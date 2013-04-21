@@ -1,0 +1,27 @@
+VPATH = . resid-fp
+CPP  = g++.exe
+CC   = gcc.exe
+WINDRES = windres.exe
+CFLAGS = -O3 -march=i686 -ffast-math -fomit-frame-pointer -falign-loops -falign-jumps -falign-functions
+OBJ = 82c711.o 1772.o arcrom.o arculfs.o arm.o arm3.o cmos.o eterna.o fdi.o fditoraw.o fpa.o ics.o ide.o ioc.o keyboard.o main.o mem.o memc.o mfm.o romload.o soundopenal.o st506.o vidc.o arculator.res
+
+LIBS =  -mwindows -lalleg44.dll -lz -lalut -lopenal32 -lgdi32 -lwinmm -lstdc++
+
+Arculator.exe: $(OBJ) $(SIDOBJ)
+	$(CC) $(OBJ) -o "Arculator.exe" $(LIBS)
+
+all : Arculator.exe
+
+clean :
+	del *.o
+	del *.exe
+	del *.res
+
+%.o : %.c
+	$(CC) $(CFLAGS) -c $<
+
+%.o : %.cc
+	$(CPP) $(CFLAGS) -c $<
+
+arculator.res: arculator.rc
+	$(WINDRES) -i arculator.rc --input-format=rc -o arculator.res -O coff

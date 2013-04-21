@@ -1,0 +1,169 @@
+Version 0.9 (06/02/07) :
+- Fixed ARM bugs - Bug Hunter now works, Phaethon no longer crashes on level 3 
+- Fixed bug in 82c711 - Nebulus now works on new FDC 
+- Fixed timing in modes 48/49 
+- Various optimisations 
+- Can now emulate ARM3 at 33mhz 
+- Now emulates two hard discs 
+- Removed software scaling options - improvements to hardware scaling mean these are not 
+  necessary anymore 
+- Improved FDI support in new FDC - more games supported (eg Wolf 3d, SF3000 etc) with hard 
+  disc install 
+- Mouse & keyboard shouldn't lock up in some stuff anymore 
+- Some other fixes
+
+Version 0.8 (23/10/06) :
+- Improved timing. Each model now performs much closer to the original machines (this means
+   slower than previous versions).
+- Can now emulate MEMC page sizes other than 32k, so all memory configurations from 512k to
+   16 megs are now possible.
+- Preliminary FDI support in 82c711 FDC.
+- Better FDI support in WD1772 FDC, including FDI v2.1 support.
+- Fast disc emulation in 82c711 FDC.
+- Bugfixes to video code. Man United Europe now looks better. Less flicker in Populous, Zarch
+  etc.
+- Keyboard/mouse fix, now doesn't freeze in Lemmings 2 and some other games.
+- Fixed broken sound in Sensible Soccer and Xenon 2.
+- Sound now in stereo.
+- Some minor optimisations.
+- Seperate ROM + CMOS files for Arthur, RISC OS 2, RISC OS 3 (old FDC) and RISC OS 3 (new FDC).
+- Added support for two MAME romsets that run on Archimedes hardware.
+- Tracked WD1772 hanging bug down to an incorrectly set CMOS bit! Now fixed.
+
+Version 0.7 (09/05/06) :
+Improved video code :
+- Display centered always
+- Multisync mode support (eg 640x480, 640x512 and 800x600)
+- Borders always drawn correctly (eg Zelanites)
+- Multisync modes are a useful workaround the desktop hanging bug!
+Fixed bug with LDMxx!, !NewLook now works, Arthur desktop now works
+Fixed bug in WD1772 FDC, disc writing now works again
+Some improvements to ArculFS
+
+version 0.6 (28/04/06) :
+Improved FDI support - many more games work
+Improved video routines - new hardware scaling option, faster! Also more video
+  modes implemented
+ArculFS - read files from the Windows file system (read-only at the moment)
+Can emulate ARM250
+
+version 0.5 (23/01/06) :
+Working 82c711 emulation. This allows high density disc access and avoids the
+  hanging bug in 1772 emulation.
+Along with 82c711 emulation comes IDE hard disc emulation.
+Preliminary FDI support (1772 only).
+Increased frequency of keyboard/mouse updates - mouse now much smoother
+Slight optimisations to video
+
+version 0.4 (12/10/05) :
+Delayed IRQ by one instruction - Lemmings 2 now has sound
+Fast disc access
+Can disable scanline effect
+
+version 0.35 (05/10/05) :
+Fixed reading of R15 in some instructions - Nebulus now works
+Sound improved a bit
+Fixed RSC instruction (don't think it affects anything though)
+Altered ARM timing
+Beginnings of new-style Arc emulation (HD floppies + IDE hard discs in theory, not 
+  working yet though)
+Palette splits slightly more stable (Lotus 2)
+
+version 0.3 (22/08/05) :
+Much improved sound (filter still a bit off though)
+Slight ARM optimisations - 10% speedup
+Bug fixes to VIDC and IOC - TCD Powerscroll and ARMageddon Megademo 3 now work
+Emulated prefetch - Elite now works (stupid protection)
+Fixed stupid video mode 0 bug
+Replaced mouse hack with mouse capture technique
+Reduced CPU usage on NT/2000/XP
+
+version 0.25 (22/07/05) :
+Disc emulation improved - can now access 720k DOS disc images, write to discs, and up to 4
+  drives now supported
+Arculator will now try to load a 2 meg file called 'rom.rom' before trying ic24-ic27.rom. 
+  This allows use of one-file ROM dumps, and Arthur, RiscOS 2 and ARM Linux ROM dumps (none
+  of which really work, but never mind)
+Slight changes to video emulation, Zelanites demo now looks okay
+Slight ARM optimisations
+
+version 0.2 (28/06/05) :
+Added support for dual/quad MEMCs (8 and 16 megs of RAM)
+ARM3 emulation
+ARM & video optimisations - 25% speed boost
+Rewritten video emulation - support midscreen palette/mode changes, correct
+  cursor in 256 colour modes, better scrolling in hardware scrolling games, etc.
+Reduced sound lag and improved sound overall
+Added fullscreen mode.
+
+version 0.1 (24/05/05) :
+Couple of CPU bugs fixed - Disc access now okay (hack no longer required), 
+many more programs/games run.
+Hack to work around other CPU bug.
+Better video emulation - more modes, scrolling in James Pond and Chuck
+Rock, correct scrolling in supervisor.
+New attempt at sound (quite poor).
+Better mouse emulation.
+
+version 0.09 (27/01/05) :
+Couple of CPU bugs fixed - BASIC and FPU emulation should be fine now.
+Better cursor emulation.
+Hack to get floppy disc to "work".
+
+pre-release 11 (01/01/04) :
+Totally rewritten. RiscOS now goes to desktop + is usable.
+Mouse and keyboard also better.
+
+pre-release 10 (30/11/02) :
+Offset all CMOS accesses by 64 bytes, now seems to work.
+Started floppy emulation (very bugged).
+Couple of optimisations.
+
+pre-release 9 (07/08/02) :
+More ARM bugs fixed - RiscOS now boots (but with some errors)
+Proper VIDC/MEMC/IOC emulation
+Keyboard and mouse now emulated (mouse a bit screwy though)
+DMA addresses are actually correct now.
+
+pre-release 8 (30/04/02) :
+Some more ARM bugs fixed - many more demos/games work.
+More SWIs trapped.
+Various address modes for video emulation.
+Monitor improved.
+Video mode changed to 400x300 to allow overscan screens to display.
+First binary release.
+
+pre-release 7 (18/04/02) :
+Monitor/debugger/disassembler added.
+Some stupid ARM bugs fixed (such as LSR not working correctly) - RiscOS gets
+further.
+SWI faking improved - more demos run.
+Alternate address for video emulation (for TCD demo 1)
+No longer compiles without DJGPP/Allegro
+Correct default palette
+
+pre-release 6 (15/03/02) :
+Can now load absolute files. Some demos run.
+SWI faking added (only for absolute files).
+Couple of ARM bug fixes.
+Primitive video emulation (mode 13 only).
+
+pre-release 5 (02/03/02) :
+Full 32k MEMC emulation.
+Some more ARM bugs fixed. RiscOS 2,3.11 and Arthur get to the first SWI.
+
+pre-release 4 (05/02/02) :
+Some ARM bugs fixed, RiscOS 3.11 starts MEMC page test.
+MEMC emulated a bit, 32k pages only, still many bugs.
+
+pre-release 3 (01/02/02) :
+RiscOS 3.11 now starts long memory test. Fixed other tests.
+Other versions of ARM emulator removed.
+
+pre-release 2 (16/01/02) :
+RiscOS 3.11 now gets past checksum.
+slightly better docs.
+
+pre-release 1 (14/01/02) :
+first release.
+ARM heavily bugged.

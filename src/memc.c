@@ -4,11 +4,21 @@
 int flybacklines;
 #include <stdio.h>
 #include "arc.h"
-#include <allegro.h>
-#include <winalleg.h>
+#include "ioc.h"
+#include "mem.h"
+#include "memc.h"
+#include "vidc.h"
 
-unsigned long memctrl;
-signed short soundbuf[8][50000],soundbuft[50000];
+#include <allegro.h>
+
+int memc_videodma_enable;
+int memc_refreshon;
+int memc_is_memc1 = 1;
+
+int sound_poll_time;
+
+uint32_t memctrl;
+int16_t soundbuf[8][50000],soundbuft[50000];
 int sinprog=0;
 int sdmaena=0;
 int bigcyc=0;
@@ -26,48 +36,6 @@ FILE *slogfile;
 int stereoimages[8];
 
 #define BUFFERSIZE 2500
-void initsound()
-{
-        unsigned short *p;
-        if (!soundena) return;
-        inital();
-/*        inital();
-        if (install_sound(DIGI_DIRECTX(0),MIDI_NONE,0))
-        {
-                if (install_sound(DIGI_AUTODETECT,MIDI_NONE,0))
-                {
-                        soundena=0;
-                        return;
-                }
-        }
-/*        if (install_sound(DIGI_AUTODETECT,MIDI_NONE,0))
-        {
-                soundena=0;
-                return;
-        }*/
-        #if 0
-        as=play_audio_stream(/*25000>>2*/BUFFERSIZE,16,1/*stereo*/,125000>>1,255,128);
-//        #if 0
-        p=0;
-        while (!p)
-        {
-                p=(unsigned short *)get_audio_stream_buffer(as);
-                Sleep(0);
-        }
-        memset(p,0,BUFFERSIZE<<2/*25000*/);
-        free_audio_stream_buffer(as);
-        #endif
-//        #endif
-//        soundf=fopen("sound.pcm","wb");
-//        slogfile=fopen("sound.txt","wt");
-}
-
-void deinitsound()
-{
-        closeal();
-//        stop_audio_stream(as);
-//        remove_sound();
-}
 
 signed short lastbuffer[4]={0,0,0,0};
 
@@ -307,8 +275,8 @@ int sampqueue=0,sampbufr=0;
 void mixsound()
 {
         int c;
-        unsigned short *p;
-        unsigned short p2[(25000)>>1];
+        uint16_t *p;
+        uint16_t p2[(25000)>>1];
         short temp;
         float tempf;
 //        rpclog("Mixsound %i %i\n",soundena,sampqueue);
@@ -329,7 +297,7 @@ void mixsound()
                 lastbuffer[1]=lastbuffer[0];
                 lastbuffer[0]=temp;
 //                temp=0;
-                p2[c<<1]=(temp*2)^0x8000;
+                p2[c<<1]=(temp*2);//^0x8000;
                 temp=(getsample(soundbuf[sampbufr][(c<<3)+1])/16);
                 temp+=(getsample(soundbuf[sampbufr][(c<<3)+3])/16);
                 temp+=(getsample(soundbuf[sampbufr][(c<<3)+5])/16);
@@ -342,34 +310,29 @@ void mixsound()
 //temp=0;
                 lastbuffer[3]=lastbuffer[2];
                 lastbuffer[2]=temp;
-                p2[(c<<1)+1]=(temp*2)^0x8000;
+                p2[(c<<1)+1]=(temp*2);//^0x8000;
         }
         sampqueue--;
         sampbufr++;
         sampbufr&=7;
-        givealbuffer(p2);
+        al_givebuffer(p2);
         #if 0
         while (!p)
         {
-                p=(unsigned short *)get_audio_stream_buffer(as);
-//                sleep(0);
+                p=(uint16_t *)get_audio_stream_buffer(as);
         }
-//        memcpy(p,&soundbuf[sampbuf^1][0],50000>>1);
         for (c=0;c</*((25000>>1))*/BUFFERSIZE<<1;c++) p[c]=p2[c];
         free_audio_stream_buffer(as);
         #endif
-//                if (!soundf) soundf=fopen("e:/devcpp/arc/sound.pcm","wb");
-//        for (c=0;c<1250<<1;c++) p2[c]^=0x8000;
-//        fwrite(p2,2500<<2,1,soundf);
 }
 
-signed short convbyte(unsigned char v)
+signed short convbyte(uint8_t v)
 {//                         7C       chord = 3     p = E/14
         signed short temp=1<<((v>>5)+4);
         temp+=(((v>>1)&0xF)<<(v>>5));
         if (v&1) temp=-temp;
         return temp;
-/*        unsigned char temp=(1<<(v>>5))-1;             //  temp=7
+/*        uint8_t temp=(1<<(v>>5))-1;             //  temp=7
         if (v&0x80) temp+=(((v>>1)&0xF)<<((v>>5)-4));  // +14<<
         else        temp+=(((v>>1)&0xF)>>(4-(v>>5)));
         temp>>=1;
@@ -381,48 +344,19 @@ signed short samples[8];
 int samplecount=0,sampledelay=0;
 //float lastsamp;
 
-unsigned short mixsample()
+uint16_t mixsample()
 {
         signed short temp2=0;
-        unsigned short *temp3;
+        uint16_t *temp3;
         signed short temp=samples[0];//((signed short)((signed char)convbyte(samples[0])))*8;
 //        float tempf;
         temp3=&temp2;
         temp2+=temp;
-/*        temp=((signed short)((signed char)convbyte(samples[1])))*16;
-        temp2+=temp;
-        temp=((signed short)((signed char)convbyte(samples[2])))*16;
-        temp2+=temp;
-        temp=((signed short)((signed char)convbyte(samples[3])))*16;
-        temp2+=temp;
-        temp=((signed short)((signed char)convbyte(samples[4])))*16;
-        temp2+=temp;
-        temp=((signed short)((signed char)convbyte(samples[5])))*16;
-        temp2+=temp;
-        temp=((signed short)((signed char)convbyte(samples[6])))*16;
-        temp2+=temp;
-        temp=((signed short)((signed char)convbyte(samples[7])))*16;
-        temp2+=temp;*/
-//        putc((*temp3)&0xFF,soundf);
-//        putc((*temp3)>>8,soundf);
-/*        tempf=((float)lastbuffer[0]*((float)13/(float)16));
-        temp2+=tempf;
-        lastbuffer[1]=lastbuffer[0];
-        lastbuffer[0]=temp2;*/
-//        if (samppos&3)
-//           soundbuf[sampbuf][(samppos>>2)]+=(*temp3);
-//        else
-//        if ((samppos&3)==3)
-//        {
-/*                tempf=((float)lastbuffer[1]*((float)13/(float)16));
-                temp2+=tempf;
-                lastbuffer[1]=lastbuffer[0];
-                lastbuffer[0]=temp2;*/
-//        }
-           soundbuft[samppos++]=(int)fir((float)samples[2]);//temp;
-           soundbuft[samppos++]=(int)fir2((float)samples[3]);
-//        samppos++;
-        if (samppos==/*(50000)*/(BUFFERSIZE<<3))
+
+        soundbuft[samppos++]=(int)fir((float)samples[2]);//temp;
+        soundbuft[samppos++]=(int)fir2((float)samples[3]);
+
+        if (samppos == (BUFFERSIZE << 3))
         {
                 if (sampqueue==8)
                 {
@@ -430,8 +364,8 @@ unsigned short mixsample()
                         sampbuf--;
                         sampbuf&=7;
                 }
-                memcpy(soundbuf[sampbuf],soundbuft,/*50000<<1*/BUFFERSIZE<<4);
-//                if (!soundf) soundf=fopen("e:/devcpp/arc/sound.pcm","wb");
+                memcpy(soundbuf[sampbuf], soundbuft, BUFFERSIZE<<4);
+//                if (!soundf) soundf=fopen("sound.pcm","wb");
 //                fwrite(soundbuf[sampbuf],1250<<2,1,soundf);
                 samppos=0;
                 sampbuf++;
@@ -444,30 +378,12 @@ unsigned short mixsample()
 }
 
 
-void resetsound()
-{
-        unsigned short *p;
-        if (!soundena) return;
-        samppos=sampbuf=sampbufr=sampqueue=0;
-        stop_audio_stream(as);
-        as=play_audio_stream(BUFFERSIZE,16,1/*stereo*/,125000>>1,255,128);
-        p=0;
-        while (!p)
-        {
-                p=(unsigned short *)get_audio_stream_buffer(as);
-                Sleep(0);
-        }
-        memset(p,0,BUFFERSIZE<<2);
-        free_audio_stream_buffer(as);
-        sampledelay=0;
-}
-
 int soundtime;
 float sampdiff;
-unsigned long spos,sdif,soend,sendN,sstart2;
+uint32_t spos,soend,sendN,sstart2;
 int nextvalid;
 #define getdmaaddr(addr) (((addr>>2)&0x7FFF)<<2)
-void writememc(unsigned long a)
+void writememc(uint32_t a)
 {
 //        rpclog("Write MEMC %08X\n",a);
 //        if (!slogfile) slogfile=fopen("slog.txt","wt");
@@ -478,9 +394,9 @@ void writememc(unsigned long a)
         }*/
         switch ((a>>17)&7)
         {
-                case 0: /*printf("MEMC write %08X - VINIT  = %05X\n",a,getdmaaddr(a));*/ vinit=getdmaaddr(a); /*rpclog("Vinit write %08X %07X\n",vinit,PC);*/ return;
-                case 1: /*printf("MEMC write %08X - VSTART = %05X\n",a,getdmaaddr(a));*/ vstart=getdmaaddr(a); /*rpclog("Vstart write %08X %07X\n",vstart,PC);*/return;
-                case 2: /*printf("MEMC write %08X - VEND   = %05X\n",a,getdmaaddr(a));*/ vend=getdmaaddr(a); /*rpclog("Vend write %08X %07X\n",vend,PC);*/return;
+                case 0: /*printf("MEMC write %08X - VINIT  = %05X\n",a,getdmaaddr(a)*4);*/ vinit=getdmaaddr(a); /*rpclog("Vinit write %08X %07X\n",vinit,PC);*/ return;
+                case 1: /*printf("MEMC write %08X - VSTART = %05X\n",a,getdmaaddr(a)*4);*/ vstart=getdmaaddr(a); /*rpclog("Vstart write %08X %07X\n",vstart,PC);*/return;
+                case 2: /*printf("MEMC write %08X - VEND   = %05X\n",a,getdmaaddr(a)*4);*/ vend=getdmaaddr(a); /*rpclog("Vend write %08X %07X\n",vend,PC);*/return;
                 case 3: /*printf("MEMC write %08X - CINIT  = %05X\n",a,getdmaaddr(a));*/ cinit=getdmaaddr(a); /*printf("CINIT=%05X\n",cinit<<2);*/ return;
                 case 4:
 //                rpclog("%08i MEMC write %08X - SSTART = %05X %05X\n",bigcyc,a,getdmaaddr(a),spos);
@@ -491,8 +407,7 @@ void writememc(unsigned long a)
 //                if (nextvalid==1)
 //                {
 //                soundtime=soundper*(ssend-sstart);
-                        ioc.irqb&=~2;
-                        updateirqs();
+                ioc_irqbc(IOC_IRQB_SOUND_BUFFER);
                         nextvalid=2;
 //                }
 //                spos=sstart;
@@ -502,12 +417,11 @@ void writememc(unsigned long a)
                 case 5:
 //                rpclog("%08i MEMC write %08X - SEND   = %05X %05X\n",bigcyc,a,getdmaaddr(a),spos);
                 sendN=getdmaaddr(a);
+
                 if (nextvalid==1) nextvalid=2;
                 if (nextvalid!=2) nextvalid=1;
 //                fputs(s,slogfile);
 //                soend=ssend;
-//                ioc.irqb&=~2;
-//                updateirqs();
                 return;
                 case 6:
 //                rpclog("%08i MEMC write %08X - SPTR   = %05X %05X\n",bigcyc,a,getdmaaddr(a),spos);
@@ -517,8 +431,7 @@ void writememc(unsigned long a)
 //                soundtime=27500;
                 spos=sstart2=sstart<<2;
                 ssend=sendN<<2;
-                ioc.irqb|=2;
-                updateirqs();
+                ioc_irqb(IOC_IRQB_SOUND_BUFFER);
                 nextvalid=0;
 //                sinprog=1;
                 return;
@@ -526,18 +439,30 @@ void writememc(unsigned long a)
                 sdmaena=(a&0x800)?1:0;
                 pagesize=(a&0xC)>>2;
                 resetpagesize(pagesize);
+                memc_videodma_enable = a & 0x400;
+                switch ((a >> 6) & 3) /*High ROM speed*/
+                {
+                        case 0: /*450ns*/
+                        mem_setromspeed(4, 4);
+                        break;
+                        case 1: /*325ns*/
+                        mem_setromspeed(3, 3);
+                        break;
+                        case 2: /*200ns*/
+                        mem_setromspeed(2, 2);
+                        break;
+                        case 3: /*200ns with 60ns nibble mode*/
+                        mem_setromspeed(2, 1);
+                        break;
+                }
+                memc_refreshon = (((a >> 8) & 3) == 1);
+                mem_dorefresh = memc_refreshon && !vidc_displayon;
+                return;
+
+                rpclog("MEMC ctrl write %08X %i\n",a,sdmaena);
 //                rpclog("CTRL write pagesize %i %i\n",pagesize,ins);
-/*                if (!olog) olog=fopen("olog.txt","wt");
-                sprintf(s,"MEMC ctrl write %08X %i\n",a,sdmaena);
-                fputs(s,olog);*/
                 memctrl=a;
                 return;
-                
-                default:
-                sprintf(err2,"Bad MEMC adr %i %08X\n",(a>>17)&7,a);
-                MessageBox(NULL,err2,"Arc",MB_OK);
-                dumpregs();
-                exit(-1);
         }
 }
 
@@ -557,10 +482,10 @@ void pollsound()
 {
         mixsample();
         if (!sdmaena) return;
-        sampledelay+=4;
-        if (sampledelay>=soundper)
+        sampledelay += 4 << 10;
+        if (sampledelay >= soundper)
         {
-                sampledelay-=soundper;
+                sampledelay -= soundper;
                 samples[0/*samplecount*/]=(ram[(spos>>2)&0x1FFFF]>>((spos&3)<<3))&0xFF;
                 samples[0]=convbyte(samples[0]);
                 samples[2]=(signed short)(((int)samples[0]*vollevels[stereo][0][stereoimages[spos&7]]));
@@ -579,8 +504,7 @@ void pollsound()
                         }
                         else
                            spos=sstart2;
-                        ioc.irqb|=2;
-                        updateirqs();
+                        ioc_irqb(IOC_IRQB_SOUND_BUFFER);
                         sinprog=0;
                 }
         }
@@ -588,7 +512,7 @@ void pollsound()
 
 int output;
 
-void writecam(unsigned long a)
+void writecam(uint32_t a)
 {
         int page,access,logical,c;
 //        rpclog("Write CAM %08X pagesize %i %i\n",a,pagesize,ins);
@@ -615,7 +539,7 @@ void writecam(unsigned long a)
                         memcpages[logical+c]=page<<13;
                         memstat[logical+c]=access+1;
                         mempoint[logical+c]=&ram[(page<<11)+(c<<10)];
-                        mempointb[logical+c]=(unsigned char *)&ram[(page<<11)+(c<<10)];
+                        mempointb[logical+c]=(uint8_t *)&ram[(page<<11)+(c<<10)];
                 }
                 break;
 //                #endif
@@ -638,7 +562,7 @@ void writecam(unsigned long a)
                         memcpages[logical+c]=page<<14;
                         memstat[logical+c]=access+1;
                         mempoint[logical+c]=&ram[(page<<12)+(c<<10)];
-                        mempointb[logical+c]=(unsigned char *)&ram[(page<<12)+(c<<10)];
+                        mempointb[logical+c]=(uint8_t *)&ram[(page<<12)+(c<<10)];
                 }
                 break;
                 case 3: /*32k*/
@@ -663,12 +587,9 @@ void writecam(unsigned long a)
                         memcpages[logical+c]=page<<15;
                         memstat[logical+c]=access+1;
                         mempoint[logical+c]=&ram[(page<<13)+(c<<10)];
-                        mempointb[logical+c]=(unsigned char *)&ram[(page<<13)+(c<<10)];
+                        mempointb[logical+c]=(uint8_t *)&ram[(page<<13)+(c<<10)];
                 }
                 break;
-                default:
-                rpclog("Bad pagesize %i\n",pagesize);
-                exit(-1);
         }
 //        memcpermissions[logical]=access;
 }

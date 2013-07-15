@@ -3,13 +3,13 @@
 
 #include <allegro.h>
 #include "arc.h"
+#include "ioc.h"
 
 int oldkey5=0,oldkey6=0;
-unsigned char readeterna(unsigned long addr)
+uint8_t readeterna(uint32_t addr)
 {
-        unsigned char temp=0;
-        ioc.irqb&=~0x20;
-        updateirqs();
+        uint8_t temp=0;
+        ioc_irqbc(IOC_IRQB_PODULE_IRQ);
         switch (addr&~3)
         {
                 case 0x33C0004: /*DSW1*/
@@ -44,6 +44,6 @@ unsigned char readeterna(unsigned long addr)
 //        return temp;
 }
 
-void writeeterna(unsigned long addr, unsigned long val)
+void writeeterna(uint32_t addr, uint32_t val)
 {
 }

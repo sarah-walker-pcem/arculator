@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include "arc.h"
 
-unsigned char icsrom[16384];
+uint8_t icsrom[16384];
 int icspage=0;
 
 void resetics()
@@ -15,7 +15,7 @@ void resetics()
         icspage=0;
 }
 
-void writeics(unsigned long addr, unsigned char val)
+void writeics(uint32_t addr, uint8_t val)
 {
 //        rpclog("Write ICS %07X %02X %07X\n",addr,val,PC);
         switch (addr&0x3000)
@@ -24,9 +24,10 @@ void writeics(unsigned long addr, unsigned char val)
         }
 }
 
-unsigned char readics(unsigned long addr)
+uint8_t readics(uint32_t addr)
 {
         int temp;
+        return 0xFF;
         if (romset<2 || romset>3) return 0xFF;
 //        rpclog("Read ICS %07X %07X\n",addr,PC);
         switch (addr&0x3000)

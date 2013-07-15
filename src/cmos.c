@@ -2,19 +2,23 @@
   I2C + CMOS RAM emulation*/
 #include <stdio.h>
 #include <allegro.h>
+#ifdef WIN32
 #include <winalleg.h>
+#endif
 #include "arc.h"
 
 FILE *olog;
 int output;
-//unsigned long *armregs[16];
+//uint32_t *armregs[16];
 int cmosstate=0;
 int i2cstate=0;
 int lastdata;
-unsigned char i2cbyte;
+uint8_t i2cbyte;
 int i2cclock=1,i2cdata=1,i2cpos;
 int i2ctransmit=-1;
+#ifdef WIN32
 SYSTEMTIME systemtime;
+#endif
 
 #define CMOS 1
 #define ARM -1
@@ -30,8 +34,8 @@ SYSTEMTIME systemtime;
 #define CMOS_RECIEVEDATA     2
 #define CMOS_SENDDATA        3
 
-unsigned char cmosaddr;
-unsigned char cmosram[256];
+uint8_t cmosaddr;
+uint8_t cmosram[256];
 int cmosrw;
 FILE *cmosf;
 
@@ -46,10 +50,10 @@ void loadcmos()
         if (romset>3) return;
         switch (romset)
         {
-                case 0: append_filename(fn,exname,"cmos\\arthur\\cmos.bin",511); break;
-                case 1: append_filename(fn,exname,"cmos\\riscos2\\cmos.bin",511); break;
-                case 2: append_filename(fn,exname,"cmos\\riscos3_old\\cmos.bin",511); break;
-                case 3: append_filename(fn,exname,"cmos\\riscos3_new\\cmos.bin",511); break;
+                case 0: append_filename(fn,exname,"cmos/arthur/cmos.bin",511); break;
+                case 1: append_filename(fn,exname,"cmos/riscos2/cmos.bin",511); break;
+                case 2: append_filename(fn,exname,"cmos/riscos3_old/cmos.bin",511); break;
+                case 3: append_filename(fn,exname,"cmos/riscos3_new/cmos.bin",511); break;
         }
 //        rpclog("Reading %s\n",fn);
         cmosf=fopen(fn,"rb");
@@ -70,10 +74,10 @@ void savecmos()
         if (romset>3) return;
         switch (romset)
         {
-                case 0: append_filename(fn,exname,"cmos\\arthur\\cmos.bin",511); break;
-                case 1: append_filename(fn,exname,"cmos\\riscos2\\cmos.bin",511); break;
-                case 2: append_filename(fn,exname,"cmos\\riscos3_old\\cmos.bin",511); break;
-                case 3: append_filename(fn,exname,"cmos\\riscos3_new\\cmos.bin",511); break;
+                case 0: append_filename(fn,exname,"cmos/arthur/cmos.bin",511); break;
+                case 1: append_filename(fn,exname,"cmos/riscos2/cmos.bin",511); break;
+                case 2: append_filename(fn,exname,"cmos/riscos3_old/cmos.bin",511); break;
+                case 3: append_filename(fn,exname,"cmos/riscos3_new/cmos.bin",511); break;
         }
 //        rpclog("Writing %s\n",fn);
         cmosf=fopen(fn,"wb");
@@ -94,7 +98,7 @@ void cmosnextbyte()
 //        cmosgettime();
         i2cbyte=cmosram[(cmosaddr++)&0xFF];
 }
-unsigned char cmosgetbyte()
+uint8_t cmosgetbyte()
 {
         return cmosram[(cmosaddr++)&0xFF];
 }
@@ -103,7 +107,8 @@ void cmosgettime()
 {
         int c,d;
         if (rtcdisable) return;
-        GetLocalTime(&systemtime);
+#ifdef WIN32
+/*        GetLocalTime(&systemtime);
         c=systemtime.wMilliseconds/10;
         d=c%10;
         c/=10;
@@ -122,7 +127,8 @@ void cmosgettime()
         cmosram[5]=d|(c<<4);
         d=systemtime.wMonth%10;
         c=systemtime.wMonth/10;
-        cmosram[6]=d|(c<<4);
+        cmosram[6]=d|(c<<4);*/
+#endif
 /*        d=systemtime.wYear%10;
         c=(systemtime.wYear/10)%10;
         cmosram[128]=d|(c<<4);
@@ -138,6 +144,7 @@ void cmosgettime()
 
 void cmostick()
 {
+#ifdef WIN32
         systemtime.wMilliseconds+=2;
         if (systemtime.wMilliseconds>=100)
         {
@@ -158,9 +165,10 @@ void cmostick()
                         }
                 }
         }
+#endif
 }
 
-void cmoswrite(unsigned char byte)
+void cmoswrite(uint8_t byte)
 {
         switch (cmosstate)
         {

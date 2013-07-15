@@ -1,1 +1,88 @@
-allegro_icon ICON arculator.ico
+#include "resources.h"
+
+MainMenu MENU DISCARDABLE
+BEGIN
+        POPUP "&File"
+        BEGIN
+                MENUITEM "&Reset",              IDM_FILE_RESET
+                MENUITEM SEPARATOR
+                MENUITEM "E&xit",               IDM_FILE_EXIT
+        END
+        POPUP "&Disc"
+        BEGIN
+                POPUP "&Change Disc"
+                BEGIN
+                        MENUITEM "Drive :&0...",     IDM_DISC_CHANGE0
+                        MENUITEM "Drive :&1...",     IDM_DISC_CHANGE1
+                        MENUITEM "Drive :&2...",     IDM_DISC_CHANGE2
+                        MENUITEM "Drive :&3...",     IDM_DISC_CHANGE3
+                END
+                POPUP "&Eject Disc"
+                BEGIN
+                        MENUITEM "Drive :&0...",     IDM_DISC_REMOVE0
+                        MENUITEM "Drive :&1...",     IDM_DISC_REMOVE1
+                        MENUITEM "Drive :&2...",     IDM_DISC_REMOVE2
+                        MENUITEM "Drive :&3...",     IDM_DISC_REMOVE3
+                END
+                MENUITEM "&Fast disc access",  IDM_DISC_FAST
+        END
+        POPUP "&Options"
+        BEGIN
+                MENUITEM "&Sound enable", IDM_OPTIONS_SOUND
+                MENUITEM "S&tereo sound", IDM_OPTIONS_STEREO
+                MENUITEM "&Limit speed",  IDM_OPTIONS_LIMIT
+        END
+        POPUP "&Machine"
+        BEGIN
+                POPUP "&CPU type"
+                BEGIN
+                        MENUITEM "ARM2 (8 MHz) w/MEMC1",      IDM_CPU_ARM2_MEMC1
+                        MENUITEM "ARM2 (8 MHz) w/MEMC1a",     IDM_CPU_ARM2
+                        MENUITEM "ARM250 (12 MHz)",           IDM_CPU_ARM250
+                        MENUITEM "ARM3 (25 MHz)",             IDM_CPU_ARM3
+                        MENUITEM "ARM3 (33 MHz)",             IDM_CPU_ARM3_33
+                        MENUITEM "ARM3 (66 MHz)",             IDM_CPU_ARM3_66
+                        MENUITEM "ARM3 (25 MHz) w/FPA",       IDM_CPU_ARM3_FPA
+                        MENUITEM "ARM3 (33 MHz) w/FPA",       IDM_CPU_ARM3_33_FPA
+                        MENUITEM "ARM3 (66 MHz) w/FPA",       IDM_CPU_ARM3_66_FPA
+                END
+                POPUP "&Memory"
+                BEGIN
+                        MENUITEM "512 kb", IDM_MEMSIZE_512K
+                        MENUITEM "1 Mb",   IDM_MEMSIZE_1M
+                        MENUITEM "2 Mb",   IDM_MEMSIZE_2M
+                        MENUITEM "4 Mb",   IDM_MEMSIZE_4M
+                        MENUITEM "8 Mb",   IDM_MEMSIZE_8M
+                        MENUITEM "16 Mb",  IDM_MEMSIZE_16M
+                END
+                POPUP "&Operating System"
+                BEGIN
+                        MENUITEM "&Arthur",              IDM_ROM_ARTHUR
+                        MENUITEM "RISC OS &2",           IDM_ROM_RO2
+                        MENUITEM "&RISC OS 3 (old FDC)", IDM_ROM_RO3_OLD
+                        MENUITEM "RISC OS &3 (new FDC)", IDM_ROM_RO3_NEW
+                        MENUITEM "&Ertictac/Tactic",     IDM_ROM_TACTIC
+                        MENUITEM "&Poizone",             IDM_ROM_POIZONE
+                        MENUITEM "&White Tiger",         IDM_ROM_WTIGER
+                END
+                POPUP "&Monitor"
+                BEGIN
+                        MENUITEM "&Normal",        IDM_MONITOR_NORMAL
+                        MENUITEM "&High-res mono", IDM_MONITOR_HIRES
+                END
+        END
+        POPUP "&Video"
+        BEGIN
+                MENUITEM "&Fullscreen",IDM_VIDEO_FULLSCR
+                POPUP "&Borders"
+                BEGIN
+                        MENUITEM "&Full borders", IDM_VIDEO_FULLBOR
+                        MENUITEM "&No borders", IDM_VIDEO_NOBOR
+                END
+                POPUP "&Blit method"
+                BEGIN
+                        MENUITEM "&Scanlines",     IDM_BLIT_SCAN
+                        MENUITEM "&Line doubling", IDM_BLIT_SCALE
+                END
+        END
+END

@@ -15,7 +15,7 @@ int loadertictac()
         char s[10];
         FILE *f[4];
         int addr=0;
-        unsigned char *romb=rom;
+        uint8_t *romb=rom;
         for (c=0;c<16;c+=4)
         {
                 for (d=0;d<4;d++)
@@ -49,7 +49,7 @@ int loadpoizone()
         char s[10];
         FILE *f[4];
         int addr=0;
-        unsigned char *romb=rom;
+        uint8_t *romb=rom;
         for (c=0;c<24;c+=4)
         {
                 if (c==12 || c==16)
@@ -99,18 +99,19 @@ int loadrom()
 //        char s[256];
         char fn[512];
         char *ext;
-        unsigned char *romb=rom;
+        uint8_t *romb=rom;
 //        rpclog("Loading ROM set %i\n",romset);
         if (firstromload) getcwd(olddir,511);
         firstromload=0;
 //        append_filename(fn,exname,"roms\\",511);
         switch (romset)
         {
-                case 0: append_filename(fn,exname,"roms\\arthur",511); break;
-                case 1: append_filename(fn,exname,"roms\\riscos2",511); break;
-                case 2: case 3: append_filename(fn,exname,"roms\\riscos3",511); break;
-                case 4: append_filename(fn,exname,"roms\\ertictac",511); chdir(fn); return loadertictac();
-                case 5: append_filename(fn,exname,"roms\\poizone",511); chdir(fn); return loadpoizone();
+                case 0: append_filename(fn,exname,"roms/arthur",511); break;
+                case 1: append_filename(fn,exname,"roms/riscos2",511); break;
+                case 2: case 3: append_filename(fn,exname,"roms/riscos3",511); break;
+                case 4: append_filename(fn,exname,"roms/ertictac",511); chdir(fn); return loadertictac();
+                case 5: append_filename(fn,exname,"roms/poizone",511); chdir(fn); return loadpoizone();
+                case 6: append_filename(fn,exname,"roms/wtiger",511); break;
         }
         chdir(fn);
         finished=al_findfirst("*.*",&ff,0xFFFF&~FA_DIREC);

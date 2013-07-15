@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include <stdint.h>
 #include "arc.h"
 
 uint8_t arcrom[32768];

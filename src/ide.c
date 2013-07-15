@@ -2,22 +2,23 @@
   IDE emulation*/
 #include <stdio.h>
 #include "arc.h"
+#include "ioc.h"
 
 int dumpedread=0;
 struct
 {
-        unsigned char atastat;
-        unsigned char error,status;
+        uint8_t atastat;
+        uint8_t error,status;
         int secount,sector,cylinder,head,drive,cylprecomp;
-        unsigned char command;
-        unsigned char fdisk;
+        uint8_t command;
+        uint8_t fdisk;
         int pos;
         int spt[2],hpc[2];
 } ide;
 
 int idereset=0;
-unsigned short idebuffer[256];
-unsigned char *idebufferb;
+uint16_t idebuffer[256];
+uint8_t *idebufferb;
 FILE *hdfile[2]={NULL,NULL};
 void closeide()
 {
@@ -29,33 +30,37 @@ int skip512[2]={0,0};
 void resetide()
 {
         int c;
+        char fn[512];
         ide.drive=0;
         ide.atastat=0x40;
         idecallback=0;
+	hdfile[0]=hdfile[1]=NULL;
+	append_filename(fn,exname,"hd4.hdf",511);
         if (!hdfile[0])
         {
-                hdfile[0]=fopen("hd4.hdf","rb+");
+                hdfile[0]=fopen(fn,"rb+");
                 if (!hdfile[0])
                 {
-                        hdfile[0]=fopen("hd4.hdf","wb");
+                        hdfile[0]=fopen(fn,"wb");
                         putc(0,hdfile[0]);
                         fclose(hdfile[0]);
-                        hdfile[0]=fopen("hd4.hdf","rb+");
+                        hdfile[0]=fopen(fn,"rb+");
                 }
                 atexit(closeide);
         }
+	append_filename(fn,exname,"hd5.hdf",511);
         if (!hdfile[1])
         {
-                hdfile[1]=fopen("hd5.hdf","rb+");
+                hdfile[1]=fopen(fn,"rb+");
                 if (!hdfile[1])
                 {
-                        hdfile[1]=fopen("hd5.hdf","wb");
+                        hdfile[1]=fopen(fn,"wb");
                         putc(0,hdfile[1]);
                         fclose(hdfile[1]);
-                        hdfile[1]=fopen("hd5.hdf","rb+");
+                        hdfile[1]=fopen(fn,"rb+");
                 }
         }
-        idebufferb=(unsigned char *)idebuffer;
+        idebufferb=(uint8_t *)idebuffer;
         for (c=0;c<2;c++)
         {
                 fseek(hdfile[c],0xFC1,SEEK_SET);
@@ -75,7 +80,7 @@ void resetide()
                                 skip512[c]=1;
                         }
                 }
-        rpclog("Drive %i - %i %i\n",c,ide.spt[c],ide.hpc[c]);
+//        rpclog("Drive %i - %i %i\n",c,ide.spt[c],ide.hpc[c]);
         }
 //        ide.spt=63;
 //        ide.hpc=16;
@@ -83,7 +88,7 @@ void resetide()
 //        ide.hpc=14;
 }
 
-void writeidew(unsigned short val)
+void writeidew(uint16_t val)
 {
 //        if (ide.sector==7) rpclog("Write data %08X %04X\n",ide.pos,val);
         idebuffer[ide.pos>>1]=val;
@@ -96,7 +101,7 @@ void writeidew(unsigned short val)
         }
 }
 
-void writeide(unsigned short addr, unsigned char val)
+void writeide(uint32_t addr, uint8_t val)
 {
 //        if (addr!=0x1F0) rpclog("Write IDE %08X %02X %08X %08X\n",addr,val,PC-8,armregs[12]);
         switch (addr)
@@ -212,10 +217,10 @@ void writeide(unsigned short addr, unsigned char val)
         exit(-1);
 }
 
-unsigned char readide(unsigned short addr)
+uint8_t readide(uint32_t addr)
 {
-        unsigned char temp;
-//        rpclog("Read IDE %08X %08X\n",addr,PC-8);
+        uint8_t temp;
+//        if (addr!=0x1F0) rpclog("Read IDE %08X %08X\n",addr,PC-8);
         switch (addr)
         {
                 case 0x1F0:
@@ -253,10 +258,7 @@ unsigned char readide(unsigned short addr)
                 return ide.head|(ide.drive<<4)|0xA0;
                 case 0x1F7:
                 if (romset==3)
-                {
-                        ioc.irqb&=~8;
-                        updateirqs();
-                }
+                        ioc_irqbc(IOC_IRQB_IDE);
 //                rpclog("Read ATAstat %02X\n",ide.atastat);
                 return ide.atastat;
                 case 0x3F6:
@@ -268,11 +270,12 @@ unsigned char readide(unsigned short addr)
         exit(-1);
 }
 
-unsigned short readidew()
+uint16_t readidew()
 {
-        unsigned short temp;
+        uint16_t temp;
 //        if (ide.sector==7) rpclog("Read data2 %08X %04X\n",ide.pos,idebuffer[ide.pos>>1]);
         temp=idebuffer[ide.pos>>1];
+//        rpclog("Read IDEW %04X\n",temp);
         ide.pos+=2;
         if (ide.pos>=512)
         {
@@ -307,6 +310,15 @@ unsigned short readidew()
 void callbackide()
 {
         int addr,c;
+//        rpclog("IDE callback %08X %i %02X\n",hdfile[ide.drive],ide.drive,ide.command);
+	if (!hdfile[ide.drive]) 
+	{
+                ide.atastat=0x41;
+                ide.error=4;
+                if (romset==3)
+                        ioc_irqb(IOC_IRQB_IDE);
+		return;
+	}
         if (idereset)
         {
                 ide.atastat=0x40;
@@ -326,10 +338,7 @@ void callbackide()
 //                rpclog("Restore callback\n");
                 ide.atastat=0x40;
                 if (romset==3)
-                {
-                        ioc.irqb|=8;
-                        updateirqs();
-                }
+                        ioc_irqb(IOC_IRQB_IDE);                
                 return;
                 case 0x20: /*Read sectors*/
                 if (!ide.secount)
@@ -345,16 +354,14 @@ void callbackide()
                         error("Read from other cylinder/head");
                         exit(-1);
                 }*/
+//                rpclog("Seek to %08X\n",addr);
                 fseek(hdfile[ide.drive],addr,SEEK_SET);
                 fread(idebuffer,512,1,hdfile[ide.drive]);
                 ide.pos=0;
                 ide.atastat=0x08;
 //                rpclog("Read sector callback %i %i %i offset %08X %i left %i\n",ide.sector,ide.cylinder,ide.head,addr,ide.secount,ide.spt[ide.drive]);
                 if (romset==3)
-                {
-                        ioc.irqb|=8;
-                        updateirqs();
-                }
+                        ioc_irqb(IOC_IRQB_IDE);                
                 return;
                 case 0x30: /*Write sector*/
                 readflash[0]=2;
@@ -364,10 +371,7 @@ void callbackide()
                 fseek(hdfile[ide.drive],addr,SEEK_SET);
                 fwrite(idebuffer,512,1,hdfile[ide.drive]);
                 if (romset==3)
-                {
-                        ioc.irqb|=8;
-                        updateirqs();
-                }
+                        ioc_irqb(IOC_IRQB_IDE);                
                 ide.secount--;
                 if (ide.secount)
                 {
@@ -394,10 +398,7 @@ void callbackide()
                 ide.atastat=0x40;
 //                rpclog("Read verify callback %i %i %i offset %08X %i left\n",ide.sector,ide.cylinder,ide.head,addr,ide.secount);
                 if (romset==3)
-                {
-                        ioc.irqb|=8;
-                        updateirqs();
-                }
+                        ioc_irqb(IOC_IRQB_IDE);                
                 return;
                 case 0x50: /*Format track*/
                 addr=(((ide.cylinder*ide.hpc[ide.drive])+ide.head)*ide.spt[ide.drive])*512;
@@ -411,10 +412,7 @@ void callbackide()
                 }
                 ide.atastat=0x40;
                 if (romset==3)
-                {
-                        ioc.irqb|=8;
-                        updateirqs();
-                }
+                        ioc_irqb(IOC_IRQB_IDE);                
                 return;
                 case 0x91: /*Set parameters*/
                 ide.spt[ide.drive]=ide.secount;
@@ -422,10 +420,7 @@ void callbackide()
 //                rpclog("%i sectors per track, %i heads per cylinder  %i %i  %i\n",ide.spt[ide.drive],ide.hpc[ide.drive],ide.secount,ide.head,ide.drive);
                 ide.atastat=0x40;
                 if (romset==3)
-                {
-                        ioc.irqb|=8;
-                        updateirqs();
-                }
+                        ioc_irqb(IOC_IRQB_IDE);                
                 return;
                 case 0xA1:
                 case 0xE3:
@@ -433,10 +428,7 @@ void callbackide()
                 ide.atastat=0x41;
                 ide.error=4;
                 if (romset==3)
-                {
-                        ioc.irqb|=8;
-                        updateirqs();
-                }
+                        ioc_irqb(IOC_IRQB_IDE);
                 return;
                 case 0xEC:
 //                        rpclog("Callback EC\n");
@@ -468,20 +460,8 @@ void callbackide()
                 ide.atastat=0x08;
 //                rpclog("ID callback\n");
                 if (romset==3)
-                {
-                        ioc.irqb|=8;
-                        updateirqs();
-                }
+                        ioc_irqb(IOC_IRQB_IDE);                
                 return;
-/*                case 0xE5:
-                ide.
-                ide.atastat=0x40;
-                if (romset==3)
-                {
-                        ioc.irqb|=8;
-                        updateirqs();
-                }
-                return;*/
         }
 }
 /*Read 1F1*/

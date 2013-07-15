@@ -1,93 +1,119 @@
+/*B-em v2.2 by Tom Walker
+  OpenAL interface*/
+
+#include <string.h>  
 #include <stdio.h>
 #include <AL/al.h>
-#include <al/alut.h>
+#include <AL/alut.h>
 #include "arc.h"
+#include "soundopenal.h"
 
-FILE *allog;
+static ALuint buffers[4]; // front and back buffers
+static ALuint source[2];     // audio source
+static ALuint buffersdd[4]; // front and back buffers
+static ALenum format;     // internal format
 
-ALuint buffers[4]; // front and back buffers
-ALuint source;     // audio source
-ALenum format;     // internal format
+#define FREQ 62500
+//#define BUFLEN (3125<<2)
+#define BUFLEN (2500<<2)
 
-#define FREQ (125000>>1)
-#define BUFLEN (2500<<1)
-
-void closeal();
-
-void check()
+static void check()
 {
         ALenum error;
         if ((error = alGetError()) != AL_NO_ERROR)
         {
-                rpclog("AL Error : %08X\n", error);
-              //  rpclog("Description : %s\n",alGetErrorString(error));
+                //printf("AL Error : %08X\n", error);
+                //printf("Description : %s\n",alGetErrorString(error));
         }
 /*        if ((error = alutGetError()) != ALUT_ERROR_NO_ERROR)
         {
-                rpclog("AL Error : %08X\n", error);
-                rpclog("Description : %s\n",alutGetErrorString(error));
+                printf("ALut Error : %08X\n", error);
+                printf("Description : %s\n",alutGetErrorString(error));
         }*/
 }
 
-void initalmain(int argc, char *argv[])
+void al_init_main(int argc, char *argv[])
 {
-        alutInit(&argc, argv);
+        alutInit(0, NULL);//&argc, argv);
         check();
-        atexit(closeal);
-        printf("AlutInit\n");
+//        atexit(closeal);
+//        printf("AlutInit\n");
 }
 
-void closeal()
+void al_close()
 {
         alutExit();
 }
 
-void inital()
+static int16_t tempbuf[BUFLEN>>1];
+static int16_t tempbufdd[4410*2];
+
+void al_init()
 {
         int c;
-        short buf[BUFLEN*2];
         format = AL_FORMAT_STEREO16;
         check();
 
         alGenBuffers(4, buffers);
         check();
         
-        alGenSources(1, &source);
+        alGenSources(2, source);
         check();
         
-        alSource3f(source, AL_POSITION,        0.0, 0.0, 0.0);
-        alSource3f(source, AL_VELOCITY,        0.0, 0.0, 0.0);
-        alSource3f(source, AL_DIRECTION,       0.0, 0.0, 0.0);
-        alSourcef (source, AL_ROLLOFF_FACTOR,  0.0          );
-        alSourcei (source, AL_SOURCE_RELATIVE, AL_TRUE      );
+        alSource3f(source[0], AL_POSITION,        0.0, 0.0, 0.0);
+        alSource3f(source[0], AL_VELOCITY,        0.0, 0.0, 0.0);
+        alSource3f(source[0], AL_DIRECTION,       0.0, 0.0, 0.0);
+        alSourcef (source[0], AL_ROLLOFF_FACTOR,  0.0          );
+        alSourcei (source[0], AL_SOURCE_RELATIVE, AL_TRUE      );
         check();
 
-        memset(buf,0,BUFLEN*4);
+        memset(tempbuf, 0, BUFLEN);
         
-        for (c=0;c<4;c++)
-            alBufferData(buffers[c], AL_FORMAT_STEREO16, buf, BUFLEN*2, FREQ);
-        alSourceQueueBuffers(source, 4, buffers);
+        for (c = 0; c < 4; c++)
+            alBufferData(buffers[c], AL_FORMAT_STEREO16, tempbuf, BUFLEN, 62500);
+        alSourceQueueBuffers(source[0], 4, buffers);
         check();
-        alSourcePlay(source);
+        alSourcePlay(source[0]);
         check();
-        printf("InitAL\n");
+//        printf("InitAL\n");
+
+        alGenBuffers(4, buffersdd);
+        check();
+
+        alSource3f(source[1], AL_POSITION,        0.0, 0.0, 0.0);
+        alSource3f(source[1], AL_VELOCITY,        0.0, 0.0, 0.0);
+        alSource3f(source[1], AL_DIRECTION,       0.0, 0.0, 0.0);
+        alSourcef (source[1], AL_ROLLOFF_FACTOR,  0.0          );
+        alSourcei (source[1], AL_SOURCE_RELATIVE, AL_TRUE      );
+        check();
+
+        memset(tempbufdd, 0, 4410 * 4);
+
+        for (c = 0; c < 4; c++)
+            alBufferData(buffersdd[c], AL_FORMAT_STEREO16, tempbufdd, 4410*4, 44100);
+        alSourceQueueBuffers(source[1], 4, buffersdd);
+        check();
+        alSourcePlay(source[1]);
+        check();
+//        printf("InitAL\n");
 }
 
-void givealbuffer(short *buf)
+static int16_t zbuf[16384];
+
+void al_givebuffer(int16_t *buf)
 {
         int processed;
         int state;
-        int c;
         
-        alGetSourcei(source, AL_SOURCE_STATE, &state);
+        alGetSourcei(source[0], AL_SOURCE_STATE, &state);
 
-        if (state==0x1014)
+        if (state == 0x1014)
         {
-                alSourcePlay(source);
-                printf("Resetting sound\n");
+                alSourcePlay(source[0]);
+//                printf("Resetting sound\n");
         }
 //        printf("State - %i %08X\n",state,state);
-        alGetSourcei(source, AL_BUFFERS_PROCESSED, &processed);
+        alGetSourcei(source[0], AL_BUFFERS_PROCESSED, &processed);
 
 //        printf("P ");
         check();
@@ -97,22 +123,58 @@ void givealbuffer(short *buf)
         {
                 ALuint buffer;
 
-                alSourceUnqueueBuffers(source, 1, &buffer);
+                alSourceUnqueueBuffers(source[0], 1, &buffer);
 //                printf("U ");
                 check();
 
-                for (c=0;c<BUFLEN*2;c++) buf[c]^=0x8000;
-                alBufferData(buffer, AL_FORMAT_STEREO16, buf, BUFLEN*2, FREQ);
+//                for (c = 0; c < (BUFLEN >> 1); c++) zbuf[c] = buf[c >> 1];
+                
+                alBufferData(buffer, AL_FORMAT_STEREO16, buf, BUFLEN, 62500);
 //                printf("B ");
                 check();
 
-                alSourceQueueBuffers(source, 1, &buffer);
+                alSourceQueueBuffers(source[0], 1, &buffer);
 //                printf("Q ");
                 check();
                 
-//                printf("\n");
-
-//                if (!allog) allog=fopen("al.pcm","wb");
-//                fwrite(buf,BUFLEN*2,1,allog);
         }
+}
+
+void al_givebufferdd(int16_t *buf)
+{
+        int processed;
+        int state;
+        int c;
+
+        alGetSourcei(source[1], AL_SOURCE_STATE, &state);
+
+        if (state == 0x1014)
+        {
+                alSourcePlay(source[1]);
+//                printf("Resetting sounddd\n");
+        }
+        alGetSourcei(source[1], AL_BUFFERS_PROCESSED, &processed);
+//rpclog("Get source\n");
+        check();
+//rpclog("Got source\n");
+        if (processed>=1)
+        {
+                ALuint buffer;
+
+//rpclog("Unqueue\n");
+                alSourceUnqueueBuffers(source[1], 1, &buffer);
+                check();
+
+                for (c = 0; c < (4410 * 2); c++) zbuf[c] = buf[c >> 1];//^0x8000;
+
+//rpclog("BufferData\n");
+                alBufferData(buffer, AL_FORMAT_STEREO16, zbuf, 4410*4, 44100);
+                check();
+
+//rpclog("Queue\n");
+                alSourceQueueBuffers(source[1], 1, &buffer);
+                check();
+        }
+        
+//        rpclog("DDnoise3\n");
 }

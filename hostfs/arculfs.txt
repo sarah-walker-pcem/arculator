@@ -1,0 +1,2 @@
+This is the HostFS directory. Place files here for them to appear in the ArculFS filesystem
+(HostFS::$).

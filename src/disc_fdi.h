@@ -1,0 +1,10 @@
+extern void fdi_init();
+extern void fdi_load(int drive, char *fn);
+extern void fdi_close(int drive);
+extern void fdi_seek(int drive, int track);
+extern void fdi_readsector(int drive, int sector, int track, int side, int density);
+extern void fdi_writesector(int drive, int sector, int track, int side, int density);
+extern void fdi_readaddress(int drive, int sector, int side, int density);
+extern void fdi_format(int drive, int sector, int side, int density);
+extern void fdi_stop();
+extern void fdi_poll();

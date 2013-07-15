@@ -1,0 +1,10 @@
+extern void jfd_init();
+extern void jfd_load(int drive, char *fn);
+extern void jfd_close(int drive);
+extern void jfd_seek(int drive, int track);
+extern void jfd_readsector(int drive, int sector, int track, int side, int density);
+extern void jfd_writesector(int drive, int sector, int track, int side, int density);
+extern void jfd_readaddress(int drive, int sector, int side, int density);
+extern void jfd_format(int drive, int sector, int side, int density);
+extern void jfd_stop();
+extern void jfd_poll();

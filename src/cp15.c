@@ -2,19 +2,26 @@
   ARM3 CP15 emulation*/
   
 #include "arc.h"
+#include "arm.h"
+#include "cp15.h"
+#include "mem.h"
+
+int cp15_cacheon;
 
 struct
 {
-        unsigned long ctrl;
-        unsigned long cache,update,disrupt;
+        uint32_t ctrl;
+        uint32_t cache,update,disrupt;
 } arm3cp;
 
 void resetcp15()
 {
-        arm3cp.ctrl=0;
+        arm3cp.ctrl = 0;
+        cp15_cacheon = 0;
+        arc_setspeed(arm_mem_speed);
 }
 
-unsigned long readcp15(int reg)
+uint32_t readcp15(int reg)
 {
         switch (reg)
         {
@@ -32,15 +39,18 @@ unsigned long readcp15(int reg)
         return 0;
 }
 
-void writecp15(int reg, unsigned long val)
+void writecp15(int reg, uint32_t val)
 {
         switch (reg)
         {
                 case 2: /*CTRL*/
                 arm3cp.ctrl=val;
-                if (val&1) speed=(arm3==3)?3:2;
-                else       speed=1;
-                redovideotiming();
+                arc_setspeed((val & 1) ? arm_cpu_speed : arm_mem_speed);
+                
+                cp15_cacheon = val & 1;
+                
+                rpclog("CTRL %i\n", val & 1);
+                vidc_redovideotiming();
 //                redoioctiming();
                 return;
                 case 3: /*Cacheable areas*/

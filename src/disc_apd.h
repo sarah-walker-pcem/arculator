@@ -1,0 +1,10 @@
+extern void apd_init();
+extern void apd_load(int drive, char *fn);
+extern void apd_close(int drive);
+extern void apd_seek(int drive, int track);
+extern void apd_readsector(int drive, int sector, int track, int side, int density);
+extern void apd_writesector(int drive, int sector, int track, int side, int density);
+extern void apd_readaddress(int drive, int sector, int side, int density);
+extern void apd_format(int drive, int sector, int side, int density);
+extern void apd_stop();
+extern void apd_poll();

@@ -1,10 +1,22 @@
 /*Arculator 0.8 by Tom Walker
   Memory read/write functions*/
 #include <allegro.h>
-#include <winalleg.h>
 #include <stdio.h>
 #include "arc.h"
 
+#include "82c711.h"
+#include "82c711_fdc.h"
+#include "cp15.h"
+#include "wd1770.h"
+
+int mem_speed[16384][2];
+
+int mem_dorefresh;
+
+static int mem_romspeed_n, mem_romspeed_s;
+
+
+uint8_t backplane_mask;
 int bank;
 int ddensity;
 int prefabort;
@@ -16,9 +28,10 @@ int realmemsize;
 void initmem(int memsize)
 {
         int c,d=(memsize>>2)-1;
+        rpclog("initmem %i\n", memsize);
         realmemsize=memsize;
-        ram=(unsigned long *)malloc(memsize*1024);
-        rom=(unsigned long *)malloc(0x200000);
+        ram=(uint32_t *)malloc(memsize*1024);
+        rom=(uint32_t *)malloc(0x200000);
         for (c=0;c<0x4000;c++) memstat[c]=0;
         for (c=0x2000;c<0x3000;c++) memstat[c]=3;
         for (c=0x2000;c<0x3000;c++) mempoint[c]=&ram[(c&d)<<10];
@@ -27,21 +40,72 @@ void initmem(int memsize)
         memset(ram,0,memsize*1024);
         memstat[0]=1;
         mempoint[0]=rom;
-        for (c=0;c<0x4000;c++) mempointb[c]=(unsigned char *)mempoint[c];
+        for (c=0;c<0x4000;c++) mempointb[c]=(uint8_t *)mempoint[c];
         realmemsize=memsize;
         initmemc();
+        
+        for (c = 0; c < 0x3000; c++)
+        {
+                mem_speed[c][0] = 1;
+                mem_speed[c][1] = 2;
+        }
+        for (c = 0x3000; c < 0x3800; c++)
+                mem_speed[c][0] = mem_speed[c][1] = 2;
+        for (c = 0x3800; c < 0x4000; c++)
+                mem_speed[c][0] = mem_speed[c][1] = 4;
+        mem_romspeed_n = mem_romspeed_s = 4;
+}
+
+void mem_setromspeed(int n, int s)
+{
+        int c;
+
+        mem_romspeed_n = n;
+        mem_romspeed_s = s;
+        
+        if (cp15_cacheon)
+        {
+                n -= (n >> 1);
+                if (!n) n = 1;
+                s -= (s >> 1);
+                if (!s) s = 1;
+        }
+        
+        for (c = 0x3800; c < 0x4000; c++)
+        {
+                mem_speed[c][0] = s;
+                mem_speed[c][1] = n;
+        }
+        
+        rpclog("mem_setromspeed %i %i\n", n, s);
+}
+
+void mem_updatetimings()
+{
+        int c;
+
+        for (c = 0; c < 0x3000; c++)
+        {
+                mem_speed[c][0] = 1;
+                mem_speed[c][1] = cp15_cacheon ? 1 : 2;
+        }
+
+        mem_setromspeed(mem_romspeed_n, mem_romspeed_s);
 }
 
 void resizemem(int memsize) /*memsize is 4096,8192,16384*/
 {
         int c,d=(memsize>>2)-1;
+        rpclog("resizemem %i\n", memsize);
         free(ram);
-        ram=(unsigned long *)malloc(memsize*1024);
+        ram=(uint32_t *)malloc(memsize*1024);
         for (c=0x2000;c<0x3000;c++) mempoint[c]=&ram[(c&d)<<10];
-        for (c=0x2000;c<0x3000;c++) mempointb[c]=(unsigned char *)mempoint[c];
+        for (c=0x2000;c<0x3000;c++) mempointb[c]=(uint8_t *)mempoint[c];
         memset(ram,0,memsize*1024);
         realmemsize=memsize;
         initmemc();
+        for (c=0x3400;c<0x3800;c++) memstat[c]=0;
+        for (c=0;c<0x4000;c++) mempointb[c]=(uint8_t *)mempoint[c];
 }
 
 void resetpagesize(int pagesize)
@@ -56,7 +120,7 @@ void resetpagesize(int pagesize)
                         e=(e&1)|((e&~3)<<1);
                         mempoint[c]=&ram[((e&0x3FF)<<10)];
                 }
-                for (c=0x2000;c<0x3000;c++) mempointb[c]=(unsigned char *)mempoint[c];
+                for (c=0x2000;c<0x3000;c++) mempointb[c]=(uint8_t *)mempoint[c];
         }
         else if (pagesize==3 && realmemsize==1024)
         {
@@ -66,7 +130,7 @@ void resetpagesize(int pagesize)
                         e=(e&1)|((e&~3)<<1);
                         mempoint[c]=&ram[((e&0x1FF)<<10)];
                 }
-                for (c=0x2000;c<0x3000;c++) mempointb[c]=(unsigned char *)mempoint[c];
+                for (c=0x2000;c<0x3000;c++) mempointb[c]=(uint8_t *)mempoint[c];
         }
         else if (pagesize==3 && realmemsize==512)
         {
@@ -76,16 +140,16 @@ void resetpagesize(int pagesize)
                         e=(e&1)|((e&~3)<<1);
                         mempoint[c]=&ram[((e&0xFF)<<10)];
                 }
-                for (c=0x2000;c<0x3000;c++) mempointb[c]=(unsigned char *)mempoint[c];
+                for (c=0x2000;c<0x3000;c++) mempointb[c]=(uint8_t *)mempoint[c];
         }
         else
         {
                 for (c=0x2000;c<0x3000;c++) mempoint[c]=&ram[(c&d)<<10];
-                for (c=0x2000;c<0x3000;c++) mempointb[c]=(unsigned char *)mempoint[c];
+                for (c=0x2000;c<0x3000;c++) mempointb[c]=(uint8_t *)mempoint[c];
         }
 }
 
-unsigned long readmemf(unsigned long a)
+uint32_t readmemf(uint32_t a)
 {
         a&=0x3FFFFFC;
 //        if (a&0xFC000000) { rpclog("Databort readmemf %08X\n",a); databort=2; return 0xdeadbeef; }
@@ -115,7 +179,7 @@ unsigned long readmemf(unsigned long a)
         exit(-1);*/
 }
 
-unsigned char readmemfb(unsigned long a)
+uint8_t readmemfb(uint32_t a)
 {
 //        if (a==0x1800F42)
 /*        if (a==(0x1801010))
@@ -136,7 +200,7 @@ unsigned char readmemfb(unsigned long a)
                 rpclog("Read byte %08X %07X %02X  R2=%08X R4=%08X R5=%08X\n",a,PC,mempointb[((a)>>15)&0x7FF][((a)&0x7FFF)],armregs[2],armregs[4],armregs[5]);
                 return mempointb[((a)>>15)&0x7FF][((a)&0x7FFF)];
         }*/
-        if (a&0xFC000000) { rpclog("Databort readmemfb %08X\n",a); databort=2; return 0xef; }
+        if (a&0xFC000000) { rpclog("Databort readmemfb %08X %08X\n",a,PC); databort=2; return 0xef; }
 /*        if ((a&~0xFFF)==0x8000)
         {
                 printf("Read %04X %08X %02X\n",a,PC,mempointb[((a)>>15)&0x7FF][(a)&0x7FFF]);
@@ -147,19 +211,21 @@ unsigned char readmemfb(unsigned long a)
                 case 0x30: /*82c711*/
 //                rpclog("Readb %08X %07X\n",a,PC);
                 if (a>=0x3012000 && a<=0x302A000)
-                   return readfdcdma(a);
-                return read82c711(a);
+                   return c82c711_fdc_dmaread(a);
+                return c82c711_read(a);
+
 //                rpclog("Read 82c711 %08X %02X\n",a,temp);
 //                return temp;
                 case 0x32: /*IOC*/
                 case 0x33:
+//                        if (output) rpclog("IOC space readb %08X\n",a);
                 bank=(a>>16)&7;
                 switch (bank)
                 {
                         case 0: /*IOC*/
-                        return readioc(a);
+                        return ioc_read(a);
                         case 1: /*1772 FDC*/
-                        if (romset<3) return read1772(a);
+                        if (romset<3) return wd1770_read(a);
                         return 0xFF;
                         case 2: /*Econet*/
                         return 0xFF;
@@ -180,6 +246,7 @@ unsigned char readmemfb(unsigned long a)
                         }
                         if ((a&0xC000)==0x4000) /*Extension ROMs in slot 1*/
                            return readarcrom(a);
+                        if (a&0x8000) return readpoduleb((a&0xC000)>>14,0,a&0x3FFF);
                         return 0xFF;
                         case 5: /*Internal latches*/
                         switch (a&0xFFFC)
@@ -187,6 +254,10 @@ unsigned char readmemfb(unsigned long a)
                                 case 0x0010: return 0xFF; /*Printer*/
                                 case 0x0018:
                                 return 0xFF; /*FDC Latch B*/
+                                case 0x0008: case 0x000C:
+                                case 0x0020: case 0x0024: case 0x0028: case 0x002C:
+                                if (romset>2) return 0xFF;
+                                return readst506(a);
                                 case 0x0040: /*FDC Latch A*/
                                 return 0xFF;
                                 case 0x0048: return 0xFF; /*????*/
@@ -194,9 +265,15 @@ unsigned char readmemfb(unsigned long a)
                                 case 0x0070: return 0xF;
                                 case 0x0074: return 0xFF; /*????*/
                                 case 0x0078: case 0x7C: return readjoy(a); /*Joystick (A3010)*/
-                                default:
-                                return readst506(a);
                         }
+                        case 6: /*Backplane*/
+                        switch (a&0xFFFC)
+                        {
+                                case 0x0000: /*rpclog("Backplane readb %07X %08X\n",a,PC); */return 0;
+                                case 0x0004: /*rpclog("Backplane readb %07X %08X\n",a,PC); */return backplane_mask;
+//                                default: rpclog("Bank 6 readl %07X\n",a);
+                        }
+                        break;
                 }
                 return 0xFF;
         }
@@ -210,9 +287,9 @@ unsigned char readmemfb(unsigned long a)
         exit(-1);*/
 }
 
-unsigned long readmemfl(unsigned long a)
+uint32_t readmemfl(uint32_t a)
 {
-//        unsigned long temp;
+//        uint32_t temp;
 /*        if (a==0x7DC)
         {
                 if (!olog) olog=fopen("olog.txt","wt");
@@ -225,7 +302,7 @@ unsigned long readmemfl(unsigned long a)
                 rpclog("Read long %08X %07X %08X R2=%08X R4=%08X R5=%08X\n",a,PC,mempoint[((a)>>15)&0x7FF][((a)&0x7FFF)>>2],armregs[2],armregs[4],armregs[5]);
                 return mempoint[((a)>>15)&0x7FF][((a)&0x7FFF)>>2];
         }*/
-        if (a&0xFC000000) { rpclog("Databort readmemfl %08X\n",a); databort=2; return 0xdeadbeef; }
+        if (a&0xFC000000) { /*rpclog("Databort readmemfl %08X\n",a); */databort=2; return 0xdeadbeef; }
         switch (a>>20)
         {
 #if 0
@@ -240,23 +317,26 @@ unsigned long readmemfl(unsigned long a)
                 databort=1;
                 return 0xdeadbeef;
 #endif
+
                 case 0x30: /*82c711*/
 //                rpclog("Readl %08X %07X\n",a,PC);
                 if (a>=0x3012000 && a<=0x302A000)
-                   return readfdcdma(a);
+                   return c82c711_fdc_dmaread(a);
                 if ((a&0xFFF)==0x7C0) return readidew();
-                return read82c711(a);
+                return c82c711_read(a);
 //                rpclog("Readl 82c711 %08X %02X\n",a,temp);
 //                return temp;
+
                 case 0x32: /*IOC*/
                 case 0x33:
+//                        if (output) rpclog("IOC space readl %08X\n",a);
                 bank=(a>>16)&7;
                 switch (bank)
                 {
                         case 0: /*IOC*/
-                        return readioc(a);
+                        return ioc_read(a);
                         case 1: /*1772 FDC*/
-                        if (romset<3) return read1772(a);
+                        if (romset<3) return wd1770_read(a);
                         return 0xFFFF;
                         case 2: /*Econet*/
                         return 0xFFFF;
@@ -279,6 +359,7 @@ unsigned long readmemfl(unsigned long a)
                         }
                         if ((a&0xC000)==0x4000) /*Extension ROMs in slot 1*/
                            return readarcrom(a);
+                        if (a&0x8000) return readpodulew((a&0xC000)>>14,0,a&0x3FFF);
                         return 0xFFFF;
                         case 5: /*Internal latches*/
                         switch (a&0xFFFC)
@@ -286,16 +367,25 @@ unsigned long readmemfl(unsigned long a)
                                 case 0x0010: return 0xFFFF; /*Printer*/
                                 case 0x0018:
                                 return 0xFFFF; /*FDC Latch B*/
+                                case 0x0008: case 0x000C:
+                                case 0x0020: case 0x0024: case 0x0028: case 0x002C:
+                                if (romset>2) return 0xFFFFFFFF;
+                                return readst506l(a);
                                 case 0x0040: /*FDC Latch A*/
                                 return 0xFFFF;
                                 case 0x0048: return 0xFFFF; /*????*/
                                 case 0x0050: return (fdctype)?5:0; /*IOEB*/
                                 case 0x0074: return 0xFFFF; /*????*/
                                 case 0x0078: return 0xFFFF; /*????*/
-                                default:
-                                return readst506l(a);
-                                return;
                         }
+                        break;
+                        case 6: /*Backplane*/
+                        switch (a&0xFFFC)
+                        {
+                                case 0x0000: case 0x0004: /*rpclog("Backplane readl %07X %07X\n",a,PC); */return 0;
+//                                default: rpclog("Bank 6 readl %07X\n",a);
+                        }
+                        break;
                 }
                 return 0xFFFF;
                 case 0x34: case 0x35: case 0x36: case 0x37: /*Expansion ROMs*/
@@ -313,35 +403,10 @@ unsigned long readmemfl(unsigned long a)
 
 int f42count=0;
 FILE *slogfile;
-void writememfb(unsigned long a,unsigned char v)
+void writememfb(uint32_t a,uint8_t v)
 {
         int bank;
         if (a&0xFC000000) { /*rpclog("Databort writememfb %08X\n",a);*/ databort=2; return; }
-/*        if (a==0x1800F42)
-        {
-                rpclog("Write 1800F42 %02X %07X %i %08X %i\n",v,PC,ins,armregs[5],f42count);
-                mempointb[((a)>>15)&0x7FF][(a)&0x7FFF]=v;
-                output=0;
-                if (f42count==7) output=1;
-                f42count++;
-                ins=0;
-                return;
-        }*/
-/*        if ((a&~3)==0x1803BEC)
-        {
-                rpclog("Write %08X %07X %02X %08X\n",a,PC,v,a);
-                mempointb[((a)>>15)&0x7FF][(a)&0x7FFF]=v;
-                return;
-        }*/
-/*        if ((a<0x2000000) && modepritablew[memmode][memstat[((a)>>15)&0x7FF]])
-        {
-                if (!olog) olog=fopen("olog.txt","wt");
-                sprintf(s,"Write %04X %02X %08X\n",a,v,PC);
-                fputs(s,olog);
-                mempointb[((a)>>15)&0x7FF][(a)&0x7FFF]=v;
-//                output=1; timetolive=2500;
-                return;
-        }*/
         switch (a>>20)
         {
 #if 0
@@ -357,25 +422,31 @@ void writememfb(unsigned long a,unsigned char v)
                 return;
 #endif
 //                case 0x1F: return; if (a>=0x1f08000 && a<=0x1f0ffff) return; break;
+
                 case 0x30: /*82c711*/
 //                rpclog("Write %08X %02X %07X\n",a,v,PC);
-                if (a>=0x3012000 && a<=0x302A000)
+                if (romset>=3)
                 {
-                        writefdcdma(a,v);
-                        return;
+                        if (a>=0x3012000 && a<=0x302A000)
+                        {
+                                c82c711_fdc_dmawrite(a,v);
+                                return;
+                        }
                 }
-                write82c711(a,v);
+                c82c711_write(a,v);
                 return;
+
                 case 0x32: /*IOC*/
                 case 0x33:
+//                rpclog("IOC space writeb %08X %02X\n",a,v);
                 bank=(a>>16)&7;
                 switch (bank)
                 {
                         case 0: /*IOC*/
-                        writeioc(a,v);
+                        ioc_write(a, v);
                         return;
                         case 1: /*1772 FDC*/
-                        if (romset<3) write1772(a,v);
+                        if (romset<3) wd1770_write(a,v);
                         return;
                         case 2: /*Econet*/
                         return;
@@ -396,39 +467,50 @@ void writememfb(unsigned long a,unsigned char v)
                         }
                         if ((a&0xC000)==0x4000) /*Extension ROMs in slot 1*/
                         { writearcrom(a,v); return; }
+                        if (a&0x8000) { writepoduleb((a&0xC000)>>14,0,a&0x3FFF,v); return; }
                         return;
                         case 5: /*Internal latches*/
                         switch (a&0xFFFC)
                         {
+                                case 0x0000: case 0x0004: case 0x0008: case 0x000C:
+                                case 0x0028: case 0x002C:
+                                if (romset>2) return;
+                                writest506(a,v);
+                                return;
                                 case 0x0010: return; /*Printer*/
                                 case 0x0018:
-                                ddensity=!(v&2);
+                                if (romset < 3)
+                                   wd1770_writelatch_b(v);
+//                                ddensity=!(v&2);
                                 return; /*FDC Latch B*/
                                 case 0x0040: /*FDC Latch A*/
-                                fdcside=(v&0x10)?0:1;
-                                if (!(v&1)) curdrive=0;
-                                if (!(v&2)) curdrive=1;
-                                if (!(v&4)) curdrive=2;
-                                if (!(v&8)) curdrive=3;
-                                motoron=!(v&0x20);
-                                updateirqs();
+                                if (romset < 3)
+                                   wd1770_writelatch_a(v);
                                 return;
-                                case 0x0048: return; /*????*/
+                                case 0x0048: /*Video clock*/
+                                vidc_setclock(v & 3);
+                                return; 
                                 case 0x0050: return; /*IOEB*/
                                 case 0x0074: return; /*????*/
                                 case 0x0078: return; /*????*/
-                                default:
-                                writest506(a,v);
-                                return;
                         }
+                        break;
+                        case 6: /*Backplane*/
+                        switch (a&0xFFFC)
+                        {
+                                case 0x0000: /*rpclog("Backplane writeb %07X %02X %07X\n",a,v,PC);*/ return;
+                                case 0x0004: /*rpclog("Backplane writeb %07X %02X %07X\n",a,v,PC);*/ backplane_mask=v; return;
+//                                default: rpclog("Bank 6 writeb %07X %02X\n",a,v);
+                        }
+                        break;
                 }
                 return;
         }
-//        rpclog("Dat abort writeb %07X %07X\n",a,PC);
+        rpclog("Dat abort writeb %07X %07X %08X %i %i\n",a,PC, memstat[((a)>>12)&0x3FFF], modepritablew[memmode][memstat[((a)>>12)&0x3FFF]], modepritablew[memmode][memstat[((a)>>12)&0x3FFF]] && !((a)>>26));
         databort=1;
 }
 
-void writememfl(unsigned long a,unsigned long v)
+void writememfl(uint32_t a,uint32_t v)
 {
         if (a&0xFC000000) { /*rpclog("Databort writememfl %08X %07X\n",a,PC); */databort=2; return; }
 /*        if (a==(0x1801010))
@@ -465,11 +547,12 @@ void writememfl(unsigned long a,unsigned long v)
                 databort=1;
                 return;
 #endif
+
                 case 0x30: /*82c711*/
 //                rpclog("Write %08X %08X %07X\n",a,v,PC);
                 if (a>=0x3012000 && a<=0x302A000)
                 {
-                        writefdcdma(a,v);
+                        c82c711_fdc_dmawrite(a,v);
                         return;
                 }
                 if ((a&0xFFF)==0x7C0)
@@ -477,18 +560,20 @@ void writememfl(unsigned long a,unsigned long v)
                         writeidew(v>>16);
                         return;
                 }
-                write82c711(a,v);
+                c82c711_write(a,v);
                 return;
+
                 case 0x32: /*IOC*/
                 case 0x33:
+//                rpclog("IOC space writel %08X %02X\n",a,v);
                 bank=(a>>16)&7;
                 switch (bank)
                 {
                         case 0: /*IOC*/
-                        writeioc(a,v>>16);
+                        ioc_write(a,v>>16);
                         return;
                         case 1: /*1772 FDC*/
-                        if (romset<3) write1772(a,v>>16);
+                        if (romset<3) wd1770_write(a,v>>16);
                         return;
                         case 2: /*Econet*/
                         return;
@@ -510,32 +595,41 @@ void writememfl(unsigned long a,unsigned long v)
                         }
                         if ((a&0xC000)==0x4000) /*Extension ROMs in slot 1*/
                         { writearcrom(a,v); return; }
+                        if (a&0x8000) { writepodulew((a&0xC000)>>14,0,a&0x3FFF,v); return; }
                         return;
                         case 5: /*Internal latches*/
                         v>>=16;
                         switch (a&0xFFFC)
                         {
+                                case 0x0000: case 0x0004: case 0x0008: case 0x000C:
+                                case 0x0028: case 0x002C:
+                                if (romset>2) return;
+                                writest506l(a,v);
+                                return;
                                 case 0x0010: return; /*Printer*/
                                 case 0x0018:
-                                ddensity=!(v&2);
+                                if (romset < 3)
+                                   wd1770_writelatch_b(v);
+//                                ddensity=!(v&2);
                                 return; /*FDC Latch B*/
                                 case 0x0040: /*FDC Latch A*/
-                                fdcside=(v&0x10)?0:1;
-                                if (!(v&1)) curdrive=0;
-                                if (!(v&2)) curdrive=1;
-                                if (!(v&4)) curdrive=2;
-                                if (!(v&8)) curdrive=3;
-                                updateirqs();
-                                motoron=!(v&0x20);
+                                if (romset < 3)
+                                   wd1770_writelatch_a(v);
                                 return;
                                 case 0x0048: return; /*????*/
                                 case 0x0050: return; /*IOEB*/
                                 case 0x0074: return; /*????*/
                                 case 0x0078: return; /*????*/
-                                default:
-                                writest506l(a,v);
-                                return;
+//                                default: rpclog("Bad 5 writel %08X\n",a);
                         }
+                        break;
+                        case 6: /*Backplane*/
+                        switch (a&0xFFFC)
+                        {
+                                case 0x0000: case 0x0004: /*rpclog("Backplane writel %07X %08X %07X\n",a,v,PC); */return;
+//                                default: rpclog("Bank 6 writel %07X %08X\n",a,v);
+                        }
+                        break;
                 }
                 return;
                 case 0x34: case 0x35: /*VIDC*/

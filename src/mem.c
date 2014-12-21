@@ -217,6 +217,9 @@ uint8_t readmemfb(uint32_t a)
                 if (!(a & ((1 << 16) | (1 << 17) | (1 << 21)))) /*MEMC podule space*/
                         return podule_memc_readb((a & 0xc000) >> 14, a & 0x3fff);
 
+                if (romset == 3 && a>=0x3012000 && a<=0x302A000)
+                        return c82c711_fdc_dmaread(a);
+
                 bank=(a>>16)&7;
 
                 switch (bank)
@@ -227,8 +230,6 @@ uint8_t readmemfb(uint32_t a)
                         return 0xff;
                         case 1: /*1772 FDC*/
                         if (romset<3) return wd1770_read(a);
-                        if (a>=0x3012000 && a<=0x302A000)
-                                return c82c711_fdc_dmaread(a);
                         return c82c711_read(a);
                         case 2: /*Econet*/
                         return 0xFF;
@@ -327,6 +328,10 @@ uint32_t readmemfl(uint32_t a)
                 case 0x33:
                 if (!(a & ((1 << 16) | (1 << 17) | (1 << 21)))) /*MEMC podule space*/
                         return podule_memc_readw((a & 0xc000) >> 14, a & 0x3fff);
+
+                if (romset == 3 && a>=0x3012000 && a<=0x302A000)
+                        return c82c711_fdc_dmaread(a);
+
 //                        if (output) rpclog("IOC space readl %08X\n",a);
                 bank=(a>>16)&7;
                 switch (bank)
@@ -337,8 +342,6 @@ uint32_t readmemfl(uint32_t a)
                         return 0xff;
                         case 1: /*1772 FDC*/
                         if (romset<3) return wd1770_read(a);
-                        if (a>=0x3012000 && a<=0x302A000)
-                                return c82c711_fdc_dmaread(a);
                         if ((a&0xFFF)==0x7C0)
                                 return readidew();
                         return c82c711_read(a);
@@ -437,6 +440,12 @@ void writememfb(uint32_t a,uint8_t v)
                         return;
                 }
 
+                if (romset == 3 && a >= 0x3012000 && a <= 0x302A000)
+                {
+                        c82c711_fdc_dmawrite(a, v);
+                        return;
+		}
+
 //                rpclog("IOC space writeb %08X %02X\n",a,v);
                 bank=(a>>16)&7;
                 switch (bank)
@@ -449,14 +458,7 @@ void writememfb(uint32_t a,uint8_t v)
                         if (romset<3)
                                 wd1770_write(a,v);
                         else
-                        {
-                                if (a>=0x3012000 && a<=0x302A000)
-                                {
-                                        c82c711_fdc_dmawrite(a,v);
-                                        return;
-                                }
                                 c82c711_write(a,v);
-                        }
                         return;
                         case 2: /*Econet*/
                         return;
@@ -567,6 +569,11 @@ void writememfl(uint32_t a,uint32_t v)
                         podule_memc_writew((a & 0xc000) >> 14, a & 0x3fff, v);
                         return;
                 }
+                if (romset == 3 && a >= 0x3012000 && a <= 0x302A000)
+                {
+                        c82c711_fdc_dmawrite(a, v);
+                        return;
+		}
 //                rpclog("IOC space writel %08X %02X\n",a,v);
                 bank=(a>>16)&7;
                 switch (bank)
@@ -580,11 +587,6 @@ void writememfl(uint32_t a,uint32_t v)
                                 wd1770_write(a,v>>16);
                         else
                         {
-                                if (a>=0x3012000 && a<=0x302A000)
-                                {
-                                        c82c711_fdc_dmawrite(a,v);
-                                        return;
-                                }
                                 if ((a&0xFFF)==0x7C0)
                                 {
                                         writeidew(v>>16);

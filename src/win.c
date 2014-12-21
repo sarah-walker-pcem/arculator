@@ -598,6 +598,8 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                         case IDM_ROM_ARTHUR: case IDM_ROM_RO2: case IDM_ROM_RO3_OLD:
                         case IDM_ROM_RO3_NEW: case IDM_ROM_TACTIC: case IDM_ROM_POIZONE:
                         case IDM_ROM_WTIGER:
+                        startblit();
+                        Sleep(200);
                         savecmos();
                         romset=LOWORD(wParam)-IDM_ROM_ARTHUR;
                         if (!romsavailable[romset])
@@ -622,6 +624,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                             CheckMenuItem(hmenu,IDM_ROM_ARTHUR+c, MF_UNCHECKED);
                         CheckMenuItem(hmenu,LOWORD(wParam),MF_CHECKED);
                         wd1770_reset();
+                        endblit();
                         return 0;
                         case IDM_MONITOR_NORMAL:
                         hires=0;

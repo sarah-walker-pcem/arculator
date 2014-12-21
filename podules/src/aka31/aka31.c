@@ -26,6 +26,7 @@ extern __declspec(dllexport) int timercallback(podule *p);
 #define AKA31_TC_IRQ   0x02
 #define AKA31_SBIC_IRQ 0x08
 
+#define AKA31_PAGE_MASK   0x3f
 #define AKA31_ENABLE_INTS 0x40
 
 static uint8_t aka31_rom[0x10000];
@@ -61,7 +62,7 @@ uint8_t readb(podule *p, int easi, uint32_t addr)
         {
                 case 0x0000: case 0x0400: case 0x0800: case 0x0c00:
                 case 0x1000: case 0x1400: case 0x1800: case 0x1c00:
-                temp = ((addr & 0x1ffc) | (aka31_page << 13)) >> 2;
+                temp = ((addr & 0x1ffc) | ((aka31_page & AKA31_PAGE_MASK) << 13)) >> 2;
                 //aka31_log("  ROM %05X %02X\n", temp, aka31_rom[temp]);
                 return aka31_rom[temp];
                 
@@ -156,7 +157,7 @@ uint16_t memc_readw(podule *p, uint32_t addr)
         int temp;
         if (!(addr & 0x2000))
         {
-                temp = ((addr & 0x1ffe) | (aka31_page << 13)) >> 1;
+                temp = ((addr & 0x1ffe) | ((aka31_page & AKA31_PAGE_MASK) << 13)) >> 1;
                 aka31_log("Read aka31 MEMC W %04X %04x %04x\n", addr, temp, aka31_ram[temp] | (aka31_ram[temp+1] << 8));
                 return aka31_ram[temp] | (aka31_ram[temp+1] << 8);
         }
@@ -186,7 +187,7 @@ void memc_writew(podule *p, uint32_t addr, uint16_t val)
         aka31_log("Write aka31 MEMC W %04X %02X\n", addr, val);
         if (!(addr & 0x2000))
         {
-                temp = ((addr & 0x1ffe) | (aka31_page << 13)) >> 1;
+                temp = ((addr & 0x1ffe) | ((aka31_page & AKA31_PAGE_MASK) << 13)) >> 1;
                 aka31_log(" Write to RAM %04x\n", temp);
                 aka31_ram[temp] = val & 0xff;
                 aka31_ram[temp+1] = (val >> 8);

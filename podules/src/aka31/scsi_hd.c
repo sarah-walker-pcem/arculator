@@ -63,6 +63,11 @@ static int scsi_hd_command(uint8_t *cdb, void *p)
         
         switch (cdb[0])
         {
+		case SCSI_TEST_UNIT_READY:
+                scsi_send_complete();
+                data->cmd_pos = 0;
+                return 1;
+
                 case SCSI_INQUIRY:
                 len = cdb[4] | (cdb[3] << 8);
 

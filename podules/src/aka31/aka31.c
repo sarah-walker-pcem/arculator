@@ -22,12 +22,15 @@ extern __declspec(dllexport) uint8_t  memc_readb(podule *p, uint32_t addr);
 extern __declspec(dllexport) void reset(podule *p);
 extern __declspec(dllexport) int timercallback(podule *p);
 
+void aka31_update_ints(podule *p);
+
 #define AKA31_POD_IRQ  0x01
 #define AKA31_TC_IRQ   0x02
 #define AKA31_SBIC_IRQ 0x08
 
 #define AKA31_PAGE_MASK   0x3f
 #define AKA31_ENABLE_INTS 0x40
+#define AKA31_RESET       0x80
 
 static uint8_t aka31_rom[0x10000];
 uint8_t aka31_ram[0x10000];
@@ -58,23 +61,16 @@ uint8_t readb(podule *p, int easi, uint32_t addr)
 
         aka31_log("Read aka31 B %04X\n", addr);
                 
-        switch (addr & 0x3c00)
+        switch (addr & 0x3000)
         {
-                case 0x0000: case 0x0400: case 0x0800: case 0x0c00:
-                case 0x1000: case 0x1400: case 0x1800: case 0x1c00:
+                case 0x0000: case 0x1000:
                 temp = ((addr & 0x1ffc) | ((aka31_page & AKA31_PAGE_MASK) << 13)) >> 2;
                 //aka31_log("  ROM %05X %02X\n", temp, aka31_rom[temp]);
                 return aka31_rom[temp];
-                
-                case 0x2c00:
-                if (addr == 0x2ffc)
-                {
-                        aka31_log("Read intstat %02x\n", aka31_intstat);
-                        return aka31_intstat;
-                }
-                break;
-/*                case 0x2c00:
-                return wd33c93a_read(addr, p);*/
+
+		case 0x2000:                
+                aka31_log("Read intstat %02x\n", aka31_intstat);
+                return aka31_intstat;
 
                 default:
                 aka31_log("Read aka31 %04X\n", addr);
@@ -93,31 +89,24 @@ uint16_t readw(podule *p, int easi, uint32_t addr)
 void writeb(podule *p, int easi, uint32_t addr, uint8_t val)
 {     
         aka31_log("Write aka31 B %04X %02X\n", addr, val);
-        switch (addr & 0x3c00)
+        switch (addr & 0x3000)
         {
-                case 0x2c00:
-                if (addr == 0x2ffc)
+                case 0x2000:
+                aka31_log("Write intclear\n");
+                aka31_intstat &= ~AKA31_TC_IRQ;
+                if (!(aka31_intstat & AKA31_SBIC_IRQ))
                 {
-                        aka31_log("Write intclear\n");
-                        aka31_intstat &= ~AKA31_TC_IRQ;
-                        if (!(aka31_intstat & AKA31_SBIC_IRQ))
-                        {
-                                aka31_intstat = 0;
-                                p->irq = 0;
-                        }
+                        aka31_intstat = 0;
+                        p->irq = 0;
                 }
                 break;
                 case 0x3000:
-                if (addr == 0x3000)
-                {
-                        aka31_log("Write page %02x\n", val);
-                        aka31_page = val; 
-                }
+                aka31_log("Write page %02x\n", val);
+		if (!(val & AKA31_RESET) && (aka31_page & AKA31_RESET))
+			wd33c93a_reset(p);
+                aka31_page = val; 
+		aka31_update_ints(p);
                 return;
-
-/*                case 0x2c00:
-                wd33c93a_write(addr, val, p);
-                break;*/
 
                 default:
                 aka31_log("Write aka31 %04X %02X\n", addr, val);
@@ -135,10 +124,20 @@ uint8_t memc_readb(podule *p, uint32_t addr)
         int temp;
 
         aka31_log("Read aka31 MEMC B %04X %i\n", addr, p->msectimer);
-                
-        switch (addr & 0x3c00)
+
+        if (!(addr & 0x2000))
         {
-                case 0x2c00:
+                temp = ((addr & 0x1ffe) | ((aka31_page & AKA31_PAGE_MASK) << 13)) >> 1;
+                aka31_log("Read aka31 MEMC B %04X %04x %02x\n", addr, temp, aka31_ram[temp | (addr & 1)]);
+                return aka31_ram[temp | (addr & 1)];
+        }
+
+	if (aka31_page & AKA31_RESET)
+		return 0xff;
+                
+        switch (addr & 0x3000)
+        {
+                case 0x2000:
                 return wd33c93a_read(addr, p);
                 
                 case 0x3000:
@@ -158,7 +157,7 @@ uint16_t memc_readw(podule *p, uint32_t addr)
         if (!(addr & 0x2000))
         {
                 temp = ((addr & 0x1ffe) | ((aka31_page & AKA31_PAGE_MASK) << 13)) >> 1;
-                aka31_log("Read aka31 MEMC W %04X %04x %04x\n", addr, temp, aka31_ram[temp] | (aka31_ram[temp+1] << 8));
+//                aka31_log("Read aka31 MEMC W %04X %04x %04x\n", addr, temp, aka31_ram[temp] | (aka31_ram[temp+1] << 8));
                 return aka31_ram[temp] | (aka31_ram[temp+1] << 8);
         }
         return memc_readb(p, addr);
@@ -167,9 +166,21 @@ uint16_t memc_readw(podule *p, uint32_t addr)
 void memc_writeb(podule *p, uint32_t addr, uint8_t val)
 {     
         aka31_log("Write aka31 MEMC B %04X %02X\n", addr, val);
-        switch (addr & 0x3c00)
+
+        if (!(addr & 0x2000))
         {
-                case 0x2c00:
+                int temp = ((addr & 0x1ffe) | ((aka31_page & AKA31_PAGE_MASK) << 13)) >> 1;
+                aka31_log(" Write to RAM %04x\n", temp);
+                aka31_ram[temp | (addr & 1)] = val;
+                return;
+        }
+
+	if (aka31_page & AKA31_RESET)
+		return;
+
+        switch (addr & 0x3000)
+        {
+                case 0x2000:
                 wd33c93a_write(addr, val, p);
                 break;
 
@@ -227,6 +238,14 @@ int timercallback(podule *p)
         aka31_log("callback %i\n", p->msectimer);
         wd33c93a_poll(p);
         return 5;
+}
+
+void aka31_update_ints(podule *p)
+{
+	if (aka31_intstat && (aka31_page & AKA31_ENABLE_INTS))
+		p->irq = 1;
+	else
+		p->irq = 0;
 }
 
 void aka31_sbic_int(podule *p)

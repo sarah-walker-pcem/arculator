@@ -11,6 +11,7 @@ int scsi_get_data();
 void scsi_set_phase(uint8_t phase);
 void scsi_set_irq(uint8_t status);
 
+#define SCSI_TEST_UNIT_READY              0x00
 #define SCSI_READ_6                       0x08
 #define SCSI_WRITE_6                      0x0a
 #define SCSI_INQUIRY                      0x12

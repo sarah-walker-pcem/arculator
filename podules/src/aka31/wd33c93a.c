@@ -183,6 +183,14 @@ void scsi_set_irq(uint8_t status)
         wd.aux_status = AUX_STATUS_INT;
         aka31_sbic_int(wd.p);
 }
+
+void wd33c93a_reset(podule *p)
+{
+	aka31_log("wd33c93a_reset\n");
+	wd.aux_status = AUX_STATUS_INT;
+        wd.status = 0x00; /*Reset*/
+        aka31_sbic_int(wd.p);
+}
         
 void wd33c93a_poll(podule *p)
 {
@@ -201,6 +209,7 @@ void wd33c93a_poll(podule *p)
                                 wd.status = 0x01; /*Reset with advanced features enabled*/
                         else
                                 wd.status = 0x00; /*Reset*/
+			aka31_sbic_int(wd.p);
                         break;
                         
                         case CMD_SEL_W_ATN_AND_TRANSFER:

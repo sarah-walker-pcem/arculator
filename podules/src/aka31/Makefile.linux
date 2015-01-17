@@ -1,0 +1,17 @@
+CPP  = g++
+CC   = gcc
+OBJ  = aka31.o d71071l.o scsi_hd.o wd33c93a.o
+LIBS = -shared
+CFLAGS = $(INCS) -DBUILDING_DLL=1 -I../../../src -fPIC
+
+all: aka31
+
+clean:
+	rm *.o
+	rm *.so
+
+aka31: $(OBJ)
+	$(CC) $(OBJ) $(LIBS) -o aka31.so
+
+%.o: %.c
+	$(CC) $(CFLAGS) -c $<

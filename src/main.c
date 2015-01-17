@@ -18,6 +18,10 @@
 
 #include "hostfs.h"
 
+#ifdef LINUX
+#include "podules-linux.h"
+#endif
+
 /*0=Arthur
   1=RiscOS 2
   2=RiscOS 3.1 with WD1772
@@ -224,6 +228,7 @@ rpclog("mem_size = %i %s cfg %s\n", memsize, p, fn);
         resetics();
         
         podules_reset();
+        opendlls();
 }
 
 int speed_mhz;
@@ -311,7 +316,7 @@ void arc_close()
 int main(int argc, char *argv[])
 {
     arc_init();
-    arc_set_cpu(0);
+    arc_set_cpu(4);
     do {
         arc_run();
     } while (1);

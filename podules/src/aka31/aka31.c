@@ -1,4 +1,6 @@
+#ifdef WIN32
 #include <windows.h>
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -6,6 +8,7 @@
 #include "aka31.h"
 #include "wd33c93a.h"
 
+#ifdef WIN32
 extern __declspec(dllexport) int InitDll();
 extern __declspec(dllexport) uint8_t  readb(podule *p, int easi, uint32_t addr);
 extern __declspec(dllexport) uint16_t readw(podule *p, int easi, uint32_t addr);
@@ -21,6 +24,10 @@ extern __declspec(dllexport) uint8_t  memc_readb(podule *p, uint32_t addr);
 
 extern __declspec(dllexport) void reset(podule *p);
 extern __declspec(dllexport) int timercallback(podule *p);
+#else
+#define BOOL int
+#define APIENTRY
+#endif
 
 void aka31_update_ints(podule *p);
 
@@ -277,6 +284,7 @@ int InitDll()
         aka31_init();
 }
 
+#ifdef WIN32
 BOOL APIENTRY DllMain (HINSTANCE hInst     /* Library instance handle. */ ,
                        DWORD reason        /* Reason this function is being called. */ ,
                        LPVOID reserved     /* Not used. */ )
@@ -300,3 +308,4 @@ BOOL APIENTRY DllMain (HINSTANCE hInst     /* Library instance handle. */ ,
     /* Returns TRUE on success, FALSE on failure */
     return TRUE;
 }
+#endif

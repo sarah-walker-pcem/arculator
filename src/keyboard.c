@@ -252,6 +252,7 @@ void keyboard_poll()
                 return;
         if (!keyena) 
                 return;
+        c = poll_keyboard();
         for (c = 1; c < 128; c++)
         {
                 if (key[c] != keydat[c] && c != KEY_MENU)

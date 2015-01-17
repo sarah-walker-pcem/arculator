@@ -224,7 +224,6 @@ rpclog("mem_size = %i %s cfg %s\n", memsize, p, fn);
         resetics();
         
         podules_reset();
-        opendlls();
 }
 
 int speed_mhz;
@@ -307,5 +306,15 @@ void arc_close()
         rpclog("closevideo\n");
         closevideo();
         rpclog("arc_close done\n");
+}
+
+int main(int argc, char *argv[])
+{
+    arc_init();
+    arc_set_cpu(0);
+    do {
+        arc_run();
+    } while (1);
+    arc_close();
 }
 

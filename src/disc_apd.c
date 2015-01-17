@@ -8,10 +8,10 @@
 
 static inline unsigned long gzgetil(gzFile *f)
 {
-        unsigned long temp = gzgetc(f);
-        temp |= (gzgetc(f) << 8);
-        temp |= (gzgetc(f) << 16);
-        temp |= (gzgetc(f) << 24);
+        unsigned long temp = gzgetc(*f);
+        temp |= (gzgetc(*f) << 8);
+        temp |= (gzgetc(*f) << 16);
+        temp |= (gzgetc(*f) << 24);
         return temp;
 }
 

@@ -241,3 +241,19 @@ void runpoduletimers(int t)
                 }
         }
 }
+
+uint8_t podule_irq_state()
+{
+        uint8_t state = 0;
+        
+        if (podules[0].irq)
+                state |= 0x01;
+        if (podules[1].irq)
+                state |= 0x02;
+        if (podules[2].irq)
+                state |= 0x04;
+        if (podules[3].irq)
+                state |= 0x08;
+        
+        return state;
+}

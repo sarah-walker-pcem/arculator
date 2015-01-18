@@ -273,7 +273,7 @@ uint8_t readmemfb(uint32_t a)
                         case 6: /*Backplane*/
                         switch (a&0xFFFC)
                         {
-                                case 0x0000: /*rpclog("Backplane readb %07X %08X\n",a,PC); */return 0;
+                                case 0x0000: /*rpclog("Backplane readb %07X %08X\n",a,PC); */return podule_irq_state() & backplane_mask;
                                 case 0x0004: /*rpclog("Backplane readb %07X %08X\n",a,PC); */return backplane_mask;
 //                                default: rpclog("Bank 6 readl %07X\n",a);
                         }

@@ -50,5 +50,6 @@ podule *addpodule(void (*writel)(podule *p, int easi, uint32_t addr, uint32_t va
 
 void runpoduletimers(int t);
 void podules_reset(void);
+uint8_t podule_irq_state();
 
 #endif

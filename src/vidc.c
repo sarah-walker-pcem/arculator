@@ -310,7 +310,6 @@ void initvid()
 {
         int depth;
         allegro_init();
-        install_keyboard();
         depth=deskdepth=desktop_color_depth();
         if (depth!=15 && depth!=16 && depth!=32)
         {

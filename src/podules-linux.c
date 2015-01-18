@@ -93,6 +93,7 @@ void opendlls(void)
         }
 
         al_findclose(&ff);
+        chdir(olddir);
         
 //        FreeLibrary(hinstLib);
 }

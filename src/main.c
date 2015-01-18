@@ -192,6 +192,7 @@ rpclog("mem_size = %i %s cfg %s\n", memsize, p, fn);
         resetarm();
         loadcmos();
         ioc_reset();
+        install_keyboard();
         install_mouse();
         keyboard_init();
         install_timer();

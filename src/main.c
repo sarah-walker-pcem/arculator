@@ -317,7 +317,6 @@ void arc_close()
 int main(int argc, char *argv[])
 {
     arc_init();
-    arc_set_cpu(4);
     do {
         arc_run();
     } while (1);

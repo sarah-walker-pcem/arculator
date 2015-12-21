@@ -335,7 +335,8 @@ static inline uint32_t shift3(uint32_t opcode)
                 shiftamount=armregs[(opcode>>8)&15]&0xFF;
                 if (shiftmode==3)
                    shiftamount&=0x1F;
-                cycles--;
+                if (memc_is_memc1) cycles -= (PC & 0xc) ? cyc_s : cyc_n;
+                else if ((PC + 4) & 0xc) cycles--;
         }
         temp=armregs[RM];
 //        if (RM==15)        temp+=4;
@@ -430,7 +431,8 @@ inline unsigned shift4(unsigned opcode)
                 shiftamount=armregs[(opcode>>8)&15]&0xFF;
                 if (shiftmode==3)
                    shiftamount&=0x1F;
-//                cycles--;
+                if (memc_is_memc1) cycles -= (PC & 0xc) ? cyc_s : cyc_n;
+                else if ((PC + 4) & 0xc) cycles--;
         }
         temp=armregs[RM];
 //        if (RM==15) temp+=4;
@@ -576,6 +578,7 @@ int framecycs;
 #define arm_mul_timing(v)       if (memc_is_memc1)                                              \
                                 {                                                               \
                                         cycles--;                                               \
+                                        if (v)       cycles -= cyc_n;                           \
                                         if (v >>  2) cycles -= cyc_n;                           \
                                         if (v >>  4) cycles -= cyc_n;                           \
                                         if (v >>  6) cycles -= cyc_n;                           \
@@ -590,15 +593,16 @@ int framecycs;
                                         if (v >> 24) cycles -= cyc_n;                           \
                                         if (v >> 26) cycles -= cyc_n;                           \
                                         if (v >> 28) cycles -= cyc_n;                           \
-                                        if (v >> 30) cycles -= cyc_n;                           \
+                                        /*if (v >> 30) cycles -= cyc_n;*/                           \
                                         if (!(PC & 0xc))                                        \
                                                 cycles -= (cyc_n - cyc_s);                      \
                                 }                                                               \
                                 else                                                            \
                                 {                                                               \
-                                        cycles--;                                               \
+                                        if ((PC + 4) & 0xc) cycles--;                           \
                                         ARM_POLLTIME();                                         \
                                         oldcyc2 = cycles;                                       \
+                                        if (v)       cycles --;                                 \
                                         if (v >>  2) cycles --;                                 \
                                         if (v >>  4) cycles --;                                 \
                                         if (v >>  6) cycles --;                                 \
@@ -613,7 +617,7 @@ int framecycs;
                                         if (v >> 24) cycles --;                                 \
                                         if (v >> 26) cycles --;                                 \
                                         if (v >> 28) cycles --;                                 \
-                                        if (v >> 30) cycles --;                                 \
+                                        /*if (v >> 30) cycles --;*/                                 \
                                         ARM_POLLTIME_NODMA();                                   \
                                         arm_dmacount -= (cyc << 10);                            \
                                         if (arm_dmacount <= 0)                                  \
@@ -622,8 +626,6 @@ int framecycs;
                                                 arm_dmacount -= (arm_dmalength << 10);          \
                                         }                                                       \
                                         oldcyc2 = cycles;                                       \
-                                        if (!(PC & 0xc))                                        \
-                                                cycles -= (cyc_n - cyc_s);                      \
                                 }
 
 #define ARM_POLLTIME()                                                          \
@@ -1677,8 +1679,8 @@ void execarm(int cycs)
                                                 if (opcode&0x200000) armregs[RN]=addr;
                                         }
                                         cycles -= mem_speed[(addr >> 12) & 0x3fff][1];  /*1S + 1N*/
-                                        if (memc_is_memc1) cycles--;
-                                        if (PC & 0xc) cycles--;                         /* + 1I*/
+                                        if (memc_is_memc1) cycles -= cyc_n;             /* + 1N*/
+                                        else if (PC & 0xc) cycles--;                    /* + 1I*/
                                         break;
 
                                         case 0x41: case 0x49: case 0x61: case 0x69: /*LDR Rd,[Rn],offset*/
@@ -1691,8 +1693,8 @@ void execarm(int cycs)
                                         if (opcode&0x800000) armregs[RN]+=addr2;
                                         else                 armregs[RN]-=addr2;
                                         cycles -= mem_speed[(addr >> 12) & 0x3fff][1];  /*1S + 1N*/
-                                        if (memc_is_memc1) cycles--;
-                                        if (PC & 0xc) cycles--;                         /* + 1I*/
+                                        if (memc_is_memc1) cycles -= cyc_n;             /* + 1N*/
+                                        else if (PC & 0xc) cycles--;                    /* + 1I*/
                                         break;
                                         case 0x43: case 0x4B: case 0x63: case 0x6B: /*LDRT Rd,[Rn],offset*/
                                         addr=GETADDR(RN);
@@ -1706,8 +1708,8 @@ void execarm(int cycs)
                                         if (opcode&0x800000) armregs[RN]+=addr2;
                                         else                 armregs[RN]-=addr2;
                                         cycles -= mem_speed[(addr >> 12) & 0x3fff][1];  /*1S + 1N*/
-                                        if (memc_is_memc1) cycles--;
-                                        if (PC & 0xc) cycles--;                         /* + 1I*/
+                                        if (memc_is_memc1) cycles -= cyc_n;             /* + 1N*/
+                                        else if (PC & 0xc) cycles--;                    /* + 1I*/
                                         break;
 
                                         case 0x40: case 0x48: case 0x60: case 0x68: /*STR Rd,[Rn],offset*/
@@ -1822,8 +1824,8 @@ void execarm(int cycs)
                                         }
                                         LOADREG(RD,templ);
                                         cycles -= mem_speed[(addr >> 12) & 0x3fff][1];  /*1S + 1N*/
-                                        if (memc_is_memc1) cycles--;
-                                        if (PC & 0xc) cycles--;                         /* + 1I*/
+                                        if (memc_is_memc1) cycles -= cyc_n;             /* + 1N*/
+                                        else if (PC & 0xc) cycles--;                    /* + 1I*/
 /*                                        if (opcode == 0xe59b0000 && PC < 0x100000) 
                                                 rpclog("%07X: LDR R0, [R11] took %i cycles\n", PC, oldcyc2-cycles);*/
                                         break;
@@ -1858,8 +1860,8 @@ void execarm(int cycs)
                                         }
                                         armregs[RD]=templ;
                                         cycles -= mem_speed[(addr >> 12) & 0x3fff][1];  /*1S + 1N*/
-                                        if (memc_is_memc1) cycles--;
-                                        if (PC & 0xc) cycles--;                         /* + 1I*/
+                                        if (memc_is_memc1) cycles -= cyc_n;             /* + 1N*/
+                                        else if (PC & 0xc) cycles--;                    /* + 1I*/
                                         break;
 
 #define STMfirst()      mask=1; \
@@ -1946,6 +1948,7 @@ void execarm(int cycs)
                                 if (!(addr&0xC)) cycles -= mem_speed[(addr >> 12) & 0x3fff][1]; \
                                 else             cycles -= mem_speed[(addr >> 12) & 0x3fff][0]; \
                                 templ=readmeml(addr); \
+                                addr += 4; \
                                 if (!databort) armregs[15]=(armregs[15]&0xFC000003)|((templ+4)&0x3FFFFFC); \
                                 refillpipeline(); \
                         }
@@ -1968,6 +1971,7 @@ void execarm(int cycs)
                                 if (!(addr & 0xC)) cycles -= mem_speed[(addr >> 12) & 0x3fff][1]; \
                                 else               cycles -= mem_speed[(addr >> 12) & 0x3fff][0]; \
                                 templ=readmeml(addr); \
+                                addr += 4; \
                                 if (!databort) \
                                 { \
                                         if (armregs[15]&3) armregs[15]=(templ+4); \
@@ -2046,8 +2050,18 @@ void execarm(int cycs)
                                         if (!(opcode&0x1000000)) addr+=4;
                                         if (opcode&0x200000) armregs[RN]-=countbits(opcode&0xFFFF);
                                         LDMall();
-                                        if (memc_is_memc1) cycles--;
-                                        if (PC & 0xc) cycles--;                         /* + 1I*/
+					if (memc_is_memc1)
+					{
+						/*MEMC1 - repeat last cycle. */
+						if (!((addr - 4) & 0xc))
+							cycles -= cyc_n;
+						else
+							cycles -= cyc_s;
+					}
+					else
+					{
+                                        	if (PC & 0xc) cycles--;                         /* + 1I*/
+					}
                                         break;
                                         case 0x89: /*LDMIA*/
                                         case 0x8B: /*LDMIA !*/
@@ -2057,10 +2071,18 @@ void execarm(int cycs)
                                         if (opcode&0x1000000) addr+=4;
                                         if (opcode&0x200000) armregs[RN]+=countbits(opcode&0xFFFF);
                                         LDMall();
-                                        if (memc_is_memc1) cycles--;
-                                        if (PC & 0xc) cycles--;                         /* + 1I*/
-/*                                        if (opcode == 0xe89b00ff && PC < 0x100000) 
-                                                rpclog("%07X: LDMIA R11, {R0 - R7} took %i cycles\n", PC, oldcyc2-cycles);*/
+					if (memc_is_memc1)
+					{
+						/*MEMC1 - repeat last cycle. */
+						if (!((addr - 4) & 0xc))
+							cycles -= cyc_n;
+						else
+							cycles -= cyc_s;
+					}
+					else
+					{
+                                        	if (PC & 0xc) cycles--;                         /* + 1I*/
+					}
                                         break;
                                         case 0x85: /*LDMDA ^*/
                                         case 0x87: /*LDMDA ^!*/
@@ -2070,8 +2092,18 @@ void execarm(int cycs)
                                         if (!(opcode&0x1000000)) addr+=4;
                                         if (opcode&0x200000) armregs[RN]-=countbits(opcode&0xFFFF);
                                         LDMallS();
-                                        if (memc_is_memc1) cycles--;
-                                        if (PC & 0xc) cycles--;                         /* + 1I*/
+					if (memc_is_memc1)
+					{
+						/*MEMC1 - repeat last cycle. */
+						if (!((addr - 4) & 0xc))
+							cycles -= cyc_n;
+						else
+							cycles -= cyc_s;
+					}
+					else
+					{
+                                        	if (PC & 0xc) cycles--;                         /* + 1I*/
+					}
                                         break;
                                         case 0x8D: /*LDMIA ^*/
                                         case 0x8F: /*LDMIA ^!*/
@@ -2081,8 +2113,18 @@ void execarm(int cycs)
                                         if (opcode&0x1000000) addr+=4;
                                         if (opcode&0x200000) armregs[RN]+=countbits(opcode&0xFFFF);
                                         LDMallS();
-                                        if (memc_is_memc1) cycles--;
-                                        if (PC & 0xc) cycles--;                         /* + 1I*/
+					if (memc_is_memc1)
+					{
+						/*MEMC1 - repeat last cycle. */
+						if (!((addr - 4) & 0xc))
+							cycles -= cyc_n;
+						else
+							cycles -= cyc_s;
+					}
+					else
+					{
+                                        	if (PC & 0xc) cycles--;                         /* + 1I*/
+					}
                                         break;
 
                                         case 0xB0: case 0xB1: case 0xB2: case 0xB3: /*BL*/

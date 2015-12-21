@@ -292,7 +292,7 @@ void keyboard_poll()
         }
         if (((mouse_buttons & 4) | (key[KEY_MENU] ? 4 : 0)) != mousedown[2]) /*Middle button*/
         {
-                mousedown[2] = mouse_buttons & 4;
+                mousedown[2] = (mouse_buttons & 4) | (key[KEY_MENU] ? 4 : 0);
                 if (mousedown[2])
                         keyboard_send_double(0xc7, 0xc1);
                 else

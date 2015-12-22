@@ -428,10 +428,13 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                         else          CheckMenuItem(hmenu,IDM_DISC_FAST,MF_UNCHECKED);
                         return 0;
                         case IDM_FILE_RESET:
+                        startblit();
+                        Sleep(200);
                         resetarm();
                         memset(ram,0,memsize*1024);
                         resetmouse();
                         keyboard_init();
+                        endblit();
                         return 0;
                         case IDM_FILE_EXIT:
                         rpclog("IDM_FILE_EXIT : PostQuitMessage\n");
@@ -460,52 +463,70 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                         else            CheckMenuItem(hmenu,IDM_OPTIONS_LIMIT,MF_UNCHECKED);
                         return 0;
                         case IDM_MEMSIZE_512K:
+                        startblit();
+                        Sleep(200);
                         resizemem(512);
                         resetarm();
                         resetmouse();
                         clearmemmenu();
                         CheckMenuItem(hmenu,IDM_MEMSIZE_512K,MF_CHECKED);
                         memsize=512;
+                        endblit();
                         return 0;
                         case IDM_MEMSIZE_1M:
+                        startblit();
+                        Sleep(200);
                         resizemem(1024);
                         resetarm();
                         resetmouse();
                         clearmemmenu();
                         CheckMenuItem(hmenu,IDM_MEMSIZE_1M,MF_CHECKED);
                         memsize=1024;
+                        endblit();
                         return 0;
                         case IDM_MEMSIZE_2M:
+                        startblit();
+                        Sleep(200);
                         resizemem(2048);
                         resetarm();
                         resetmouse();
                         clearmemmenu();
                         CheckMenuItem(hmenu,IDM_MEMSIZE_2M,MF_CHECKED);
                         memsize=2048;
+                        endblit();
                         return 0;
                         case IDM_MEMSIZE_4M:
+                        startblit();
+                        Sleep(200);
                         resizemem(4096);
                         resetarm();
                         resetmouse();
                         clearmemmenu();
                         CheckMenuItem(hmenu,IDM_MEMSIZE_4M,MF_CHECKED);
                         memsize=4096;
+                        endblit();
                         return 0;
                         case IDM_MEMSIZE_8M:
+                        startblit();
+                        Sleep(200);
                         resizemem(8192);
                         resetarm();
                         resetmouse();
                         clearmemmenu();
                         CheckMenuItem(hmenu,IDM_MEMSIZE_8M,MF_CHECKED);
                         memsize=8192;
+                        endblit();
                         return 0;
                         case IDM_MEMSIZE_16M:
+                        startblit();
+                        Sleep(200);
                         resizemem(16384);
                         resetarm();
                         resetmouse();
                         clearmemmenu();
                         CheckMenuItem(hmenu,IDM_MEMSIZE_16M,MF_CHECKED);
                         memsize=16384;
+                        endblit();
                         return 0;
                         case IDM_VIDEO_FULLSCR:
                         fullscreen=1;

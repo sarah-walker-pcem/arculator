@@ -314,6 +314,11 @@ void arc_close()
         rpclog("arc_close done\n");
 }
 
+#ifndef WIN32
+void updatewindowsize(int x, int y)
+{
+}
+
 int main(int argc, char *argv[])
 {
     arc_init();
@@ -322,4 +327,4 @@ int main(int argc, char *argv[])
     } while (1);
     arc_close();
 }
-
+#endif

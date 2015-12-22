@@ -1099,10 +1099,10 @@ void pollline()
                                 if ((xxl-xxh)!=(oldxxl-oldxxh) || (yh-yl)!=(oldyh-oldyl))
                                 {
 //                                        rpclog("Changing size!\n");
-                                        //if (vidc.scanrate || !dblscan)
-                                        //   updatewindowsize(xxl-xxh,yh-yl);
-                                        //else
-                                        //   updatewindowsize(xxl-xxh,((yh-yl)<<1)-2);
+                                        if (vidc.scanrate || !dblscan)
+                                           updatewindowsize(xxl-xxh,yh-yl);
+                                        else
+                                           updatewindowsize(xxl-xxh,((yh-yl)<<1)-2);
                                 }
                                 oldxxl=xxl;
                                 oldxxh=xxh;

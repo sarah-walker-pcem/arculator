@@ -1002,8 +1002,6 @@ void execarm(int cycs)
                                         }
                                         else
                                         {
-                                                #if 0
-                                                /*No undefined on ARM2?*/
                                                 templ=armregs[15]-4;
                                                 armregs[15]|=3;
                                                 updatemode(SUPERVISOR);
@@ -1012,7 +1010,6 @@ void execarm(int cycs)
                                                 armregs[15]|=0x08000008;
                                                 cycles-=3;
                                                 refillpipeline();
-                                                #endif
                                         }
                                         break;
                                         
@@ -1072,8 +1069,6 @@ void execarm(int cycs)
                                         }
                                         else
                                         {
-                                                #if 0
-                                                /*No undefined on ARM2?*/
                                                 templ=armregs[15]-4;
                                                 armregs[15]|=3;
                                                 updatemode(SUPERVISOR);
@@ -1082,7 +1077,6 @@ void execarm(int cycs)
                                                 armregs[15]|=0x08000008;
                                                 cycles-=3;
                                                 refillpipeline();
-                                                #endif
                                         }
                                         break;
 

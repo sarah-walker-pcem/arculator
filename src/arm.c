@@ -634,7 +634,8 @@ int framecycs;
                         if (arm_dmacount <= 0)                                  \
                         {                                                       \
                                 arm_dmacount += arm_dmalatch;                   \
-                                cycles       -= arm_dmalength;                  \
+                                if (memc_videodma_enable)                       \
+					cycles       -= arm_dmalength;          \
                                 arm_dmacount -= (arm_dmalength << 10);          \
                         }                                                       \
                         ARM_POLLTIME_NODMA();

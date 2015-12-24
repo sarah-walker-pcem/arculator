@@ -15,6 +15,8 @@ int podule_time=8000;
   ARM2 & ARM3 emulation*/
 #include <stdio.h>
 #include "arc.h"
+#include "arm.h"
+#include "cp15.h"
 #include "disc.h"
 #include <allegro.h>
 #include "hostfs.h"
@@ -25,11 +27,97 @@ int podule_time=8000;
 #include "vidc.h"
 //#include <winalleg.h>
 
+int cycles;
+
 void refillpipeline();
 void refillpipeline2();
 
-int arm_dmacount = 0x7fffffff, arm_dmalatch = 0x7fffffff, arm_dmalength = 0;
+static uint8_t arm3_cache[((1 << 26) >> 4) >> 3];
+static uint32_t arm3_cache_tag[4][64];
+static int arm3_slot = 1;
+#define TAG_INVALID -1
+
 static int cyc_s, cyc_n;
+
+static inline void cache_read_timing(uint32_t addr, int is_n_cycle)
+{
+	int bit_offset = (addr >> 4) & 7;
+	int byte_offset = (addr >> (4+3));
+	
+	if (cp15_cacheon)
+	{
+		if (arm3_cache[byte_offset] & (1 << bit_offset))
+		{
+			cycles--;
+		}
+		else if (!(arm3cp.cache & (1 << (addr >> 21))))
+		{
+			cycles -= is_n_cycle ? mem_speed[(addr >> 12) & 0x3fff][1] : mem_speed[(addr >> 12) & 0x3fff][0];
+		}
+		else
+		{
+			int set = (addr >> 4) & 3;
+//			rpclog("cache fetch %08x\n", addr);
+			if (arm3_cache_tag[set][arm3_slot] != TAG_INVALID)
+			{
+				int old_bit_offset = (arm3_cache_tag[set][arm3_slot] >> 4) & 7;
+				int old_byte_offset = (arm3_cache_tag[set][arm3_slot] >> (4+3));
+//				rpclog(" clear %i,%i\n", 
+				arm3_cache[old_byte_offset] &= ~(1 << old_bit_offset);
+			}
+			
+			arm3_cache_tag[set][arm3_slot] = addr & ~0xf;
+			arm3_cache[byte_offset] |= (1 << bit_offset);
+			cycles -= mem_speed[(addr >> 12) & 0x3fff][1] + mem_speed[(addr >> 12) & 0x3fff][0]*3;
+			if (!((arm3_slot ^ (arm3_slot >> 1)) & 1))
+				arm3_slot |= 0x40;
+			arm3_slot >>= 1;
+		}
+	}
+	else
+	{
+//		rpclog("cycle %08x %i %i\n", addr, is_n_cycle, is_n_cycle ? mem_speed[(addr >> 12) & 0x3fff][1] : mem_speed[(addr >> 12) & 0x3fff][0]);
+		cycles -= is_n_cycle ? mem_speed[(addr >> 12) & 0x3fff][1] : mem_speed[(addr >> 12) & 0x3fff][0];
+	}
+}
+
+void cache_flush()
+{
+	int set, slot;
+//	rpclog("cache_flush\n");
+	for (set = 0; set < 4; set++)
+	{
+		for (slot = 0; slot < 64; slot++)
+		{
+			if (arm3_cache_tag[set][slot] != TAG_INVALID)
+			{
+				int bit_offset = (arm3_cache_tag[set][slot] >> 4) & 7;
+				int byte_offset = (arm3_cache_tag[set][slot] >> (4+3));
+				
+				arm3_cache[byte_offset] &= ~(1 << bit_offset);
+				
+				arm3_cache_tag[set][arm3_slot] = TAG_INVALID;
+			}
+		}
+	}
+/*	for (set = 0; set < (((1 << 26) >> 4) >> 3); set++)
+	{
+		if (arm3_cache[set])
+			fatal("Flush didn't flush - %x %x\n", set, arm3_cache[set]);
+	}*/
+}
+
+static void cache_write_timing(uint32_t addr, int is_n_cycle)
+{
+	if (arm3cp.disrupt & (1 << (addr >> 21)))
+		cache_flush();
+	if (is_n_cycle)
+		cycles -= mem_speed[(addr >> 12) & 0x3fff][1];
+	else
+		cycles -= mem_speed[(addr >> 12) & 0x3fff][0];
+}
+
+int arm_dmacount = 0x7fffffff, arm_dmalatch = 0x7fffffff, arm_dmalength = 0;
 
 int arm_cpu_type;
 
@@ -47,7 +135,6 @@ int motoron;
 int fdccallback;
 int fdicount=16;
 int irq;
-int cycles;
 int prefabort;
 uint8_t flaglookup[16][16];
 uint32_t rotatelookup[4096];
@@ -233,6 +320,9 @@ void resetarm()
         resetfpa();
         resetics();
         resetarcrom();
+        
+        memset(arm3_cache, 0, sizeof(arm3_cache));
+        memset(arm3_cache_tag, TAG_INVALID, sizeof(arm3_cache_tag));
 }
 
 int indumpregs=0;
@@ -635,8 +725,10 @@ int framecycs;
                         {                                                       \
                                 arm_dmacount += arm_dmalatch;                   \
                                 if (memc_videodma_enable)                       \
+                                {						\
 					cycles       -= arm_dmalength;          \
-                                arm_dmacount -= (arm_dmalength << 10);          \
+                                	arm_dmacount -= (arm_dmalength << 10);  \
+				}						\
                         }                                                       \
                         ARM_POLLTIME_NODMA();
 
@@ -671,7 +763,7 @@ int refreshcount = 32;
 void execarm(int cycs)
 {
         uint32_t templ,templ2,mask,addr,addr2,*rn;
-        int c,cyc,oldcyc,oldcyc2;
+        int c,cyc,oldcyc,oldcyc2,oldcyc3;
         int linecyc;
 
         cycles+=cycs;
@@ -685,7 +777,7 @@ void execarm(int cycs)
                 {
                         opcode=opcode2;
                         opcode2=opcode3;
-                        oldcyc2=cycles;
+                        oldcyc3=oldcyc2=cycles;
                         if ((PC>>12)==pccache)
                            opcode3=pccache2[(PC&0xFFF)>>2];
                         else
@@ -706,10 +798,11 @@ void execarm(int cycs)
                                         pccache=0xFFFFFFFF;
                                 }
                         }
-                        if (PC & 0xc)
+                        cache_read_timing(PC, (PC & 0xc) ? 0 : 1);
+/*                        if (PC & 0xc)
                                 cycles -= cyc_s;
                         else
-                                cycles -= cyc_n;
+                                cycles -= cyc_n;*/
 
                         /*if (!((PC)&0xC)) cycles--;*/
                         if (flaglookup[opcode>>28][armregs[15]>>28] && !prefabort)
@@ -998,7 +1091,9 @@ void execarm(int cycs)
                                                 addr=GETADDR(RN);
                                                 templ=GETREG(RM);
                                                 LOADREG(RD,readmeml(addr));
+                                                cache_read_timing(PC, 1);
                                                 if (!databort) writememl(addr,templ);
+                                                cache_write_timing(addr, 1);
                                                 cycles -= cyc_n * 2;
                                         }
                                         else
@@ -1065,7 +1160,9 @@ void execarm(int cycs)
                                                 addr=armregs[RN];
                                                 templ=GETREG(RM);
                                                 LOADREG(RD,readmemb(addr));
+                                                cache_read_timing(addr, 1);
                                                 writememb(addr,templ);
+                                                cache_write_timing(addr, 1);
                                                 cycles -= cyc_n * 2;
                                         }
                                         else
@@ -1656,13 +1753,14 @@ void execarm(int cycs)
                                         if (!(opcode&0x800000))  addr2=-addr2;
                                         if (opcode&0x1000000)
                                         {
-                                                addr+=addr2;
+                                                 addr+=addr2;
                                         }
                                         templ=memmode;
                                         memmode=0;
                                         templ2=readmemb(addr);
                                         memmode=templ;
                                         if (databort) break;
+                                        cache_read_timing(addr, 1);
                                         LOADREG(RD,templ2);
                                         if (!(opcode&0x1000000))
                                         {
@@ -1673,9 +1771,9 @@ void execarm(int cycs)
                                         {
                                                 if (opcode&0x200000) armregs[RN]=addr;
                                         }
-                                        cycles -= mem_speed[(addr >> 12) & 0x3fff][1];  /*1S + 1N*/
-                                        if (memc_is_memc1) cycles -= cyc_n;             /* + 1N*/
-                                        else if (PC & 0xc) cycles--;                    /* + 1I*/
+//                                        cycles -= mem_speed[(addr >> 12) & 0x3fff][1];  /*1S + 1N*/
+                                        if (memc_is_memc1)                   cycles -= cyc_n;             /* + 1N*/
+                                        else if (cp15_cacheon || (PC & 0xc)) cycles--;                    /* + 1I*/
                                         break;
 
                                         case 0x41: case 0x49: case 0x61: case 0x69: /*LDR Rd,[Rn],offset*/
@@ -1684,12 +1782,13 @@ void execarm(int cycs)
                                         else                  addr2=opcode&0xFFF;
                                         templ2=ldrresult(readmeml(addr),addr);
                                         if (databort) break;
+                                        cache_read_timing(addr, 1);
                                         LOADREG(RD,templ2);
                                         if (opcode&0x800000) armregs[RN]+=addr2;
                                         else                 armregs[RN]-=addr2;
-                                        cycles -= mem_speed[(addr >> 12) & 0x3fff][1];  /*1S + 1N*/
-                                        if (memc_is_memc1) cycles -= cyc_n;             /* + 1N*/
-                                        else if (PC & 0xc) cycles--;                    /* + 1I*/
+//                                        cycles -= mem_speed[(addr >> 12) & 0x3fff][1];  /*1S + 1N*/
+                                        if (memc_is_memc1)                   cycles -= cyc_n;             /* + 1N*/
+                                        else if (cp15_cacheon || (PC & 0xc)) cycles--;                    /* + 1I*/
                                         break;
                                         case 0x43: case 0x4B: case 0x63: case 0x6B: /*LDRT Rd,[Rn],offset*/
                                         addr=GETADDR(RN);
@@ -1699,12 +1798,13 @@ void execarm(int cycs)
                                         templ2=ldrresult(readmeml(addr),addr);
                                         memmode=templ;
                                         if (databort) break;
+                                        cache_read_timing(addr, 1);
                                         LOADREG(RD,templ2);
                                         if (opcode&0x800000) armregs[RN]+=addr2;
                                         else                 armregs[RN]-=addr2;
-                                        cycles -= mem_speed[(addr >> 12) & 0x3fff][1];  /*1S + 1N*/
-                                        if (memc_is_memc1) cycles -= cyc_n;             /* + 1N*/
-                                        else if (PC & 0xc) cycles--;                    /* + 1I*/
+//                                        cycles -= mem_speed[(addr >> 12) & 0x3fff][1];  /*1S + 1N*/
+                                        if (memc_is_memc1)                   cycles -= cyc_n;             /* + 1N*/
+                                        else if (cp15_cacheon || (PC & 0xc)) cycles--;                    /* + 1I*/
                                         break;
 
                                         case 0x40: case 0x48: case 0x60: case 0x68: /*STR Rd,[Rn],offset*/
@@ -1714,10 +1814,11 @@ void execarm(int cycs)
                                         if (RD==15) { writememl(addr,armregs[RD]+4); }
                                         else        { writememl(addr,armregs[RD]); }
                                         if (databort) break;
+                                        cache_write_timing(addr, 1);
                                         if (opcode&0x800000) armregs[RN]+=addr2;
                                         else                 armregs[RN]-=addr2;
-                                        cycles -= mem_speed[(addr >> 12) & 0x3fff][1]; /*2N*/
-                                        if (PC & 0xc) cycles -= cyc_n - cyc_s;
+//                                        cycles -= mem_speed[(addr >> 12) & 0x3fff][1]; /*2N*/
+                                        if (!cp15_cacheon && (PC & 0xc)) cycles -= cyc_n - cyc_s;
                                         break;
                                         case 0x42: case 0x4A: case 0x62: case 0x6A: /*STRT Rd,[Rn],offset*/
                                         addr=GETADDR(RN);
@@ -1727,11 +1828,12 @@ void execarm(int cycs)
                                         else        { writememl(addr,armregs[RD]); }
                                         templ=memmode; memmode=0;
                                         if (databort) break;
+                                        cache_write_timing(addr, 1);
                                         memmode=templ;
                                         if (opcode&0x800000) armregs[RN]+=addr2;
                                         else                 armregs[RN]-=addr2;
-                                        cycles -= mem_speed[(addr >> 12) & 0x3fff][1]; /*2N*/
-                                        if (PC & 0xc) cycles -= cyc_n - cyc_s;
+//                                        cycles -= mem_speed[(addr >> 12) & 0x3fff][1]; /*2N*/
+                                        if (!cp15_cacheon && (PC & 0xc)) cycles -= cyc_n - cyc_s;
                                         break;
                                         case 0x50: case 0x58: case 0x70: case 0x78: /*STR Rd,[Rn,offset]*/
                                         case 0x52: case 0x5A: case 0x72: case 0x7A: /*STR Rd,[Rn,offset]!*/
@@ -1742,9 +1844,10 @@ void execarm(int cycs)
                                         if (RD==15) { writememl(addr,armregs[RD]+4); }
                                         else        { writememl(addr,armregs[RD]); }
                                         if (databort) break;
+                                        cache_write_timing(addr, 1);
                                         if (opcode&0x200000) armregs[RN]=addr;
-                                        cycles -= mem_speed[(addr >> 12) & 0x3fff][1]; /*2N*/
-                                        if (PC & 0xc) cycles -= cyc_n - cyc_s;
+//                                        cycles -= mem_speed[(addr >> 12) & 0x3fff][1]; /*2N*/
+                                        if (!cp15_cacheon && (PC & 0xc)) cycles -= cyc_n - cyc_s;
 /*                                        if (opcode == 0xe58b0000 && PC < 0x100000) 
                                                 rpclog("%07X: STR R0, [R11] took %i cycles\n", PC, oldcyc2-cycles);*/
                                         break;
@@ -1755,10 +1858,11 @@ void execarm(int cycs)
                                         else                  addr2=opcode&0xFFF;
                                         writememb(addr,armregs[RD]);
                                         if (databort) break;
+                                        cache_write_timing(addr, 1);
                                         if (opcode&0x800000) armregs[RN]+=addr2;
                                         else                 armregs[RN]-=addr2;
-                                        cycles -= mem_speed[(addr >> 12) & 0x3fff][1]; /*2N*/
-                                        if (PC & 0xc) cycles -= cyc_n - cyc_s;
+//                                        cycles -= mem_speed[(addr >> 12) & 0x3fff][1]; /*2N*/
+                                        if (!cp15_cacheon && (PC & 0xc)) cycles -= cyc_n - cyc_s;
                                         break;
                                         case 0x46: case 0x4E: case 0x66: case 0x6E: /*STRBT Rd,[Rn],offset*/
                                         addr=GETADDR(RN);
@@ -1768,11 +1872,12 @@ void execarm(int cycs)
                                         templ=memmode;
                                         memmode=0;
                                         if (databort) break;
+                                        cache_write_timing(addr, 1);
                                         memmode=templ;
                                         if (opcode&0x800000) armregs[RN]+=addr2;
                                         else                 armregs[RN]-=addr2;
-                                        cycles -= mem_speed[(addr >> 12) & 0x3fff][1]; /*2N*/
-                                        if (PC & 0xc) cycles -= cyc_n - cyc_s;
+//                                        cycles -= mem_speed[(addr >> 12) & 0x3fff][1]; /*2N*/
+                                        if (!cp15_cacheon && (PC & 0xc)) cycles -= cyc_n - cyc_s;
                                         break;
                                         case 0x54: case 0x5C: case 0x74: case 0x7C: /*STRB Rd,[Rn,offset]*/
                                         case 0x56: case 0x5E: case 0x76: case 0x7E: /*STRB Rd,[Rn,offset]!*/
@@ -1782,9 +1887,10 @@ void execarm(int cycs)
                                         else                 addr=GETADDR(RN)-addr2;
                                         writememb(addr,armregs[RD]);
                                         if (databort) break;
+                                        cache_write_timing(addr, 1);
                                         if (opcode&0x200000) armregs[RN]=addr;
-                                        cycles -= mem_speed[(addr >> 12) & 0x3fff][1]; /*2N*/
-                                        if (PC & 0xc) cycles -= cyc_n - cyc_s;
+//                                        cycles -= mem_speed[(addr >> 12) & 0x3fff][1]; /*2N*/
+                                        if (!cp15_cacheon && (PC & 0xc)) cycles -= cyc_n - cyc_s;
                                         break;
 
 
@@ -1808,6 +1914,7 @@ void execarm(int cycs)
                                         templ=readmeml(addr);
                                         templ=ldrresult(templ,addr);
                                         if (databort) break;
+                                        cache_read_timing(addr, 1);
                                         if (!(opcode&0x1000000))
                                         {
                                                 addr+=addr2;
@@ -1818,9 +1925,9 @@ void execarm(int cycs)
                                                 if (opcode&0x200000) armregs[RN]=addr;
                                         }
                                         LOADREG(RD,templ);
-                                        cycles -= mem_speed[(addr >> 12) & 0x3fff][1];  /*1S + 1N*/
-                                        if (memc_is_memc1) cycles -= cyc_n;             /* + 1N*/
-                                        else if (PC & 0xc) cycles--;                    /* + 1I*/
+//                                        cycles -= mem_speed[(addr >> 12) & 0x3fff][1];  /*1S + 1N*/
+                                        if (memc_is_memc1)                   cycles -= cyc_n;             /* + 1N*/
+                                        else if (cp15_cacheon || (PC & 0xc)) cycles--;                    /* + 1I*/
 /*                                        if (opcode == 0xe59b0000 && PC < 0x100000) 
                                                 rpclog("%07X: LDR R0, [R11] took %i cycles\n", PC, oldcyc2-cycles);*/
                                         break;
@@ -1844,6 +1951,7 @@ void execarm(int cycs)
                                         }
                                         templ=readmemb(addr);
                                         if (databort) break;
+                                        cache_read_timing(addr, 1);
                                         if (!(opcode&0x1000000))
                                         {
                                                 addr+=addr2;
@@ -1854,9 +1962,9 @@ void execarm(int cycs)
                                                 if (opcode&0x200000) armregs[RN]=addr;
                                         }
                                         armregs[RD]=templ;
-                                        cycles -= mem_speed[(addr >> 12) & 0x3fff][1];  /*1S + 1N*/
-                                        if (memc_is_memc1) cycles -= cyc_n;             /* + 1N*/
-                                        else if (PC & 0xc) cycles--;                    /* + 1I*/
+//                                        cycles -= mem_speed[(addr >> 12) & 0x3fff][1];  /*1S + 1N*/
+                                        if (memc_is_memc1)                   cycles -= cyc_n;             /* + 1N*/
+                                        else if (cp15_cacheon || (PC & 0xc)) cycles--;                    /* + 1I*/
                                         break;
 
 #define STMfirst()      mask=1; \
@@ -1864,9 +1972,10 @@ void execarm(int cycs)
                         { \
                                 if (opcode & mask) \
                                 { \
-                                        cycles -= mem_speed[(addr >> 12) & 0x3fff][1]; \
+                                        /*cycles -= mem_speed[(addr >> 12) & 0x3fff][1];*/ \
                                         if (c == 15) { writememl(addr, armregs[c] + 4); } \
                                         else         { writememl(addr, armregs[c]); } \
+                                        cache_write_timing(addr, 1); \
                                         addr += 4; \
                                         break; \
                                 } \
@@ -1878,18 +1987,20 @@ void execarm(int cycs)
                         { \
                                 if (opcode&mask) \
                                 { \
-                                        if (!(addr&0xC)) cycles -= mem_speed[(addr >> 12) & 0x3fff][1]; \
-                                        else             cycles -= mem_speed[(addr >> 12) & 0x3fff][0]; \
+                                        /*if (!(addr&0xC)) cycles -= mem_speed[(addr >> 12) & 0x3fff][1];*/ \
+                                        /*else             cycles -= mem_speed[(addr >> 12) & 0x3fff][0];*/ \
                                         writememl(addr,armregs[c]); \
+                                        cache_write_timing(addr, !(addr & 0xc)); \
                                         addr+=4; \
                                 } \
                                 mask<<=1; \
                         } \
                         if (opcode&0x8000) \
                         { \
-                                if (!(addr&0xC)) cycles -= mem_speed[(addr >> 12) & 0x3fff][1]; \
-                                else             cycles -= mem_speed[(addr >> 12) & 0x3fff][0]; \
+                                /*if (!(addr&0xC)) cycles -= mem_speed[(addr >> 12) & 0x3fff][1];*/ \
+                                /*else             cycles -= mem_speed[(addr >> 12) & 0x3fff][0];*/ \
                                 writememl(addr,armregs[15]+4); \
+                                cache_write_timing(addr, !(addr & 0xc)); \
                         }
 
 #define STMfirstS()     mask=1; \
@@ -1897,9 +2008,10 @@ void execarm(int cycs)
                         { \
                                 if (opcode&mask) \
                                 { \
-                                        cycles -= mem_speed[(addr >> 12) & 0x3fff][1]; \
+                                        /*cycles -= mem_speed[(addr >> 12) & 0x3fff][1];*/ \
                                         if (c==15) { writememl(addr,armregs[c]+4); } \
                                         else       { writememl(addr,*usrregs[c]); } \
+                                        cache_write_timing(addr, 1); \
                                         addr+=4; \
                                         break; \
                                 } \
@@ -1911,61 +2023,67 @@ void execarm(int cycs)
                         { \
                                 if (opcode&mask) \
                                 { \
-                                        if (!(addr&0xC)) cycles -= mem_speed[(addr >> 12) & 0x3fff][1]; \
-                                        else             cycles -= mem_speed[(addr >> 12) & 0x3fff][0]; \
+                                        /*if (!(addr&0xC)) cycles -= mem_speed[(addr >> 12) & 0x3fff][1];*/ \
+                                        /*else             cycles -= mem_speed[(addr >> 12) & 0x3fff][0];*/ \
                                         writememl(addr,*usrregs[c]); \
+                                        cache_write_timing(addr, !(addr & 0xc)); \
                                         addr+=4; \
                                 } \
                                 mask<<=1; \
                         } \
                         if (opcode&0x8000) \
                         { \
-                                if (!(addr&0xC)) cycles -= mem_speed[(addr >> 12) & 0x3fff][1]; \
-                                else             cycles -= mem_speed[(addr >> 12) & 0x3fff][0]; \
+                                /*if (!(addr&0xC)) cycles -= mem_speed[(addr >> 12) & 0x3fff][1];*/ \
+                                /*else             cycles -= mem_speed[(addr >> 12) & 0x3fff][0];*/ \
                                 writememl(addr,armregs[15]+4); \
+                                cache_write_timing(addr, !(addr & 0xc)); \
                         }
 
 #define LDMall()        mask=1; \
-                        if (addr & 0xc) cycles -= (mem_speed[(addr >> 12) & 0x3fff][1] - mem_speed[(addr >> 12) & 0x3fff][1]); \
+                        /*if (addr & 0xc) cycles -= (mem_speed[(addr >> 12) & 0x3fff][1] - mem_speed[(addr >> 12) & 0x3fff][1]);*/ \
                         for (c=0;c<15;c++) \
                         { \
                                 if (opcode&mask) \
                                 { \
-                                        if (!(addr&0xC)) cycles -= mem_speed[(addr >> 12) & 0x3fff][1]; \
-                                        else             cycles -= mem_speed[(addr >> 12) & 0x3fff][0]; \
+                                        /*if (!(addr&0xC)) cycles -= mem_speed[(addr >> 12) & 0x3fff][1];*/ \
+                                        /*else             cycles -= mem_speed[(addr >> 12) & 0x3fff][0];*/ \
                                         templ=readmeml(addr); if (!databort) armregs[c]=templ; \
+                                        cache_read_timing(addr, !(opcode & (mask - 1)) || !(addr & 0xc)); \
                                         addr+=4; \
                                 } \
                                 mask<<=1; \
                         } \
                         if (opcode&0x8000) \
                         { \
-                                if (!(addr&0xC)) cycles -= mem_speed[(addr >> 12) & 0x3fff][1]; \
-                                else             cycles -= mem_speed[(addr >> 12) & 0x3fff][0]; \
+                                /*if (!(addr&0xC)) cycles -= mem_speed[(addr >> 12) & 0x3fff][1];*/ \
+                                /*else             cycles -= mem_speed[(addr >> 12) & 0x3fff][0];*/ \
                                 templ=readmeml(addr); \
+                        	cache_read_timing(addr, !(addr & 0xc)); \
                                 addr += 4; \
                                 if (!databort) armregs[15]=(armregs[15]&0xFC000003)|((templ+4)&0x3FFFFFC); \
                                 refillpipeline(); \
                         }
 
 #define LDMallS()       mask=1; \
-                        if (addr & 0xc) cycles -= (mem_speed[(addr >> 12) & 0x3fff][1] - mem_speed[(addr >> 12) & 0x3fff][1]); \
+                        /*if (addr & 0xc) cycles -= (mem_speed[(addr >> 12) & 0x3fff][1] - mem_speed[(addr >> 12) & 0x3fff][1]);*/ \
                         if (opcode&0x8000) \
                         { \
                                 for (c=0;c<15;c++) \
                                 { \
                                         if (opcode&mask) \
                                         { \
-                                                if (!(addr & 0xC)) cycles -= mem_speed[(addr >> 12) & 0x3fff][1]; \
-                                                else               cycles -= mem_speed[(addr >> 12) & 0x3fff][0]; \
+                                                /*if (!(addr & 0xC)) cycles -= mem_speed[(addr >> 12) & 0x3fff][1];*/ \
+                                                /*else               cycles -= mem_speed[(addr >> 12) & 0x3fff][0];*/ \
                                                 templ=readmeml(addr); if (!databort) armregs[c]=templ; \
+		                        	cache_read_timing(addr, !(opcode & (mask - 1)) || !(addr & 0xc)); \
                                                 addr+=4; \
                                         } \
                                         mask<<=1; \
                                 } \
-                                if (!(addr & 0xC)) cycles -= mem_speed[(addr >> 12) & 0x3fff][1]; \
-                                else               cycles -= mem_speed[(addr >> 12) & 0x3fff][0]; \
+                                /*if (!(addr & 0xC)) cycles -= mem_speed[(addr >> 12) & 0x3fff][1];*/ \
+                                /*else               cycles -= mem_speed[(addr >> 12) & 0x3fff][0];*/ \
                                 templ=readmeml(addr); \
+                        	cache_read_timing(addr, !(opcode & (mask - 1)) || !(addr & 0xc)); \
                                 addr += 4; \
                                 if (!databort) \
                                 { \
@@ -1980,8 +2098,8 @@ void execarm(int cycs)
                                 { \
                                         if (opcode&mask) \
                                         { \
-                                                if (!(addr & 0xC)) cycles -= mem_speed[(addr >> 12) & 0x3fff][1]; \
-                                                else               cycles -= mem_speed[(addr >> 12) & 0x3fff][0]; \
+                                                /*if (!(addr & 0xC)) cycles -= mem_speed[(addr >> 12) & 0x3fff][1];*/ \
+                                                /*else               cycles -= mem_speed[(addr >> 12) & 0x3fff][0];*/ \
                                                 templ=readmeml(addr); if (!databort) *usrregs[c]=templ; \
                                                 addr+=4; \
                                         } \
@@ -2130,7 +2248,9 @@ void execarm(int cycs)
                                         armregs[14]=armregs[15]-4;
                                         armregs[15]=((armregs[15]+templ+4)&0x3FFFFFC)|(armregs[15]&0xFC000003);
                                         refillpipeline();
-                                        cycles -= (mem_speed[PC >> 12][1] + mem_speed[PC >> 12][0]);
+                                        cache_read_timing(PC-4, 1);
+                                        cache_read_timing(PC, !(PC & 0xc));
+//                                        cycles -= (mem_speed[PC >> 12][1] + mem_speed[PC >> 12][0]);
                                         break;
 
                                         case 0xA0: case 0xA1: case 0xA2: case 0xA3: /*B*/
@@ -2140,11 +2260,13 @@ void execarm(int cycs)
                                         templ=(opcode&0xFFFFFF)<<2;
                                         armregs[15]=((armregs[15]+templ+4)&0x3FFFFFC)|(armregs[15]&0xFC000003);
                                         refillpipeline();
-                                        if (PC >= 4) cycles -= mem_speed[(PC - 4) >> 12][1];
+                                        cache_read_timing(PC-4, 1);
+                                        cache_read_timing(PC, !(PC & 0xc));
+/*                                        if (PC >= 4) cycles -= mem_speed[(PC - 4) >> 12][1];
                                         if (!(PC & 0xc)) 
                                                 cycles -= mem_speed[PC >> 12][1];
                                         else
-                                                cycles -= mem_speed[PC >> 12][0];
+                                                cycles -= mem_speed[PC >> 12][0];*/
                                         break;
 
                                         case 0xE0: case 0xE2: case 0xE4: case 0xE6: /*MCR*/
@@ -2159,8 +2281,10 @@ void execarm(int cycs)
                                                         armregs[14]=templ;
                                                         armregs[15]&=0xFC000003;
                                                         armregs[15]|=0x08000008;
-                                                        cycles -= (mem_speed[PC >> 12][1] + mem_speed[PC >> 12][0]);
+//                                                        cycles -= (mem_speed[PC >> 12][1] + mem_speed[PC >> 12][0]);
                                                         refillpipeline();
+		                                        cache_read_timing(PC-4, 1);
+		                                        cache_read_timing(PC, 0);
                                                 }
                                         }
                                         else if (MULRS==15 && (opcode&0x10) && arm_has_cp15)
@@ -2176,8 +2300,10 @@ void execarm(int cycs)
                                                 armregs[14]=templ;
                                                 armregs[15]&=0xFC000003;
                                                 armregs[15]|=0x08000008;
-                                                cycles -= (mem_speed[PC >> 12][1] + mem_speed[PC >> 12][0]);
+//                                                cycles -= (mem_speed[PC >> 12][1] + mem_speed[PC >> 12][0]);
                                                 refillpipeline();
+	                                        cache_read_timing(PC-4, 1);
+	                                        cache_read_timing(PC, 0);
                                         }
                                         break;
 
@@ -2193,8 +2319,10 @@ void execarm(int cycs)
                                                         armregs[14]=templ;
                                                         armregs[15]&=0xFC000003;
                                                         armregs[15]|=0x08000008;
-                                                        cycles -= (mem_speed[PC >> 12][1] + mem_speed[PC >> 12][0]);
+//                                                        cycles -= (mem_speed[PC >> 12][1] + mem_speed[PC >> 12][0]);
                                                         refillpipeline();
+		                                        cache_read_timing(PC-4, 1);
+		                                        cache_read_timing(PC, 0);
                                                 }
                                         }
                                         else if (MULRS==15 && (opcode&0x10) && arm_has_cp15)
@@ -2211,8 +2339,10 @@ void execarm(int cycs)
                                                 armregs[14]=templ;
                                                 armregs[15]&=0xFC000003;
                                                 armregs[15]|=0x08000008;
-                                                cycles -= (mem_speed[PC >> 12][1] + mem_speed[PC >> 12][0]);
+//                                                cycles -= (mem_speed[PC >> 12][1] + mem_speed[PC >> 12][0]);
                                                 refillpipeline();
+		                                cache_read_timing(PC-4, 1);
+		                                cache_read_timing(PC, 0);
                                         }
                                         break;
                                         
@@ -2239,8 +2369,10 @@ void execarm(int cycs)
                                                         armregs[14]=templ;
                                                         armregs[15]&=0xFC000003;
                                                         armregs[15]|=0x08000008;
-                                                        cycles -= (mem_speed[PC >> 12][1] + mem_speed[PC >> 12][0]);
+//                                                        cycles -= (mem_speed[PC >> 12][1] + mem_speed[PC >> 12][0]);
                                                         refillpipeline();
+		                                        cache_read_timing(PC-4, 1);
+		                                        cache_read_timing(PC, 0);
                                                 }
                                         }
                                         else
@@ -2252,8 +2384,10 @@ void execarm(int cycs)
                                                 armregs[14]=templ;
                                                 armregs[15]&=0xFC000003;
                                                 armregs[15]|=0x08000008;
-                                                cycles -= (mem_speed[PC >> 12][1] + mem_speed[PC >> 12][0]);
+//                                                cycles -= (mem_speed[PC >> 12][1] + mem_speed[PC >> 12][0]);
                                                 refillpipeline();
+	                                        cache_read_timing(PC-4, 1);
+	                                        cache_read_timing(PC, 0);
                                         }
                                         break;
 
@@ -2308,8 +2442,10 @@ void execarm(int cycs)
                                                 armregs[14]=templ;
                                                 armregs[15]&=0xFC000003;
                                                 armregs[15]|=0x0800000C;
-                                                cycles -= (mem_speed[PC >> 12][1] + mem_speed[PC >> 12][0]);
+//                                                cycles -= (mem_speed[PC >> 12][1] + mem_speed[PC >> 12][0]);
                                                 refillpipeline();
+	                                        cache_read_timing(PC-4, 1);
+	                                        cache_read_timing(PC, 0);
                                         }
                                         break;
 

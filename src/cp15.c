@@ -8,17 +8,11 @@
 
 int cp15_cacheon;
 
-struct
-{
-        uint32_t ctrl;
-        uint32_t cache,update,disrupt;
-} arm3cp;
-
 void resetcp15()
 {
         arm3cp.ctrl = 0;
         cp15_cacheon = 0;
-        arc_setspeed(arm_mem_speed);
+        arc_setspeed(arm_cpu_speed);
 }
 
 uint32_t readcp15(int reg)
@@ -43,9 +37,12 @@ void writecp15(int reg, uint32_t val)
 {
         switch (reg)
         {
+		case 1:
+		cache_flush();
+		return;
                 case 2: /*CTRL*/
                 arm3cp.ctrl=val;
-                arc_setspeed((val & 1) ? arm_cpu_speed : arm_mem_speed);
+                arc_setspeed((val & 1) ? arm_cpu_speed : arm_cpu_speed);
                 
                 cp15_cacheon = val & 1;
                 

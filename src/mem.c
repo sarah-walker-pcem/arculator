@@ -3,6 +3,7 @@
 #include <allegro.h>
 #include <stdio.h>
 #include "arc.h"
+#include "arm.h"
 
 #include "82c711.h"
 #include "82c711_fdc.h"
@@ -28,6 +29,7 @@ int fdcside;
 int realmemsize;
 void initmem(int memsize)
 {
+	int mem_spd_multi = arm_has_cp15 ? 2 : 1;
         int c,d=(memsize>>2)-1;
         rpclog("initmem %i\n", memsize);
         realmemsize=memsize;
@@ -48,18 +50,20 @@ void initmem(int memsize)
         
         for (c = 0; c < 0x3000; c++)
         {
-                mem_speed[c][0] = 1;
-                mem_speed[c][1] = 2;
+                mem_speed[c][0] = 1 * mem_spd_multi;
+                mem_speed[c][1] = 2 * mem_spd_multi;
         }
         for (c = 0x3000; c < 0x3800; c++)
-                mem_speed[c][0] = mem_speed[c][1] = 2;
+                mem_speed[c][0] = mem_speed[c][1] = 2 * mem_spd_multi;
         for (c = 0x3800; c < 0x4000; c++)
-                mem_speed[c][0] = mem_speed[c][1] = 4;
+                mem_speed[c][0] = mem_speed[c][1] = 4 * mem_spd_multi;
         mem_romspeed_n = mem_romspeed_s = 4;
+        rpclog("Update2: mem=%i,%i\n", mem_speed[0x1800][0], mem_speed[0x1800][1]);
 }
 
 void mem_setromspeed(int n, int s)
 {
+	int mem_spd_multi = arm_has_cp15 ? 2 : 1;
         int c;
 
         mem_romspeed_n = n;
@@ -75,8 +79,8 @@ void mem_setromspeed(int n, int s)
         
         for (c = 0x3800; c < 0x4000; c++)
         {
-                mem_speed[c][0] = s;
-                mem_speed[c][1] = n;
+                mem_speed[c][0] = s * mem_spd_multi;
+                mem_speed[c][1] = n * mem_spd_multi;
         }
         
         rpclog("mem_setromspeed %i %i\n", n, s);
@@ -84,13 +88,15 @@ void mem_setromspeed(int n, int s)
 
 void mem_updatetimings()
 {
+	int mem_spd_multi = arm_has_cp15 ? 2 : 1;
         int c;
 
         for (c = 0; c < 0x3000; c++)
         {
-                mem_speed[c][0] = 1;
-                mem_speed[c][1] = cp15_cacheon ? 1 : 2;
+        	mem_speed[c][0] = 1 * mem_spd_multi;
+                mem_speed[c][1] = 2 * mem_spd_multi;
         }
+        rpclog("Update: mem=%i,%i\n", mem_speed[0x1800][0], mem_speed[0x1800][1]);
 
         mem_setromspeed(mem_romspeed_n, mem_romspeed_s);
 }

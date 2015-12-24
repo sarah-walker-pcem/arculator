@@ -275,7 +275,8 @@ void arc_set_cpu(int cpu)
         arm_has_swp   = arc_cpus[cpu].has_swp;
         arm_has_cp15  = arc_cpus[cpu].has_cp15;
         fpaena        = arc_cpus[cpu].has_fpa;
-        arc_setspeed(arm_mem_speed);
+        arc_setspeed(arm_cpu_speed);
+        mem_updatetimings();
 }
 
 static int ddnoise_frames = 0;

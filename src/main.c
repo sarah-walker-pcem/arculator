@@ -242,6 +242,8 @@ void arc_setspeed(int mhz)
         disc_poll_time = 2 * mhz;
         sound_poll_time = 4 * mhz;
         keyboard_poll_time = 10000 * mhz;
+	memc_refresh_time = ((32 << 10) * speed_mhz) / 8;
+        rpclog("memc_refresh_time=%i\n", memc_refresh_time);
 }
 
 static struct

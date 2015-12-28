@@ -4,3 +4,4 @@ void vidc_redovideotiming();
 void vidc_setclock(int clock);
 int vidc_getclock();
 extern int vidc_framecount;
+extern int vidc_dma_length;

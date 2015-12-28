@@ -7,3 +7,5 @@ extern int arm_has_swp;
 extern int arm_has_cp15;
 
 void cache_flush();
+
+extern int linecyc;

@@ -14,6 +14,7 @@ int flybacklines;
 int memc_videodma_enable;
 int memc_refreshon;
 int memc_is_memc1 = 1;
+int memc_refresh_time;
 
 int sound_poll_time;
 

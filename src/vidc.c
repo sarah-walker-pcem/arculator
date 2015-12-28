@@ -13,6 +13,9 @@
 #include "sound.h"
 #include "vidc.h"
 
+int vidc_dma_length;
+extern int vidc_fetches;
+extern int cycles;
 int vidc_framecount = 0;
 int vidc_displayon = 0;
 int blitcount=0;
@@ -63,6 +66,8 @@ struct
         int fetch_count;
         
         int clock;
+        
+        int disp_len, disp_rate, disp_count;
 } vidc;
 
 int vidc_getline()
@@ -505,9 +510,9 @@ void pollline()
                 vidc.in_display = 1;
                 if (vidc.displayon)
                 {
-                        arm_dmacount = vidc.fetch_count;
+                        /*arm_dmacount = vidc.fetch_count;
                         arm_dmalatch = vidc.cycles_per_fetch;
-                        arm_dmalength = 5;
+                        arm_dmalength = 5;*/
                 }
                 return;
         }
@@ -1248,6 +1253,8 @@ void pollline()
                         rpclog("Blit\n");
                 }
                 vidc.line=0;
+//                rpclog("%i fetches\n", vidc_fetches);
+                vidc_fetches = 0;
                 if (redrawall)
                 {
                         xx=(!vidc.scanrate && !dblscan)?2:1;
@@ -1272,23 +1279,23 @@ void pollline()
         {
                 if (memc_refreshon)
                 {
-                        arm_dmacount  = 32 << 10;
+                        /*arm_dmacount  = 32 << 10;
                         arm_dmalatch  = 32 << 10;
-                        arm_dmalength =  2;
+                        arm_dmalength =  2;*/
                 }
                 else
                 {
-                        arm_dmacount = 0x7fffffff;
+                        /*arm_dmacount = 0x7fffffff;
                         arm_dmalatch = 0x7fffffff;
-                        arm_dmalength = 0;
+                        arm_dmalength = 0;*/
                 }
         }
         else if (vidc.displayon)
         {
                 vidc.fetch_count = arm_dmacount;
-                arm_dmacount = 0x7fffffff;
+                /*arm_dmacount = 0x7fffffff;
                 arm_dmalatch = 0x7fffffff;
-                arm_dmalength = 0;
+                arm_dmalength = 0;*/
         }
 }
 
@@ -1302,31 +1309,58 @@ int vidcgetcycs()
         {
                 int temp, temp2;
                 int displen = vidc.hdend2 - vidc.hdstart2;
+                int disp_rate;
                 
                 if (displen < 0)
                         displen = 0;
 
                 temp  = displen * 4;
                 temp2 = ((vidc.htot - displen) + 1) * 4;
-
+rpclog("displen %i\n", displen);
                 switch (vidcr[0x38]&3)
                 {
-                        case 0: 
+                        case 0:
+			disp_rate = displen / 64;
                         break;
                         case 1: 
                         temp  = (temp * 2) / 3; 
                         temp2 = (temp2 * 2) / 3;
+                        disp_rate = displen / 32;
                         break;
                         case 2: 
                         temp  = temp / 2; 
                         temp2 = temp2 / 2;
+                        disp_rate = displen / 16;
                         break;
                         case 3: 
                         temp  = temp / 3; 
                         temp2 = temp2 / 3;
+                        disp_rate = displen / 8;
                         break;
                 }
 
+		switch (vidcr[0x38] & 0xc)
+                {
+                        case 0x0:
+			disp_rate = displen / 64;
+                        break;
+                        case 0x4: 
+                        disp_rate = displen / 32;
+                        break;
+                        case 0x8:
+                        disp_rate = displen / 16;
+                        break;
+                        case 0xc:
+                        disp_rate = displen / 8;
+                        break;
+                }
+rpclog("disp_rate %i\n", disp_rate);
+		if (disp_rate)
+			disp_rate = displen / disp_rate;
+		rpclog("disp_rate %i\n", disp_rate);
+		vidc.disp_len = displen;
+		vidc.disp_rate = disp_rate;
+		
                 vidc.cyclesperline_display  = (((temp * speed_mhz) / 8) / 2) << 10;
                 vidc.cyclesperline_blanking = (((temp2 * speed_mhz) / 8) / 2) << 10;
         
@@ -1365,6 +1399,33 @@ int vidcgetcycs()
                 return vidc.cyclesperline_display;
 
         return vidc.cyclesperline_blanking;
+}
+
+int vidc_update_cycles()
+{
+//rpclog("Fetch at %i %i  %i,%i  %i %i %i,%i,%i\n", vidc.in_display, vidc_fetches, (vidc.cyclesperline_display-cycles) >> 10, vidc.line, time,cycles, vidc.disp_count, vidc.disp_rate, vidc.disp_len);
+	if (!vidc.displayon)
+	{
+		vidc_dma_length = memc_refreshon ? mem_speed[0][1] : 0;
+//		rpclog("!displayon %i %i\n", vidc.cyclesperline_display + vidc.cyclesperline_blanking, cycles);
+		return memc_refresh_time;//cycles;
+	}
+	if (vidc.in_display && vidc.disp_count < vidc.disp_len)
+	{
+		if (memc_videodma_enable)
+			vidc_dma_length = mem_speed[0][1] + mem_speed[0][0]*3;
+		else
+			vidc_dma_length = 0;
+		vidc.disp_count += vidc.disp_rate;
+		return vidc.cycles_per_fetch;
+	}
+	else
+	{
+		vidc_dma_length = 0;
+		if (!vidc.in_display)
+			vidc.disp_count = 0;
+		return cycles;
+	}
 }
 
 void vidc_setclock(int clock)

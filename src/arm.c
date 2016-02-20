@@ -2237,7 +2237,7 @@ void execarm(int cycs)
                                         addr=armregs[RN]-countbits(opcode&0xFFFF);
                                         if (!(opcode&0x1000000)) addr+=4;
                                         STMfirst();
-                                        if (opcode&0x200000) armregs[RN]-=countbits(opcode&0xFFFF);
+                                        if (opcode&0x200000 && RN != 15) armregs[RN]-=countbits(opcode&0xFFFF);
                                         STMall()
                                         if (PC & 0xc) { CLOCK_I(); cycles -= cyc_i; }
                                         break;
@@ -2248,7 +2248,7 @@ void execarm(int cycs)
                                         addr=armregs[RN];
                                         if (opcode&0x1000000) addr+=4;
                                         STMfirst();
-                                        if (opcode&0x200000) armregs[RN]+=countbits(opcode&0xFFFF);
+                                        if (opcode&0x200000 && RN != 15) armregs[RN]+=countbits(opcode&0xFFFF);
                                         STMall();
                                         if (PC & 0xc) { CLOCK_I(); cycles -= cyc_i; }
 /*                                        if (opcode == 0xe88b00ff && PC < 0x100000) 
@@ -2261,7 +2261,7 @@ void execarm(int cycs)
                                         addr=armregs[RN]-countbits(opcode&0xFFFF);
                                         if (!(opcode&0x1000000)) addr+=4;
                                         STMfirstS();
-                                        if (opcode&0x200000) armregs[RN]-=countbits(opcode&0xFFFF);
+                                        if (opcode&0x200000 && RN != 15) armregs[RN]-=countbits(opcode&0xFFFF);
                                         STMallS()
                                         if (PC & 0xc) { CLOCK_I(); cycles -= cyc_i; }
                                         break;
@@ -2272,7 +2272,7 @@ void execarm(int cycs)
                                         addr=armregs[RN];
                                         if (opcode&0x1000000) addr+=4;
                                         STMfirstS();
-                                        if (opcode&0x200000) armregs[RN]+=countbits(opcode&0xFFFF);
+                                        if (opcode&0x200000 && RN != 15) armregs[RN]+=countbits(opcode&0xFFFF);
                                         STMallS();
                                         if (PC & 0xc) { CLOCK_I(); cycles -= cyc_i; }
                                         break;
@@ -2284,7 +2284,7 @@ void execarm(int cycs)
                                         addr=armregs[RN]-countbits(opcode&0xFFFF);
 //                                        rpclog("LDMDB %08X\n",addr);
                                         if (!(opcode&0x1000000)) addr+=4;
-                                        if (opcode&0x200000) armregs[RN]-=countbits(opcode&0xFFFF);
+                                        if (opcode&0x200000 && RN != 15) armregs[RN]-=countbits(opcode&0xFFFF);
                                         LDMall();
 					if (memc_is_memc1)
 					{
@@ -2311,7 +2311,7 @@ void execarm(int cycs)
                                         case 0x9B: /*LDMIB !*/
                                         addr=armregs[RN];
                                         if (opcode&0x1000000) addr+=4;
-                                        if (opcode&0x200000) armregs[RN]+=countbits(opcode&0xFFFF);
+                                        if (opcode&0x200000 && RN != 15) armregs[RN]+=countbits(opcode&0xFFFF);
                                         LDMall();
 					if (memc_is_memc1)
 					{
@@ -2338,7 +2338,7 @@ void execarm(int cycs)
                                         case 0x97: /*LDMDB ^!*/
                                         addr=armregs[RN]-countbits(opcode&0xFFFF);
                                         if (!(opcode&0x1000000)) addr+=4;
-                                        if (opcode&0x200000) armregs[RN]-=countbits(opcode&0xFFFF);
+                                        if (opcode&0x200000 && RN != 15) armregs[RN]-=countbits(opcode&0xFFFF);
                                         LDMallS();
 					if (memc_is_memc1)
 					{
@@ -2365,7 +2365,7 @@ void execarm(int cycs)
                                         case 0x9F: /*LDMIB ^!*/
                                         addr=armregs[RN];
                                         if (opcode&0x1000000) addr+=4;
-                                        if (opcode&0x200000) armregs[RN]+=countbits(opcode&0xFFFF);
+                                        if (opcode&0x200000 && RN != 15) armregs[RN]+=countbits(opcode&0xFFFF);
                                         LDMallS();
 					if (memc_is_memc1)
 					{

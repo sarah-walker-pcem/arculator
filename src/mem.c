@@ -29,7 +29,7 @@ int fdcside;
 int realmemsize;
 void initmem(int memsize)
 {
-	int mem_spd_multi = arm_has_cp15 ? ((speed_mhz << 10) / 12) : 1024;
+	int mem_spd_multi = arm_has_cp15 ? ((speed_mhz << 10) / arm_mem_speed) : 1024;
         int c,d=(memsize>>2)-1;
         rpclog("initmem %i\n", memsize);
         realmemsize=memsize;
@@ -63,7 +63,7 @@ void initmem(int memsize)
 
 void mem_setromspeed(int n, int s)
 {
-	int mem_spd_multi = arm_has_cp15 ? ((speed_mhz << 10) / 12) : 1024;
+	int mem_spd_multi = arm_has_cp15 ? ((speed_mhz << 10) / arm_mem_speed) : 1024;
         int c;
 
         mem_romspeed_n = n;
@@ -88,7 +88,7 @@ void mem_setromspeed(int n, int s)
 
 void mem_updatetimings()
 {
-	int mem_spd_multi = arm_has_cp15 ? ((speed_mhz << 10) / 12) : 1024;
+	int mem_spd_multi = arm_has_cp15 ? ((speed_mhz << 10) / arm_mem_speed) : 1024;
         int c;
 
         for (c = 0; c < 0x3000; c++)

@@ -3,7 +3,7 @@ CPP  = g++.exe
 CC   = gcc.exe
 WINDRES = windres.exe
 CFLAGS = -O3 -march=i686 -ffast-math -fomit-frame-pointer -falign-loops -falign-jumps -falign-functions
-OBJ = 82c711.o 82c711_fdc.o arcrom.o arm.o cmos.o config.o cp15.o ddnoise.o disc.o disc_adf.o disc_apd.o disc_fdi.o disc_jfd.o disc_ssd.o eterna.o fdi2raw.o fpa.o hostfs.o ics.o ide.o ioc.o keyboard.o main.o mem.o memc.o podules.o podules-win.o romload.o soundopenal.o st506.o vidc.o wd1770.o win.o arculator.res
+OBJ = 82c711.o 82c711_fdc.o arcrom.o arm.o cmos.o config.o cp15.o ddnoise.o disc.o disc_adf.o disc_apd.o disc_fdi.o disc_jfd.o disc_ssd.o eterna.o fdi2raw.o fpa.o hostfs.o ics.o ide.o ioc.o keyboard.o main.o mem.o memc.o podules.o podules-win.o romload.o soundopenal.o st506.o vidc.o wd1770.o win.o win-config.o arculator.res
 
 LIBS =  -mwindows -lalleg44.dll -lz -lalut -lopenal32 -lgdi32 -lwinmm -lstdc++
 

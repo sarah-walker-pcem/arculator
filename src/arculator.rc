@@ -1,3 +1,4 @@
+#include <windows.h>
 #include "resources.h"
 
 MainMenu MENU DISCARDABLE
@@ -34,37 +35,7 @@ BEGIN
         END
         POPUP "&Machine"
         BEGIN
-                POPUP "&CPU type"
-                BEGIN
-                        MENUITEM "ARM2 (8 MHz) w/MEMC1",      IDM_CPU_ARM2_MEMC1
-                        MENUITEM "ARM2 (8 MHz) w/MEMC1a",     IDM_CPU_ARM2
-                        MENUITEM "ARM250 (12 MHz)",           IDM_CPU_ARM250
-                        MENUITEM "ARM3 (25 MHz)",             IDM_CPU_ARM3
-                        MENUITEM "ARM3 (33 MHz)",             IDM_CPU_ARM3_33
-                        MENUITEM "ARM3 (66 MHz)",             IDM_CPU_ARM3_66
-                        MENUITEM "ARM3 (25 MHz) w/FPA",       IDM_CPU_ARM3_FPA
-                        MENUITEM "ARM3 (33 MHz) w/FPA",       IDM_CPU_ARM3_33_FPA
-                        MENUITEM "ARM3 (66 MHz) w/FPA",       IDM_CPU_ARM3_66_FPA
-                END
-                POPUP "&Memory"
-                BEGIN
-                        MENUITEM "512 kb", IDM_MEMSIZE_512K
-                        MENUITEM "1 Mb",   IDM_MEMSIZE_1M
-                        MENUITEM "2 Mb",   IDM_MEMSIZE_2M
-                        MENUITEM "4 Mb",   IDM_MEMSIZE_4M
-                        MENUITEM "8 Mb",   IDM_MEMSIZE_8M
-                        MENUITEM "16 Mb",  IDM_MEMSIZE_16M
-                END
-                POPUP "&Operating System"
-                BEGIN
-                        MENUITEM "&Arthur",              IDM_ROM_ARTHUR
-                        MENUITEM "RISC OS &2",           IDM_ROM_RO2
-                        MENUITEM "&RISC OS 3 (old FDC)", IDM_ROM_RO3_OLD
-                        MENUITEM "RISC OS &3 (new FDC)", IDM_ROM_RO3_NEW
-                        MENUITEM "&Ertictac/Tactic",     IDM_ROM_TACTIC
-                        MENUITEM "&Poizone",             IDM_ROM_POIZONE
-                        MENUITEM "&White Tiger",         IDM_ROM_WTIGER
-                END
+                MENUITEM "&Configure...", IDM_MACHINE_CONFIGURE
                 POPUP "&Monitor"
                 BEGIN
                         MENUITEM "&Normal",        IDM_MONITOR_NORMAL
@@ -85,4 +56,29 @@ BEGIN
                         MENUITEM "&Line doubling", IDM_BLIT_SCALE
                 END
         END
+END
+
+ConfigureDlg DIALOGEX 0, 0, 232, 200
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Configure Arculator"
+FONT 8, "MS Sans Serif"
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,64,170,50,14, WS_TABSTOP
+    PUSHBUTTON      "Cancel",IDCANCEL,128,170,50,14, WS_TABSTOP
+    
+    LTEXT           "Preset :",IDC_STATIC,15,16,40,10
+    COMBOBOX        IDC_COMBO_PRESET,62,16,157,120,CBS_DROPDOWN | WS_VSCROLL | WS_TABSTOP    
+
+    LTEXT           "CPU :",IDC_STATIC,15,48,34,10
+    LTEXT           "FPU :",IDC_STATIC,15,68,34,10
+    LTEXT           "Memory :",IDC_STATIC,15,88,34,10
+    LTEXT           "MEMC :",IDC_STATIC,15,108,34,10    
+    LTEXT           "IO :",IDC_STATIC,15,128,34,10
+    LTEXT           "OS :",IDC_STATIC,15,148,34,10
+    COMBOBOX        IDC_COMBO_CPU,62,48,157,120,CBS_DROPDOWN | WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_COMBO_FPU,62,68,157,120,CBS_DROPDOWN | WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_COMBO_MEMORY,62,88,157,120,CBS_DROPDOWN | WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_COMBO_MEMC,62,108,157,120,CBS_DROPDOWN | WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_COMBO_IO,62,128,157,120,CBS_DROPDOWN | WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_COMBO_OS,62,148,157,120,CBS_DROPDOWN | WS_VSCROLL | WS_TABSTOP
 END

@@ -49,8 +49,8 @@ void resetst506()
         st506.p=st506.wp=0;
         st506.drq=0;
         st506.first=0;
-//        if (shdfile[0]) fclose(shdfile[0]);
-	append_filename(fn,exname,"HardImage1",511);
+        if (shdfile[0]) fclose(shdfile[0]);
+        append_filename(fn,exname,"HardImage1",511);
         shdfile[0]=fopen(fn,"rb+");
         if (!shdfile[0])
         {
@@ -59,7 +59,7 @@ void resetst506()
                 fclose(shdfile[0]);
                 shdfile[0]=fopen(fn,"rb+");
         }
-//        if (shdfile[1]) fclose(shdfile[1]);
+        if (shdfile[1]) fclose(shdfile[1]);
 	append_filename(fn,exname,"HardImage2",511);
         shdfile[1]=fopen(fn,"rb+");
         if (!shdfile[1])

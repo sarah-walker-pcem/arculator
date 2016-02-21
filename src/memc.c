@@ -15,6 +15,7 @@ int memc_videodma_enable;
 int memc_refreshon;
 int memc_is_memc1 = 1;
 int memc_refresh_time;
+int memc_type;
 
 int sound_poll_time;
 

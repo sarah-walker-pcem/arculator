@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include "arc.h"
 #include "arm.h"
+#include "memc.h"
 
 void loadconfig()
 {
@@ -17,6 +18,7 @@ void loadconfig()
         else                     fullborders=1;
         noborders=get_config_int(NULL,"no_borders",0);
         arm_cpu_type = get_config_int(NULL, "cpu_type", 0);
+        memc_type = get_config_int(NULL, "memc_type", 0);
         p=get_config_string(NULL,"hires",NULL);
         if (!p || strcmp(p,"1")) hires=0;
         else                     hires=1;
@@ -54,6 +56,7 @@ void saveconfig()
         sprintf(s,"%i",memsize);
         set_config_string(NULL,"mem_size",s);
         set_config_int(NULL, "cpu_type", arm_cpu_type);
+        set_config_int(NULL, "memc_type", memc_type);
         sprintf(s,"%i",fpaena);
         set_config_string(NULL,"fpa",s);
         sprintf(s,"%i",hires);

@@ -18,6 +18,7 @@ HANDLE mainthreadh;
 /*  Make the class name into a global variable  */
 char szClassName[ ] = "WindowsApp";
 HWND ghwnd;
+HINSTANCE hinstance;
 
 CRITICAL_SECTION cs;
 
@@ -176,6 +177,8 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
         MSG messages;            /* Here messages to the application are saved */
         WNDCLASSEX wincl;        /* Data structure for the windowclass */
 
+        hinstance = hThisInstance;
+        
         /* The Window structure */
         wincl.hInstance = hThisInstance;
         wincl.lpszClassName = szClassName;
@@ -462,72 +465,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                         if (limitspeed) CheckMenuItem(hmenu,IDM_OPTIONS_LIMIT,MF_CHECKED);
                         else            CheckMenuItem(hmenu,IDM_OPTIONS_LIMIT,MF_UNCHECKED);
                         return 0;
-                        case IDM_MEMSIZE_512K:
-                        startblit();
-                        Sleep(200);
-                        resizemem(512);
-                        resetarm();
-                        resetmouse();
-                        clearmemmenu();
-                        CheckMenuItem(hmenu,IDM_MEMSIZE_512K,MF_CHECKED);
-                        memsize=512;
-                        endblit();
-                        return 0;
-                        case IDM_MEMSIZE_1M:
-                        startblit();
-                        Sleep(200);
-                        resizemem(1024);
-                        resetarm();
-                        resetmouse();
-                        clearmemmenu();
-                        CheckMenuItem(hmenu,IDM_MEMSIZE_1M,MF_CHECKED);
-                        memsize=1024;
-                        endblit();
-                        return 0;
-                        case IDM_MEMSIZE_2M:
-                        startblit();
-                        Sleep(200);
-                        resizemem(2048);
-                        resetarm();
-                        resetmouse();
-                        clearmemmenu();
-                        CheckMenuItem(hmenu,IDM_MEMSIZE_2M,MF_CHECKED);
-                        memsize=2048;
-                        endblit();
-                        return 0;
-                        case IDM_MEMSIZE_4M:
-                        startblit();
-                        Sleep(200);
-                        resizemem(4096);
-                        resetarm();
-                        resetmouse();
-                        clearmemmenu();
-                        CheckMenuItem(hmenu,IDM_MEMSIZE_4M,MF_CHECKED);
-                        memsize=4096;
-                        endblit();
-                        return 0;
-                        case IDM_MEMSIZE_8M:
-                        startblit();
-                        Sleep(200);
-                        resizemem(8192);
-                        resetarm();
-                        resetmouse();
-                        clearmemmenu();
-                        CheckMenuItem(hmenu,IDM_MEMSIZE_8M,MF_CHECKED);
-                        memsize=8192;
-                        endblit();
-                        return 0;
-                        case IDM_MEMSIZE_16M:
-                        startblit();
-                        Sleep(200);
-                        resizemem(16384);
-                        resetarm();
-                        resetmouse();
-                        clearmemmenu();
-                        CheckMenuItem(hmenu,IDM_MEMSIZE_16M,MF_CHECKED);
-                        memsize=16384;
-                        endblit();
-                        return 0;
+
                         case IDM_VIDEO_FULLSCR:
                         fullscreen=1;
                         if (firstfull)
@@ -593,60 +531,6 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                         CheckMenuItem(hmenu,IDM_BLIT_HSCALE,MF_CHECKED);
                         return 0;
 
-                        case IDM_CPU_ARM2_MEMC1:
-                        case IDM_CPU_ARM2:
-                        case IDM_CPU_ARM250:
-                        case IDM_CPU_ARM3:
-                        case IDM_CPU_ARM3_33:
-                        case IDM_CPU_ARM3_66:
-                        case IDM_CPU_ARM3_FPA:
-                        case IDM_CPU_ARM3_33_FPA:
-                        case IDM_CPU_ARM3_66_FPA:
-                        startblit();
-                        Sleep(200);
-                        endblit();
-                        CheckMenuItem(hmenu, IDM_CPU_ARM2_MEMC1 + arm_cpu_type, MF_UNCHECKED);
-                        arm_cpu_type = LOWORD(wParam) - IDM_CPU_ARM2_MEMC1;
-                        arc_set_cpu(arm_cpu_type);
-                        resetarm();
-                        memset(ram,0,memsize*1024);
-                        resetmouse();
-                        ioc_reset();
-                        keyboard_init();
-                        CheckMenuItem(hmenu, IDM_CPU_ARM2_MEMC1 + arm_cpu_type, MF_CHECKED);
-                        return 0;
-
-                        case IDM_ROM_ARTHUR: case IDM_ROM_RO2: case IDM_ROM_RO3_OLD:
-                        case IDM_ROM_RO3_NEW: case IDM_ROM_TACTIC: case IDM_ROM_POIZONE:
-                        case IDM_ROM_WTIGER:
-                        startblit();
-                        Sleep(200);
-                        savecmos();
-                        romset=LOWORD(wParam)-IDM_ROM_ARTHUR;
-                        if (!romsavailable[romset])
-                        {
-//                                rpclog("romset %i not available!\n");
-                                return 0;
-                        }
-                        fdctype=(LOWORD(wParam)==IDM_ROM_RO3_NEW)?1:0;
-                        if ((LOWORD(wParam)<IDM_ROM_RO3_OLD && memsize>4096) || LOWORD(wParam)==IDM_ROM_WTIGER)
-                        {
-                                memsize=4096; /*Arthur and RO2 only support max of 4mb RAM*/
-                                resizemem(4096);
-                        }
-                        loadrom();
-                        loadcmos();
-                        resetarm();
-                        memset(ram,0,memsize*1024);
-                        resetmouse();
-                        ioc_reset();
-                        keyboard_init();
-                        for (c=0;c<6;c++)
-                            CheckMenuItem(hmenu,IDM_ROM_ARTHUR+c, MF_UNCHECKED);
-                        CheckMenuItem(hmenu,LOWORD(wParam),MF_CHECKED);
-                        wd1770_reset();
-                        endblit();
-                        return 0;
                         case IDM_MONITOR_NORMAL:
                         hires=0;
                         CheckMenuItem(hmenu,IDM_MONITOR_NORMAL,MF_CHECKED);
@@ -660,6 +544,13 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                         CheckMenuItem(hmenu,IDM_MONITOR_NORMAL,MF_UNCHECKED);
                         CheckMenuItem(hmenu,IDM_MONITOR_HIRES, MF_CHECKED);
                         reinitvideo();
+                        return 0;
+                        
+                        case IDM_MACHINE_CONFIGURE:
+                        startblit();
+                        Sleep(200);
+                        config_open(hwnd);
+                        endblit();
                         return 0;
                 }
                 break;

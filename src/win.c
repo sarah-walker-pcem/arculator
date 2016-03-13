@@ -53,17 +53,13 @@ void error(char *format, ...)
    MessageBox(NULL,buf,"Arculator error",MB_OK);
 }
 
-
+static int winsizex, winsizey;
+static int win_doresize = 0;
 
 void updatewindowsize(int x, int y)
 {
-        RECT r;
-//        rpclog("Window size now %i %i\n",x,y);
-        GetWindowRect(ghwnd,&r);
-        MoveWindow(ghwnd,r.left,r.top,
-                     x+(GetSystemMetrics(SM_CXFIXEDFRAME)*2),
-                     y+(GetSystemMetrics(SM_CYFIXEDFRAME)*2)+GetSystemMetrics(SM_CYMENUSIZE)+GetSystemMetrics(SM_CYCAPTION)+2,
-                     TRUE);
+        winsizex = x; winsizey = y;
+        win_doresize = 1;
 }
 
 void clearmemmenu()
@@ -153,6 +149,17 @@ void mainthread(LPVOID param)
                         {
                                 Sleep(1);
                         }
+
+                if (!fullscreen && win_doresize)
+                {
+                        RECT r;
+                        GetWindowRect(ghwnd, &r);
+                        MoveWindow(ghwnd, r.left, r.top,
+                                winsizex + (GetSystemMetrics(SM_CXFIXEDFRAME) * 2),
+                                winsizey + (GetSystemMetrics(SM_CYFIXEDFRAME) * 2) + GetSystemMetrics(SM_CYMENUSIZE) + GetSystemMetrics(SM_CYCAPTION) + 1,
+                                TRUE);
+                        win_doresize = 0;
+                }
 
                 if (updatemips)
                 {
@@ -532,18 +539,24 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                         return 0;
 
                         case IDM_MONITOR_NORMAL:
+                        startblit();
+                        Sleep(200);
                         hires=0;
                         CheckMenuItem(hmenu,IDM_MONITOR_NORMAL,MF_CHECKED);
                         CheckMenuItem(hmenu,IDM_MONITOR_HIRES, MF_UNCHECKED);
                         reinitvideo();
                         if (fullborders) updatewindowsize(800,600);
                         else             updatewindowsize(672,544);
+                        endblit();
                         return 0;
                         case IDM_MONITOR_HIRES:
+                        startblit();
+                        Sleep(200);
                         hires=1;
                         CheckMenuItem(hmenu,IDM_MONITOR_NORMAL,MF_UNCHECKED);
                         CheckMenuItem(hmenu,IDM_MONITOR_HIRES, MF_CHECKED);
                         reinitvideo();
+                        endblit();
                         return 0;
                         
                         case IDM_MACHINE_CONFIGURE:

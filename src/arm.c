@@ -1950,12 +1950,12 @@ void execarm(int cycs)
                                         addr=GETADDR(RN);
                                         if (opcode&0x2000000) addr2=shiftmem(opcode);
                                         else                  addr2=opcode&0xFFF;
+                                        templ=memmode; memmode=0;
                                         if (RD==15) { writememl(addr,armregs[RD]+4); }
                                         else        { writememl(addr,armregs[RD]); }
-                                        templ=memmode; memmode=0;
+                                        memmode=templ;
                                         if (databort) break;
                                         cache_write_timing(addr, 1);
-                                        memmode=templ;
                                         if (opcode&0x800000) armregs[RN]+=addr2;
                                         else                 armregs[RN]-=addr2;
 //                                        cycles -= mem_speed[(addr >> 12) & 0x3fff][1]; /*2N*/

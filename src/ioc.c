@@ -250,7 +250,7 @@ void ioc_reset()
         ioc.irqa = ioc.mska = 0;//x10;
         ioc.irqb = ioc.mskb = 0;
         ioc.fiq  = ioc.mskf = 0;
-//        ioc.irqa=0x10;
+        ioc.irqa=0x10;
         ioc.irqb = 2;
 }
 

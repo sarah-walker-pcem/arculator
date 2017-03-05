@@ -139,6 +139,8 @@ void establishromavailability()
         exit(-1);
 }
 
+void arc_set_cpu(int cpu, int memc);
+
 void arc_init()
 {
         char *p;
@@ -225,7 +227,7 @@ rpclog("mem_size = %i %s cfg %s\n", memsize, p, fn);
         if (romset==3) fdctype=1;
         else	       fdctype=0;
 
-        arc_set_cpu(arm_cpu_type);
+        arc_set_cpu(arm_cpu_type, memc_type);
 
         resetst506();
         resetics();
@@ -236,6 +238,24 @@ rpclog("mem_size = %i %s cfg %s\n", memsize, p, fn);
 
 int speed_mhz;
 
+void arc_reset()
+{
+        loadrom();
+        loadcmos();
+        resizemem(memsize);
+        arc_set_cpu(arm_cpu_type, memc_type);
+        resetarm();
+        memset(ram,0,memsize*1024);
+        resetmouse();
+        ioc_reset();
+        keyboard_init();
+        wd1770_reset();
+        c82c711_fdc_reset();
+        resetst506();
+        resetics();
+        podules_reset();
+}
+
 void arc_setspeed(int mhz)
 {
         rpclog("arc_setspeed : %i MHz\n", mhz);
@@ -244,40 +264,55 @@ void arc_setspeed(int mhz)
         disc_poll_time = 2 * mhz;
         sound_poll_time = 4 * mhz;
         keyboard_poll_time = 10000 * mhz;
+	memc_refresh_time = ((32 << 10) * speed_mhz) / 8;
+        rpclog("memc_refresh_time=%i\n", memc_refresh_time);
 }
 
 static struct
 {
         char name[50];
-        int cpu_speed;
         int mem_speed;
-        int has_memc1;
-        int has_swp;
-        int has_cp15;
-        int has_fpa;
-} arc_cpus[] =
+        int is_memc1;
+} arc_memcs[] =
 {
-        {"ARM2 w/MEMC1",         8,  8, 1, 0, 0, 0},
-        {"ARM2",                 8,  8, 0, 0, 0, 0},
-        {"ARM250",              12, 12, 0, 1, 0, 0},
-        {"ARM3 (25 MHz)",       25, 12, 0, 1, 1, 0},
-        {"ARM3 (33 MHz)",       33, 12, 0, 1, 1, 0},
-        {"ARM3 (66 MHz)",       66, 12, 0, 1, 1, 0},
-        {"ARM3 w/FPA (25 MHz)", 25, 12, 0, 1, 1, 1},
-        {"ARM3 w/FPA (33 MHz)", 33, 12, 0, 1, 1, 1},
-        {"ARM3 w/FPA (66 MHz)", 66, 12, 0, 1, 1, 1}
+        {"MEMC1",             8, 1},
+        {"MEMC1A at 8 MHz",   8, 0},
+        {"MEMC1A at 12 MHz", 12, 0},
+        {"MEMC1A at 16 MHz", 16, 0}
 };
 
-void arc_set_cpu(int cpu)
+static struct
+{
+        char name[50];
+        int cpu_speed;
+        int has_swp;
+        int has_cp15;
+} arc_cpus[] =
+{
+        {"ARM2",          0,  0, 0},
+        {"ARM250",        0,  1, 0},
+        {"ARM3 (20 MHz)", 20, 1, 1},
+        {"ARM3 (25 MHz)", 25, 1, 1},
+        {"ARM3 (26 MHz)", 26, 1, 1},
+        {"ARM3 (30 MHz)", 30, 1, 1},
+        {"ARM3 (33 MHz)", 33, 1, 1},
+        {"ARM3 (35 MHz)", 35, 1, 1},
+};
+
+void arc_set_cpu(int cpu, int memc)
 {
         rpclog("arc_setcpu : setting CPU to %s\n", arc_cpus[cpu].name);
-        arm_cpu_speed = arc_cpus[cpu].cpu_speed;
-        arm_mem_speed = arc_cpus[cpu].mem_speed;
-        memc_is_memc1 = arc_cpus[cpu].has_memc1;
+        arm_mem_speed = arc_memcs[memc].mem_speed;
+        memc_is_memc1 = arc_memcs[memc].is_memc1;
+        rpclog("setting memc to %i %i %i\n", memc, memc_is_memc1, arm_mem_speed);
+        if (arc_cpus[cpu].cpu_speed)
+                arm_cpu_speed = arc_cpus[cpu].cpu_speed;
+        else
+                arm_cpu_speed = arm_mem_speed;
         arm_has_swp   = arc_cpus[cpu].has_swp;
         arm_has_cp15  = arc_cpus[cpu].has_cp15;
-        fpaena        = arc_cpus[cpu].has_fpa;
-        arc_setspeed(arm_mem_speed);
+        arc_setspeed(arm_cpu_speed);
+        mem_updatetimings();
 }
 
 static int ddnoise_frames = 0;
@@ -316,6 +351,11 @@ void arc_close()
         rpclog("arc_close done\n");
 }
 
+#ifndef WIN32
+void updatewindowsize(int x, int y)
+{
+}
+
 int main(int argc, char *argv[])
 {
     arc_init();
@@ -324,4 +364,4 @@ int main(int argc, char *argv[])
     } while (1);
     arc_close();
 }
-
+#endif

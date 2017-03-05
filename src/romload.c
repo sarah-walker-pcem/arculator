@@ -50,6 +50,7 @@ int loadpoizone()
         FILE *f[4];
         int addr=0;
         uint8_t *romb=rom;
+        return -1;
         for (c=0;c<24;c+=4)
         {
                 if (c==12 || c==16)

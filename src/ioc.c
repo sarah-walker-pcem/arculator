@@ -79,7 +79,7 @@ void ioc_write(uint32_t addr, uint32_t v)
                 ioc.timerl[0] = (ioc.timerl[0] & 0x00ff) | (v << 8);
                 return;
                 case 0x48:
-                ioc.timerc[0] = (ioc.timerl[0] + 2) * ((speed_mhz << 10) >> 1);
+                ioc.timerc[0] = (ioc.timerl[0] + 1) * ((speed_mhz << 10) >> 1);
 //                rpclog("T0 count = %08X %i\n", ioc.timerc[0], ioc.timerl[0]);
                 return;
                 case 0x4C:
@@ -93,7 +93,7 @@ void ioc_write(uint32_t addr, uint32_t v)
                 ioc.timerl[1] = (ioc.timerl[1] & 0x00ff) | (v << 8);
                 return;
                 case 0x58:
-                ioc.timerc[1] = (ioc.timerl[1] + 2) * ((speed_mhz << 10) >> 1);
+                ioc.timerc[1] = (ioc.timerl[1] + 1) * ((speed_mhz << 10) >> 1);
                 return;
                 case 0x5C:
                 ioc.timerr[1] = ioc.timerc[1] / ((speed_mhz << 10) >> 1);
@@ -227,7 +227,7 @@ void ioc_updatetimers()
                 while (ioc.timerc[0] < 0)
                 {
                         if (ioc.timerl[0])
-                                ioc.timerc[0] += ioc.timerl[0] * ((speed_mhz << 10) >> 1);
+                                ioc.timerc[0] += (ioc.timerl[0] + 1) * ((speed_mhz << 10) >> 1);
                         else
                                 ioc.timerc[0] += 0x10000 * ((speed_mhz << 10) >> 1);
                 }
@@ -238,7 +238,7 @@ void ioc_updatetimers()
                 while (ioc.timerc[1] < 0)
                 {
                         if (ioc.timerl[1])
-                                ioc.timerc[1] += ioc.timerl[1] * ((speed_mhz << 10) >> 1);
+                                ioc.timerc[1] += (ioc.timerl[1] + 1) * ((speed_mhz << 10) >> 1);
                         else
                                 ioc.timerc[1] += 0x10000 * ((speed_mhz << 10) >> 1);
                 }
@@ -250,7 +250,7 @@ void ioc_reset()
         ioc.irqa = ioc.mska = 0;//x10;
         ioc.irqb = ioc.mskb = 0;
         ioc.fiq  = ioc.mskf = 0;
-//        ioc.irqa=0x10;
+        ioc.irqa=0x10;
         ioc.irqb = 2;
 }
 

@@ -13,13 +13,15 @@
 #include "sound.h"
 #include "vidc.h"
 
+int vidc_dma_length;
+extern int vidc_fetches;
+extern int cycles;
 int vidc_framecount = 0;
 int vidc_displayon = 0;
 int blitcount=0;
 /*b - memory buffer
   vbuf - DirectX buffer (used for hardware blitting)*/
 BITMAP *buffer, *vbuf;
-int depth32;
 
 int redrawall;
 int flyback;
@@ -63,6 +65,12 @@ struct
         int fetch_count;
         
         int clock;
+        
+        int disp_len, disp_rate, disp_count;
+        
+        int resync;
+        
+        int x_min, x_max, x_mid;
 } vidc;
 
 int vidc_getline()
@@ -80,20 +88,10 @@ void redolookup()
         {
                 for (c=0;c<16;c++)
                 {
-                        if (depth32)
-                        {
-                                monolook[c][0]=(vidcr[c]&1)?0xFFFFFF:0x000000;
-                                monolook[c][1]=(vidcr[c]&2)?0xFFFFFF:0x000000;
-                                monolook[c][2]=(vidcr[c]&4)?0xFFFFFF:0x000000;
-                                monolook[c][3]=(vidcr[c]&8)?0xFFFFFF:0x000000;
-                        }
-                        else
-                        {
-                                monolook[c][0]=(vidcr[c]&1)?0xFFFF:0x0000;
-                                monolook[c][0]|=(vidcr[c]&2)?0xFFFF0000:0x00000000;
-                                monolook[c][1]=(vidcr[c]&4)?0xFFFF:0x0000;
-                                monolook[c][1]|=(vidcr[c]&8)?0xFFFF0000:0x00000000;
-                        }
+                        monolook[c][0]=(vidcr[c]&1)?0xFFFFFF:0x000000;
+                        monolook[c][1]=(vidcr[c]&2)?0xFFFFFF:0x000000;
+                        monolook[c][2]=(vidcr[c]&4)?0xFFFFFF:0x000000;
+                        monolook[c][3]=(vidcr[c]&8)?0xFFFFFF:0x000000;
                 }
         }
         switch (vidcr[0x38]&0xF)
@@ -225,25 +223,41 @@ void writevidc(uint32_t v)
         vidcr[v>>26]=v;
         if ((v>>24)==0x80)
         {
-                vidc.htot=(v&0xFFFFFF)>>14;
-                vidc_redovideotiming();
+                if (vidc.htot != ((v >> 14) & 0x3FF))
+                {
+                        vidc.resync = 2;
+                        vidc.htot = (v >> 14) & 0x3FF;
+                        vidc_redovideotiming();
+                }
         }
         if ((v>>24)==0xA0)
         {
-                vidc.vtot=((v&0xFFFFFF)>>14)+1;
-                if (vidc.vtot>400)
-                   vidc.scanrate=1;
-                else
-                   vidc.scanrate=0;
-                if ((vidc.scanrate!=oldscanrate) || (vidc.vtot!=oldvtot))
+                if (vidc.vtot != ((v >> 14) & 0x3FF) + 1)
                 {
-                        clear(screen);
-                        clear(vbuf);
+                        vidc.resync = 2;
+                        vidc.vtot = ((v >> 14) & 0x3FF) + 1;
+
+                        if (vidc.vtot>400)
+                                vidc.scanrate=1;
+                        else
+                                vidc.scanrate=0;
+                        if ((vidc.scanrate!=oldscanrate) || (vidc.vtot!=oldvtot))
+                        {
+                                clear(screen);
+                                clear(vbuf);
 //                        clear(b);
-                        redrawall=(fullscreen)?4:2;
+                                redrawall=(fullscreen)?4:2;
+                        }
                 }
         }
-        if ((v>>24)==0x84) vidc.sync=(v&0xFFFFFF);
+        if ((v>>24)==0x84)
+        {
+                if (vidc.sync != ((v >> 14) & 0x3FF))
+                {
+                        vidc.resync = 2;
+                        vidc.sync = (v >> 14) & 0x3FF;
+                }
+        }
         if ((v>>24)==0x88) vidc.hbstart=(((v&0xFFFFFF)>>14)<<1)+1;
         if ((v>>24)==0x8C)
         {
@@ -260,7 +274,14 @@ void writevidc(uint32_t v)
         if ((v>>24)==0x94) vidc.hbend=(((v&0xFFFFFF)>>14)<<1)+1;
         if ((v>>24)==0x98) { vidc.cx=((v&0xFFE000)>>13)+6; vidc.cxh=((v&0xFFF800)>>11)+24; }
         if ((v>>24)==0x9C) vidc.inter=(v&0xFFFFFF);
-        if ((v>>24)==0xA4) vidc.vsync=((v&0xFFFFFF)>>14)+1;
+        if ((v>>24)==0xA4)
+        {
+                if (vidc.vsync != ((v >> 14) & 0x3FF) + 1)
+                {
+                        vidc.resync = 2;
+                        vidc.vsync = ((v >> 14) & 0x3FF) + 1;
+                }
+        }
         if ((v>>24)==0xA8)
         {
                 vidc.vbstart=((v&0xFFFFFF)>>14)+1;
@@ -317,22 +338,9 @@ void initvid()
                 exit(-1);
         }
         #ifdef WIN32
-        if (depth==16 || depth==15)
-        {
-                set_color_depth(16);
-                if (set_gfx_mode(GFX_AUTODETECT_WINDOWED,1152,864,0,0))
-                {
-                        set_color_depth(15);
-                        depth=15;
-                        set_gfx_mode(GFX_AUTODETECT_WINDOWED,1152,864,0,0);
-                }
-        }
-        else if (depth==32)
-        {
-                set_color_depth(32);
-                set_gfx_mode(GFX_AUTODETECT_WINDOWED,1152,864,0,0);
-        }
-        vbuf = create_video_bitmap(1536,1536);
+        set_color_depth(depth);
+        set_gfx_mode(GFX_AUTODETECT_WINDOWED,1152,1152,0,0);
+        vbuf = create_video_bitmap(2048, 2048);
         #else
         if (depth==16 || depth==15)
         {
@@ -349,16 +357,12 @@ void initvid()
                 set_color_depth(32);
                 set_gfx_mode(GFX_AUTODETECT_WINDOWED,800,600,0,0);
         }
-        vbuf = create_bitmap(1536,1536);
+        vbuf = create_video_bitmap(2048, 2048);
         #endif
-        depth32=(depth==32)?16:0;
-//        if (depth!=15) set_color_depth(16);
-//        else           set_color_depth(15);
-//        set_color_depth(8);
-        buffer = create_bitmap(1024, 1024);
+        set_color_depth(32);
+        buffer = create_bitmap(2048, 2048);
         vidc.line = 0;
         vidc.clock = 24000;
-//        clear(b);
         clear(vbuf);
 }
 
@@ -392,73 +396,29 @@ void closevideo()
 
 void reinitvideo()
 {
-//        int c;
         destroy_bitmap(vbuf);
-//        destroy_bitmap(b);
 #ifdef WIN32
         if (fullscreen)
         {
-                set_color_depth(16);
+                set_color_depth(32);
                 if (hires)
-                {
-                        if (set_gfx_mode(GFX_AUTODETECT_FULLSCREEN,1152,896,0,0))
-                        {
-                                set_color_depth(15);
-                                if (set_gfx_mode(GFX_AUTODETECT_FULLSCREEN,1152,896,0,0))
-                                {
-                                        if (set_gfx_mode(GFX_AUTODETECT_FULLSCREEN,1280,960,0,0))
-                                        {
-                                                set_color_depth(16);
-                                                if (set_gfx_mode(GFX_AUTODETECT_FULLSCREEN,1280,960,0,0))
-                                                {
-                                                        if (set_gfx_mode(GFX_AUTODETECT_FULLSCREEN,1280,1024,0,0))
-                                                        {
-                                                                set_color_depth(15);
-                                                                set_gfx_mode(GFX_AUTODETECT_FULLSCREEN,1280,1024,0,0);
-                                                        }
-                                                }
-                                        }
-                                }
-                        }
-                }
+                        set_gfx_mode(GFX_AUTODETECT_FULLSCREEN,1152,896,0,0);
                 else
-                {
-                        if (set_gfx_mode(GFX_AUTODETECT_FULLSCREEN,800,600,0,0))
-                        {
-                                set_color_depth(15);
-                                set_gfx_mode(GFX_AUTODETECT_FULLSCREEN,800,600,0,0);
-                        }
-                }
-                depth32=0;
+                        set_gfx_mode(GFX_AUTODETECT_FULLSCREEN,800,600,0,0);
         }
         else
         {
-                if (deskdepth==16 || deskdepth==15)
-                {
-                        set_color_depth(16);
-                        if (set_gfx_mode(GFX_AUTODETECT_WINDOWED,1152,896,0,0))
-                        {
-                                set_color_depth(15);
-                                set_gfx_mode(GFX_AUTODETECT_WINDOWED,1152,896,0,0);
-                        }
-                }
-                else if (deskdepth==32)
-                {
-                        set_color_depth(32);
-                        set_gfx_mode(GFX_AUTODETECT_WINDOWED,1152,896,0,0);
-                }
-                depth32=(deskdepth==32)?16:0;
+                set_color_depth(deskdepth);
+                set_gfx_mode(GFX_AUTODETECT_WINDOWED,1152,1152,0,0);
         }
-//        b=create_bitmap(1024,1024);
-        vbuf = create_video_bitmap(1152,1536);
+        vbuf = create_video_bitmap(2048, 2048);
 #else
         set_gfx_mode(GFX_AUTODETECT_WINDOWED,800,600,0,0);
-        vbuf = create_bitmap(1536,1536);
+        vbuf = create_video_bitmap(2048, 2048);
 #endif
+        set_color_depth(32);
         setredrawall();
         redopalette();
-//        clear(vbuf);
-//        clear(b);
 }
 
 int getvidcline()
@@ -473,16 +433,8 @@ int getvidcwidth()
 void archline(uint8_t *bp, int x1, int y, int x2, uint32_t col)
 {
         int x;
-        if (depth32)
-        {
-                for (x=x1;x<=x2;x++)
-                    ((uint32_t *)bp)[x]=col;
-        }
-        else
-        {
-                for (x=x1;x<=x2;x++)
-                    ((uint16_t *)bp)[x]=col;
-        }
+        for (x=x1;x<=x2;x++)
+                ((uint32_t *)bp)[x]=col;
 }
 
 void pollline()
@@ -490,7 +442,7 @@ void pollline()
         int c;
         int mode;
 //        int col=0;
-        int x,xx,xl;//,y,c;
+        int x,xx;
         uint32_t temp;
         uint32_t *p;
         uint8_t *bp;
@@ -505,9 +457,9 @@ void pollline()
                 vidc.in_display = 1;
                 if (vidc.displayon)
                 {
-                        arm_dmacount = vidc.fetch_count;
+                        /*arm_dmacount = vidc.fetch_count;
                         arm_dmalatch = vidc.cycles_per_fetch;
-                        arm_dmalength = 5;
+                        arm_dmalength = 5;*/
                 }
                 return;
         }
@@ -591,271 +543,150 @@ void pollline()
                         if (hires) xoffset2=0;
                         if (vidc.displayon)
                         {
-                                switch (mode|depth32)
+                                int x_min, x_max;
+
+                                switch (mode)
                                 {
+                                        case 0: /*Mode 4*/
+                                        case 1:
+                                        if (vidc.hdstart*2 < vidc.x_min)
+                                                vidc.x_min = vidc.hdstart*2;
+                                        if (vidc.hdend*2 > vidc.x_max)
+                                                vidc.x_max = vidc.hdend*2;
+                                        for (x = vidc.hdstart*2; x < vidc.hdend*2; x += 32)
+                                        {
+                                                temp = ram[vidc.addr++];
+                                                if (x < 2048)
+                                                {
+                                                        for (xx = 0; xx < 64; xx += 2)
+                                                                ((uint32_t *)bp)[x+xx] = ((uint32_t *)bp)[x+xx+1] = vidc.pal[(temp>>xx)&1];
+                                                }
+                                                if (vidc.addr == vend + 4)
+                                                        vidc.addr = vstart;
+                                        }
+                                        break;
                                         case 2: /*Mode 0*/
                                         case 3: /*Mode 25*/
-                                        xl=xxl=(vidc.hdend-vidc.hdstart)+xoffset2;
-                                        x=xxh=xoffset2;
-                                        p=(uint32_t *)(bp+(x<<1));
-                                        if (hires)
+                                        if ((hires ? vidc.hdstart*4 : vidc.hdstart) < vidc.x_min)
+                                                vidc.x_min = hires ? vidc.hdstart*4 : vidc.hdstart;
+                                        if ((hires ? vidc.hdend*4 : vidc.hdend) > vidc.x_max)
+                                                vidc.x_max = hires ? vidc.hdend*4 : vidc.hdend;
+                                        for (x = (hires ? vidc.hdstart*4 : vidc.hdstart); x < (hires ? vidc.hdend*4 : vidc.hdend); x += 32)
                                         {
-                                                p=(uint32_t *)(bp+(x>>1));
-                                                x<<=2;
-                                                xl<<=2;
-                                                xxl<<=2;
-                                                xxh<<=2;
-                                        }
-                                        for (;x<xl;x+=32)
-                                        {
-                                                temp=ram[vidc.addr++];
-                                                if (x<1024 || hires)
-                                                {
-                                                        if (hires)
-                                                        {
-                                                                for (xx=0;xx<16;xx+=2)
-                                                                {
-                                                                        p[xx]=monolook[temp&15][0];
-                                                                        p[xx+1]=monolook[temp&15][1];
-                                                                        temp>>=4;
-                                                                }
-                                                        }
-                                                        else
-                                                        {
-                                                                for (xx=0;xx<16;xx++)
-                                                                    p[xx]=vidlookup[(temp>>(xx<<1))&3];
-                                                        }
-                                                        p+=16;
-                                                }
-                                                if (vidc.addr==vend+4) vidc.addr=vstart;
-                                        }
-                                        break;
-                                        case 4: /*Mode 1*/
-                                        case 5:
-                                        xl=xxl=((vidc.hdend-vidc.hdstart)<<1)+xoffset2;
-                                        x=xxh=xoffset2;
-                                        for (;x<xl;x+=32)
-                                        {
-                                                temp=ram[vidc.addr++];
-                                                if (x<1024)
-                                                {
-                                                        for (xx=0;xx<32;xx+=2)
-                                                            ((uint16_t *)bp)[x+xx]=((uint16_t *)bp)[x+xx+1]=vidc.pal[(temp>>xx)&3];
-                                                }
-                                                if (vidc.addr==vend+4) vidc.addr=vstart;
-                                        }
-                                        break;
-                                        case 6: /*Mode 8*/
-                                        case 7: /*Mode 26*/
-                                        xl=xxl=(vidc.hdend-vidc.hdstart)+xoffset2;
-                                        x=xxh=xoffset2;
-                                        p=(uint32_t *)(bp+(x<<1));
-                                        for (;x<xl;x+=16)
-                                        {
-                                                temp=ram[vidc.addr++];
-                                                if (x<1024)
-                                                {
-                                                        for (xx=0;xx<8;xx++)
-                                                            p[xx]=vidlookup[(temp>>(xx<<2))&0xF];
-                                                        p+=8;
-                                                }
-                                                if (vidc.addr==vend+4) vidc.addr=vstart;
-                                        }
-                                        break;
-                                        case 8: /*Mode 9*/
-                                        case 9:
-                                        xl=xxl=((vidc.hdend-vidc.hdstart)<<1)+xoffset2;
-                                        x=xxh=xoffset2;
-                                        p=(uint32_t *)(bp+(x<<1));
-                                        xl-=x;
-                                        xl>>=1;
-                                        xx=x;
-                                        for (x=0;x<xl;x+=8)
-                                        {
-                                                temp=ram[vidc.addr++];
-                                                if (x<(1024-xx))
-                                                {
-                                                        for (c=0;c<8;c++)
-                                                            p[c]=vidlookup[(temp>>(c<<2))&0xF];
-                                                        p+=8;
-                                                }
-                                                if (vidc.addr==vend+4) vidc.addr=vstart;
-                                        }
-                                        xl=((vidc.hdend-vidc.hdstart)<<1)+xoffset2;
-                                        break;
-                                        case 10: /*Mode 12*/
-                                        case 11: /*Mode 27*/
-                                        xl=xxl=(vidc.hdend-vidc.hdstart)+xoffset2;
-                                        x=xxh=xoffset2;
-                                        p=(uint32_t *)(bp+(x<<1));
-                                        xl-=x;
-                                        xl>>=1;
-                                        xx=x;
-                                        for (x=0;x<xl;x+=4)
-                                        {
-                                                temp=ram[vidc.addr++];
-                                                if (x<(1024-xx))
-                                                {
-                                                        for (c=0;c<4;c++)
-                                                            p[c]=vidlookup[(temp>>(c<<3))&0xFF];
-                                                        p+=4;
-                                                }
-                                                if (vidc.addr==vend+4) vidc.addr=vstart;
-                                        }
-                                        xl=(vidc.hdend-vidc.hdstart)+xoffset2;
-                                        break;
-                                        case 12: /*Mode 13*/
-                                        case 13:
-                                        xl=xxl=((vidc.hdend-vidc.hdstart)<<1)+xoffset2;
-                                        x=xxh=xoffset2;
-                                        for (;x<xl;x+=8)
-                                        {
-                                                temp=ram[vidc.addr++];
-                                                if (x<1024)
-                                                {
-                                                        ((uint16_t *)bp)[x]=((uint16_t *)bp)[x+1]=vidc.pal8[temp&0xFF];
-                                                        ((uint16_t *)bp)[x+2]=((uint16_t *)bp)[x+3]=vidc.pal8[(temp>>8)&0xFF];
-                                                        ((uint16_t *)bp)[x+4]=((uint16_t *)bp)[x+5]=vidc.pal8[(temp>>16)&0xFF];
-                                                        ((uint16_t *)bp)[x+6]=((uint16_t *)bp)[x+7]=vidc.pal8[(temp>>24)&0xFF];
-                                                }
-                                                if (vidc.addr==vend+4) vidc.addr=vstart;
-                                        }
-                                        break;
-                                        case 14: /*Mode 15*/
-                                        case 15: /*Mode 28*/
-                                        xl=xxl=(vidc.hdend-vidc.hdstart)+xoffset2;
-                                        x=xxh=xoffset2;
-                                        for (;x<xl;x+=4)
-                                        {
-                                                temp=ram[vidc.addr++];
-                                                if (x<1024)
-                                                {
-                                                        ((uint16_t *)bp)[x]=vidc.pal8[temp&0xFF];
-                                                        ((uint16_t *)bp)[x+1]=vidc.pal8[(temp>>8)&0xFF];
-                                                        ((uint16_t *)bp)[x+2]=vidc.pal8[(temp>>16)&0xFF];
-                                                        ((uint16_t *)bp)[x+3]=vidc.pal8[(temp>>24)&0xFF];
-                                                }
-                                                if (vidc.addr==vend+4) vidc.addr=vstart;
-                                        }
-                                        break;
-
-                                        case 16+2: /*Mode 0*/
-                                        case 16+3: /*Mode 25*/
-                                        xl=xxl=(vidc.hdend-vidc.hdstart)+xoffset2;
-                                        x=xxh=xoffset2;
-                                        p=(uint32_t *)(bp+(x<<2));
-                                        if (hires)
-                                        {
-                                                p=(uint32_t *)(bp);
-                                                xxl<<=2;
-                                                xxh<<=2;
-                                        }
-                                        for (;x<xl;x+=32)
-                                        {
-                                                temp=ram[vidc.addr++];
-                                                if (x<1024)
+                                                temp = ram[vidc.addr++];
+                                                if (x < 2048)
                                                 {
                                                         if (hires)
                                                         {
                                                                 for (xx=0;xx<32;xx+=4)
                                                                 {
-                                                                        p[xx]=monolook[temp&0xF][0];
-                                                                        p[xx+1]=monolook[temp&0xF][1];
-                                                                        p[xx+2]=monolook[temp&0xF][2];
-                                                                        p[xx+3]=monolook[temp&0xF][3];
+                                                                        ((uint32_t *)bp)[x+xx]   = monolook[temp&0xF][0];
+                                                                        ((uint32_t *)bp)[x+xx+1] = monolook[temp&0xF][1];
+                                                                        ((uint32_t *)bp)[x+xx+2] = monolook[temp&0xF][2];
+                                                                        ((uint32_t *)bp)[x+xx+3] = monolook[temp&0xF][3];
                                                                         temp>>=4;
                                                                 }
                                                         }
                                                         else
                                                         {
                                                                 for (xx=0;xx<32;xx++)
-                                                                    p[xx]=vidc.pal[(temp>>xx)&1];
+                                                                        ((uint32_t *)bp)[x+xx] = vidc.pal[(temp>>xx)&1];
                                                         }
-                                                        p+=32;
+//                                                        p += 32;
                                                 }
-                                                if (vidc.addr==vend+4) vidc.addr=vstart;
+                                                if (vidc.addr == vend + 4)
+                                                        vidc.addr = vstart;
                                         }
                                         break;
-                                        case 16+4: /*Mode 1*/
-                                        case 16+5:
-                                        xl=xxl=((vidc.hdend-vidc.hdstart)<<1)+xoffset2;
-                                        x=xxh=xoffset2;
-                                        for (;x<xl;x+=32)
+                                        case 4: /*Mode 1*/
+                                        case 5:
+                                        if (vidc.hdstart*2 < vidc.x_min)
+                                                vidc.x_min = vidc.hdstart*2;
+                                        if (vidc.hdend*2 > vidc.x_max)
+                                                vidc.x_max = vidc.hdend*2;
+                                        for (x = vidc.hdstart*2; x < vidc.hdend*2; x += 32)
                                         {
-                                                temp=ram[vidc.addr++];
-                                                if (x<1024)
+                                                temp = ram[vidc.addr++];
+                                                if (x < 2048)
                                                 {
                                                         for (xx=0;xx<32;xx+=2)
-                                                            ((uint32_t *)bp)[x+xx]=((uint32_t *)bp)[x+xx+1]=vidc.pal[(temp>>xx)&3];
+                                                                ((uint32_t *)bp)[x+xx]=((uint32_t *)bp)[x+xx+1]=vidc.pal[(temp>>xx)&3];
                                                 }
-                                                if (vidc.addr==vend+4) vidc.addr=vstart;
+                                                if (vidc.addr == vend + 4)
+                                                        vidc.addr = vstart;
                                         }
                                         break;
-                                        case 16+6: /*Mode 8*/
-                                        case 16+7: /*Mode 26*/
-                                        xl=xxl=(vidc.hdend-vidc.hdstart)+xoffset2;
-                                        x=xxh=xoffset2;
-                                        p=(uint32_t *)(bp+(x<<2));
-                                        for (;x<xl;x+=16)
+                                        case 6: /*Mode 8*/
+                                        case 7: /*Mode 26*/
+                                        if (vidc.hdstart < vidc.x_min)
+                                                vidc.x_min = vidc.hdstart;
+                                        if (vidc.hdend > vidc.x_max)
+                                                vidc.x_max = vidc.hdend;
+                                        for (x = vidc.hdstart; x < vidc.hdend; x += 16)
                                         {
-                                                temp=ram[vidc.addr++];
-                                                if (x<1024)
+                                                temp = ram[vidc.addr++];
+                                                if (x < 2048)
                                                 {
-                                                        for (xx=0;xx<16;xx++)
-                                                            p[xx]=vidc.pal[temp>>(xx<<1)&3];
+                                                        for (xx = 0; xx < 16; xx++)
+                                                                ((uint32_t *)bp)[x+xx]=vidc.pal[temp>>(xx<<1)&3];
                                                         p+=16;
                                                 }
-                                                if (vidc.addr==vend+4) vidc.addr=vstart;
+                                                if (vidc.addr == vend + 4)
+                                                        vidc.addr = vstart;
                                         }
                                         break;
-                                        case 16+8: /*Mode 9*/
-                                        case 16+9:
-                                        xl=xxl=((vidc.hdend-vidc.hdstart)<<1)+xoffset2;
-                                        x=xxh=xoffset2;
-                                        p=(uint32_t *)(bp+(x<<2));
-                                        xl-=x;
-                                        xx=x;
-                                        for (x=0;x<xl;x+=16)
+                                        case 8: /*Mode 9*/
+                                        case 9:
+                                        x_min = (vidc.hdstart < vidc.hbstart) ? vidc.hbstart*2 : vidc.hdstart*2;
+                                        x_max = (vidc.hdend   > vidc.hbend)   ? vidc.hbend*2 : vidc.hdend*2;
+                                        
+                                        if (x_min < vidc.x_min)
+                                                vidc.x_min = x_min;
+                                        if (x_max > vidc.x_max)
+                                                vidc.x_max = x_max;
+                                        for (x = vidc.hdstart*2; x < vidc.hdend*2; x += 16)
                                         {
-                                                temp=ram[vidc.addr++];
-                                                if (x<(1024-xx))
+                                                temp = ram[vidc.addr++];
+                                                if (x < 2048)
                                                 {
-                                                        for (c=0;c<16;c+=2)
-                                                            p[c]=p[c+1]=vidc.pal[(temp>>(c<<1))&0xF];
-                                                        p+=16;
+                                                        for (c = 0; c < 16; c += 2)
+                                                                ((uint32_t *)bp)[x+c] = ((uint32_t *)bp)[x+c+1] = vidc.pal[(temp>>(c<<1))&0xF];
                                                 }
-                                                if (vidc.addr==vend+4) vidc.addr=vstart;
+                                                if (vidc.addr == vend + 4)
+                                                        vidc.addr = vstart;
                                         }
-                                        xl=((vidc.hdend-vidc.hdstart)<<1)+xoffset2;
                                         break;
-                                        case 16+10: /*Mode 12*/
-                                        case 16+11: /*Mode 27*/
-                                        xl=xxl=(vidc.hdend-vidc.hdstart)+xoffset2;
-                                        x=xxh=xoffset2;
-                                        p=(uint32_t *)(bp+(x<<2));
-                                        xl-=x;
-                                        xx=x;
-                                        for (x=0;x<xl;x+=8)
+                                        case 10: /*Mode 12*/
+                                        case 11: /*Mode 27*/
+                                        if (vidc.hdstart < vidc.x_min)
+                                                vidc.x_min = vidc.hdstart;
+                                        if (vidc.hdend > vidc.x_max)
+                                                vidc.x_max = vidc.hdend;
+                                        for (x = vidc.hdstart; x < vidc.hdend; x += 8)
                                         {
-                                                temp=ram[vidc.addr++];
-                                                if (x<(1024-xx))
+                                                temp = ram[vidc.addr++];
+                                                if (x < 2048)
                                                 {
-                                                        for (c=0;c<8;c++)
-                                                            p[c]=vidc.pal[(temp>>(c<<2))&0xF];
+                                                        for (c = 0; c < 8; c++)
+                                                                ((uint32_t *)bp)[x+c]=vidc.pal[(temp>>(c<<2))&0xF];
                                                         p+=8;
                                                 }
                                                 if (vidc.addr==vend+4) vidc.addr=vstart;
                                         }
-                                        xl=(vidc.hdend-vidc.hdstart)+xoffset2;
                                         break;
-                                        case 16+12: /*Mode 13*/
-                                        case 16+13:
-                                        xl=xxl=((vidc.hdend-vidc.hdstart)<<1)+xoffset2;
-                                        x=xxh=xoffset2;
-                                        for (;x<xl;x+=8)
+                                        case 12: /*Mode 13*/
+                                        case 13:
+                                        x_min = (vidc.hdstart < vidc.hbstart) ? vidc.hbstart*2 : vidc.hdstart*2;
+                                        x_max = (vidc.hdend   > vidc.hbend)   ? vidc.hbend*2 : vidc.hdend*2;
+                                        
+                                        if (x_min < vidc.x_min)
+                                                vidc.x_min = x_min;
+                                        if (x_max > vidc.x_max)
+                                                vidc.x_max = x_max;
+                                        for (x = vidc.hdstart*2; x < vidc.hdend*2; x += 8)
                                         {
                                                 temp=ram[vidc.addr++];
-                                                if (x<1024)
+                                                if (x < 2048)
                                                 {
                                                         ((uint32_t *)bp)[x]=((uint32_t *)bp)[x+1]=vidc.pal8[temp&0xFF];
                                                         ((uint32_t *)bp)[x+2]=((uint32_t *)bp)[x+3]=vidc.pal8[(temp>>8)&0xFF];
@@ -865,25 +696,28 @@ void pollline()
                                                 if (vidc.addr==vend+4) vidc.addr=vstart;
                                         }
                                         break;
-                                        case 16+14: /*Mode 15*/
-                                        case 16+15: /*Mode 28*/
-                                        xl=xxl=(vidc.hdend-vidc.hdstart)+xoffset2;
-                                        x=xxh=xoffset2;
-                                        for (;x<xl;x+=4)
+                                        case 14: /*Mode 15*/
+                                        case 15: /*Mode 28*/
+                                        if (vidc.hdstart < vidc.x_min)
+                                                vidc.x_min = vidc.hdstart;
+                                        if (vidc.hdend > vidc.x_max)
+                                                vidc.x_max = vidc.hdend;
+                                        for (x = vidc.hdstart; x < vidc.hdend; x += 4)
                                         {
-                                                temp=ram[vidc.addr++];
-                                                if (x<1024)
+                                                temp = ram[vidc.addr++];
+                                                if (x < 2048)
                                                 {
-                                                        ((uint32_t *)bp)[x]=vidc.pal8[temp&0xFF];
-                                                        ((uint32_t *)bp)[x+1]=vidc.pal8[(temp>>8)&0xFF];
-                                                        ((uint32_t *)bp)[x+2]=vidc.pal8[(temp>>16)&0xFF];
-                                                        ((uint32_t *)bp)[x+3]=vidc.pal8[(temp>>24)&0xFF];
+                                                        ((uint32_t *)bp)[x]   = vidc.pal8[temp&0xFF];
+                                                        ((uint32_t *)bp)[x+1] = vidc.pal8[(temp>>8)&0xFF];
+                                                        ((uint32_t *)bp)[x+2] = vidc.pal8[(temp>>16)&0xFF];
+                                                        ((uint32_t *)bp)[x+3] = vidc.pal8[(temp>>24)&0xFF];
                                                 }
-                                                if (vidc.addr==vend+4) vidc.addr=vstart;
+                                                if (vidc.addr == vend + 4)
+                                                        vidc.addr = vstart;
                                         }
                                         break;
                                 }
-
+//#if 0
                                 switch (mode)
                                 {
                                         case 0: /*Mode 4*/
@@ -895,19 +729,22 @@ void pollline()
                                         case 12: /*Mode 13*/
                                         case 13:
                                         if (vidc.hbstart<vidc.hdstart)
-                                           archline(bp,startb,l,xoffset2-1,vidc.pal[0x10]);
+                                        	archline(bp,0,l,(vidc.hdstart<<1)-1,vidc.pal[0x10]);
                                         else
                                         {
                                                 if (noborders && !fullscreen) xxh=xoffset-1;
-                                                archline(bp,startb,l,xoffset-1,vidc.pal[0x10]);
+                                                archline(bp,0,l,(vidc.hbstart<<1)-1,vidc.pal[0x10]);
                                         }
-                                        if ((xoffset+((vidc.hbend-vidc.hbstart)<<1))<xl)
+                                        if (1)
                                         {
                                                 if (noborders && !fullscreen) xxl=xoffset+((vidc.hbend-vidc.hbstart)<<1);
-                                                archline(bp,xoffset+((vidc.hbend-vidc.hbstart)<<1),l,endb,vidc.pal[0x10]);
+                                                if (vidc.hbend < vidc.hdend)
+                                                	archline(bp,vidc.hbend<<1,l,1023,vidc.pal[0x10]);
+                                                else
+                                                	archline(bp,vidc.hdend<<1,l,1023,vidc.pal[0x10]);
                                         }
                                         else
-                                           archline(bp,xl,l,endb,vidc.pal[0x10]);
+                                           archline(bp,0,l,1023,vidc.pal[0x10]);
                                         break;
                                         case 2:  /*Mode 0*/
                                         case 3:  /*Mode 25*/
@@ -919,58 +756,48 @@ void pollline()
                                         case 15: /*Mode 28*/
                                         if (hires) break;
                                         if (vidc.hbstart<vidc.hdstart)
-                                           archline(bp,startb,l,xoffset2-1,vidc.pal[0x10]);
+                                        	archline(bp,0,l,vidc.hdstart-1,vidc.pal[0x10]);
                                         else
                                         {
                                                 if (noborders && !fullscreen) xxh=xoffset-1;
-                                                archline(bp,startb,l,xoffset-1,vidc.pal[0x10]);
+                                                archline(bp,0,l,vidc.hdstart-1,vidc.pal[0x10]);
                                         }
-                                        if (vidc.hbend<xl)
+                                        if (vidc.hbend<1024)
                                         {
                                                 if (noborders && !fullscreen) xxl=xoffset+(vidc.hbend-vidc.hbstart);
-                                                archline(bp,xoffset+(vidc.hbend-vidc.hbstart),l,endb,vidc.pal[0x10]);
+                                                if (vidc.hbend < vidc.hdend)
+                                                	archline(bp,vidc.hbend,l,1023,vidc.pal[0x10]);
+                                                else
+                                                	archline(bp,vidc.hdend,l,1023,vidc.pal[0x10]);
                                         }
                                         else
-                                           archline(bp,xl,l,endb,vidc.pal[0x10]);
+                                           archline(bp,0,l,1023,vidc.pal[0x10]);
                                         break;
                                 }
+//#endif
                                 if (((vidc.cys>>14)+2)<=vidc.line && ((vidc.cye>>14)+2)>vidc.line)
                                 {
                                         if (hires)
                                         {
-                                                x=(vidc.cxh-(vidc.hdstart<<2))-30;
-                                                if (depth32)
+                                                x = (vidc.cx << 2) - 80;
+                                                temp = ram[vidc.caddr++];
+                                                for (xx = 0; xx < 64; xx += 4)
                                                 {
-                                                        temp=ram[vidc.caddr++];
-                                                        for (xx=0;xx<32;xx+=2)
-                                                        {
-                                                                if (temp&3) ((uint32_t *)bp)[x+xx+1]=((uint32_t *)bp)[x+xx]=hirescurcol[temp&3];
-                                                                temp>>=2;
-                                                        }
-                                                        temp=ram[vidc.caddr++];
-                                                        for (xx=32;xx<64;xx+=2)
-                                                        {
-                                                                if (temp&3) ((uint32_t *)bp)[x+xx+1]=((uint32_t *)bp)[x+xx]=hirescurcol[temp&3];
-                                                                temp>>=2;
-                                                        }
+                                                        if (temp & 3)
+                                                                ((uint32_t *)bp)[x+xx]   = ((uint32_t *)bp)[x+xx+1] = 
+                                                                ((uint32_t *)bp)[x+xx+2] = ((uint32_t *)bp)[x+xx+3] = hirescurcol[temp&3];
+                                                        temp>>=2;
                                                 }
-                                                else
+                                                temp = ram[vidc.caddr++];
+                                                for (xx = 64; xx < 128; xx += 4)
                                                 {
-                                                        temp=ram[vidc.caddr++];
-                                                        for (xx=0;xx<32;xx+=2)
-                                                        {
-                                                                if (temp&3) ((uint16_t *)bp)[x+xx+1]=((uint16_t *)bp)[x+xx]=hirescurcol[temp&3];
-                                                                temp>>=2;
-                                                        }
-                                                        temp=ram[vidc.caddr++];
-                                                        for (xx=32;xx<64;xx+=2)
-                                                        {
-                                                                if (temp&3) ((uint16_t *)bp)[x+xx+1]=((uint16_t *)bp)[x+xx]=hirescurcol[temp&3];
-                                                                temp>>=2;
-                                                        }
+                                                        if (temp & 3)
+                                                                ((uint32_t *)bp)[x+xx]   = ((uint32_t *)bp)[x+xx+1] = 
+                                                                ((uint32_t *)bp)[x+xx+2] = ((uint32_t *)bp)[x+xx+3] = hirescurcol[temp&3];
+                                                        temp>>=2;
                                                 }
                                         }
-                                        else switch ((vidcr[0x38]&0xF)|depth32)
+                                        else switch (vidcr[0x38]&0xF)
                                         {
                                                 case 0: /*Mode 4*/
                                                 case 1:
@@ -980,30 +807,7 @@ void pollline()
                                                 case 9:
                                                 case 12: /*Mode 13*/
                                                 case 13:
-                                                x=((vidc.cx-vidc.hdstart)<<1)+xoffset2;
-                                                if (x>1024) break;
-                                                temp=ram[vidc.caddr++];
-                                                for (xx=0;xx<32;xx+=2)
-                                                {
-                                                        if (temp&3) ((uint16_t *)bp)[x+xx]=((uint16_t *)bp)[x+xx+1]=vidc.pal[(temp&3)|0x10];
-                                                        temp>>=2;
-                                                }
-                                                temp=ram[vidc.caddr++];
-                                                for (xx=32;xx<64;xx+=2)
-                                                {
-                                                        if (temp&3) ((uint16_t *)bp)[x+xx]=((uint16_t *)bp)[x+xx+1]=vidc.pal[(temp&3)|0x10];
-                                                        temp>>=2;
-                                                }
-                                                break;
-                                                case 16+0: /*Mode 4*/
-                                                case 16+1:
-                                                case 16+4: /*Mode 1*/
-                                                case 16+5:
-                                                case 16+8: /*Mode 9*/
-                                                case 16+9:
-                                                case 16+12: /*Mode 13*/
-                                                case 16+13:
-                                                x=((vidc.cx-vidc.hdstart)<<1)+xoffset2;
+                                                x = vidc.cx << 1;//((vidc.cx-vidc.hdstart)<<1)+xoffset2;
                                                 if (x>1024) break;
                                                 temp=ram[vidc.caddr++];
                                                 for (xx=0;xx<32;xx+=2)
@@ -1027,30 +831,7 @@ void pollline()
                                                 case 11: /*Mode 27*/
                                                 case 14: /*Mode 15*/
                                                 case 15: /*Mode 28*/
-                                                x=(vidc.cx-vidc.hdstart)+xoffset2;
-                                                if (x>1024) break;
-                                                temp=ram[vidc.caddr++];
-                                                for (xx=0;xx<16;xx++)
-                                                {
-                                                        if (temp&3) ((uint16_t *)bp)[x+xx]=vidc.pal[(temp&3)|0x10];
-                                                        temp>>=2;
-                                                }
-                                                temp=ram[vidc.caddr++];
-                                                for (xx=16;xx<32;xx++)
-                                                {
-                                                        if (temp&3) ((uint16_t *)bp)[x+xx]=vidc.pal[(temp&3)|0x10];
-                                                        temp>>=2;
-                                                }
-                                                break;
-                                                case 16+2:  /*Mode 0*/
-                                                case 16+3:  /*Mode 25*/
-                                                case 16+6:  /*Mode 8*/
-                                                case 16+7:  /*Mode 26*/
-                                                case 16+10: /*Mode 12*/
-                                                case 16+11: /*Mode 27*/
-                                                case 16+14: /*Mode 15*/
-                                                case 16+15: /*Mode 28*/
-                                                x=(vidc.cx-vidc.hdstart)+xoffset2;
+                                                x = vidc.cx;//(vidc.cx-vidc.hdstart)+xoffset2;
                                                 if (x>1024) break;
                                                 temp=ram[vidc.caddr++];
                                                 for (xx=0;xx<16;xx++)
@@ -1068,15 +849,21 @@ void pollline()
                                         }
                                 }
                         }
-                        else if ((vidc.borderon || !vidc.displayon) && redrawall && !((noborders || hires) && !fullscreen))
+                        if ((vidc.borderon || !vidc.displayon))// && redrawall && !((noborders || hires) && !fullscreen))
                         {
-                                archline(bp,startb,l,1023,vidc.pal[16]);
+                                archline(bp,0,l,1023,vidc.pal[16]);
                         }
                 }
         }
 
         if (vidc.line>=vidc.vtot)
         {
+                if (vidc.resync)
+                {
+                        vidc.resync--;
+                        if (!vidc.resync)
+                                vidc.x_mid = (vidc.x_min + vidc.x_max) / 2;
+                }
 //                rpclog("Frame over!\n");
                 if (vidc.displayon)
                 {
@@ -1094,24 +881,32 @@ void pollline()
 //
                         if ((noborders || hires) && !fullscreen)
                         {
+//                                xxl = vidc.x_min;
+//                                xxh = vidc.x_max;
 //                                rpclog("((noborders || hires) && !fullscreen)\n");
 //                                rpclog("XXH %i XXL %i YL %i YH %i   %i,%i  %i %i %i %i  %i,%i\n",xxh,xxl,yl,yh,xxl-xxh,yh-yl,oldxxh,oldxxl,oldyl,oldyh,oldxxl-oldxxh,oldyh-oldyl);
-                                if ((xxl-xxh)!=(oldxxl-oldxxh) || (yh-yl)!=(oldyh-oldyl))
+                                if ((vidc.x_max - vidc.x_min) != (oldxxl-oldxxh) || (yh-yl)!=(oldyh-oldyl))
                                 {
 //                                        rpclog("Changing size!\n");
-                                        //if (vidc.scanrate || !dblscan)
-                                        //   updatewindowsize(xxl-xxh,yh-yl);
-                                        //else
-                                        //   updatewindowsize(xxl-xxh,((yh-yl)<<1)-2);
+/*                                        if (vidc.scanrate || !dblscan)
+                                           updatewindowsize(xxl-xxh,yh-yl);
+                                        else
+                                           updatewindowsize(xxl-xxh,((yh-yl)<<1)-2);*/
+                                        if (vidc.scanrate || !dblscan)
+                                                updatewindowsize(vidc.x_max - vidc.x_min, yh-yl);
+                                        else
+                                                updatewindowsize(vidc.x_max - vidc.x_min, ((yh-yl)<<1)-2);
                                 }
-                                oldxxl=xxl;
-                                oldxxh=xxh;
+                                oldxxl = vidc.x_min;
+                                oldxxh = vidc.x_max;
                                 oldyl=yl;
                                 oldyh=yh;
-                                blit(buffer, vbuf, xxh, yl, xxh, yl, xxl - xxh, yh - yl);
+//                                blit(buffer, vbuf, xxh, yl, xxh, yl, xxl - xxh, yh - yl);
+                                blit(buffer, vbuf, vidc.x_min, yl, 0, yl, vidc.x_max - vidc.x_min, yh - yl);
                                 if (vidc.scanrate || !dblscan)
                                 {
-                                        blit(vbuf,bout,xxh,yl,0,0,xxl-xxh,yh-yl);
+//                                        blit(vbuf,bout,xxh,yl,0,0,xxl-xxh,yh-yl);
+                                        blit(vbuf,bout,0,yl,0,0,vidc.x_max - vidc.x_min,yh-yl);
                                 }
                                 else
                                 {
@@ -1125,24 +920,32 @@ void pollline()
                                            xxl=672+60;
                                         if (((yh<<1)-24)>=544)
                                            yh=272+12;
-                                        stretch_blit(vbuf,bout,xxh,yl,xxl-xxh,(yh-yl), 0,0,xxl-xxh,(yh-yl)<<1);
+//                                        stretch_blit(vbuf,bout,xxh,yl,xxl-xxh,(yh-yl), 0,0,xxl-xxh,(yh-yl)<<1);
+                                        stretch_blit(vbuf,bout, 0,yl, vidc.x_max - vidc.x_min,(yh-yl), 0,0, vidc.x_max - vidc.x_min,(yh-yl)<<1);
                                 }
                                 xxl=xxh=yl=yh=-1;
                         }
                         else if (fullborders|fullscreen)
                         {
+				int blit_x_offset;
+				
+				if (vidcr[0x38] & 0x2)
+					blit_x_offset = vidc.htot + vidc.sync - 400;
+				else
+					blit_x_offset = vidc.htot*2 + vidc.sync*2 - 400;
+				
                                 oldyl=yl;
                                 oldyh=yh;
-                                if (redrawall)
+                                if (redrawall || 1)
                                 {
                                         if (vidc.scanrate || !dblscan)
                                         {
-                                                blit(buffer, vbuf, 0, 0, 0, 0, 800, 600);
+                                                blit(buffer, vbuf, vidc.x_mid-400, 0, 0, 0, 800, 600);
                                                 blit(vbuf, bout, 0, 0, 0, 0, 800, 600);
                                         }
                                         else
                                         {
-                                                blit(buffer, vbuf, 0, 0, 0, 0, 800, 300);
+                                                blit(buffer, vbuf, vidc.x_mid-400, 0, 0, 0, 800, 300);
                                                 stretch_blit(vbuf, bout, 0, 0, 800, 300, 0, 0, 800, 600);
                                         }
 
@@ -1248,6 +1051,8 @@ void pollline()
                         rpclog("Blit\n");
                 }
                 vidc.line=0;
+//                rpclog("%i fetches\n", vidc_fetches);
+                vidc_fetches = 0;
                 if (redrawall)
                 {
                         xx=(!vidc.scanrate && !dblscan)?2:1;
@@ -1266,29 +1071,32 @@ void pollline()
                         }
                 }
                 vidc_framecount++;
+
+                vidc.x_min = 9999;
+                vidc.x_max = 0;
         }
         
         if (!vidc.displayon && !old_display_on)
         {
                 if (memc_refreshon)
                 {
-                        arm_dmacount  = 32 << 10;
+                        /*arm_dmacount  = 32 << 10;
                         arm_dmalatch  = 32 << 10;
-                        arm_dmalength =  2;
+                        arm_dmalength =  2;*/
                 }
                 else
                 {
-                        arm_dmacount = 0x7fffffff;
+                        /*arm_dmacount = 0x7fffffff;
                         arm_dmalatch = 0x7fffffff;
-                        arm_dmalength = 0;
+                        arm_dmalength = 0;*/
                 }
         }
         else if (vidc.displayon)
         {
                 vidc.fetch_count = arm_dmacount;
-                arm_dmacount = 0x7fffffff;
+                /*arm_dmacount = 0x7fffffff;
                 arm_dmalatch = 0x7fffffff;
-                arm_dmalength = 0;
+                arm_dmalength = 0;*/
         }
 }
 
@@ -1302,31 +1110,58 @@ int vidcgetcycs()
         {
                 int temp, temp2;
                 int displen = vidc.hdend2 - vidc.hdstart2;
+                int disp_rate;
                 
                 if (displen < 0)
                         displen = 0;
 
                 temp  = displen * 4;
                 temp2 = ((vidc.htot - displen) + 1) * 4;
-
+rpclog("displen %i\n", displen);
                 switch (vidcr[0x38]&3)
                 {
-                        case 0: 
+                        case 0:
+			disp_rate = displen / 64;
                         break;
                         case 1: 
                         temp  = (temp * 2) / 3; 
                         temp2 = (temp2 * 2) / 3;
+                        disp_rate = displen / 32;
                         break;
                         case 2: 
                         temp  = temp / 2; 
                         temp2 = temp2 / 2;
+                        disp_rate = displen / 16;
                         break;
                         case 3: 
                         temp  = temp / 3; 
                         temp2 = temp2 / 3;
+                        disp_rate = displen / 8;
                         break;
                 }
 
+		switch (vidcr[0x38] & 0xc)
+                {
+                        case 0x0:
+			disp_rate = displen / 64;
+                        break;
+                        case 0x4: 
+                        disp_rate = displen / 32;
+                        break;
+                        case 0x8:
+                        disp_rate = displen / 16;
+                        break;
+                        case 0xc:
+                        disp_rate = displen / 8;
+                        break;
+                }
+rpclog("disp_rate %i\n", disp_rate);
+		if (disp_rate)
+			disp_rate = displen / disp_rate;
+		rpclog("disp_rate %i\n", disp_rate);
+		vidc.disp_len = displen;
+		vidc.disp_rate = disp_rate;
+		
                 vidc.cyclesperline_display  = (((temp * speed_mhz) / 8) / 2) << 10;
                 vidc.cyclesperline_blanking = (((temp2 * speed_mhz) / 8) / 2) << 10;
         
@@ -1365,6 +1200,33 @@ int vidcgetcycs()
                 return vidc.cyclesperline_display;
 
         return vidc.cyclesperline_blanking;
+}
+
+int vidc_update_cycles()
+{
+//rpclog("Fetch at %i %i  %i,%i  %i %i %i,%i,%i\n", vidc.in_display, vidc_fetches, (vidc.cyclesperline_display-cycles) >> 10, vidc.line, time,cycles, vidc.disp_count, vidc.disp_rate, vidc.disp_len);
+	if (!vidc.displayon)
+	{
+		vidc_dma_length = memc_refreshon ? mem_speed[0][1] : 0;
+//		rpclog("!displayon %i %i\n", vidc.cyclesperline_display + vidc.cyclesperline_blanking, cycles);
+		return memc_refresh_time;//cycles;
+	}
+	if (vidc.in_display && vidc.disp_count < vidc.disp_len)
+	{
+		if (memc_videodma_enable)
+			vidc_dma_length = mem_speed[0][1] + mem_speed[0][0]*3;
+		else
+			vidc_dma_length = 0;
+		vidc.disp_count += vidc.disp_rate;
+		return vidc.cycles_per_fetch;
+	}
+	else
+	{
+		vidc_dma_length = 0;
+		if (!vidc.in_display)
+			vidc.disp_count = 0;
+		return cycles;
+	}
 }
 
 void vidc_setclock(int clock)

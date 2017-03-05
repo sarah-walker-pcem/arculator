@@ -9,7 +9,7 @@
 void rpclog(char *format, ...);
 void error(char *format, ...);
 
-void arc_set_cpu(int cpu);
+void arc_set_cpu(int cpu, int memc);
 
 /*ARM*/
 uint32_t *usrregs[16],userregs[16],superregs[16],fiqregs[16],irqregs[16];

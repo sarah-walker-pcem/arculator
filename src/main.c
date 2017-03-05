@@ -157,15 +157,6 @@ void arc_init()
 #endif
         hostfs_init();
         resetide();
-        for (c=0;c<4;c++)
-        {
-                sprintf(s,"disc_name_%i",c);
-                p = (char *)get_config_string(NULL,s,NULL);
-                if (!p) 
-                   ioc_discchange(c);
-                else
-                   disc_load(c, discname[c]);
-        }
         p = (char *)get_config_string(NULL,"mem_size",NULL);
         if (!p || !strcmp(p,"4096")) memsize=4096;
         else if (!strcmp(p,"8192"))  memsize=8192;
@@ -220,6 +211,17 @@ rpclog("mem_size = %i %s cfg %s\n", memsize, p, fn);
         wd1770_reset();
         c82c711_fdc_reset();
 
+        for (c=0;c<4;c++)
+        {
+                sprintf(s,"disc_name_%i",c);
+                p = (char *)get_config_string(NULL,s,NULL);
+                if (p) {
+                   disc_close(c);
+                   strcpy(discname[c], p);
+                   disc_load(c, discname[c]);
+                   ioc_discchange(c);
+                }
+        }
         if (romset==3) fdctype=1;
         else	       fdctype=0;
 

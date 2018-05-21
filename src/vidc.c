@@ -263,7 +263,7 @@ void writevidc(uint32_t v)
                         vidc.resync = 2;
                         vidc.vtot = ((v >> 14) & 0x3FF) + 1;
 
-                        if (vidc.vtot>400)
+                        if (vidc.vtot >= 350)
                                 vidc.scanrate=1;
                         else
                                 vidc.scanrate=0;

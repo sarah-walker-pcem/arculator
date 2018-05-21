@@ -13,6 +13,8 @@ void resetarcrom()
                 fread(arcrom,32768,1,f);
                 fclose(f);
         }
+        else
+                memset(arcrom, 0xff, 32768);
         arcpage=0;
 }
 

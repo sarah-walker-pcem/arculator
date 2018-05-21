@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include "arc.h"
 #include "config.h"
 #include "ioc.h"

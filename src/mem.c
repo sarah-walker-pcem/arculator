@@ -1,6 +1,8 @@
 /*Arculator 0.8 by Tom Walker
   Memory read/write functions*/
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "arc.h"
 #include "arm.h"
 

@@ -3,6 +3,7 @@
 
 int flybacklines;
 #include <stdio.h>
+#include <string.h>
 #include "arc.h"
 #include "ioc.h"
 #include "mem.h"

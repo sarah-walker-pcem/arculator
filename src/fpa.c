@@ -3,6 +3,8 @@
   Not enabled by default due to bugs*/
 
 #include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include "arc.h"
 
 int cycles;

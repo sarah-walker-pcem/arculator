@@ -14,6 +14,8 @@ int podule_time=8000;
 /*Arculator 0.8 by Tom Walker
   ARM2 & ARM3 emulation*/
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "arc.h"
 #include "arm.h"
 #include "cp15.h"

@@ -2,6 +2,7 @@
   Disc support*/
   
 #include <stdio.h>
+#include <string.h>
 #include "arc.h"
 #include "config.h"
 

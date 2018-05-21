@@ -4,6 +4,7 @@
   
 #include <stdio.h>
 #include <stdint.h>
+#include <string.h>
 #include "arc.h"
 #include "disc.h"
 #include "disc_fdi.h"

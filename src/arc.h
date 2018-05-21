@@ -220,3 +220,8 @@ extern int speed_to_mhz[5];
 
 
 extern int mousecapture;
+
+
+void updateins();
+
+void get_executable_name(char *s, int size);

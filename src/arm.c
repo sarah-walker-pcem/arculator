@@ -18,14 +18,12 @@ int podule_time=8000;
 #include "arm.h"
 #include "cp15.h"
 #include "disc.h"
-#include <allegro.h>
 #include "hostfs.h"
 #include "keyboard.h"
 #include "mem.h"
 #include "memc.h"
 #include "sound.h"
 #include "vidc.h"
-//#include <winalleg.h>
 
 int cycles;
 int linecyc;

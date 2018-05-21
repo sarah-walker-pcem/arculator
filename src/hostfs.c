@@ -39,9 +39,9 @@
 #include <sys/stat.h>
 #include <limits.h>
 #include <stdint.h>
-#include <allegro.h>
 
 #include "arc.h"
+#include "config.h"
 //#include "arm.h"
 //#include "mem.h"
 #include "hostfs.h"

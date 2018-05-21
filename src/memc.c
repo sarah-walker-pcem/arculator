@@ -9,8 +9,6 @@ int flybacklines;
 #include "memc.h"
 #include "vidc.h"
 
-#include <allegro.h>
-
 int memc_videodma_enable;
 int memc_refreshon;
 int memc_is_memc1 = 1;
@@ -31,7 +29,6 @@ int osmode;
 int pagesize;
 int memcpages[0x2000];
 int samppos=0,sampbuf=0;
-AUDIOSTREAM *as;
 int spdcount;
 FILE *soundf;
 FILE *slogfile;

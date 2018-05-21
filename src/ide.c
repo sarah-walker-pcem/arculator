@@ -2,6 +2,7 @@
   IDE emulation*/
 #include <stdio.h>
 #include "arc.h"
+#include "config.h"
 #include "ioc.h"
 
 int dumpedread=0;

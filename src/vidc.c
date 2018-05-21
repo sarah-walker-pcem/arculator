@@ -1,9 +1,10 @@
 /*Arculator 0.8 by Tom Walker
   VIDC10 emulation*/
 #include <stdio.h>
-#include <allegro.h>
-#ifdef WIN32
-#include <winalleg.h>
+#if WIN32
+#define BITMAP __win_BITMAP
+#include <windows.h>
+#undef BITMAP
 #endif
 #include "arc.h"
 #include "arm.h"
@@ -12,6 +13,32 @@
 #include "memc.h"
 #include "sound.h"
 #include "vidc.h"
+#include "plat_video.h"
+
+BITMAP *create_bitmap(int x, int y)
+{
+        BITMAP *b = malloc(sizeof(BITMAP) + (y * sizeof(uint8_t *)));
+        int c;
+        b->dat = malloc(x * y * 4);
+        for (c = 0; c < y; c++)
+        {
+                b->line[c] = b->dat + (c * x * 4);
+        }
+        b->w = x;
+        b->h = y;
+        return b;
+}
+
+void destroy_bitmap(BITMAP *b)
+{
+        free(b->dat);
+        free(b);
+}
+
+static void clear(BITMAP *b)
+{
+        memset(b->dat, 0, b->w * b->h * 4);
+}
 
 int vidc_dma_length;
 extern int vidc_fetches;
@@ -19,9 +46,8 @@ extern int cycles;
 int vidc_framecount = 0;
 int vidc_displayon = 0;
 int blitcount=0;
-/*b - memory buffer
-  vbuf - DirectX buffer (used for hardware blitting)*/
-BITMAP *buffer, *vbuf;
+/*b - memory buffer*/
+BITMAP *buffer;
 
 int redrawall;
 int flyback;
@@ -242,12 +268,7 @@ void writevidc(uint32_t v)
                         else
                                 vidc.scanrate=0;
                         if ((vidc.scanrate!=oldscanrate) || (vidc.vtot!=oldvtot))
-                        {
-                                clear(screen);
-                                clear(vbuf);
-//                        clear(b);
                                 redrawall=(fullscreen)?4:2;
-                        }
                 }
         }
         if ((v>>24)==0x84)
@@ -323,47 +344,14 @@ void writevidc(uint32_t v)
 void clearbitmap()
 {
         redrawall=(fullscreen)?4:2;
-//        clear(b);
-        clear(vbuf);
+        clear(buffer);
 }
 
 void initvid()
 {
-        int depth;
-        allegro_init();
-        depth=deskdepth=desktop_color_depth();
-        if (depth!=15 && depth!=16 && depth!=32)
-        {
-                error("Your desktop must be set to 16 or 32 bit colour!");
-                exit(-1);
-        }
-        #ifdef WIN32
-        set_color_depth(depth);
-        set_gfx_mode(GFX_AUTODETECT_WINDOWED,1152,1152,0,0);
-        vbuf = create_video_bitmap(2048, 2048);
-        #else
-        if (depth==16 || depth==15)
-        {
-                set_color_depth(16);
-                if (set_gfx_mode(GFX_AUTODETECT_WINDOWED,800,600,0,0))
-                {
-                        set_color_depth(15);
-                        depth=15;
-                        set_gfx_mode(GFX_AUTODETECT_WINDOWED,800,600,0,0);
-                }
-        }
-        else if (depth==32)
-        {
-                set_color_depth(32);
-                set_gfx_mode(GFX_AUTODETECT_WINDOWED,800,600,0,0);
-        }
-        vbuf = create_video_bitmap(2048, 2048);
-        #endif
-        set_color_depth(32);
         buffer = create_bitmap(2048, 2048);
         vidc.line = 0;
         vidc.clock = 24000;
-        clear(vbuf);
 }
 
 void redopalette()
@@ -381,42 +369,15 @@ void setredrawall()
 {
         oldxxh=oldxxl=oldyh=oldyl=-1;
                 redrawall=(fullscreen)?4:2;
-//        clear(b);
-        clear(vbuf);
+        clear(buffer);
 }
 
 void closevideo()
 {
-        rpclog("destroy_bitmap(vbuf)\n");
-        destroy_bitmap(vbuf);
-        rpclog("destroy_bitmap(vbuf) done\n");
-//        destroy_bitmap(b);
-//        allegro_exit();
 }
 
 void reinitvideo()
 {
-        destroy_bitmap(vbuf);
-#ifdef WIN32
-        if (fullscreen)
-        {
-                set_color_depth(32);
-                if (hires)
-                        set_gfx_mode(GFX_AUTODETECT_FULLSCREEN,1152,896,0,0);
-                else
-                        set_gfx_mode(GFX_AUTODETECT_FULLSCREEN,800,600,0,0);
-        }
-        else
-        {
-                set_color_depth(deskdepth);
-                set_gfx_mode(GFX_AUTODETECT_WINDOWED,1152,1152,0,0);
-        }
-        vbuf = create_video_bitmap(2048, 2048);
-#else
-        set_gfx_mode(GFX_AUTODETECT_WINDOWED,800,600,0,0);
-        vbuf = create_video_bitmap(2048, 2048);
-#endif
-        set_color_depth(32);
         setredrawall();
         redopalette();
 }
@@ -449,7 +410,6 @@ void pollline()
 //        char s[256];
         int l=(vidc.line-16);
         int xoffset,xoffset2;
-        BITMAP *bout=screen;
         int old_display_on = vidc.displayon;
   
         if (!vidc.in_display)
@@ -762,7 +722,7 @@ void pollline()
                                                 if (noborders && !fullscreen) xxh=xoffset-1;
                                                 archline(bp,0,l,vidc.hdstart-1,vidc.pal[0x10]);
                                         }
-                                        if (vidc.hbend<1024)
+                                        if (1)
                                         {
                                                 if (noborders && !fullscreen) xxl=xoffset+(vidc.hbend-vidc.hbstart);
                                                 if (vidc.hbend < vidc.hdend)
@@ -901,27 +861,27 @@ void pollline()
                                 oldxxh = vidc.x_max;
                                 oldyl=yl;
                                 oldyh=yh;
-//                                blit(buffer, vbuf, xxh, yl, xxh, yl, xxl - xxh, yh - yl);
-                                blit(buffer, vbuf, vidc.x_min, yl, 0, yl, vidc.x_max - vidc.x_min, yh - yl);
+
+                                video_renderer_update(buffer, vidc.x_min, yl, 0, yl, vidc.x_max - vidc.x_min, yh - yl);
+
                                 if (vidc.scanrate || !dblscan)
                                 {
-//                                        blit(vbuf,bout,xxh,yl,0,0,xxl-xxh,yh-yl);
-                                        blit(vbuf,bout,0,yl,0,0,vidc.x_max - vidc.x_min,yh-yl);
+                                        video_renderer_present(0,yl, vidc.x_max - vidc.x_min,yh-yl);
                                 }
                                 else
                                 {
 //                                        xxl+=32;
 //                                        yh++;
-                                        if (((yl<<1)-24)<0)
+/*                                        if (((yl<<1)-24)<0)
                                            yl=12;
                                         if ((xxh-60)<0)
                                            xxh=60;
                                         if ((xxl-60)>=672)
                                            xxl=672+60;
                                         if (((yh<<1)-24)>=544)
-                                           yh=272+12;
-//                                        stretch_blit(vbuf,bout,xxh,yl,xxl-xxh,(yh-yl), 0,0,xxl-xxh,(yh-yl)<<1);
-                                        stretch_blit(vbuf,bout, 0,yl, vidc.x_max - vidc.x_min,(yh-yl), 0,0, vidc.x_max - vidc.x_min,(yh-yl)<<1);
+                                           yh=272+12;*/
+
+                                        video_renderer_present(0,yl, vidc.x_max - vidc.x_min,(yh-yl));
                                 }
                                 xxl=xxh=yl=yh=-1;
                         }
@@ -936,51 +896,27 @@ void pollline()
 				
                                 oldyl=yl;
                                 oldyh=yh;
-                                if (redrawall || 1)
+                                if (vidc.scanrate || !dblscan)
                                 {
-                                        if (vidc.scanrate || !dblscan)
-                                        {
-                                                blit(buffer, vbuf, vidc.x_mid-400, 0, 0, 0, 800, 600);
-                                                blit(vbuf, bout, 0, 0, 0, 0, 800, 600);
-                                        }
-                                        else
-                                        {
-                                                blit(buffer, vbuf, vidc.x_mid-400, 0, 0, 0, 800, 300);
-                                                stretch_blit(vbuf, bout, 0, 0, 800, 300, 0, 0, 800, 600);
-                                        }
-
-                                        if (redrawall)
-                                                redrawall--;
+                                        video_renderer_update(buffer, blit_x_offset, 0, 0, 0, 800, 600);
+                                        video_renderer_present(0, 0, 800, 600);
                                 }
                                 else
                                 {
-                                        xxl += 32;
-                                        blit(buffer, vbuf, xxh, yl, xxh, yl, xxl-xxh, yh-yl);
-                                        if (vidc.scanrate || !dblscan)
-                                           blit(vbuf,bout,xxh,yl,xxh,yl,xxl-xxh,yh-yl);
-                                        else
-                                        {
-                                                xxl+=32;
-                                                yh++;
-                                                if ((yl<<1)<0)
-                                                   yl=0;
-                                                if (xxh<0)
-                                                   xxh=0;
-                                                if (xxl>=800)
-                                                   xxl=800;
-                                                if ((yh<<1)>=600)
-                                                   yh=300;
-
-                                                stretch_blit(vbuf,bout,xxh,yl,xxl-xxh,(yh-yl), xxh,(yl<<1),xxl-xxh,(yh-yl)<<1);
-                                        }
+                                        video_renderer_update(buffer, blit_x_offset/*vidc.x_min-400*/, 0, 0, 0, 800, 300);
+                                        video_renderer_present(0, 0, 800, 300);
                                 }
+
+                                if (redrawall)
+                                        redrawall--;
+
                                 xxh=xxl=yh=yl=-1;
                         }
                         else
                         {
                                 oldyl=yl;
                                 oldyh=yh;
-                                if (redrawall)
+                                if (redrawall || 1)
                                 {
                                         xxh=60;
                                         yl=24;
@@ -1000,9 +936,8 @@ void pollline()
                                 }
                                 if (vidc.scanrate || !dblscan)
                                 {
-//                                        rpclog("Blit from %i,%i to %i,%i\n",xxh-60,yl-24,xxl-xxh,yh-yl);
-                                        blit(buffer, vbuf, xxh, yl, xxh, yl, xxl-xxh, yh-yl);
-                                        blit(vbuf,bout,xxh,yl,xxh-60,yl-24,xxl-xxh,yh-yl);
+                                        video_renderer_update(buffer, xxh, yl, xxh, yl, xxl-xxh, yh-yl);
+                                        video_renderer_present(xxh,yl, xxl-xxh,yh-yl);
                                 }
                                 else
                                 {
@@ -1016,13 +951,14 @@ void pollline()
                                            xxl=672+60;
                                         if (((yh<<1)-24)>=544)
                                            yh=272+12;
-//                                        rpclog("Blit %i,%i (%i,%i) to %i,%i (%i,%i)\n",xxh,yl,xxl-xxh,yh-yl,xxh-60,(yl<<1)-24,xxl-xxh,((yh-yl)<<1)-1);
-                                        blit(buffer, vbuf, xxh, yl, xxh, yl, xxl-xxh, yh-yl);
-                                        stretch_blit(vbuf,bout,xxh,yl,xxl-xxh,(yh-yl), xxh-60,(yl<<1)-24,xxl-xxh,(yh-yl)<<1);
+
+                                        video_renderer_update(buffer, xxh, yl, xxh, yl, xxl-xxh, yh-yl);
+                                        video_renderer_present(xxh,yl, xxl-xxh,(yh-yl));
                                 }
                                 if (redrawall) redrawall--;
                                 xxh=xxl=yh=yl=-1;
                         }
+//                        video_renderer_present();
 /*                        if (fullborders|fullscreen)
                         {
                                 if (readflash[0]) rectfill(bout,780,4,796,8,makecol(255,160,32));

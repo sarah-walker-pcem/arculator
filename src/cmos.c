@@ -1,11 +1,12 @@
 /*Arculator 0.8 by Tom Walker
   I2C + CMOS RAM emulation*/
 #include <stdio.h>
-#include <allegro.h>
+#include <string.h>
 #ifdef WIN32
-#include <winalleg.h>
+#include <windows.h>
 #endif
 #include "arc.h"
+#include "config.h"
 
 FILE *olog;
 int output;
@@ -63,7 +64,7 @@ void loadcmos()
                 fclose(cmosf);
         }
         else
-           memset(cmosram,0,256);
+                memset(cmosram,0,256);
         cmosgettime();
 }
 

@@ -1,5 +1,4 @@
-#include <allegro.h>
-#include <winalleg.h>
+#include <windows.h>
 #include <commctrl.h>
 #include "arc.h"
 #include "arm.h"

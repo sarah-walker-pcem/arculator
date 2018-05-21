@@ -2,15 +2,19 @@
 
 /*Arculator 0.8 by Tom Walker
   Windows interfacing*/
+#define BITMAP __win_bitmap
+#include <windows.h>
+#undef BITMAP
 #include <stdio.h>
 #include <stdlib.h>
-#include <allegro.h>
-#include <winalleg.h>
 #include "arc.h"
 #include "arm.h"
 #include "memc.h"
+#include "plat_input.h"
 #include "resources.h"
 #include "vidc.h"
+#include "plat_video.h"
+#include "video_sdl2.h"
 
 int infocus;
 HANDLE mainthreadh;
@@ -19,6 +23,7 @@ HANDLE mainthreadh;
 char szClassName[ ] = "WindowsApp";
 HWND ghwnd;
 HINSTANCE hinstance;
+static HMENU menu = 0;
 
 CRITICAL_SECTION cs;
 
@@ -53,8 +58,9 @@ void error(char *format, ...)
    MessageBox(NULL,buf,"Arculator error",MB_OK);
 }
 
-static int winsizex, winsizey;
+static int winsizex = 0, winsizey = 0;
 static int win_doresize = 0;
+static int win_dofullscreen;
 
 void updatewindowsize(int x, int y)
 {
@@ -79,6 +85,7 @@ void initmenu()
         if (limitspeed) CheckMenuItem(menu,IDM_OPTIONS_LIMIT,MF_CHECKED);
         if (soundena)   CheckMenuItem(menu,IDM_OPTIONS_SOUND,MF_CHECKED);
         if (stereo)     CheckMenuItem(menu,IDM_OPTIONS_STEREO,MF_CHECKED);
+        rpclog("initmenu - fullborders=%i\n", fullborders);
         if (fullborders)
         {
                 updatewindowsize(800,600);
@@ -125,6 +132,13 @@ void mainthread(LPVOID param)
         DWORD old_time, new_time;
 //        mainthreadon=1;
 
+        if (!video_renderer_init(ghwnd))
+        {
+                MessageBox(ghwnd, "Video renderer init failed", "Arculator error", MB_OK);
+                fatal(-1);
+        }
+        input_init();
+
         old_time = GetTickCount();
         while (!quited)
         {
@@ -152,13 +166,40 @@ void mainthread(LPVOID param)
 
                 if (!fullscreen && win_doresize)
                 {
-                        RECT r;
-                        GetWindowRect(ghwnd, &r);
-                        MoveWindow(ghwnd, r.left, r.top,
-                                winsizex + (GetSystemMetrics(SM_CXFIXEDFRAME) * 2),
-                                winsizey + (GetSystemMetrics(SM_CYFIXEDFRAME) * 2) + GetSystemMetrics(SM_CYMENUSIZE) + GetSystemMetrics(SM_CYCAPTION) + 1,
-                                TRUE);
+                        SDL_Rect rect;
+                                
                         win_doresize = 0;
+                                
+                        SDL_GetWindowSize(window, &rect.w, &rect.h);
+                        if (rect.w != winsizex || rect.h != winsizey)
+                        {
+                                SDL_GetWindowPosition(window, &rect.x, &rect.y);
+                                SDL_SetWindowSize(window, winsizex, winsizey);
+                                SDL_SetWindowPosition(window, rect.x, rect.y);
+                        }
+                }
+                
+                if (win_dofullscreen)
+                {
+                        win_dofullscreen = 0;
+                        
+                        SetMenu(ghwnd, 0);
+                        SDL_RaiseWindow(window);
+                        SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN_DESKTOP);
+                        mouse_capture_enable();
+                        fullscreen = 1;
+
+                }
+
+                if ((key[KEY_LCONTROL] || key[KEY_RCONTROL]) && key[KEY_END] && fullscreen)
+                {
+                        mouse_capture_disable();
+                        SDL_SetWindowFullscreen(window, 0);
+                        SetMenu(ghwnd, menu);
+                        
+                        fullscreen=0;
+                        if (fullborders) updatewindowsize(800,600);
+                        else             updatewindowsize(672,544);
                 }
 
                 if (updatemips)
@@ -172,6 +213,15 @@ void mainthread(LPVOID param)
         }
         rpclog("mainthread exit\n");
 //        mainthreadon=0;
+
+        video_renderer_close();
+}
+
+#define TIMER_1SEC 1
+
+void get_executable_name(char *s, int size)
+{
+        GetModuleFileName(hinstance, s, size);
 }
 
 int WINAPI WinMain (HINSTANCE hThisInstance,
@@ -196,17 +246,19 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
         /* Use default icon and mouse-pointer */
         wincl.hIcon = LoadIcon(hThisInstance, "allegro_icon");
         wincl.hIconSm = LoadIcon(hThisInstance, "allegro_icon");
-        wincl.hCursor = LoadCursor (NULL, IDC_ARROW);
+        wincl.hCursor = NULL;//LoadCursor (NULL, IDC_ARROW);
         wincl.lpszMenuName = NULL;                 /* No menu */
         wincl.cbClsExtra = 0;                      /* No extra bytes after the window class */
         wincl.cbWndExtra = 0;                      /* structure or the window instance */
         /* Use Windows's default color as the background of the window */
         wincl.hbrBackground = (HBRUSH) COLOR_BACKGROUND;
 
+        menu = LoadMenu(hThisInstance,TEXT("MainMenu"));
+        
         /* Register the window class, and if it fails quit the program */
         if (!RegisterClassEx (&wincl))
            return 0;
-
+           
         /* The class is registered, let's create the program*/
         ghwnd = CreateWindowEx (
            0,                   /* Extended possibilites for variation */
@@ -215,28 +267,23 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
            WS_OVERLAPPEDWINDOW&~(WS_MAXIMIZEBOX|WS_SIZEBOX), /* default window */
            CW_USEDEFAULT,       /* Windows decides the position */
            CW_USEDEFAULT,       /* where the window ends up on the screen */
-           672+(GetSystemMetrics(SM_CXFIXEDFRAME)*2),/* The programs width */
-           544+(GetSystemMetrics(SM_CYFIXEDFRAME)*2)+GetSystemMetrics(SM_CYMENUSIZE)+GetSystemMetrics(SM_CYCAPTION)+2, /* and height in pixels */
+           800+(GetSystemMetrics(SM_CXFIXEDFRAME)*2),/* The programs width */
+           600+(GetSystemMetrics(SM_CYFIXEDFRAME)*2)+GetSystemMetrics(SM_CYMENUSIZE)+GetSystemMetrics(SM_CYCAPTION)+2, /* and height in pixels */
            HWND_DESKTOP,        /* The window is a child-window to desktop */
-           LoadMenu(hThisInstance,TEXT("MainMenu")),                /* Menu */
+           menu,                /* Menu */
            hThisInstance,       /* Program Instance handler */
            NULL                 /* No Window Creation data */
            );
 
         /* Make the window visible on the screen */
         ShowWindow (ghwnd, nFunsterStil);
-        win_set_window(ghwnd);
 
         arc_init();
-        set_display_switch_mode(SWITCH_BACKGROUND);
         
         SendMessage(ghwnd,WM_USER,0,0);
 
-        MoveWindow(ghwnd,100,100,640+(GetSystemMetrics(SM_CXFIXEDFRAME)*2),512+(GetSystemMetrics(SM_CYFIXEDFRAME)*2)+GetSystemMetrics(SM_CYMENUSIZE)+GetSystemMetrics(SM_CYCAPTION)+1,TRUE);
-
         initmenu();
 
-        timeBeginPeriod(1);
         InitializeCriticalSection(&cs);
         mainthreadh = (HANDLE)_beginthread(mainthread, 0, NULL);
         SetThreadPriority(mainthreadh, THREAD_PRIORITY_HIGHEST);
@@ -254,24 +301,23 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
                         TranslateMessage(&messages);
                         /* Send message to WindowProcedure */
                         DispatchMessage(&messages);
-
+                        
                         if ((key[KEY_LCONTROL] || key[KEY_RCONTROL]) && key[KEY_END] && !fullscreen && mousecapture)
                         {
                                 ClipCursor(&oldclip);
+                                mouse_capture_disable();
                                 mousecapture=0;
                                 updatemips=1;
                         }
-                        if ((key[KEY_LCONTROL] || key[KEY_RCONTROL]) && key[KEY_END] && fullscreen)
+/*                        if ((key[KEY_LCONTROL] || key[KEY_RCONTROL]) && key[KEY_END] && fullscreen)
                         {
                                 fullscreen=0;
                                 reinitvideo();
                                 if (fullborders) updatewindowsize(800,600);
                                 else             updatewindowsize(672,544);
-                        }
+                        }*/
                 }
                 quited = 1;
-//                while (limitspeed && !spdcount && infocus)
-//                      sleep(0);
         }
         rpclog("WM_QUIT received\n");
         startblit();
@@ -279,7 +325,6 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
         Sleep(200);
 
         TerminateThread(mainthreadh,0);
-        timeEndPeriod(1);
         rpclog("arc_close\n");
         arc_close();
         if (mousecapture) ClipCursor(&oldclip);
@@ -379,7 +424,8 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
         switch (message)                  /* handle the messages */
         {
                 case WM_CREATE:
-                hKeyboardHook = SetWindowsHookEx( WH_KEYBOARD_LL,  LowLevelKeyboardProc, GetModuleHandle(NULL), 0 );
+                //hKeyboardHook = SetWindowsHookEx( WH_KEYBOARD_LL,  LowLevelKeyboardProc, GetModuleHandle(NULL), 0 );
+                SetTimer(hwnd, TIMER_1SEC, 1000, NULL);
                 break;
 
                 case WM_USER:
@@ -473,8 +519,8 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                         else            CheckMenuItem(hmenu,IDM_OPTIONS_LIMIT,MF_UNCHECKED);
                         return 0;
 
-                        case IDM_VIDEO_FULLSCR:
-                        fullscreen=1;
+                        case IDM_VIDEO_FULLSCR:                        
+//                        fullscreen=1;
                         if (firstfull)
                         {
                                 firstfull=0;
@@ -485,7 +531,8 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                                 ClipCursor(&oldclip);
                                 mousecapture=0;
                         }
-                        reinitvideo();
+                        win_dofullscreen = 1;
+//                        reinitvideo();
                         return 0;
                         case IDM_VIDEO_FULLBOR:
                         fullborders^=1;
@@ -578,6 +625,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                 if (mousecapture)
                 {
                         ClipCursor(&oldclip);
+                        mouse_capture_disable();
                         mousecapture=0;
                 }
                 break;
@@ -593,56 +641,18 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                         ClipCursor(&arcclip);
                         mousecapture=1;
                         updatemips=1;
+                        mouse_capture_enable();
                 }
                 break;
 
-        	case WM_SYSKEYDOWN:
-        	case WM_KEYDOWN:
-                if (LOWORD(wParam)!=255)
-                {
-//                        rpclog("Key %04X %04X\n",LOWORD(wParam),VK_LEFT);
-                        c=MapVirtualKey(LOWORD(wParam),0);
-                        c=hw_to_mycode[c];
-//                        rpclog("MVK %i %i %i\n",c,hw_to_mycode[c],KEY_PGUP);
-                        if (LOWORD(wParam)==VK_LEFT)   c=KEY_LEFT;
-                        if (LOWORD(wParam)==VK_RIGHT)  c=KEY_RIGHT;
-                        if (LOWORD(wParam)==VK_UP)     c=KEY_UP;
-                        if (LOWORD(wParam)==VK_DOWN)   c=KEY_DOWN;
-                        if (LOWORD(wParam)==VK_HOME)   c=KEY_HOME;
-                        if (LOWORD(wParam)==VK_END)    c=KEY_END;
-                        if (LOWORD(wParam)==VK_INSERT) c=KEY_INSERT;
-                        if (LOWORD(wParam)==VK_DELETE) c=KEY_DEL;
-                        if (LOWORD(wParam)==VK_PRIOR)  c=KEY_PGUP;
-                        if (LOWORD(wParam)==VK_NEXT)   c=KEY_PGDN;
-//                        rpclog("MVK2 %i %i %i\n",c,hw_to_mycode[c],KEY_PGUP);
-                        key[c]=1;
-                }
-                break;
-        	case WM_SYSKEYUP:
-        	case WM_KEYUP:
-                if (LOWORD(wParam)!=255)
-                {
-//                        rpclog("Key %04X %04X\n",LOWORD(wParam),VK_LEFT);
-                        c=MapVirtualKey(LOWORD(wParam),0);
-                        c=hw_to_mycode[c];
-                        if (LOWORD(wParam)==VK_LEFT)   c=KEY_LEFT;
-                        if (LOWORD(wParam)==VK_RIGHT)  c=KEY_RIGHT;
-                        if (LOWORD(wParam)==VK_UP)     c=KEY_UP;
-                        if (LOWORD(wParam)==VK_DOWN)   c=KEY_DOWN;
-                        if (LOWORD(wParam)==VK_HOME)   c=KEY_HOME;
-                        if (LOWORD(wParam)==VK_END)    c=KEY_END;
-                        if (LOWORD(wParam)==VK_INSERT) c=KEY_INSERT;
-                        if (LOWORD(wParam)==VK_DELETE) c=KEY_DEL;
-                        if (LOWORD(wParam)==VK_PRIOR)  c=KEY_PGUP;
-                        if (LOWORD(wParam)==VK_NEXT)   c=KEY_PGDN;
-//                        rpclog("MVK %i\n",c);
-                        key[c]=0;
-                }
+                case WM_TIMER:
+                if (wParam == TIMER_1SEC)
+                        updateins();
                 break;
 
                 case WM_DESTROY:
                 rpclog("WM_DESTROY\n");
-                UnhookWindowsHookEx(hKeyboardHook);
+                //UnhookWindowsHookEx(hKeyboardHook);
                 PostQuitMessage (0);       /* send a WM_QUIT to the message queue */
                 break;
                 default:                      /* for messages that we don't deal with */
@@ -650,72 +660,5 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
         }
         return 0;
 }
-
-uint8_t hw_to_mycode[256] = {
-   /* 0x00 */ 0, KEY_ESC, KEY_1, KEY_2,
-   /* 0x04 */ KEY_3, KEY_4, KEY_5, KEY_6,
-   /* 0x08 */ KEY_7, KEY_8, KEY_9, KEY_0,
-   /* 0x0C */ KEY_MINUS, KEY_EQUALS, KEY_BACKSPACE, KEY_TAB,
-   /* 0x10 */ KEY_Q, KEY_W, KEY_E, KEY_R,
-   /* 0x14 */ KEY_T, KEY_Y, KEY_U, KEY_I,
-   /* 0x18 */ KEY_O, KEY_P, KEY_OPENBRACE, KEY_CLOSEBRACE,
-   /* 0x1C */ KEY_ENTER, KEY_LCONTROL, KEY_A, KEY_S,
-   /* 0x20 */ KEY_D, KEY_F, KEY_G, KEY_H,
-   /* 0x24 */ KEY_J, KEY_K, KEY_L, KEY_SEMICOLON,
-   /* 0x28 */ KEY_QUOTE, KEY_TILDE, KEY_LSHIFT, KEY_BACKSLASH,
-   /* 0x2C */ KEY_Z, KEY_X, KEY_C, KEY_V,
-   /* 0x30 */ KEY_B, KEY_N, KEY_M, KEY_COMMA,
-   /* 0x34 */ KEY_STOP, KEY_SLASH, KEY_RSHIFT, KEY_ASTERISK,
-   /* 0x38 */ KEY_ALT, KEY_SPACE, KEY_CAPSLOCK, KEY_F1,
-   /* 0x3C */ KEY_F2, KEY_F3, KEY_F4, KEY_F5,
-   /* 0x40 */ KEY_F6, KEY_F7, KEY_F8, KEY_F9,
-   /* 0x44 */ KEY_F10, KEY_NUMLOCK, KEY_SCRLOCK, KEY_7_PAD,
-   /* 0x48 */ KEY_8_PAD, KEY_9_PAD, KEY_MINUS_PAD, KEY_4_PAD,
-   /* 0x4C */ KEY_5_PAD, KEY_6_PAD, KEY_PLUS_PAD, KEY_1_PAD,
-   /* 0x50 */ KEY_2_PAD, KEY_3_PAD, KEY_0_PAD, KEY_DEL_PAD,
-   /* 0x54 */ KEY_PRTSCR, 0, KEY_BACKSLASH2, KEY_F11,
-   /* 0x58 */ KEY_F12, 0, 0, KEY_LWIN,
-   /* 0x5C */ KEY_RWIN, KEY_MENU, 0, 0,
-   /* 0x60 */ 0, 0, 0, 0,
-   /* 0x64 */ 0, 0, 0, 0,
-   /* 0x68 */ 0, 0, 0, 0,
-   /* 0x6C */ 0, 0, 0, 0,
-   /* 0x70 */ KEY_KANA, 0, 0, KEY_ABNT_C1,
-   /* 0x74 */ 0, 0, 0, 0,
-   /* 0x78 */ 0, KEY_CONVERT, 0, KEY_NOCONVERT,
-   /* 0x7C */ 0, KEY_YEN, 0, 0,
-   /* 0x80 */ 0, 0, 0, 0,
-   /* 0x84 */ 0, 0, 0, 0,
-   /* 0x88 */ 0, 0, 0, 0,
-   /* 0x8C */ 0, 0, 0, 0,
-   /* 0x90 */ 0, KEY_AT, KEY_COLON2, 0,
-   /* 0x94 */ KEY_KANJI, 0, 0, 0,
-   /* 0x98 */ 0, 0, 0, 0,
-   /* 0x9C */ KEY_ENTER_PAD, KEY_RCONTROL, 0, 0,
-   /* 0xA0 */ 0, 0, 0, 0,
-   /* 0xA4 */ 0, 0, 0, 0,
-   /* 0xA8 */ 0, 0, 0, 0,
-   /* 0xAC */ 0, 0, 0, 0,
-   /* 0xB0 */ 0, 0, 0, 0,
-   /* 0xB4 */ 0, KEY_SLASH_PAD, 0, KEY_PRTSCR,
-   /* 0xB8 */ KEY_ALTGR, 0, 0, 0,
-   /* 0xBC */ 0, 0, 0, 0,
-   /* 0xC0 */ 0, 0, 0, 0,
-   /* 0xC4 */ 0, KEY_PAUSE, 0, KEY_HOME,
-   /* 0xC8 */ KEY_UP, KEY_PGUP, 0, KEY_LEFT,
-   /* 0xCC */ 0, KEY_RIGHT, 0, KEY_END,
-   /* 0xD0 */ KEY_DOWN, KEY_PGDN, KEY_INSERT, KEY_DEL,
-   /* 0xD4 */ 0, 0, 0, 0,
-   /* 0xD8 */ 0, 0, 0, KEY_LWIN,
-   /* 0xDC */ KEY_RWIN, KEY_MENU, 0, 0,
-   /* 0xE0 */ 0, 0, 0, 0,
-   /* 0xE4 */ 0, 0, 0, 0,
-   /* 0xE8 */ 0, 0, 0, 0,
-   /* 0xEC */ 0, 0, 0, 0,
-   /* 0xF0 */ 0, 0, 0, 0,
-   /* 0xF4 */ 0, 0, 0, 0,
-   /* 0xF8 */ 0, 0, 0, 0,
-   /* 0xFC */ 0, 0, 0, 0
-};
 
 #endif

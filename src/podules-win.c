@@ -1,8 +1,9 @@
 #if defined WIN32 || defined _WIN32 || defined _WIN32
-#include <allegro.h>
-#include <winalleg.h>
+#include <dir.h>
+#include <windows.h>
 #include <stdio.h>
 #include "arc.h"
+#include "config.h"
 #include "podules.h"
 
 HINSTANCE hinstLib[8];
@@ -20,7 +21,8 @@ void opendlls(void)
 {
         char olddir[512],fn[512];
         podule tempp;
-        struct al_ffblk ff;
+        struct _finddata_t finddata;
+        int file;
         int (*InitDll)();
         int finished;
         int dllnum=0;
@@ -33,27 +35,27 @@ void opendlls(void)
         getcwd(olddir,sizeof(olddir));
         append_filename(fn,exname,"podules",sizeof(fn));
         if (chdir(fn)) { error("Cannot find podules directory %s",fn); exit(-1); }
-        finished=al_findfirst("*.dll",&ff,0xFFFF&~FA_DIREC);
-        if (finished)
+        file = _findfirst("*.dll", &finddata);
+        if (file == -1)
         {
                 chdir(olddir);
                 return;
         }
         while (!finished && dllnum<6)
         {
-                rpclog("Loading %s\n",ff.name);
+                rpclog("Loading %s\n", finddata.name);
                 SetErrorMode(0);
-                hinstLib[dllnum]=LoadLibrary(ff.name);
+                hinstLib[dllnum] = LoadLibrary(finddata.name);
                 if (hinstLib[dllnum] == NULL)
                 {
                         DWORD lasterror = GetLastError();
-                        rpclog("Failed to open DLL %s %x\n",ff.name, lasterror);
+                        rpclog("Failed to open DLL %s %x\n", finddata.name, lasterror);
                         goto nextdll;
                 }
                 InitDll = (const void *) GetProcAddress(hinstLib[dllnum], "InitDll");
                 if (InitDll == NULL)
                 {
-                        rpclog("Couldn't find InitDll in %s\n",ff.name);
+                        rpclog("Couldn't find InitDll in %s\n", finddata.name);
                         goto nextdll;
                 }
                 InitDll();
@@ -80,10 +82,10 @@ void opendlls(void)
                 dllnum++;
                 
                 nextdll:
-                finished = al_findnext(&ff);
+                finished = _findnext(file, &finddata);
         }
 
-        al_findclose(&ff);
+        _findclose(file);
         chdir(olddir);
         
 //        FreeLibrary(hinstLib);

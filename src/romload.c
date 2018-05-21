@@ -1,8 +1,10 @@
 /*Arculator v0.8 by Tom Walker
   'Flexible' ROM loader*/
-#include <allegro.h>
 #include <stdio.h>
+#include <io.h>
+#include <string.h>
 #include "arc.h"
+#include "config.h"
 
 int romset;
 char romfns[17][256];
@@ -15,7 +17,7 @@ int loadertictac()
         char s[10];
         FILE *f[4];
         int addr=0;
-        uint8_t *romb=rom;
+        uint8_t *romb = (uint8_t *)rom;
         for (c=0;c<16;c+=4)
         {
                 for (d=0;d<4;d++)
@@ -49,7 +51,7 @@ int loadpoizone()
         char s[10];
         FILE *f[4];
         int addr=0;
-        uint8_t *romb=rom;
+        uint8_t *romb = (uint8_t *)rom;
         return -1;
         for (c=0;c<24;c+=4)
         {
@@ -96,11 +98,12 @@ int loadrom()
         int file=0;
         int c,d,e;
         int len,pos=0;
-        struct al_ffblk ff;
+        struct _finddata_t finddata;
+        int find_file;
 //        char s[256];
         char fn[512];
         char *ext;
-        uint8_t *romb=rom;
+        uint8_t *romb = (uint8_t *)rom;
 //        rpclog("Loading ROM set %i\n",romset);
         if (firstromload) getcwd(olddir,511);
         firstromload=0;
@@ -115,8 +118,8 @@ int loadrom()
                 case 6: append_filename(fn,exname,"roms/wtiger",511); break;
         }
         chdir(fn);
-        finished=al_findfirst("*.*",&ff,0xFFFF&~FA_DIREC);
-        if (finished)
+        find_file = _findfirst("*.*", &finddata);
+        if (find_file == -1)
         {
                 chdir(olddir);
 //                rpclog("No files found!\n");
@@ -124,18 +127,18 @@ int loadrom()
         }
         while (!finished && file<16)
         {
-                ext=get_extension(ff.name);
+                ext = (char *)get_extension(finddata.name);
                 if (stricmp(ext,"txt"))
                 {
 //                        rpclog("Found %s\n",ff.name);
-                        strcpy(romfns[file],ff.name);
+                        strcpy(romfns[file],finddata.name);
                         file++;
                 }
 //                else
 //                   rpclog("Skipping %s\n",ff.name);
-                finished = al_findnext(&ff);
+                finished = _findnext(find_file, &finddata);
         }
-        al_findclose(&ff);
+        _findclose(find_file);
         if (file==0)
         {
                 chdir(olddir);

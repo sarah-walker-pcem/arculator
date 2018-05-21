@@ -1,7 +1,6 @@
 /*B-em v2.2 by Tom Walker
   Disc drive noise*/
 
-#include <allegro.h>
 #include <stdio.h>
 #include "arc.h"
 #include "disc.h"
@@ -11,8 +10,8 @@
 int ddnoise_vol=3;
 int ddnoise_type=0;
 
-static SAMPLE *seeksmp[4][2];
-static SAMPLE *motorsmp[3];
+//static SAMPLE *seeksmp[4][2];
+//static SAMPLE *motorsmp[3];
 
 static float ddnoise_mpos = 0;
 static int ddnoise_mstat = -1;
@@ -24,6 +23,8 @@ static int ddnoise_sdir = 0;
 
 void ddnoise_init()
 {
+        return;
+#if 0
         char path[512], p2[512];
         getcwd(p2, 511);
         sprintf(path, "%sddnoise/35",  exname);
@@ -56,10 +57,12 @@ void ddnoise_init()
         motorsmp[2] = load_wav("motoroff.wav");
         chdir(p2);
 //        printf("done!\n");
+#endif
 }
 
 void ddnoise_close()
 {
+#if 0
         int c;
         for (c = 0; c < 4; c++)
         {
@@ -72,12 +75,15 @@ void ddnoise_close()
                 if (motorsmp[c]) destroy_sample(motorsmp[c]);
                 motorsmp[c] = NULL;
         }
+#endif
 }
 
 static int16_t ddbuffer[4410];
 
 void ddnoise_seek(int len)
 {
+        fdc_time = 20000;
+#if 0
         rpclog("Seek %i tracks\n",len);
         ddnoise_sdir = (len < 0) ? 1 : 0;
         if (len < 0) len = -len;
@@ -89,10 +95,12 @@ void ddnoise_seek(int len)
         else                 ddnoise_sstat = 3;
 //        if (!sound_ddnoise) fdc_time = 200;
 //        rpclog("Start seek!\n");
+#endif
 }
 
 void ddnoise_mix()
 {
+#if 0
         int c;
 //        if (!f1) f1=fopen("f1.pcm","wb");
 //        if (!f2) f2=fopen("f2.pcm","wb");
@@ -158,4 +166,5 @@ void ddnoise_mix()
         al_givebufferdd(ddbuffer);
         
         oldmotoron=motoron;
+#endif
 }

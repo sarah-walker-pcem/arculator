@@ -1,9 +1,9 @@
 /*Arculator v0.8 by Tom Walker
   Eterna arcade emulation*/
 
-#include <allegro.h>
 #include "arc.h"
 #include "ioc.h"
+#include "plat_input.h"
 
 int oldkey5=0,oldkey6=0;
 uint8_t readeterna(uint32_t addr)

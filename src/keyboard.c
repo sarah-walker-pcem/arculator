@@ -1,15 +1,17 @@
 /*Arculator 0.8 by Tom Walker
   Keyboard/mouse emulation*/
-#include <allegro.h>
 #include <stdio.h>
 #include "arc.h"
 #include "ioc.h"
 #include "keyboard.h"
+#include "plat_input.h"
 #include "keytable.h"
+
+static int mouse_b, mouse_x, mouse_y;
 
 int mousecapture;
 
-int keydat[128];
+int keydat[512];
 
 int moldx,moldy;
 int ledcaps,lednum,ledscr;
@@ -131,14 +133,14 @@ void keyboard_write(uint8_t val)
                 {
                         case KEYBOARD_HRST: /*HRST*/
                         keyboard_send_single(KEYBOARD_HRST); /*HRST*/
-                        for (c = 0; c < 128; c++) 
+                        for (c = 0; c < 512; c++) 
                                 keydat[c] = 0;
                         keyena = mouseena = 0;
                         keystat = KEYBOARD_RESET;
                         break;
                         case KEYBOARD_RAK1: /*RAK1*/
                         keyboard_send_single(KEYBOARD_RAK1); /*RAK1*/
-                        for (c = 0; c < 128; c++) 
+                        for (c = 0; c < 512; c++) 
                                 keydat[c] = 0;
                         keyena = mouseena = 0;
                         keystat = KEYBOARD_RESET;
@@ -215,7 +217,7 @@ void keyboard_init()
         key_rx_callback = 0;
         keyboard_send_single(KEYBOARD_HRST);
         keystat = KEYBOARD_RESET;        
-        for (c = 0; c < 128; c++)
+        for (c = 0; c < 512; c++)
         {
                 keytable[c][0] = keytable[c][1] = -1;
                 keydat[c] = 0;
@@ -252,10 +254,10 @@ void keyboard_poll()
                 return;
         if (!keyena) 
                 return;
-        c = poll_keyboard();
-        for (c = 1; c < 128; c++)
+//        c = poll_keyboard();
+        for (c = 1; c < 512; c++)
         {
-                if (key[c] != keydat[c] && c != KEY_MENU)
+                if (key[c] != keydat[c] && c != KEY_MENU && keytable[c-1][0] != -1)
                 {
                         if (key[c])
                         {
@@ -270,7 +272,7 @@ void keyboard_poll()
                 }
         }
 
-        mouse_buttons = mousecapture ? mouse_b : 0;
+        mouse_buttons = /*mousecapture ? */mouse_get_buttons()/* : 0*/;
         
         if ((mouse_buttons & 1) != mousedown[0]) /*Left button*/
         {
@@ -300,11 +302,11 @@ void keyboard_poll()
                 return;
         }
 
-        if (mouseena && !mousehack && mousecapture)// && (!mousehack || fullscreen))
+        if (mouseena && !mousehack/* && mousecapture*/)// && (!mousehack || fullscreen))
         {
-                get_mouse_mickeys(&mx,&my);
-                if (mousecapture && !fullscreen) 
-                        position_mouse(320,256);
+                mouse_get_mickeys(&mx,&my);
+//                if (mousecapture && !fullscreen) 
+//                        position_mouse(320,256);
 
                 if (!mx && !my) 
                         return;

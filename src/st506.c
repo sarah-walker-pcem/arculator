@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include "arc.h"
+#include "config.h"
 #include "ioc.h"
 
 void callbackst506();

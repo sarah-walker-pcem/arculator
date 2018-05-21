@@ -1,6 +1,5 @@
 #if defined(LINUX)
 #warning
-#include <allegro.h>
 #include <stdio.h>
 #include "arc.h"
 #include "podules.h"

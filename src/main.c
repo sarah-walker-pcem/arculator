@@ -1,10 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <allegro.h>
+#include <string.h>
+#include <stdarg.h>
 #include "arc.h"
 
 #include "82c711_fdc.h"
 #include "arm.h"
+#include "config.h"
 #include "disc.h"
 #include "disc_adf.h"
 #include "disc_apd.h"
@@ -13,6 +15,7 @@
 #include "disc_ssd.h"
 #include "keyboard.h"
 #include "memc.h"
+#include "plat_input.h"
 #include "sound.h"
 #include "wd1770.h"
 
@@ -55,18 +58,6 @@ void updateins()
         jint=0;
         updatemips=1;
 }
-
-END_OF_FUNCTION(updateins);
-
-void installins()
-{
-        LOCK_FUNCTION(updateins);
-        LOCK_VARIABLE(inssec);
-        LOCK_VARIABLE(inscount);
-        install_int_ex(updateins,MSEC_TO_TIMER(1000));
-        inscount=0;
-}
-
 
 FILE *rlog;
 void rpclog(char *format, ...)
@@ -148,18 +139,20 @@ void arc_init()
         int c;
         al_init_main(NULL,0);
 
+        loadconfig();
+        
         initvid();
         get_executable_name(exname,511);
-        p=get_filename(exname);
-        *p=0;
+        p = (char *)get_filename(exname);
+        *p = 0;
         append_filename(fn,exname,"arc.cfg",511);
-        set_config_file(fn);
+//        set_config_file(fn);
 #if 0
         initarculfs();
 #endif
         hostfs_init();
         resetide();
-        p = (char *)get_config_string(NULL,"mem_size",NULL);
+        p = (char *)config_get_string(NULL,"mem_size",NULL);
         if (!p || !strcmp(p,"4096")) memsize=4096;
         else if (!strcmp(p,"8192"))  memsize=8192;
         else if (!strcmp(p,"2048"))  memsize=2048;
@@ -169,7 +162,7 @@ void arc_init()
 rpclog("mem_size = %i %s cfg %s\n", memsize, p, fn);
         initmem(memsize);
         
-        p = (char *)get_config_string(NULL,"rom_set",NULL);
+        p = (char *)config_get_string(NULL,"rom_set",NULL);
         if (!p || !strcmp(p,"3")) romset=3;
         else if (!strcmp(p,"1"))  romset=1;
         else if (!strcmp(p,"2"))  romset=2;
@@ -185,14 +178,9 @@ rpclog("mem_size = %i %s cfg %s\n", memsize, p, fn);
         resetarm();
         loadcmos();
         ioc_reset();
-        install_keyboard();
-        install_mouse();
         keyboard_init();
-        install_timer();
-        installins();
         resetmouse();
 
-        loadconfig();
         fullscreen=0;
         //mousehack=0;
         limitspeed=1;
@@ -216,7 +204,7 @@ rpclog("mem_size = %i %s cfg %s\n", memsize, p, fn);
         for (c=0;c<4;c++)
         {
                 sprintf(s,"disc_name_%i",c);
-                p = (char *)get_config_string(NULL,s,NULL);
+                p = (char *)config_get_string(NULL,s,NULL);
                 if (p) {
                    disc_close(c);
                    strcpy(discname[c], p);
@@ -321,7 +309,8 @@ void arc_run()
         execarm((speed_mhz * 1000000) / 100);
         cmostick();
         polljoy();
-        poll_mouse();
+        mouse_poll_host();
+        keyboard_poll_host();
         if (mousehack) doosmouse();
         frameco++;
         ddnoise_frames++;

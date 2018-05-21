@@ -1,9 +1,9 @@
 /*B-em v2.2 by Tom Walker
   Disc support*/
   
-#include <allegro.h>
 #include <stdio.h>
 #include "arc.h"
+#include "config.h"
 
 #include "disc.h"
 

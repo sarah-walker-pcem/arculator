@@ -1,6 +1,5 @@
 /*Arculator 0.8 by Tom Walker
   IOC emulation*/
-#include <allegro.h>
 #include <stdio.h>
 #include "arc.h"
 #include "disc.h"
@@ -286,16 +285,21 @@ void keycallback2()
 
 void initjoy()
 {
+        #if 0
         install_joystick(JOY_TYPE_AUTODETECT);
+        #endif
 }
 
 void polljoy()
 {
+        #if 0
         poll_joystick();
+        #endif
 }
 
 uint8_t readjoy(int addr)
 {
+        #if 0
         int c=(addr&4)?1:0;
         uint8_t temp=0x60;
         if (joy[c].stick[0].axis[1].d1) temp|=0x01;
@@ -304,4 +308,5 @@ uint8_t readjoy(int addr)
         if (joy[c].stick[0].axis[0].d2) temp|=0x08;
         if (joy[c].button[0].b) temp|=0x10;
         return temp^0x1F;
+        #endif
 }

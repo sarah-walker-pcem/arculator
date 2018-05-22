@@ -134,18 +134,27 @@ void convert64to80(uint32_t *temp, double tf)
                                 return 1;
 
 
-int64_t fpa_round(double x, uint32_t opcode)
+int64_t fpa_round(double b, uint32_t opcode)
 {
+        int64_t a, c;
+        
         switch (opcode&0x60)
         {
                 case 0x00: /*Nearest*/
-                return (int64_t)(x+0.5);
+                a = (int64_t)floor(b);
+                c = (int64_t)floor(b + 1.0);
+                if ((b - a) < (c - b))
+                        return a;
+                else if ((b - a) > (c - b))
+                        return c;
+                else
+                        return (a & 1) ? c : a;
                 case 0x20: /*+inf*/
-                return (int64_t)ceil(x);
+                return (int64_t)ceil(b);
                 case 0x40: /*-inf*/
-                return (int64_t)floor(x);
+                return (int64_t)floor(b);
                 case 0x60: /*Zero*/
-                return (int64_t)x;
+                return (int64_t)b;
         }
 }
 

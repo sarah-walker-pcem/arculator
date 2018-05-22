@@ -134,17 +134,17 @@ void arc_set_cpu(int cpu, int memc);
 void arc_init()
 {
         char *p;
-        char fn[512],s[512];
+        char s[512];
         int c;
         al_init_main(NULL,0);
+
+        get_executable_name(exname,511);
+        p = (char *)get_filename(exname);
+        *p = 0;
 
         loadconfig();
         
         initvid();
-        get_executable_name(exname,511);
-        p = (char *)get_filename(exname);
-        *p = 0;
-        append_filename(fn,exname,"arc.cfg",511);
 //        set_config_file(fn);
 #if 0
         initarculfs();
@@ -158,7 +158,6 @@ void arc_init()
         else if (!strcmp(p,"1024"))  memsize=1024;
         else if (!strcmp(p,"512"))   memsize=512;
         else                         memsize=16384;
-rpclog("mem_size = %i %s cfg %s\n", memsize, p, fn);
         initmem(memsize);
         
         p = (char *)config_get_string(NULL,"rom_set",NULL);

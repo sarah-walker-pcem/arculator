@@ -299,6 +299,7 @@ void polljoy()
 
 uint8_t readjoy(int addr)
 {
+        return 0x7f;
         #if 0
         int c=(addr&4)?1:0;
         uint8_t temp=0x60;

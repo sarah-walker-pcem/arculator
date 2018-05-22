@@ -178,7 +178,6 @@ char exname[512];
 /*Config*/
 int fastdisc,dblscan;
 int romset;
-int hardwareblit;
 int stereo;
 
 #if 0
@@ -204,7 +203,6 @@ extern int hires;
 extern int fullborders,noborders;
 extern int firstfull;
 extern int dblscan;
-extern int hardwareblit;
 
 extern int arm3;
 extern int fpaena;

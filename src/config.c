@@ -5,6 +5,7 @@
 #include "arm.h"
 #include "config.h"
 #include "memc.h"
+#include "video.h"
 
 char *get_filename(char *s)
 {
@@ -514,10 +515,7 @@ rpclog("config_file=%s\n", config_file);
         p=config_get_string(NULL,"sound_enable",NULL);
         if (!p || strcmp(p,"0")) soundena=1;
         else                     soundena=0;
-        p=config_get_string(NULL,"full_borders",NULL);
-        if (!p || strcmp(p,"1")) fullborders=0;
-        else                     fullborders=1;
-        noborders=config_get_int(NULL,"no_borders",0);
+        display_mode = config_get_int(NULL, "display_mode", DISPLAY_MODE_NO_BORDERS);
         arm_cpu_type = config_get_int(NULL, "cpu_type", 0);
         memc_type = config_get_int(NULL, "memc_type", 0);
         p=config_get_string(NULL,"hires",NULL);
@@ -529,9 +527,6 @@ rpclog("config_file=%s\n", config_file);
         p=config_get_string(NULL,"double_scan",NULL);
         if (!p || strcmp(p,"0")) dblscan=1;
         else                     dblscan=0;
-        p=config_get_string(NULL,"hardware_blit",NULL);
-        if (!p || strcmp(p,"0")) hardwareblit=1;
-        else                     hardwareblit=0;
         p=config_get_string(NULL,"fast_disc",NULL);
         if (!p || strcmp(p,"0")) fastdisc=1;
         else                     fastdisc=0;
@@ -567,13 +562,10 @@ void saveconfig()
         sprintf(s,"%i",hires);
         config_set_string(NULL,"hires",s);
         sprintf(s,"%i",fullborders);
-        config_set_string(NULL,"full_borders",s);
-        sprintf(s,"%i",firstfull);
+        config_set_int(NULL, "display_mode", display_mode);
         config_set_string(NULL,"first_fullscreen",s);
         sprintf(s,"%i",dblscan);
         config_set_string(NULL,"double_scan",s);
-        sprintf(s,"%i",hardwareblit);
-        config_set_string(NULL,"hardware_blit",s);
         sprintf(s,"%i",fastdisc);
         config_set_string(NULL,"fast_disc",s);
         sprintf(s,"%i",fdctype);
@@ -582,7 +574,6 @@ void saveconfig()
         config_set_string(NULL,"rom_set",s);
         sprintf(s,"%i",stereo);
         config_set_string(NULL,"stereo",s);
-        config_set_int(NULL,"no_borders",noborders);
         
         config_save(config_file);
 }

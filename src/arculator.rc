@@ -45,10 +45,11 @@ BEGIN
         POPUP "&Video"
         BEGIN
                 MENUITEM "&Fullscreen",IDM_VIDEO_FULLSCR
-                POPUP "&Borders"
+                POPUP "&Display mode"
                 BEGIN
-                        MENUITEM "&Full borders", IDM_VIDEO_FULLBOR
-                        MENUITEM "&No borders", IDM_VIDEO_NOBOR
+                        MENUITEM "&No borders",     IDM_VIDEO_NO_BORDERS
+                        MENUITEM "N&ative borders", IDM_VIDEO_NATIVE_BORDERS
+                        MENUITEM "&TV mode",        IDM_VIDEO_TV
                 END
                 POPUP "&Blit method"
                 BEGIN

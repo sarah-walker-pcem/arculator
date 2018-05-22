@@ -37,7 +37,6 @@
 int romset=2;
 int romsavailable[6];
 
-int hardwareblit;
 void fdiclose();
 int firstfull=1;
 int memsize=4096;

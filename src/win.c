@@ -14,6 +14,7 @@
 #include "resources.h"
 #include "vidc.h"
 #include "plat_video.h"
+#include "video.h"
 #include "video_sdl2.h"
 
 int infocus;
@@ -86,11 +87,9 @@ void initmenu()
         if (soundena)   CheckMenuItem(menu,IDM_OPTIONS_SOUND,MF_CHECKED);
         if (stereo)     CheckMenuItem(menu,IDM_OPTIONS_STEREO,MF_CHECKED);
         rpclog("initmenu - fullborders=%i\n", fullborders);
-        if (fullborders)
-        {
-                updatewindowsize(800,600);
-                CheckMenuItem(menu,IDM_VIDEO_FULLBOR, MF_CHECKED);
-        }
+        CheckMenuItem(menu, IDM_VIDEO_NO_BORDERS,     (display_mode == DISPLAY_MODE_NO_BORDERS) ? MF_CHECKED : MF_UNCHECKED);
+        CheckMenuItem(menu, IDM_VIDEO_NATIVE_BORDERS, (display_mode == DISPLAY_MODE_NATIVE_BORDERS) ? MF_CHECKED : MF_UNCHECKED);
+        CheckMenuItem(menu, IDM_VIDEO_TV,             (display_mode == DISPLAY_MODE_TV) ? MF_CHECKED : MF_UNCHECKED);
         if (fastdisc)   CheckMenuItem(menu,IDM_DISC_FAST,    MF_CHECKED);
         if (!dblscan)   CheckMenuItem(menu,IDM_VIDEO_DBLSCAN,MF_CHECKED);
         switch (memsize)
@@ -534,23 +533,13 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                         win_dofullscreen = 1;
 //                        reinitvideo();
                         return 0;
-                        case IDM_VIDEO_FULLBOR:
-                        fullborders^=1;
-                        noborders=0;
-                        if (fullborders) updatewindowsize(800,600);
-                        else             updatewindowsize(672,544);
-                        if (fullborders) CheckMenuItem(hmenu,IDM_VIDEO_FULLBOR,MF_CHECKED);
-                        else             CheckMenuItem(hmenu,IDM_VIDEO_FULLBOR,MF_UNCHECKED);
-                        CheckMenuItem(hmenu,IDM_VIDEO_NOBOR,MF_UNCHECKED);
-                        clearbitmap();
-                        setredrawall();
-                        return 0;
-                        case IDM_VIDEO_NOBOR:
-                        noborders^=1;
-                        fullborders=0;
-                        if (noborders) CheckMenuItem(hmenu,IDM_VIDEO_NOBOR,MF_CHECKED);
-                        else           CheckMenuItem(hmenu,IDM_VIDEO_NOBOR,MF_UNCHECKED);
-                        CheckMenuItem(hmenu,IDM_VIDEO_FULLBOR,MF_UNCHECKED);
+                        case IDM_VIDEO_NO_BORDERS:
+                        case IDM_VIDEO_NATIVE_BORDERS:
+                        case IDM_VIDEO_TV:
+                        display_mode = LOWORD(wParam) - IDM_VIDEO_NO_BORDERS;
+                        CheckMenuItem(menu, IDM_VIDEO_NO_BORDERS,     (display_mode == DISPLAY_MODE_NO_BORDERS) ? MF_CHECKED : MF_UNCHECKED);
+                        CheckMenuItem(menu, IDM_VIDEO_NATIVE_BORDERS, (display_mode == DISPLAY_MODE_NATIVE_BORDERS) ? MF_CHECKED : MF_UNCHECKED);
+                        CheckMenuItem(menu, IDM_VIDEO_TV,             (display_mode == DISPLAY_MODE_TV) ? MF_CHECKED : MF_UNCHECKED);
                         clearbitmap();
                         setredrawall();
                         return 0;
@@ -562,7 +551,6 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                         return 0;
                         case IDM_BLIT_SCAN:
                         dblscan=0;
-                        hardwareblit=0;
                         clearbitmap();
                         CheckMenuItem(hmenu,IDM_BLIT_SCAN,  MF_CHECKED);
                         CheckMenuItem(hmenu,IDM_BLIT_SCALE, MF_UNCHECKED);
@@ -570,7 +558,6 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                         return 0;
                         case IDM_BLIT_SCALE:
                         dblscan=1;
-                        hardwareblit=0;
                         clearbitmap();
                         CheckMenuItem(hmenu,IDM_BLIT_SCAN,  MF_UNCHECKED);
                         CheckMenuItem(hmenu,IDM_BLIT_SCALE, MF_CHECKED);
@@ -578,7 +565,6 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                         return 0;
                         case IDM_BLIT_HSCALE:
                         dblscan=1;
-                        hardwareblit=1;
                         clearbitmap();
                         CheckMenuItem(hmenu,IDM_BLIT_SCAN,  MF_UNCHECKED);
                         CheckMenuItem(hmenu,IDM_BLIT_SCALE, MF_UNCHECKED);

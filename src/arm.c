@@ -100,8 +100,16 @@ static void CLOCK_I()
 	}
 }
 
+void arm_clock_i(int i_cycles)
+{
+        while (i_cycles--)
+        {
+                CLOCK_I();
+                cycles -= cyc_i;
+        }
+}
 
-static inline void cache_read_timing(uint32_t addr, int is_n_cycle)
+void cache_read_timing(uint32_t addr, int is_n_cycle)
 {
 	int bit_offset = (addr >> 4) & 7;
 	int byte_offset = ((addr & 0x3ffffff) >> (4+3));
@@ -183,7 +191,7 @@ void cache_flush()
 	}*/
 }
 
-static void cache_write_timing(uint32_t addr, int is_n_cycle)
+void cache_write_timing(uint32_t addr, int is_n_cycle)
 {
 	if (addr & 0xfc000000)
 	       return; /*Address exception*/

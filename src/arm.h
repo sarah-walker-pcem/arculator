@@ -9,3 +9,8 @@ extern int arm_has_cp15;
 void cache_flush();
 
 extern int linecyc;
+
+void arm_clock_i(int cycles);
+
+void cache_read_timing(uint32_t addr, int is_n_cycle);
+void cache_write_timing(uint32_t addr, int is_n_cycle);

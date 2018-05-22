@@ -6,9 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "arc.h"
-
-int cycles;
-int timetolive;
+#include "arm.h"
 
 //#define UNDEFINED  11
 //#define undefined() exception(UNDEFINED,8,4)
@@ -49,6 +47,12 @@ void resetfpa()
 #define ZFLAG 0x40000000
 #define CFLAG 0x20000000
 #define VFLAG 0x10000000
+
+#define FPA_PRECISION_MASK     ((1 << 19) | (1 << 7))
+#define FPA_PRECISION_SINGLE   (0)
+#define FPA_PRECISION_DOUBLE   (1 << 7)
+#define FPA_PRECISION_EXTENDED (1 << 19)
+#define FPA_PRECISION_ILLEGAL  ((1 << 19) | (1 << 7))
 
 void setsubf(double op1, double op2)
 {
@@ -143,6 +147,13 @@ int64_t fpa_round(double x, uint32_t opcode)
                 case 0x60: /*Zero*/
                 return (int64_t)x;
         }
+}
+
+static void fpa_arithmetic_bounce()
+{
+        fpcr&=0xD00;
+        fpcr|=0x400; /*Arithmetic bounce*/
+        fpcr|=(opcode&0xFFF0FF); /*Opcode, destination, source 1, source 2, rounding*/
 }
 
 static char fpa_temps[10];
@@ -403,6 +414,7 @@ int fpaopcode(uint32_t opcode)
 //                        rpclog("%08X %03X\n",opcode,opcode&0x100);
                 if (opcode&0x100) /*LDF/STF*/
                 {
+                        arm_clock_i(1);
 //                        rpclog("1\n");
                         addr=GETADDR(RN);
                         if (opcode&0x1000000)
@@ -417,7 +429,6 @@ int fpaopcode(uint32_t opcode)
                                 temp[0]=f32.i;
                                 temp[1]=temp[2]=0;
                                 len=1;
-                                cycles-=2;
 //                                if (!(opcode&0x100000)) rpclog("Storing %08X %08X %08X %08X %f %f\n",addr,temp[0],temp[1],temp[2],fparegs[FD],*tfs);
                                 break;
                                 case 0x008000: /*Double*/
@@ -426,12 +437,10 @@ int fpaopcode(uint32_t opcode)
                                 temp[1]=f64.i.h;
                                 temp[2]=0;
                                 len=2;
-                                cycles-=3;
                                 break;
                                 case 0x400000: /*Long*/
                                 convert64to80(temp, fparegs[FD]);
                                 len=3;
-                                cycles-=4;
                                 break;
                                 default:
 //rpclog("Bad LDF/STF size %08X %08X\n",opcode&0x408000,opcode);
@@ -454,15 +463,21 @@ int fpaopcode(uint32_t opcode)
                                 {
                                         case 1:
                                         temp[0]=readmeml(addr);
+                                        cache_read_timing(addr, 1);
                                         break;
                                         case 2:
                                         temp[1]=readmeml(addr);
                                         temp[0]=readmeml(addr+4);
+                                        cache_read_timing(addr, 1);
+                                        cache_read_timing(addr+4, !((addr + 4) & 0xc));
                                         break;
                                         case 3:
                                         temp[0]=readmeml(addr);
                                         temp[1]=readmeml(addr+4);
                                         temp[2]=readmeml(addr+8);
+                                        cache_read_timing(addr, 1);
+                                        cache_read_timing(addr+4, !((addr + 4) & 0xc));
+                                        cache_read_timing(addr+8, !((addr + 8) & 0xc));
                                         break;
                                 }
                                 switch (opcode&0x408000)
@@ -492,15 +507,21 @@ int fpaopcode(uint32_t opcode)
                                 {
                                         case 1:
                                         writememl(addr,temp[0]);
+                                        cache_write_timing(addr, 1);
                                         break;
                                         case 2:
                                         writememl(addr,temp[1]);
                                         writememl(addr+4,temp[0]);
+                                        cache_write_timing(addr, 1);
+                                        cache_write_timing(addr+4, !((addr + 4) & 0xc));
                                         break;
                                         case 3:
                                         writememl(addr,temp[0]);
                                         writememl(addr+4,temp[1]);
                                         writememl(addr+8,temp[2]);
+                                        cache_write_timing(addr, 1);
+                                        cache_write_timing(addr+4, !((addr + 4) & 0xc));
+                                        cache_write_timing(addr+8, !((addr + 8) & 0xc));
                                         break;
                                 }
                         }
@@ -540,7 +561,19 @@ int fpaopcode(uint32_t opcode)
                                 temp[1]=readmeml(addr+40);
                                 temp[2]=readmeml(addr+44);
                                 fparegs[(FD+3)&7]=convert80to64(&temp[0]);
-                                cycles-=13;
+                                arm_clock_i(1);
+                                cache_read_timing(addr, 1);
+                                cache_read_timing(addr+4, !((addr + 4) & 0xc));
+                                cache_read_timing(addr+8, !((addr + 8) & 0xc));
+                                cache_read_timing(addr+12, !((addr + 12) & 0xc));
+                                cache_read_timing(addr+16, !((addr + 16) & 0xc));
+                                cache_read_timing(addr+20, !((addr + 20) & 0xc));
+                                cache_read_timing(addr+24, !((addr + 24) & 0xc));
+                                cache_read_timing(addr+28, !((addr + 28) & 0xc));
+                                cache_read_timing(addr+32, !((addr + 32) & 0xc));
+                                cache_read_timing(addr+36, !((addr + 36) & 0xc));
+                                cache_read_timing(addr+40, !((addr + 40) & 0xc));
+                                cache_read_timing(addr+44, !((addr + 44) & 0xc));
                                 break;
                                 case 0x408000: /*3 registers*/
                                 temp[0]=readmeml(addr);
@@ -555,7 +588,16 @@ int fpaopcode(uint32_t opcode)
                                 temp[1]=readmeml(addr+28);
                                 temp[2]=readmeml(addr+32);
                                 fparegs[(FD+2)&7]=convert80to64(&temp[0]);
-                                cycles-=10;
+                                arm_clock_i(1);
+                                cache_read_timing(addr, 1);
+                                cache_read_timing(addr+4, !((addr + 4) & 0xc));
+                                cache_read_timing(addr+8, !((addr + 8) & 0xc));
+                                cache_read_timing(addr+12, !((addr + 12) & 0xc));
+                                cache_read_timing(addr+16, !((addr + 16) & 0xc));
+                                cache_read_timing(addr+20, !((addr + 20) & 0xc));
+                                cache_read_timing(addr+24, !((addr + 24) & 0xc));
+                                cache_read_timing(addr+28, !((addr + 28) & 0xc));
+                                cache_read_timing(addr+32, !((addr + 32) & 0xc));
                                 break;
                                 case 0x400000: /*2 registers*/
                                 temp[0]=readmeml(addr);
@@ -566,14 +608,23 @@ int fpaopcode(uint32_t opcode)
                                 temp[1]=readmeml(addr+16);
                                 temp[2]=readmeml(addr+20);
                                 fparegs[(FD+1)&7]=convert80to64(&temp[0]);
-                                cycles-=7;
+                                arm_clock_i(1);
+                                cache_read_timing(addr, 1);
+                                cache_read_timing(addr+4, !((addr + 4) & 0xc));
+                                cache_read_timing(addr+8, !((addr + 8) & 0xc));
+                                cache_read_timing(addr+12, !((addr + 12) & 0xc));
+                                cache_read_timing(addr+16, !((addr + 16) & 0xc));
+                                cache_read_timing(addr+20, !((addr + 20) & 0xc));
                                 break;
                                 case 0x008000: /*1 register*/
                                 temp[0]=readmeml(addr);
                                 temp[1]=readmeml(addr+4);
                                 temp[2]=readmeml(addr+8);
                                 fparegs[FD]=convert80to64(&temp[0]);
-                                cycles-=4;
+                                arm_clock_i(1);
+                                cache_read_timing(addr, 1);
+                                cache_read_timing(addr+4, !((addr + 4) & 0xc));
+                                cache_read_timing(addr+8, !((addr + 8) & 0xc));
                                 break;
 
                                 default:
@@ -619,7 +670,19 @@ int fpaopcode(uint32_t opcode)
                                 writememl(addr+36,temp[0]);
                                 writememl(addr+40,temp[1]);
                                 writememl(addr+44,temp[2]);
-                                cycles-=13;
+                                arm_clock_i(1);
+                                cache_write_timing(addr, 1);
+                                cache_write_timing(addr+4, !((addr + 4) & 0xc));
+                                cache_write_timing(addr+8, !((addr + 8) & 0xc));
+                                cache_write_timing(addr+12, !((addr + 12) & 0xc));
+                                cache_write_timing(addr+16, !((addr + 16) & 0xc));
+                                cache_write_timing(addr+20, !((addr + 20) & 0xc));
+                                cache_write_timing(addr+24, !((addr + 24) & 0xc));
+                                cache_write_timing(addr+28, !((addr + 28) & 0xc));
+                                cache_write_timing(addr+32, !((addr + 32) & 0xc));
+                                cache_write_timing(addr+36, !((addr + 36) & 0xc));
+                                cache_write_timing(addr+40, !((addr + 40) & 0xc));
+                                cache_write_timing(addr+44, !((addr + 44) & 0xc));
                                 break;
                                 case 0x408000: /*3 registers*/
                                 temp[2]=0;
@@ -635,7 +698,16 @@ int fpaopcode(uint32_t opcode)
                                 writememl(addr+24,temp[0]);
                                 writememl(addr+28,temp[1]);
                                 writememl(addr+32,temp[2]);
-                                cycles-=10;
+                                arm_clock_i(1);
+                                cache_write_timing(addr, 1);
+                                cache_write_timing(addr+4, !((addr + 4) & 0xc));
+                                cache_write_timing(addr+8, !((addr + 8) & 0xc));
+                                cache_write_timing(addr+12, !((addr + 12) & 0xc));
+                                cache_write_timing(addr+16, !((addr + 16) & 0xc));
+                                cache_write_timing(addr+20, !((addr + 20) & 0xc));
+                                cache_write_timing(addr+24, !((addr + 24) & 0xc));
+                                cache_write_timing(addr+28, !((addr + 28) & 0xc));
+                                cache_write_timing(addr+32, !((addr + 32) & 0xc));
                                 break;
                                 case 0x400000: /*2 registers*/
                                 temp[2]=0;
@@ -647,7 +719,13 @@ int fpaopcode(uint32_t opcode)
                                 writememl(addr+12,temp[0]);
                                 writememl(addr+16,temp[1]);
                                 writememl(addr+20,temp[2]);
-                                cycles-=7;
+                                arm_clock_i(1);
+                                cache_write_timing(addr, 1);
+                                cache_write_timing(addr+4, !((addr + 4) & 0xc));
+                                cache_write_timing(addr+8, !((addr + 8) & 0xc));
+                                cache_write_timing(addr+12, !((addr + 12) & 0xc));
+                                cache_write_timing(addr+16, !((addr + 16) & 0xc));
+                                cache_write_timing(addr+20, !((addr + 20) & 0xc));
                                 break;
                                 case 0x008000: /*1 register*/
                                 temp[2]=0;
@@ -655,7 +733,10 @@ int fpaopcode(uint32_t opcode)
                                 writememl(addr,temp[0]);
                                 writememl(addr+4,temp[1]);
                                 writememl(addr+8,temp[2]);
-                                cycles-=4;
+                                arm_clock_i(1);
+                                cache_write_timing(addr, 1);
+                                cache_write_timing(addr+4, !((addr + 4) & 0xc));
+                                cache_write_timing(addr+8, !((addr + 8) & 0xc));
                                 break;
                                 
                                 default:
@@ -690,7 +771,7 @@ int fpaopcode(uint32_t opcode)
                                         else          
                                                 tempf = fparegs[opcode & 7];
                                         setsubf(fparegs[FN], tempf);
-                                        cycles -= 5;
+                                        arm_clock_i(5);
                                         return 0;
                                         case 5: /*CNF*/
                                         case 7: /*CNFE*/
@@ -699,7 +780,7 @@ int fpaopcode(uint32_t opcode)
                                         else          
                                                 tempf = fparegs[opcode & 7];
                                         setsubf(fparegs[FN], -tempf);
-                                        cycles -= 5;
+                                        arm_clock_i(5);
                                         return 0;
                                 }
                                 undeffpa
@@ -709,32 +790,32 @@ int fpaopcode(uint32_t opcode)
                         {
                                 case 0: /*FLT*/
                                 fparegs[FN]=(double)(int32_t)armregs[RD];
-                                cycles-=6;
+                                arm_clock_i(6);
 //                                rpclog("FLT F%i now %f from R%i %08X %i %07X\n",FN,fparegs[FN],RD,armregs[RD],armregs[RD],PC);
                                 return 0;
                                 case 1: /*FIX*/
                                 armregs[RD]=(int32_t)fpa_round(fparegs[opcode&7],opcode);
-                                cycles-=8;
+                                arm_clock_i(7);
 //                                rpclog("FIX F%i (%f) to R%i (%08X %i)\n",FN,fparegs[FN],RD,armregs[RD],armregs[RD]);
                                 return 0;
                                 case 2: /*WFS*/
                                 fpsr=(armregs[RD]&0xFFFFFF)|(fpsr&0xFF000000);
-                                cycles-=3;
+                                arm_clock_i(3);
                                 return 0;
                                 case 3: /*RFS*/
 //                                rpclog("Read FPSR - %08X\n",fpsr);
                                 armregs[RD]=fpsr|0x400;
-                                cycles-=3;
+                                arm_clock_i(3);
                                 return 0;
                                 case 4: /*WFC*/
                                 fpcr=(fpcr&~0xD00)|(armregs[RD]&0xD00);
-                                cycles-=3;
+                                arm_clock_i(3);
                                 return 0;
                                 case 5: /*RFC*/
 //                                rpclog("Read FPCR - %08X\n",fpcr);
                                 armregs[RD]=fpcr;
                                 fpcr&=~0xD00;
-                                cycles-=3;
+                                arm_clock_i(3);
                                 return 0;
                         }
                         undeffpa
@@ -749,69 +830,99 @@ int fpaopcode(uint32_t opcode)
 //                        undefined();
                         return 1;
                 }
+                if ((opcode & FPA_PRECISION_MASK) == FPA_PRECISION_ILLEGAL)
+                {
+                        fpa_arithmetic_bounce();
+                        return 1;
+                }
                 switch (opcode&0xF08000)
                 {
                         case 0x000000: /*ADF*/
                         fparegs[FD]=fparegs[FN]+tempf;
-                        cycles-=2;
+                        arm_clock_i(2);
                         return 0;
                         case 0x100000: /*MUF*/
-                        cycles-=3;
+                        fparegs[FD]=fparegs[FN]*tempf;
+                        arm_clock_i(8);
+                        return 0;
                         case 0x900000: /*FML*/
                         fparegs[FD]=fparegs[FN]*tempf;
-                        cycles-=5;
+                        arm_clock_i(5);
                         return 0;
                         case 0x200000: /*SUF*/
                         fparegs[FD]=fparegs[FN]-tempf;
-                        cycles-=2;
+                        arm_clock_i(2);
                         return 0;
                         case 0x300000: /*RSF*/
                         fparegs[FD]=tempf-fparegs[FN];
-                        cycles-=2;
+                        arm_clock_i(2);
                         return 0;
                         case 0x400000: /*DVF*/
                         case 0xA00000: /*FDV*/
                         fparegs[FD]=fparegs[FN]/tempf;
-                        cycles-=30;
+                        switch (opcode & FPA_PRECISION_MASK)
+                        {
+                                case FPA_PRECISION_SINGLE:
+                                arm_clock_i(30);
+                                break;
+                                case FPA_PRECISION_DOUBLE:
+                                arm_clock_i(58);
+                                break;
+                                case FPA_PRECISION_EXTENDED:
+                                arm_clock_i(70);
+                                break;
+                        }
                         return 0;
                         case 0x500000: /*RDV*/
                         case 0xB00000: /*FRD*/
                         fparegs[FD]=tempf/fparegs[FN];
-                        cycles-=30;
+                        switch (opcode & FPA_PRECISION_MASK)
+                        {
+                                case FPA_PRECISION_SINGLE:
+                                arm_clock_i(30);
+                                break;
+                                case FPA_PRECISION_DOUBLE:
+                                arm_clock_i(58);
+                                break;
+                                case FPA_PRECISION_EXTENDED:
+                                arm_clock_i(70);
+                                break;
+                        }
                         return 0;
                         case 0x800000: /*RMF*/
                         fparegs[FD]=fmod(fparegs[FN],tempf);
-                        cycles-=30;
+                        arm_clock_i(30);
                         return 0;
                         
                         case 0x008000: /*MVF*/
                         fparegs[FD]=tempf;
-                        cycles--;
+                        arm_clock_i(1);
                         return 0;
                         case 0x108000: /*MNF*/
                         fparegs[FD]=-tempf;
-                        cycles--;
+                        arm_clock_i(1);
                         return 0;
                         case 0x208000: /*ABS*/
                         fparegs[FD]=fabs(tempf);
-                        cycles--;
+                        arm_clock_i(1);
                         return 0;
+#if 0
                         case 0x308000: /*RND*/
                         fparegs[FD]=(double)fpa_round(tempf,opcode);
-                        cycles--;
+                        arm_clock_i(1);
                         return 0;
                         case 0x408000: /*SQT*/
                         fparegs[FD]=sqrt(tempf);
-                        cycles-=5;
+                        arm_clock_i(5);
                         return 0;
-                        
+#endif                        
                         case 0xe08000: /*URD*/
                         fparegs[FD] = fpa_round(tempf, opcode);
-                        cycles -= 2;
+                        arm_clock_i(2);
                         return 0;
                         case 0xf08000: /*NRM*/
                         fparegs[FD] = tempf;
-                        cycles -= 2;
+                        arm_clock_i(2);
                         return 0;
                         #if 0
                         case 0x508000: /*LOG*/

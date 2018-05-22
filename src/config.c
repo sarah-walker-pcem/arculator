@@ -518,6 +518,7 @@ rpclog("config_file=%s\n", config_file);
         display_mode = config_get_int(NULL, "display_mode", DISPLAY_MODE_NO_BORDERS);
         arm_cpu_type = config_get_int(NULL, "cpu_type", 0);
         memc_type = config_get_int(NULL, "memc_type", 0);
+        fpaena = config_get_int(NULL, "fpa", 0);
         p=config_get_string(NULL,"hires",NULL);
         if (!p || strcmp(p,"1")) hires=0;
         else                     hires=1;
@@ -557,8 +558,7 @@ void saveconfig()
         config_set_string(NULL,"mem_size",s);
         config_set_int(NULL, "cpu_type", arm_cpu_type);
         config_set_int(NULL, "memc_type", memc_type);
-        sprintf(s,"%i",fpaena);
-        config_set_string(NULL,"fpa",s);
+        config_set_int(NULL, "fpa", fpaena);
         sprintf(s,"%i",hires);
         config_set_string(NULL,"hires",s);
         sprintf(s,"%i",fullborders);

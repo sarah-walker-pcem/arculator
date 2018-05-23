@@ -1,13 +1,18 @@
 #include <stdio.h>
 #include <string.h>
 #include "arc.h"
+#include "config.h"
 
 uint8_t arcrom[32768];
 int arcpage=0;
 
 void resetarcrom()
 {
-        FILE *f=fopen("arcrom","rb");
+        FILE *f;
+        char fn[512];
+        
+        append_filename(fn, exname, "arcrom", 511);
+        f = fopen(fn, "rb");
         if (f)
         {
                 fread(arcrom,32768,1,f);

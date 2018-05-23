@@ -493,7 +493,7 @@ static inline void setadc(uint32_t op1, uint32_t op2, uint32_t res)
         else if (checkneg(res))            armregs[15]|=NFLAG;
 }
 
-inline void setzn(uint32_t op)
+static inline void setzn(uint32_t op)
 {
         armregs[15]&=0x3FFFFFFF;
         if (!op)               armregs[15]|=ZFLAG;
@@ -610,7 +610,7 @@ static inline uint32_t shift3(uint32_t opcode)
                 break;
         }
 }
-inline unsigned shift4(unsigned opcode)
+static inline unsigned shift4(unsigned opcode)
 {
         unsigned shiftmode=(opcode>>5)&3;
         unsigned shiftamount=(opcode>>7)&31;
@@ -668,7 +668,7 @@ inline unsigned shift4(unsigned opcode)
         }
 }
 
-inline unsigned rotate(unsigned data)
+static inline unsigned rotate(unsigned data)
 {
         uint32_t rotval;
         rotval=rotatelookup[data&4095];
@@ -682,7 +682,7 @@ inline unsigned rotate(unsigned data)
 
 #define rotate2(v) rotatelookup[v&4095]
 
-inline unsigned shiftmem(unsigned opcode)
+static inline unsigned shiftmem(unsigned opcode)
 {
         unsigned shiftmode=(opcode>>5)&3;
         unsigned shiftamount=(opcode>>7)&31;

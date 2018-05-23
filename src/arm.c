@@ -610,12 +610,13 @@ static inline uint32_t shift3(uint32_t opcode)
                 break;
         }
 }
-static inline unsigned shift4(unsigned opcode)
+static inline uint32_t shift4(uint32_t opcode)
 {
-        unsigned shiftmode=(opcode>>5)&3;
-        unsigned shiftamount=(opcode>>7)&31;
+        int shiftmode=(opcode>>5)&3;
+        int shiftamount=(opcode>>7)&31;
         uint32_t temp;
         int cflag=CFSET;
+        
         if (!(opcode&0xFF0)) return armregs[RM];
         if (opcode&0x10)
         {
@@ -668,9 +669,10 @@ static inline unsigned shift4(unsigned opcode)
         }
 }
 
-static inline unsigned rotate(unsigned data)
+static inline uint32_t rotate(uint32_t data)
 {
         uint32_t rotval;
+        
         rotval=rotatelookup[data&4095];
         if (data&0x100000 && data&0xF00)
         {
@@ -682,12 +684,13 @@ static inline unsigned rotate(unsigned data)
 
 #define rotate2(v) rotatelookup[v&4095]
 
-static inline unsigned shiftmem(unsigned opcode)
+static inline uint32_t shiftmem(uint32_t opcode)
 {
-        unsigned shiftmode=(opcode>>5)&3;
-        unsigned shiftamount=(opcode>>7)&31;
+        int shiftmode=(opcode>>5)&3;
+        int shiftamount=(opcode>>7)&31;
         uint32_t temp;
         int cflag=CFSET;
+        
         if (!(opcode&0xFF0)) return armregs[RM];
         if (opcode&0x10)
         {

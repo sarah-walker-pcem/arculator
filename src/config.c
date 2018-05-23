@@ -500,7 +500,6 @@ void config_save(char *fn)
 
 void loadconfig()
 {
-        char s[512];
         char config_file[512];
         char *p;
 

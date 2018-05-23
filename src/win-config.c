@@ -2,6 +2,7 @@
 #include <commctrl.h>
 #include "arc.h"
 #include "arm.h"
+#include "config.h"
 #include "memc.h"
 #include "resources.h"
 #include "win.h"
@@ -150,9 +151,8 @@ static void update_list(HWND hdlg, int cpu, int mem, int memc, int fpu, int io)
 
 static BOOL CALLBACK config_dlgproc(HWND hdlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
-        char temp_str[256];
         HWND h;
-        int c, d;
+        int c;
         int preset;
 //        pclog("Dialog msg %i %08X\n",message,message);
         switch (message)
@@ -430,5 +430,5 @@ static BOOL CALLBACK config_dlgproc(HWND hdlg, UINT message, WPARAM wParam, LPAR
 
 void config_open(HWND hwnd)
 {
-        DialogBox(hinstance, TEXT("ConfigureDlg"), hwnd, config_dlgproc);
+        DialogBox(hinstance, TEXT("ConfigureDlg"), hwnd, (DLGPROC)config_dlgproc);
 }

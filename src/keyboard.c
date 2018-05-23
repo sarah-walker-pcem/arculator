@@ -116,6 +116,8 @@ uint8_t keyboard_read()
                 case KEYBOARD_DAT2:
                 return key_data[1];
         }
+        
+        return 0;
 }
 
 void keyboard_write(uint8_t val)

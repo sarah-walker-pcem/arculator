@@ -88,7 +88,6 @@ void c82c711_fdc_spindown()
 
 void c82c711_fdc_write(uint16_t addr, uint8_t val)
 {
-        int c;
 //        rpclog("Write FDC %04X %02X %07X  %02X rate=%i\n", addr, val, PC, fdc.st0, fdc.rate);
         switch (addr&7)
         {
@@ -663,7 +662,6 @@ void c82c711_fdc_callback()
 }
 
 extern int cycles;
-static int lastcycles = 0;
 
 void c82c711_fdc_data(uint8_t dat)
 {

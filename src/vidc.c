@@ -9,6 +9,7 @@
 #include "arc.h"
 #include "arm.h"
 #include "ioc.h"
+#include "keyboard.h"
 #include "mem.h"
 #include "memc.h"
 #include "sound.h"
@@ -197,7 +198,7 @@ void writevidc(uint32_t v)
 {
 //        char s[80];
         RGB r;
-        int c,d,oldscanrate=vidc.scanrate,oldvtot=vidc.vtot;
+        int c,d;
 //        rpclog("Write VIDC %08X\n",v);
         if (((v>>24)&~0x1F)==0x60)
         {
@@ -833,7 +834,7 @@ void pollline()
                 }
         }
         else if (display_mode == DISPLAY_MODE_TV && l >= TV_Y_MIN && l < TV_Y_MAX)
-                archline(bp, TV_X_MIN, l, TV_X_MAX-1, 0);
+                archline(buffer->line[l], TV_X_MIN, l, TV_X_MAX-1, 0);
 
         if (vidc.line>=vidc.vtot)
         {
@@ -889,7 +890,6 @@ void pollline()
                         }
                         else if (display_mode == DISPLAY_MODE_NATIVE_BORDERS)
                         {
-				int blit_x_offset;
 				int hb_start = vidc.hbstart;
 				int hb_end = vidc.hbend;
 

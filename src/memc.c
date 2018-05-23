@@ -8,6 +8,7 @@ int flybacklines;
 #include "ioc.h"
 #include "mem.h"
 #include "memc.h"
+#include "soundopenal.h"
 #include "vidc.h"
 
 int memc_videodma_enable;
@@ -275,14 +276,11 @@ int sampqueue=0,sampbufr=0;
 void mixsound()
 {
         int c;
-        uint16_t *p;
-        uint16_t p2[(25000)>>1];
+        int16_t p2[(25000)>>1];
         short temp;
-        float tempf;
 //        rpclog("Mixsound %i %i\n",soundena,sampqueue);
         if (!soundena) return;
         if (!sampqueue) return;
-        p=0;
         for (c=0;c</*((25000>>1)>>1)*/BUFFERSIZE;c++)
         {
                 temp=(getsample(soundbuf[sampbufr][c<<3])/16);
@@ -344,10 +342,10 @@ signed short samples[8];
 int samplecount=0,sampledelay=0;
 //float lastsamp;
 
-uint16_t mixsample()
+int16_t mixsample()
 {
         signed short temp2=0;
-        uint16_t *temp3;
+        int16_t *temp3;
         signed short temp=samples[0];//((signed short)((signed char)convbyte(samples[0])))*8;
 //        float tempf;
         temp3=&temp2;

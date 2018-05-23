@@ -26,3 +26,6 @@ char *get_extension(char *s);
 void config_load(char *fn);
 void config_save(char *fn);
 void config_dump();
+
+void loadconfig();
+void saveconfig();

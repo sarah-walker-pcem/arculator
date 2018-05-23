@@ -39,4 +39,5 @@ uint8_t readarcrom(uint32_t addr)
 //                rpclog("Read AROM %04X %i %04X %02X\n",addr,arcpage,temp,arcrom[temp&0x7FFF]);
                 return arcrom[temp&0x7FFF];
         }
+        return 0xff;
 }

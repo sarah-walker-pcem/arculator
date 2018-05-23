@@ -8,8 +8,14 @@
 
 #include "82c711.h"
 #include "82c711_fdc.h"
+#include "arcrom.h"
 #include "cp15.h"
+#include "eterna.h"
+#include "ics.h"
+#include "ioc.h"
+#include "memc.h"
 #include "podules.h"
+#include "vidc.h"
 #include "wd1770.h"
 
 int mem_speed[16384][2];

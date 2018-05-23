@@ -13,13 +13,13 @@ int ddnoise_type=0;
 //static SAMPLE *seeksmp[4][2];
 //static SAMPLE *motorsmp[3];
 
-static float ddnoise_mpos = 0;
+/*static float ddnoise_mpos = 0;
 static int ddnoise_mstat = -1;
 static int oldmotoron = 0;
 
 static float ddnoise_spos = 0;
 static int ddnoise_sstat = -1;
-static int ddnoise_sdir = 0;
+static int ddnoise_sdir = 0;*/
 
 void ddnoise_init()
 {
@@ -78,7 +78,7 @@ void ddnoise_close()
 #endif
 }
 
-static int16_t ddbuffer[4410];
+/*static int16_t ddbuffer[4410];*/
 
 void ddnoise_seek(int len)
 {

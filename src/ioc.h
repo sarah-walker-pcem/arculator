@@ -54,3 +54,8 @@ enum
         IOC_FIQ_PODULE_FIQ      = 1 << 6,
         IOC_FIQ_FORCE_FIQ       = 1 << 7
 };
+
+
+void initjoy();
+void polljoy();
+uint8_t readjoy(int addr);

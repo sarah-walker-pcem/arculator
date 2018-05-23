@@ -23,9 +23,6 @@ typedef struct podule
         int msectimer;
         int broken;
 } podule;
-              
-
-extern void opendlls(void);
 
 #ifdef __cplusplus
 }

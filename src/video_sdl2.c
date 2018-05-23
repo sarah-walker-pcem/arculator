@@ -18,7 +18,6 @@ static SDL_Rect texture_rect;
 
 int video_renderer_init(void *main_window)
 {
-        int flags = SDL_RENDERER_ACCELERATED;
         SDL_Rect screen_rect;
         
         SDL_SetHint(SDL_HINT_WINDOWS_DISABLE_THREAD_NAMING, "1");

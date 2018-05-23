@@ -46,7 +46,6 @@ int romset;
 void loadcmos()
 {
         char fn[512];
-        int c;
 //        rpclog("Read cmos %i\n",romset);
         if (romset>3) return;
         switch (romset)
@@ -106,7 +105,7 @@ uint8_t cmosgetbyte()
 int rtcdisable=0;
 void cmosgettime()
 {
-        int c,d;
+/*        int c,d;*/
         if (rtcdisable) return;
 #ifdef WIN32
 /*        GetLocalTime(&systemtime);

@@ -17,13 +17,18 @@ int podule_time=8000;
 #include <stdlib.h>
 #include <string.h>
 #include "arc.h"
+#include "arcrom.h"
 #include "arm.h"
 #include "cp15.h"
 #include "disc.h"
+#include "fpa.h"
 #include "hostfs.h"
+#include "ics.h"
+#include "ioc.h"
 #include "keyboard.h"
 #include "mem.h"
 #include "memc.h"
+#include "podules.h"
 #include "sound.h"
 #include "vidc.h"
 
@@ -419,9 +424,9 @@ int indumpregs=0;
 
 void dumpregs()
 {
-        int c;
+/*        int c;
         FILE *f;
-        uint32_t l;
+        uint32_t l;*/
 
         if (indumpregs) return;
         indumpregs=1;
@@ -609,6 +614,7 @@ static inline uint32_t shift3(uint32_t opcode)
                 return (temp>>shiftamount)|(temp<<(32-shiftamount));
                 break;
         }
+        return 0;
 }
 static inline uint32_t shift4(uint32_t opcode)
 {
@@ -667,6 +673,7 @@ static inline uint32_t shift4(uint32_t opcode)
                 return (temp>>shiftamount)|(temp<<(32-shiftamount));
                 break;
         }
+        return 0;
 }
 
 static inline uint32_t rotate(uint32_t data)
@@ -722,6 +729,7 @@ static inline uint32_t shiftmem(uint32_t opcode)
                 return (temp>>shiftamount)|(temp<<(32-shiftamount));
                 break;
         }
+        return 0;
 }
 
 int ldrlookup[4]={0,8,16,24};
@@ -887,8 +895,8 @@ int total_cycles;
 
 void execarm(int cycs)
 {
-        uint32_t templ,templ2,mask,addr,addr2,*rn;
-        int c,cyc,oldcyc,oldcyc2,oldcyc3;
+        uint32_t templ,templ2,mask,addr,addr2;
+        int c,cyc,oldcyc,oldcyc2;
         
 
         total_cycles+=cycs << 10;
@@ -902,7 +910,7 @@ void execarm(int cycs)
                 {
                         opcode=opcode2;
                         opcode2=opcode3;
-                        oldcyc3=oldcyc2=cycles;
+                        oldcyc2=cycles;
                         if ((PC>>12)==pccache)
                            opcode3=pccache2[(PC&0xFFF)>>2];
                         else
@@ -1219,7 +1227,10 @@ void execarm(int cycs)
                                                 templ=GETREG(RM);
                                                 LOADREG(RD,readmeml(addr));
                                                 cache_read_timing(PC, 1);
-                                                if (!databort) writememl(addr,templ);
+                                                if (!databort)
+                                                {
+                                                        writememl(addr,templ);
+                                                }
                                                 cache_write_timing(addr, 1);
                                                 CLOCK_N(addr);
                                                 CLOCK_N(addr);

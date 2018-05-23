@@ -5,6 +5,7 @@
 #include "arm.h"
 #include "cp15.h"
 #include "mem.h"
+#include "vidc.h"
 
 int cp15_cacheon;
 

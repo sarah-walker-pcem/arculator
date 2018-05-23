@@ -93,17 +93,17 @@ void apd_load(int drive, char *fn)
 
 	for (c = 0; c < 160; c++)
 	{
-                apd_head[drive].sdtrack[c].len = gzgetil(apd_f[drive]);
+                apd_head[drive].sdtrack[c].len = gzgetil(&apd_f[drive]);
 	        apd_head[drive].sdtrack[c].rd  = (apd_head[drive].sdtrack[c].len + 7) >> 3;
 		apd_head[drive].sdtrack[c].pos = pos;
 		pos += apd_head[drive].sdtrack[c].rd;
 
-	        apd_head[drive].track[c].len = gzgetil(apd_f[drive]);
+	        apd_head[drive].track[c].len = gzgetil(&apd_f[drive]);
 	        apd_head[drive].track[c].rd  = (apd_head[drive].track[c].len + 7) >> 3;
 		apd_head[drive].track[c].pos = pos;
 		pos += apd_head[drive].track[c].rd;
 
-	        apd_head[drive].hdtrack[c].len = gzgetil(apd_f[drive]);
+	        apd_head[drive].hdtrack[c].len = gzgetil(&apd_f[drive]);
 	        apd_head[drive].hdtrack[c].rd  = (apd_head[drive].hdtrack[c].len + 7) >> 3;
 		apd_head[drive].hdtrack[c].pos = pos;
 		pos += apd_head[drive].hdtrack[c].rd;
@@ -132,7 +132,6 @@ void apd_close(int drive)
 
 void apd_seek(int drive, int track)
 {
-        int c;
         if (!apd_f[drive]) return;
 //        rpclog("Track start %i\n",track);
         if (track < 0) track = 0;

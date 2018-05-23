@@ -4,6 +4,7 @@
 #include "arc.h"
 #include "disc.h"
 #include "ioc.h"
+#include "keyboard.h"
 
 int irq;
 int flyback,fdcready;

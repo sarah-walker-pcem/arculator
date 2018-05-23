@@ -104,7 +104,7 @@ double convert80to64(uint32_t *temp)
 int __x,__y;
 void convert64to80(uint32_t *temp, double tf)
 {
-        int tempi,len;
+        int tempi;
         f64.f=tf;
         __x=f64.i.h;
         __y=f64.i.l;
@@ -156,6 +156,7 @@ int64_t fpa_round(double b, uint32_t opcode)
                 case 0x60: /*Zero*/
                 return (int64_t)b;
         }
+        return 0;
 }
 
 static void fpa_arithmetic_bounce()
@@ -402,15 +403,10 @@ void fpa_dasm(uint32_t opcode)
 int fpaopcode(uint32_t opcode)
 {
         uint32_t temp[6];
-        double *tf,*tf2;
-        float *tfs;
         double tempf;
-        int len,tempi;
+        int len;
         uint32_t addr;
         if (romset<2 || romset>3) return 1;
-        tf=(double *)temp;
-        tf2=(double *)&temp[4];
-        tfs=(float *)temp;
 /*        if (PC < 0x1800000 || output)
         {
                 dumpfpa();

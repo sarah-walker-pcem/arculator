@@ -8,6 +8,7 @@
 /*Misc*/
 void rpclog(char *format, ...);
 void error(char *format, ...);
+void fatal(char *format, ...);
 
 void arc_set_cpu(int cpu, int memc);
 
@@ -223,3 +224,12 @@ extern int mousecapture;
 void updateins();
 
 void get_executable_name(char *s, int size);
+void arc_setspeed(int mhz);
+
+
+void updatewindowsize(int x, int y);
+
+void arc_init();
+void arc_reset();
+void arc_run();
+void arc_close();

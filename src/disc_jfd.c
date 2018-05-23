@@ -62,7 +62,6 @@ enum
         
 static gzFile jfd_f[4];
 
-static int jfd_pos;
 static int jfd_revs;
 
 static int jfd_sector, jfd_track,   jfd_side,    jfd_drive, jfd_density;
@@ -109,8 +108,6 @@ void jfd_init()
 
 void jfd_load(int drive, char *fn)
 {
-        int c;
-        
         rpclog("jfd_load\n");
         
         writeprot[drive] = fwriteprot[drive] = 1;
@@ -274,10 +271,7 @@ void jfd_format(int drive, int track, int side, int density)
         jfd_readpos = 0;
 }
 
-static int readidpoll=0,readdatapoll=0,jfd_nextsector=0,inreadop=0;
-static uint8_t jfd_sectordat[1026];
-static int lastjfddat[2],sectorcrc[2];
-static int sectorsize,fdc_sectorsize;
+static int jfd_nextsector=0;
 static int ddidbitsleft=0;
 
 void jfd_stop()
@@ -287,16 +281,6 @@ void jfd_stop()
         jfd_state = JFD_IDLE;
 }
 
-static uint16_t crc;
-
-static void calccrc(uint8_t byte)
-{
-//	rpclog("calccrc : %02X %04X %02X ", byte, crc, CRCTable[(crc >> 8)^byte]);
-	crc = (crc << 8) ^ CRCTable[(crc >> 8)^byte];
-//	rpclog("%04X\n", crc);
-}
-
-static int jfd_cursector = -1;
 static int jfd_pos_us = 0;
 static int jfd_time = 0;
 
@@ -382,6 +366,9 @@ void jfd_poll()
                         jfd_inread = 0;
                         jfd_state = JFD_IDLE;
                 }
+                break;
+                
+                case JFD_READ_ID:
                 break;
         }
 }

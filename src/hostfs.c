@@ -26,6 +26,7 @@
 #include <string.h>
 
 #include <dirent.h>
+#include <direct.h>
 #ifdef _MSC_VER
 #define PATH_MAX 1024
 #else
@@ -149,20 +150,6 @@ static char *cache_names = NULL;
 
 /** Current registration state of HostFS module with backend code */
 static HostFSState hostfs_state = HOSTFS_STATE_UNREGISTERED;
-
-#ifdef NDEBUG
-static inline void dbug_hostfs(const char *format, ...) {}
-#else
-static void
-dbug_hostfs(const char *format, ...)
-{
-  va_list ap;
-
-  va_start(ap, format);
-  vfprintf(stderr, format, ap);
-  va_end(ap);
-}
-#endif
 
 #define dbug_hostfs rpclog
 

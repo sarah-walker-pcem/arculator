@@ -5,10 +5,15 @@
 #define BITMAP __win_bitmap
 #include <windows.h>
 #undef BITMAP
+#include <process.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include "arc.h"
 #include "arm.h"
+#include "config.h"
+#include "disc.h"
+#include "ioc.h"
+#include "keyboard.h"
 #include "memc.h"
 #include "plat_input.h"
 #include "resources.h"
@@ -16,6 +21,7 @@
 #include "plat_video.h"
 #include "video.h"
 #include "video_sdl2.h"
+#include "win.h"
 
 int infocus;
 HANDLE mainthreadh;
@@ -134,7 +140,7 @@ void mainthread(LPVOID param)
         if (!video_renderer_init(ghwnd))
         {
                 MessageBox(ghwnd, "Video renderer init failed", "Arculator error", MB_OK);
-                fatal(-1);
+                exit(-1);
         }
         input_init();
 
@@ -334,14 +340,12 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 void changedisc(HWND hwnd, int drive)
 {
         char fn[512];
-        char start[512];
         char fn2[512];
         OPENFILENAME ofn;
         memcpy(fn2,discname[drive],512);
 //        p=get_filename(fn2);
 //        *p=0;
         fn[0]=0;
-        start[0]=0;
         memset(&ofn,0,sizeof(OPENFILENAME));
         ofn.lStructSize = sizeof(OPENFILENAME);
 	ofn.hwndOwner = hwnd;

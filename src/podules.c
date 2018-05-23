@@ -1,6 +1,7 @@
 #include <string.h>
 
 #include "arc.h"
+#include "ioc.h"
 #include "podules.h"
 
 /*Podules -
@@ -94,7 +95,6 @@ void rethinkpoduleints(void)
 
 void writepodulel(int num, int easi, uint32_t addr, uint32_t val)
 {
-        int oldirq=podules[num].irq,oldfiq=podules[num].fiq;
         if (podules[num].writel)
            podules[num].writel(&podules[num], easi,addr,val);
 /*        if (oldirq!=podules[num].irq || oldfiq!=podules[num].fiq) */rethinkpoduleints();
@@ -102,7 +102,6 @@ void writepodulel(int num, int easi, uint32_t addr, uint32_t val)
 
 void writepodulew(int num, int easi, uint32_t addr, uint32_t val)
 {
-        int oldirq=podules[num].irq,oldfiq=podules[num].fiq;
         if (podules[num].writew)
         {
 //                rpclog("WRITE PODULEw 1 %08X %08X %04X\n",addr,armregs[15]-8,val);
@@ -114,7 +113,6 @@ void writepodulew(int num, int easi, uint32_t addr, uint32_t val)
 
 void writepoduleb(int num, int easi, uint32_t addr, uint8_t val)
 {
-        int oldirq=podules[num].irq,oldfiq=podules[num].fiq;
         if (podules[num].writeb)
         {
 //                rpclog("WRITE PODULEb 1 %08X %08X %02X\n",addr,armregs[15]-8,val);
@@ -125,7 +123,6 @@ void writepoduleb(int num, int easi, uint32_t addr, uint8_t val)
 
 void podule_memc_writew(int num, uint32_t addr, uint32_t val)
 {
-        int oldirq=podules[num].irq,oldfiq=podules[num].fiq;
         if (podules[num].memc_writew)
         {
 //                rpclog("WRITE MEMC PODULEw 1 %08X %08X %04X\n",addr,armregs[15]-8,val);
@@ -136,7 +133,6 @@ void podule_memc_writew(int num, uint32_t addr, uint32_t val)
 
 void podule_memc_writeb(int num, uint32_t addr, uint8_t val)
 {
-        int oldirq=podules[num].irq,oldfiq=podules[num].fiq;
         if (podules[num].memc_writeb)
         {
 //                rpclog("WRITE MEMC PODULEb 1 %08X %08X %02X\n",addr,armregs[15]-8,val);
@@ -147,7 +143,6 @@ void podule_memc_writeb(int num, uint32_t addr, uint8_t val)
 
 uint32_t readpodulel(int num, int easi, uint32_t addr)
 {
-        int oldirq=podules[num].irq,oldfiq=podules[num].fiq;
         uint32_t temp;
         if (podules[num].readl)
         {
@@ -160,7 +155,6 @@ uint32_t readpodulel(int num, int easi, uint32_t addr)
 
 uint32_t readpodulew(int num, int easi, uint32_t addr)
 {
-        int oldirq=podules[num].irq,oldfiq=podules[num].fiq;
         uint32_t temp;
         if (podules[num].readw)
         {
@@ -174,7 +168,6 @@ uint32_t readpodulew(int num, int easi, uint32_t addr)
 
 uint8_t readpoduleb(int num, int easi, uint32_t addr)
 {
-        int oldirq=podules[num].irq,oldfiq=podules[num].fiq;
         uint8_t temp;
         if (podules[num].readb)
         {
@@ -187,7 +180,6 @@ uint8_t readpoduleb(int num, int easi, uint32_t addr)
 
 uint32_t podule_memc_readw(int num, uint32_t addr)
 {
-        int oldirq=podules[num].irq,oldfiq=podules[num].fiq;
         uint32_t temp;
         if (podules[num].memc_readw)
         {
@@ -200,7 +192,6 @@ uint32_t podule_memc_readw(int num, uint32_t addr)
 
 uint8_t podule_memc_readb(int num, uint32_t addr)
 {
-        int oldirq=podules[num].irq,oldfiq=podules[num].fiq;
         uint8_t temp;
         if (podules[num].memc_readb)
         {
@@ -223,7 +214,6 @@ void runpoduletimers(int t)
                         d=1;
                         while (podules[c].msectimer<=0 && d)
                         {
-                                int oldirq=podules[c].irq,oldfiq=podules[c].fiq;
 //                                rpclog("Callback! podule %i  %i %i\n",c,podules[c].irq,podules[c].fiq);
                                 d=podules[c].timercallback(&podules[c]);
                                 if (!d)

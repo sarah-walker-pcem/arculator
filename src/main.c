@@ -7,17 +7,24 @@
 #include "82c711_fdc.h"
 #include "arm.h"
 #include "config.h"
+#include "ddnoise.h"
 #include "disc.h"
 #include "disc_adf.h"
 #include "disc_apd.h"
 #include "disc_fdi.h"
 #include "disc_jfd.h"
 #include "disc_ssd.h"
+#include "ics.h"
+#include "ioc.h"
 #include "keyboard.h"
+#include "mem.h"
 #include "memc.h"
 #include "plat_input.h"
+#include "podules.h"
 #include "sound.h"
+#include "soundopenal.h"
 #include "wd1770.h"
+#include "vidc.h"
 
 #include "hostfs.h"
 
@@ -136,7 +143,7 @@ void arc_init()
         char *p;
         char s[512];
         int c;
-        al_init_main(NULL,0);
+        al_init_main(0, NULL);
 
         get_executable_name(exname,511);
         p = (char *)get_filename(exname);

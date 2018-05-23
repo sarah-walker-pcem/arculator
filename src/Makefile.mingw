@@ -1,4 +1,4 @@
-VPATH = . resid-fp
+VPATH = .
 CPP  = g++.exe
 CC   = gcc.exe
 WINDRES = windres.exe
@@ -7,15 +7,15 @@ OBJ = 82c711.o 82c711_fdc.o arcrom.o arm.o cmos.o config.o cp15.o ddnoise.o disc
 
 LIBS =  -mwindows -lSDL2 -lz -lopenal32
 
-Arculator.exe: $(OBJ) $(SIDOBJ)
+Arculator.exe: $(OBJ)
 	$(CC) $(OBJ) -o "Arculator.exe" $(LIBS)
 
 all : Arculator.exe
 
 clean :
-	del *.o
-	del *.exe
-	del *.res
+	rm *.o
+	rm *.exe
+	rm *.res
 
 %.o : %.c
 	$(CC) $(CFLAGS) -c $<

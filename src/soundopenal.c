@@ -4,7 +4,7 @@
 #include <string.h>  
 #include <stdio.h>
 #include <AL/al.h>
-#include <AL/alut.h>
+#include <AL/alc.h>
 #include "arc.h"
 #include "soundopenal.h"
 
@@ -30,6 +30,39 @@ static void check()
                 printf("ALut Error : %08X\n", error);
                 printf("Description : %s\n",alutGetErrorString(error));
         }*/
+}
+
+ALvoid  alutInit(ALint *argc,ALbyte **argv) 
+{
+	ALCcontext *Context;
+	ALCdevice *Device;
+	
+	//Open device
+ 	Device=alcOpenDevice((void *)"");
+	//Create context(s)
+	Context=alcCreateContext(Device,NULL);
+	//Set active context
+	alcMakeContextCurrent(Context);
+	//Register extensions
+}
+
+ALvoid  alutExit(ALvoid) 
+{
+	ALCcontext *Context;
+	ALCdevice *Device;
+
+	//Unregister extensions
+
+	//Get active context
+	Context=alcGetCurrentContext();
+	//Get device for active context
+	Device=alcGetContextsDevice(Context);
+	//Disable context
+	alcMakeContextCurrent(NULL);
+	//Release context(s)
+	alcDestroyContext(Context);
+	//Close device
+	alcCloseDevice(Device);
 }
 
 void al_init_main(int argc, char *argv[])

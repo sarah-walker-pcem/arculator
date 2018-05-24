@@ -175,12 +175,12 @@ void mainthread(LPVOID param)
                                 
                         win_doresize = 0;
                                 
-                        SDL_GetWindowSize(window, &rect.w, &rect.h);
+                        SDL_GetWindowSize(sdl_main_window, &rect.w, &rect.h);
                         if (rect.w != winsizex || rect.h != winsizey)
                         {
-                                SDL_GetWindowPosition(window, &rect.x, &rect.y);
-                                SDL_SetWindowSize(window, winsizex, winsizey);
-                                SDL_SetWindowPosition(window, rect.x, rect.y);
+                                SDL_GetWindowPosition(sdl_main_window, &rect.x, &rect.y);
+                                SDL_SetWindowSize(sdl_main_window, winsizex, winsizey);
+                                SDL_SetWindowPosition(sdl_main_window, rect.x, rect.y);
                         }
                 }
                 
@@ -189,8 +189,8 @@ void mainthread(LPVOID param)
                         win_dofullscreen = 0;
                         
                         SetMenu(ghwnd, 0);
-                        SDL_RaiseWindow(window);
-                        SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN_DESKTOP);
+                        SDL_RaiseWindow(sdl_main_window);
+                        SDL_SetWindowFullscreen(sdl_main_window, SDL_WINDOW_FULLSCREEN_DESKTOP);
                         mouse_capture_enable();
                         fullscreen = 1;
 
@@ -199,7 +199,7 @@ void mainthread(LPVOID param)
                 if ((key[KEY_LCONTROL] || key[KEY_RCONTROL]) && key[KEY_END] && fullscreen)
                 {
                         mouse_capture_disable();
-                        SDL_SetWindowFullscreen(window, 0);
+                        SDL_SetWindowFullscreen(sdl_main_window, 0);
                         SetMenu(ghwnd, menu);
                         
                         fullscreen=0;

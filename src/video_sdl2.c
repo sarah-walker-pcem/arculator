@@ -14,20 +14,36 @@
 
 static SDL_Texture *texture = NULL;
 static SDL_Renderer *renderer = NULL;
-SDL_Window *window = NULL;
+SDL_Window *sdl_main_window = NULL;
 static SDL_Rect texture_rect;
 
 int video_renderer_init(void *main_window)
 {
         SDL_Rect screen_rect;
         
+        rpclog("video_renderer_init()\n");
         SDL_SetHint(SDL_HINT_WINDOWS_DISABLE_THREAD_NAMING, "1");
         SDL_Init(SDL_INIT_EVERYTHING);
 
-        window = SDL_CreateWindowFrom(main_window);
+        rpclog("create SDL window\n");
+        if (main_window == NULL)
+        {
+                sdl_main_window = SDL_CreateWindow(
+                        "Arculator",
+                        SDL_WINDOWPOS_CENTERED,
+                        SDL_WINDOWPOS_CENTERED,
+                        768,
+                        576,
+                        0
+                );
+        }
+        else
+        {
+                sdl_main_window = SDL_CreateWindowFrom(main_window);
+        }
         screen_rect.w = screen_rect.h = 2048;
 
-        if (!window)
+        if (!sdl_main_window)
         {
                 char message[200];
                 sprintf(message,
@@ -36,11 +52,13 @@ int video_renderer_init(void *main_window)
 #if WIN32
                 MessageBox(main_window, message, "SDL Error", MB_OK);
 #else
-                printf(message);
+                printf("%s", message);
 #endif                
                 return SDL_FALSE;
         }
-                renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+
+        rpclog("create SDL renderer\n");
+        renderer = SDL_CreateRenderer(sdl_main_window, -1, SDL_RENDERER_ACCELERATED);
 
         if (!renderer)
         {
@@ -51,15 +69,17 @@ int video_renderer_init(void *main_window)
 #if WIN32
                 MessageBox(main_window, message, "SDL Error", MB_OK);
 #else
-                printf(message);
+                printf("%s", message);
 #endif                
                 return SDL_FALSE;
         }
 
+        rpclog("create texture\n");
         texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888,
                         SDL_TEXTUREACCESS_STREAMING,
                         screen_rect.w, screen_rect.h);
 
+        rpclog("video initialized\n");
         return SDL_TRUE;
 }
 
@@ -77,9 +97,10 @@ void video_renderer_close()
         }
 }
 
+/*Update display texture from memory bitmap src.*/
 void video_renderer_update(BITMAP *src, int src_x, int src_y, int dest_x, int dest_y, int w, int h)
 {
-//        rpclog("update: src=%i,%i dest=%i,%i size=%i,%i\n", src_x,src_y, dest_x,dest_y, w,h);
+        LOG_VIDEO_FRAMES("video_renderer_update: src=%i,%i dest=%i,%i size=%i,%i\n", src_x,src_y, dest_x,dest_y, w,h);
         texture_rect.x = dest_x;
         texture_rect.y = dest_y;
         texture_rect.w = w;
@@ -125,14 +146,21 @@ void video_renderer_update(BITMAP *src, int src_x, int src_y, int dest_x, int de
         if ((texture_rect.y + texture_rect.h) > 2047)
                 texture_rect.h = 2048 - texture_rect.y;
 
+        LOG_VIDEO_FRAMES("SDL_UpdateTexture (%d, %d)+(%d, %d) from src (%d, %d) w %d\n",
+                texture_rect.x, texture_rect.y,
+                texture_rect.w, texture_rect.h,
+                src_x, src_y, src->w);
         SDL_UpdateTexture(texture, &texture_rect, &((uint32_t *)src->dat)[src_y * src->w + src_x], src->w * 4);
 }
 
+/*Render display texture to video window.*/
 void video_renderer_present(int src_x, int src_y, int src_w, int src_h)
 {
+        LOG_VIDEO_FRAMES("video_renderer_present: %d,%d + %d,%d\n", src_x, src_y, src_w, src_h);
+
         SDL_Rect window_rect;
 
-        SDL_GetWindowSize(window, &window_rect.w, &window_rect.h);               
+        SDL_GetWindowSize(sdl_main_window, &window_rect.w, &window_rect.h);
         window_rect.x = 0;
         window_rect.y = 0;
 
@@ -141,9 +169,12 @@ void video_renderer_present(int src_x, int src_y, int src_w, int src_h)
         texture_rect.w = src_w;
         texture_rect.h = src_h;
 
+        /*Clear the renderer backbuffer*/
         SDL_RenderClear(renderer);
 /*rpclog("Present %i,%i %i,%i -> %i,%i %i,%i\n", texture_rect.x, texture_rect.y, texture_rect.w, texture_rect.h,
                                                 window_rect.x, window_rect.y, window_rect.w, window_rect.h);*/
+        /*Copy texture to backbuffer*/
         SDL_RenderCopy(renderer, texture, &texture_rect, &window_rect);
+        /*Present backbuffer to window*/
         SDL_RenderPresent(renderer);
 }

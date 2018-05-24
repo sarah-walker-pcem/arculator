@@ -21,15 +21,17 @@ static void mouse_close()
 
 void mouse_capture_enable()
 {
+        rpclog("Mouse captured\n");
         SDL_SetRelativeMouseMode(SDL_TRUE);
-        SDL_SetWindowGrab(window, SDL_TRUE);
+        SDL_SetWindowGrab(sdl_main_window, SDL_TRUE);
         mouse_capture = 1;
 }
 
 void mouse_capture_disable()
 {
+        rpclog("Mouse released\n");
         mouse_capture = 0;
-        SDL_SetWindowGrab(window, SDL_FALSE);
+        SDL_SetWindowGrab(sdl_main_window, SDL_FALSE);
         SDL_SetRelativeMouseMode(SDL_FALSE);
 }
 
@@ -53,16 +55,18 @@ void mouse_poll_host()
                 {
                         mouse_buttons |= 4;
                 }
+
                 mouse_x += mouse[0];
                 mouse_y += mouse[1];
 
-                SDL_GetWindowSize(window, &rect.w, &rect.h);
-                SDL_WarpMouseInWindow(window, rect.w/2, rect.h/2);
+                SDL_GetWindowSize(sdl_main_window, &rect.w, &rect.h);
+                SDL_WarpMouseInWindow(sdl_main_window, rect.w/2, rect.h/2);
         }
         else
         {
                 mouse_x = mouse_y = mouse_buttons = 0;
         }
+        // printf("mouse %d, %d\n", mouse_x, mouse_y);
 }
 
 void mouse_get_mickeys(int *x, int *y)

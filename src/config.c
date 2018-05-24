@@ -19,7 +19,7 @@ char *get_filename(char *s)
         return s;
 }
 
-void append_filename(char *dest, char *s1, char *s2, int size)
+void append_filename(char *dest, const char *s1, const char *s2, int size)
 {
         sprintf(dest, "%s%s", s1, s2);
 }
@@ -156,7 +156,7 @@ void config_free()
         }
 }
 
-int config_free_section(char *name)
+int config_free_section(const char *name)
 {
         section_t *current_section, *prev_section;
         list_t *head = &config_head;
@@ -201,12 +201,15 @@ void config_load(char *fn)
         
         memset(head, 0, sizeof(list_t));
 
-        current_section = malloc(sizeof(section_t));
+        current_section = (section_t *)malloc(sizeof(section_t));
         memset(current_section, 0, sizeof(section_t));
         list_add(&current_section->list, head);
 
         if (!f)
+        {
+                rpclog("failed to open %s\n", fn);
                 return;
+        }
 
         while (1)
         {
@@ -240,7 +243,7 @@ void config_load(char *fn)
                                 continue;
                         name[d] = 0;
                         
-                        new_section = malloc(sizeof(section_t));
+                        new_section = (section_t *)malloc(sizeof(section_t));
                         memset(new_section, 0, sizeof(section_t));
                         strncpy(new_section->name, name, 256);
                         list_add(&new_section->list, head);
@@ -274,7 +277,7 @@ void config_load(char *fn)
                                 c++;
                         }
 
-                        new_entry = malloc(sizeof(entry_t));
+                        new_entry = (entry_t *)malloc(sizeof(entry_t));
                         memset(new_entry, 0, sizeof(entry_t));
                         strncpy(new_entry->name, name, 256);
                         strncpy(new_entry->data, &buffer[data_pos], 256);
@@ -295,7 +298,7 @@ void config_new()
         fclose(f);
 }
 
-static section_t *find_section(char *name)
+static section_t *find_section(const char *name)
 {
         section_t *current_section;
         char blank[] = "";
@@ -315,7 +318,7 @@ static section_t *find_section(char *name)
         return NULL;
 }
 
-static entry_t *find_entry(section_t *section, char *name)
+static entry_t *find_entry(section_t *section, const char *name)
 {
         entry_t *current_entry;
         
@@ -331,9 +334,9 @@ static entry_t *find_entry(section_t *section, char *name)
         return NULL;
 }
 
-static section_t *create_section(char *name)
+static section_t *create_section(const char *name)
 {
-        section_t *new_section = malloc(sizeof(section_t));
+        section_t *new_section = (section_t *)malloc(sizeof(section_t));
         list_t *head = &config_head;
         
         memset(new_section, 0, sizeof(section_t));
@@ -343,9 +346,9 @@ static section_t *create_section(char *name)
         return new_section;
 }
 
-static entry_t *create_entry(section_t *section, char *name)
+static entry_t *create_entry(section_t *section, const char *name)
 {
-        entry_t *new_entry = malloc(sizeof(entry_t));
+        entry_t *new_entry = (entry_t *)malloc(sizeof(entry_t));
         memset(new_entry, 0, sizeof(entry_t));
         strncpy(new_entry->name, name, 256);
         list_add(&new_entry->list, &section->entry_head);
@@ -353,7 +356,7 @@ static entry_t *create_entry(section_t *section, char *name)
         return new_entry;
 }
         
-int config_get_int(char *head, char *name, int def)
+int config_get_int(const char *head, const char *name, int def)
 {
         section_t *section;
         entry_t *entry;
@@ -374,7 +377,7 @@ int config_get_int(char *head, char *name, int def)
         return value;
 }
 
-float config_get_float(char *head, char *name, float def)
+float config_get_float(const char *head, const char *name, float def)
 {
         section_t *section;
         entry_t *entry;
@@ -395,7 +398,7 @@ float config_get_float(char *head, char *name, float def)
         return value;
 }
 
-char *config_get_string(char *head, char *name, char *def)
+const char *config_get_string(const char *head, const char *name, const char *def)
 {
         section_t *section;
         entry_t *entry;
@@ -413,7 +416,7 @@ char *config_get_string(char *head, char *name, char *def)
         return entry->data; 
 }
 
-void config_set_int(char *head, char *name, int val)
+void config_set_int(const char *head, const char *name, int val)
 {
         section_t *section;
         entry_t *entry;
@@ -431,7 +434,7 @@ void config_set_int(char *head, char *name, int val)
         sprintf(entry->data, "%i", val);
 }
 
-void config_set_float(char *head, char *name, float val)
+void config_set_float(const char *head, const char *name, float val)
 {
         section_t *section;
         entry_t *entry;
@@ -449,7 +452,7 @@ void config_set_float(char *head, char *name, float val)
         sprintf(entry->data, "%f", val);
 }
 
-void config_set_string(char *head, char *name, char *val)
+void config_set_string(const char *head, const char *name, char *val)
 {
         section_t *section;
         entry_t *entry;
@@ -501,10 +504,10 @@ void config_save(char *fn)
 void loadconfig()
 {
         char config_file[512];
-        char *p;
+        const char *p;
 
         append_filename(config_file, exname, "arc.cfg", 511);
-rpclog("config_file=%s\n", config_file);
+        rpclog("config_file=%s\n", config_file);
         config_load(config_file);
         config_dump();
 

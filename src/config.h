@@ -6,26 +6,26 @@ enum
 
 extern int fdctype;
 
-float config_get_float(char *head, char *name, float def);
-int config_get_int(char *head, char *name, int def);
-char *config_get_string(char *head, char *name, char *def);
-void config_set_float(char *head, char *name, float val);
-void config_set_int(char *head, char *name, int val);
-void config_set_string(char *head, char *name, char *val);
+extern float config_get_float(const char *head, const char *name, float def);
+extern int config_get_int(const char *head, const char *name, int def);
+extern const char *config_get_string(const char *head, const char *name, const char *def);
+extern void config_set_float(const char *head, const char *name, float val);
+extern void config_set_int(const char *head, const char *name, int val);
+extern void config_set_string(const char *head, const char *name, char *val);
 
-int config_free_section(char *head);
+extern int config_free_section(const char *name);
 
-void add_config_callback(void(*loadconfig)(), void(*saveconfig)(), void(*onloaded)());
+extern void add_config_callback(void(*loadconfig)(), void(*saveconfig)(), void(*onloaded)());
 
-char *get_filename(char *s);
-void append_filename(char *dest, char *s1, char *s2, int size);
-void append_slash(char *s, int size);
-void put_backslash(char *s);
-char *get_extension(char *s);
+extern char *get_filename(char *s);
+extern void append_filename(char *dest, const char *s1, const char *s2, int size);
+extern void append_slash(char *s, int size);
+extern void put_backslash(char *s);
+extern char *get_extension(char *s);
 
-void config_load(char *fn);
-void config_save(char *fn);
-void config_dump();
+extern void config_load(char *fn);
+extern void config_save(char *fn);
+extern void config_dump();
 
-void loadconfig();
-void saveconfig();
+extern void loadconfig();
+extern void saveconfig();

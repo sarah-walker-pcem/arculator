@@ -5,7 +5,6 @@
 #include <string.h>
 #include "arc.h"
 #include "arm.h"
-
 #include "82c711.h"
 #include "82c711_fdc.h"
 #include "arcrom.h"
@@ -29,11 +28,18 @@ uint8_t backplane_mask;
 int bank;
 int ddensity;
 int prefabort;
-int timetolive;
-char err2[256];
+// static char err2[256];
 FILE *olog;
 int fdcside;
 int realmemsize;
+
+uint32_t *ram,*rom;
+uint8_t *romb;
+uint32_t *mempoint[0x4000];
+uint8_t *mempointb[0x4000];
+int memstat[0x4000];
+int memmode;
+
 void initmem(int memsize)
 {
 	int mem_spd_multi = arm_has_cp15 ? ((speed_mhz << 10) / arm_mem_speed) : 1024;
@@ -215,7 +221,7 @@ uint8_t readmemfb(uint32_t a)
                 rpclog("Read byte %08X %07X %02X  R2=%08X R4=%08X R5=%08X\n",a,PC,mempointb[((a)>>15)&0x7FF][((a)&0x7FFF)],armregs[2],armregs[4],armregs[5]);
                 return mempointb[((a)>>15)&0x7FF][((a)&0x7FFF)];
         }*/
-        if (a&0xFC000000) { rpclog("Databort readmemfb %08X %08X\n",a,PC); databort=2; return 0xef; }
+        if (a&0xFC000000) { LOG_DATABORT("Dat abort readmemfb %08X %08X\n",a,PC); databort=2; return 0xef; }
 /*        if ((a&~0xFFF)==0x8000)
         {
                 printf("Read %04X %08X %02X\n",a,PC,mempointb[((a)>>15)&0x7FF][(a)&0x7FFF]);
@@ -296,7 +302,7 @@ uint8_t readmemfb(uint32_t a)
         }
 //        rpclog("Data abort b %07X\n",a);
         databort=1;
-//        rpclog("Dat abort readb %07X %07X\n",a,PC);
+        LOG_DATABORT("Dat abort readb %07X %07X\n",a,PC);
         return 0xef;
 /*        sprintf(err2,"Bad read byte %06X %03X %04X\n",a,a>>15,a&0x7FFF);
         MessageBox(NULL,err2,"Arc",MB_OK);
@@ -319,7 +325,7 @@ uint32_t readmemfl(uint32_t a)
                 rpclog("Read long %08X %07X %08X R2=%08X R4=%08X R5=%08X\n",a,PC,mempoint[((a)>>15)&0x7FF][((a)&0x7FFF)>>2],armregs[2],armregs[4],armregs[5]);
                 return mempoint[((a)>>15)&0x7FF][((a)&0x7FFF)>>2];
         }*/
-        if (a&0xFC000000) { /*rpclog("Databort readmemfl %08X\n",a); */databort=2; return 0xdeadbeef; }
+        if (a&0xFC000000) { LOG_DATABORT("Dat abort readmemfl %08X\n",a); databort=2; return 0xdeadbeef; }
         switch (a>>20)
         {
 #if 0
@@ -413,7 +419,7 @@ uint32_t readmemfl(uint32_t a)
         }
 //        rpclog("Data abort l %07X\n",a);
         databort=1;
-//        rpclog("Dat abort readl %07X %07X\n",a,PC);
+        LOG_DATABORT("Dat abort readl %07X %07X\n",a,PC);
         return 0xdeadbeef;
 /*        sprintf(err2,"Bad read long %06X %03X %04X\n",a,a>>15,a&0x7FFF);
         MessageBox(NULL,err2,"Arc",MB_OK);
@@ -422,11 +428,11 @@ uint32_t readmemfl(uint32_t a)
 }
 
 int f42count=0;
-FILE *slogfile;
+
 void writememfb(uint32_t a,uint8_t v)
 {
         int bank;
-        if (a&0xFC000000) { /*rpclog("Databort writememfb %08X\n",a);*/ databort=2; return; }
+        if (a&0xFC000000) { LOG_DATABORT("Dat abort writememfb %08X\n",a); databort=2; return; }
         switch (a>>20)
         {
 #if 0
@@ -531,13 +537,13 @@ void writememfb(uint32_t a,uint8_t v)
                 }
                 return;
         }
-        rpclog("Dat abort writeb %07X %07X %08X %i %i\n",a,PC, memstat[((a)>>12)&0x3FFF], modepritablew[memmode][memstat[((a)>>12)&0x3FFF]], modepritablew[memmode][memstat[((a)>>12)&0x3FFF]] && !((a)>>26));
+        LOG_DATABORT("Dat abort writeb %07X %07X %08X %i %i\n",a,PC, memstat[((a)>>12)&0x3FFF], modepritablew[memmode][memstat[((a)>>12)&0x3FFF]], modepritablew[memmode][memstat[((a)>>12)&0x3FFF]] && !((a)>>26));
         databort=1;
 }
 
 void writememfl(uint32_t a,uint32_t v)
 {
-        if (a&0xFC000000) { /*rpclog("Databort writememfl %08X %07X\n",a,PC); */databort=2; return; }
+        if (a&0xFC000000) { LOG_DATABORT("Dat abort writememfl %08X %07X\n",a,PC); databort=2; return; }
 /*        if (a==(0x1801010))
         {
                 rpclog("Writel R12+284 %07X %08X %08X\n",PC,v,a);
@@ -666,7 +672,7 @@ void writememfl(uint32_t a,uint32_t v)
                 }
                 return;
                 case 0x34: case 0x35: /*VIDC*/
-//                printf("Write VIDC %08X %08X %07X %08X\n",a,v,PC,armregs[15]);
+		LOG_VIDC_REGISTERS("Write VIDC %08X %08X %07X %08X\n",a,v,PC,armregs[15]);
                 writevidc(v);
                 return;
                 case 0x36: /*MEMC*/
@@ -678,7 +684,7 @@ void writememfl(uint32_t a,uint32_t v)
                 return;
 //                case 0x35: return; /*??? - Fire & Ice writes here*/
         }
-//        rpclog("Dat abort writel %07X %07X\n",a,PC);
+        LOG_DATABORT("Dat abort writel %07X %07X\n",a,PC);
         databort=1;
 //        rpclog("Dat abort writel %07X %07X\n",a,PC);
 /*        sprintf(err2,"Bad write long %06X %03X %04X %08X\n",a,a>>15,a&0x7FFF,v);*/

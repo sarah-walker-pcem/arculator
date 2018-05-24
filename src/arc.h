@@ -93,17 +93,17 @@ struct
 
 /*Memory*/
 extern int modepritabler[3][6],modepritablew[3][6];
-uint32_t *mempoint[0x4000];
-uint8_t *mempointb[0x4000];
-int memstat[0x4000];
-uint32_t *ram,*rom;
-uint8_t *romb;
-int memmode;
+extern uint32_t *mempoint[0x4000];
+extern uint8_t *mempointb[0x4000];
+extern int memstat[0x4000];
+extern uint32_t *ram,*rom;
+extern uint8_t *romb;
+extern int memmode;
 
-void initmem(int memsize);
-void resizemem(int memsize);
-int loadrom();
-void resetpagesize(int pagesize);
+extern void initmem(int memsize);
+extern void resizemem(int memsize);
+extern int loadrom();
+extern void resetpagesize(int pagesize);
 
 #define readmemb(a)    ((modepritabler[memmode][memstat[((a)>>12)&0x3FFF]] && !((a)>>26))?mempointb[((a)>>12)&0x3FFF][(a)&0xFFF]:readmemfb(a))
 #define readmeml(a)    ((modepritabler[memmode][memstat[((a)>>12)&0x3FFF]] && !((a)>>26))?mempoint[((a)>>12)&0x3FFF][((a)&0xFFF)>>2]:readmemfl(a))

@@ -33,11 +33,23 @@
 
 int display_mode;
 
+
+static uint32_t vidcr[64];
+static int soundhz;
+int soundper;
+
+int offsetx = 0, offsety = 0;
+int fullscreen;
+int fullborders,noborders;
+int hires;
+int dblscan;
+
+
 BITMAP *create_bitmap(int x, int y)
 {
-        BITMAP *b = malloc(sizeof(BITMAP) + (y * sizeof(uint8_t *)));
+        BITMAP *b = (BITMAP *)malloc(sizeof(BITMAP) + (y * sizeof(uint8_t *)));
         int c;
-        b->dat = malloc(x * y * 4);
+        b->dat = (uint8_t *)malloc(x * y * 4);
         for (c = 0; c < y; c++)
         {
                 b->line[c] = b->dat + (c * x * 4);
@@ -60,7 +72,6 @@ static void clear(BITMAP *b)
 
 int vidc_dma_length;
 extern int vidc_fetches;
-extern int cycles;
 int vidc_framecount = 0;
 int vidc_displayon = 0;
 int blitcount=0;
@@ -201,7 +212,8 @@ void writevidc(uint32_t v)
 //        char s[80];
         RGB r;
         int c,d;
-//        rpclog("Write VIDC %08X\n",v);
+        LOG_VIDC_REGISTERS("Write VIDC %08X (addr %02X<<2 or %02X/%02X, data %06X) with R15=%08X (PC=%08X)\n",
+                v, v>>26, v>>24, (v>>24) & 0xFC, v & 0xFFFFFFul, armregs[15], PC);
         if (((v>>24)&~0x1F)==0x60)
         {
                 stereoimages[((v>>26)-1)&7]=v&7;
@@ -235,7 +247,7 @@ void writevidc(uint32_t v)
                 r.r=(v&0xF)<<2;
                 c=vidc.pal[(v>>26)&0x1F];
                 vidc.pal[(v>>26)&0x1F]=makecol((r.r<<2)|(r.r>>2),(r.g<<2)|(r.g>>2),(r.b<<2)|(r.b>>2));
-//                rpclog("Write pal %08X %08X %08X %i\n",c,vidc.pal[(v>>26)&0x1F],v,get_color_depth());
+                LOG_VIDC_REGISTERS("VIDC Write pal %08X %08X %08X\n",c,vidc.pal[(v>>26)&0x1F],v);
                 d=v>>26;
                 palchange=1;
                 for (c=d;c<0x100+d;c+=16)
@@ -258,6 +270,7 @@ void writevidc(uint32_t v)
                         vidc.htot = (v >> 14) & 0x3FF;
                         vidc_redovideotiming();
                 }
+                LOG_VIDC_REGISTERS("VIDC write htot = %d\n", vidc.htot);
         }
         if ((v>>24)==0xA0)
         {
@@ -270,6 +283,7 @@ void writevidc(uint32_t v)
                         else
                                 vidc.scanrate=0;
                 }
+                LOG_VIDC_REGISTERS("VIDC write vtot = %d\n", vidc.vtot);
         }
         if ((v>>24)==0x84)
         {
@@ -277,19 +291,26 @@ void writevidc(uint32_t v)
                 {
                         vidc.sync = (v >> 14) & 0x3FF;
                 }
+                LOG_VIDC_REGISTERS("VIDC write sync = %d\n", vidc.sync);
         }
-        if ((v>>24)==0x88) vidc.hbstart=(((v&0xFFFFFF)>>14)<<1)+1;
+        if ((v>>24)==0x88)
+        {
+                vidc.hbstart=(((v&0xFFFFFF)>>14)<<1)+1;
+                LOG_VIDC_REGISTERS("VIDC write hbstart = %d\n", vidc.hbstart);
+        }
         if ((v>>24)==0x8C)
         {
                 vidc.hdstart2=((v&0xFFFFFF)>>14);
                 recalcse();
                 vidc_redovideotiming();                
+                LOG_VIDC_REGISTERS("VIDC write hdstart2 = %d\n", vidc.hdstart2);
         }
         if ((v>>24)==0x90)
         {
                 vidc.hdend2=((v&0xFFFFFF)>>14);
                 recalcse();
                 vidc_redovideotiming();
+                LOG_VIDC_REGISTERS("VIDC write hdend2 = %d\n", vidc.hdend2);
         }
         if ((v>>24)==0x94) vidc.hbend=(((v&0xFFFFFF)>>14)<<1)+1;
         if ((v>>24)==0x98) { vidc.cx=((v&0xFFE000)>>13)+6; vidc.cxh=((v&0xFFF800)>>11)+24; }
@@ -324,13 +345,14 @@ void writevidc(uint32_t v)
                 soundhz = 250000 / ((v & 0xff) + 2);
                 soundper = ((v & 0xff) + 2) << 10;
                 soundper = (soundper * 24000) / vidc.clock;
-//                rpclog("Sound frequency write %08X period %i\n",v,soundper);
+                LOG_VIDC_REGISTERS("Sound frequency write %08X period %i\n",v,soundper);
         }
         if ((v>>24)==0xE0)
         {
                 vidc.cr = v & 0xffffff;
                 recalcse();
                 vidc_redovideotiming();
+                LOG_VIDC_REGISTERS("VIDC write ctrl %08X\n", vidc.cr);
         }
 //        printf("VIDC write %08X\n",v);
 }
@@ -452,7 +474,7 @@ void pollline()
                 if (vidc.disp_y_max == -1)
                         vidc.disp_y_max = l;
                 vidc.display_was_disabled = 1;
-//                rpclog("Normal vsync\n");
+                LOG_VIDEO_FRAMES("Normal vsync; speed %d%%, ins=%d, inscount=%d, PC=%08X\n", inssec, ins, inscount, PC);
         }
         if (vidc.line==vidc.vbend) 
         { 
@@ -462,6 +484,7 @@ void pollline()
                 vidc.border_was_disabled = 1;
         }
         vidc.line++;
+        LOG_VIDC_TIMING("++ vidc.line == %d\n", vidc.line);
         videodma=vidc.addr;
         mode=(vidcr[0x38]&0xF);
         if (hires) mode=2;
@@ -840,7 +863,7 @@ void pollline()
 
         if (vidc.line>=vidc.vtot)
         {
-//                rpclog("Frame over!\n");
+                LOG_VIDEO_FRAMES("Frame over!  vidc.line=%d, vidc.vtot=%d\n", vidc.line, vidc.vtot);
                 if (vidc.displayon)
                 {
                         vidc.displayon = vidc_displayon = 0;
@@ -857,9 +880,9 @@ void pollline()
 
                         if (display_mode == DISPLAY_MODE_NO_BORDERS || hires)
                         {
-				int hd_start = (vidc.hbstart > vidc.hdstart) ? vidc.hbstart : vidc.hdstart;
-				int hd_end = (vidc.hbend < vidc.hdend) ? vidc.hbend : vidc.hdend;
-				int height = vidc.disp_y_max - vidc.disp_y_min;
+                                int hd_start = (vidc.hbstart > vidc.hdstart) ? vidc.hbstart : vidc.hdstart;
+                                int hd_end = (vidc.hbend < vidc.hdend) ? vidc.hbend : vidc.hdend;
+                                int height = vidc.disp_y_max - vidc.disp_y_min;
 
                                 if (hires)
                                 {
@@ -879,12 +902,14 @@ void pollline()
 
                                 if (vidc.scanrate || !dblscan)
                                 {
+                                        LOG_VIDEO_FRAMES("PRESENT: normal display\n");
                                         updatewindowsize(hd_end-hd_start, height);
                                         video_renderer_update(buffer, hd_start, vidc.disp_y_min, 0, 0, hd_end-hd_start, height);
                                         video_renderer_present(0, 0, hd_end-hd_start, height);
                                 }
                                 else
                                 {
+                                        LOG_VIDEO_FRAMES("PRESENT: line doubled");
                                         updatewindowsize(hd_end-hd_start, height * 2);
                                         video_renderer_update(buffer, hd_start, vidc.disp_y_min, 0, 0, hd_end-hd_start, height);
                                         video_renderer_present(0, 0, hd_end-hd_start, height);
@@ -892,6 +917,7 @@ void pollline()
                         }
                         else if (display_mode == DISPLAY_MODE_NATIVE_BORDERS)
                         {
+                                LOG_VIDEO_FRAMES("BLIT: fullborders|fullscreen\n");
 				int hb_start = vidc.hbstart;
 				int hb_end = vidc.hbend;
 
@@ -903,12 +929,14 @@ void pollline()
 				
                                 if (vidc.scanrate || !dblscan)
                                 {
+                                        LOG_VIDEO_FRAMES("UPDATE AND PRESENT: fullborders|fullscreen no doubling\n");
                                         updatewindowsize(hb_end-hb_start, vidc.y_max-vidc.y_min);
                                         video_renderer_update(buffer, hb_start, vidc.y_min, 0, 0, hb_end-hb_start, vidc.y_max-vidc.y_min);
                                         video_renderer_present(0, 0, hb_end-hb_start, vidc.y_max-vidc.y_min);
                                 }
                                 else
                                 {
+                                        LOG_VIDEO_FRAMES("UPDATE AND PRESENT: fullborders|fullscreen + doubling\n");
                                         updatewindowsize(hb_end-hb_start, (vidc.y_max-vidc.y_min) * 2);
                                         video_renderer_update(buffer, hb_start, vidc.y_min, 0, 0, hb_end-hb_start, vidc.y_max-vidc.y_min);
                                         video_renderer_present(0, 0, hb_end-hb_start, vidc.y_max-vidc.y_min);
@@ -916,6 +944,7 @@ void pollline()
                         }
                         else
                         {
+                                LOG_VIDEO_FRAMES("BLIT: !(fullborders|fullscreen)\n");
                                 updatewindowsize(TV_X_MAX-TV_X_MIN, (TV_Y_MAX-TV_Y_MIN)*2);
                                 if (vidcr[0x38] & 1)
                                 {
@@ -965,7 +994,7 @@ void pollline()
                                 if (readflash[3]) rectfill(bout,592,4,608,8,makecol(255,160,32));
                         }
                         readflash[0]=readflash[1]=readflash[2]=readflash[3]=0;*/
-                        rpclog("Blit\n");
+                        LOG_VIDEO_FRAMES("Blit\n");
                 }
                 vidc.line=0;
                 vidc.border_was_disabled = 0;
@@ -1003,6 +1032,8 @@ void vidc_redovideotiming()
 {
         vidc.cyclesperline_display = vidc.cyclesperline_blanking = 0;
 }
+
+/*Return the number of clock ticks * 1024 in the next display line*/
 int vidcgetcycs()
 {
         if (!vidc.cyclesperline_display)
@@ -1016,7 +1047,7 @@ int vidcgetcycs()
 
                 temp  = displen * 4;
                 temp2 = ((vidc.htot - displen) + 1) * 4;
-rpclog("displen %i\n", displen);
+                rpclog("displen %i, htot %d\n", displen, vidc.htot);
                 switch (vidcr[0x38]&3)
                 {
                         case 0:
@@ -1054,7 +1085,6 @@ rpclog("displen %i\n", displen);
                         disp_rate = displen / 8;
                         break;
                 }
-rpclog("disp_rate %i\n", disp_rate);
 		if (disp_rate)
 			disp_rate = displen / disp_rate;
 		rpclog("disp_rate %i\n", disp_rate);
@@ -1063,15 +1093,21 @@ rpclog("disp_rate %i\n", disp_rate);
 		
                 vidc.cyclesperline_display  = (((temp * speed_mhz) / 8) / 2) << 10;
                 vidc.cyclesperline_blanking = (((temp2 * speed_mhz) / 8) / 2) << 10;
+                rpclog("set cyclesperline display=%d blanking=%d\n",
+                        vidc.cyclesperline_display, vidc.cyclesperline_blanking);
         
                 if (!vidc.cyclesperline_display)
                         vidc.cyclesperline_display = 512 << 10;
                 if (!vidc.cyclesperline_blanking)
                         vidc.cyclesperline_blanking = 512 << 10;
+                rpclog("2 cyclesperline display=%d blanking=%d\n",
+                        vidc.cyclesperline_display, vidc.cyclesperline_blanking);
         
                 vidc.cyclesperline_display  = (int32_t)(((int64_t)vidc.cyclesperline_display  * 24000) / vidc.clock);
                 vidc.cyclesperline_blanking = (int32_t)(((int64_t)vidc.cyclesperline_blanking * 24000) / vidc.clock);
-                rpclog("cyclesperline = %i %i  %i %i %i  %i\n", vidc.cyclesperline_display, vidc.cyclesperline_blanking, vidc.htot, vidc.hdend2, vidc.hdstart2, speed_mhz);
+                // rpclog("cyclesperline = %i %i  %i %i %i  %i\n", vidc.cyclesperline_display, vidc.cyclesperline_blanking, vidc.htot, vidc.hdend2, vidc.hdstart2, speed_mhz);
+                rpclog("3 cyclesperline display=%d blanking=%d\n",
+                        vidc.cyclesperline_display, vidc.cyclesperline_blanking);
 
                 temp = (128 >> ((vidc.cr >> 2) & 3)) << 10; /*Pixel clocks per fetch*/
                 rpclog("pixel clocks per fetch %i %i\n", temp, temp >> 10);
@@ -1096,7 +1132,22 @@ rpclog("disp_rate %i\n", disp_rate);
         }
 
         if (vidc.in_display)
+        {
+                if (vidc.cyclesperline_display < 0)
+                {
+                        error("vidc.cyclesperline_display == %d, should be positive.  clock=%d\n",
+                                vidc.cyclesperline_display, vidc.clock);
+                        return 512 << 10;
+                }
                 return vidc.cyclesperline_display;
+        }
+
+        if (vidc.cyclesperline_blanking < 0)
+        {
+                error("vidc.cyclesperline_blanking == %d, should be positive.  clock=%d\n",
+                        vidc.cyclesperline_blanking, vidc.clock);
+                return 512 << 10;
+        }
 
         return vidc.cyclesperline_blanking;
 }

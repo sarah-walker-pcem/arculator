@@ -661,8 +661,6 @@ void c82c711_fdc_callback()
 //        exit(-1);
 }
 
-extern int cycles;
-
 void c82c711_fdc_data(uint8_t dat)
 {
         if (fdc.tc)

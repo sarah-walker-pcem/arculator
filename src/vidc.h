@@ -3,15 +3,15 @@
 
 extern int vidc_displayon;
 
-void vidc_redovideotiming();
-void vidc_setclock(int clock);
-int vidc_getclock();
-int vidc_update_cycles();
-int vidcgetcycs();
+extern void vidc_redovideotiming();
+extern void vidc_setclock(int clock);
+extern int vidc_getclock();
+extern int vidc_update_cycles();
+extern int vidcgetcycs();
+extern void closevideo();
+
 extern int vidc_framecount;
 extern int vidc_dma_length;
-
-void closevideo();
 
 
 

@@ -68,6 +68,7 @@ extern void updatewindowsize(int x, int y);
 uint32_t *usrregs[16],userregs[16],superregs[16],fiqregs[16],irqregs[16];
 uint32_t armregs[16];
 int armirq,armfiq;
+extern int cycles;
 #define PC ((armregs[15])&0x3FFFFFC)
 int ins,output;
 
@@ -145,12 +146,13 @@ extern void mixsound();
 extern void pollsound();
 
 /*VIDC*/
-uint32_t vidcr[64];
-int soundhz,soundper;
-int offsetx,offsety;
-int fullborders,noborders;
-int hires;
-int stereoimages[8];
+extern int soundper;
+extern int offsetx,offsety;
+extern int fullscreen;
+extern int fullborders,noborders;
+extern int hires;
+extern int stereoimages[8];
+extern int flyback;
 
 extern void initvid();
 extern void reinitvideo();

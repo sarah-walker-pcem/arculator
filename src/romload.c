@@ -1,6 +1,10 @@
 /*Arculator v0.8 by Tom Walker
   'Flexible' ROM loader*/
+#ifdef WIN32
+#include <io.h>
+#else
 #include <dirent.h>
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -103,14 +107,21 @@ int loadrom()
 //        char s[256];
         char fn[512];
         char *ext;
+#ifdef WIN32
+        struct _finddata_t finddata;
+#else
         DIR *dirp;
         struct dirent *dp;
+#endif
         uint8_t *romb = (uint8_t *)rom;
 //        rpclog("Loading ROM set %i\n",romset);
-        if (firstromload) {
+        if (firstromload)
+        {
                 getcwd(olddir,511);
                 firstromload=0;
-        } else {
+        }
+        else
+        {
                 chdir(olddir);
         }
 //        append_filename(fn,exname,"roms\\",511);
@@ -125,21 +136,45 @@ int loadrom()
         }
 
         rpclog("Loading ROM set %d from %s\n",romset, fn);
-        if (chdir(fn) != 0) {
+        if (chdir(fn) != 0)
+        {
                 perror(fn);
                 return -1;
         }
 
+#ifdef WIN32
+        find_file = _findfirst("*.*", &finddata);
+        if (find_file == -1)
+        {
+                chdir(olddir);
+//                rpclog("No files found!\n");
+                return -1;
+        }
+        while (!finished && file<16)
+        {
+                ext = (char *)get_extension(finddata.name);
+                if (stricmp(ext,"txt"))
+                {
+//                        rpclog("Found %s\n",ff.name);
+                        strcpy(romfns[file],finddata.name);
+                        file++;
+                }
+//                else
+//                   rpclog("Skipping %s\n",ff.name);
+                finished = _findnext(find_file, &finddata);
+        }
+        _findclose(find_file);                        
+#else
         dirp = opendir(".");
-        if (!dirp) {
+        if (!dirp)
+        {
                 perror("opendir: ");
                 fatal("Can't open rom dir %s\n", fn);
         }
         while (((dp = readdir(dirp)) != NULL) && file<16)
         {
-                if (dp->d_type != DT_REG && dp->d_type != DT_LNK) {
+                if (dp->d_type != DT_REG && dp->d_type != DT_LNK)
                         continue;
-                }
                 ext=get_extension(dp->d_name);
                 if (strcasecmp(ext,"txt"))
                 {
@@ -151,7 +186,7 @@ int loadrom()
 //                   rpclog("Skipping %s\n",ff.name);
         }
         (void)closedir(dirp);
-
+#endif
         if (file==0)
         {
                 chdir(olddir);

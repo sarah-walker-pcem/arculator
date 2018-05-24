@@ -54,7 +54,7 @@ extern int romsavailable[6];
 /*  Declare Windows procedure  */
 LRESULT CALLBACK WindowProcedure (HWND, UINT, WPARAM, LPARAM);
 
-void error(char *format, ...)
+void error(const char *format, ...)
 {
    char buf[256];
 

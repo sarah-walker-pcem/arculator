@@ -1,3 +1,6 @@
+#ifndef _VIDC_H_
+#define _VIDC_H_
+
 extern int vidc_displayon;
 
 void vidc_redovideotiming();
@@ -35,3 +38,5 @@ typedef RGB PALETTE[256];
 
 #define makecol(r, g, b)    ((b) | ((g) << 8) | ((r) << 16))
 #define makecol32(r, g, b)  ((b) | ((g) << 8) | ((r) << 16))
+
+#endif /* _VIDC_H_ */

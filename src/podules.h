@@ -13,6 +13,10 @@ void podule_memc_writeb(int num, uint32_t addr, uint8_t  val);
 uint32_t podule_memc_readw(int num, uint32_t addr);
 uint8_t  podule_memc_readb(int num, uint32_t addr);
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct podule
 {
         void (*writeb)(struct podule *p, int easi, uint32_t addr, uint8_t val);
@@ -31,6 +35,10 @@ typedef struct podule
         int msectimer;
         int broken;
 } podule;
+
+#ifdef __cplusplus
+}
+#endif
 
 void rethinkpoduleints(void);
 

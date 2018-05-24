@@ -33,7 +33,6 @@ void opendlls(void)
 {
         char olddir[512],fn[512];
         podule tempp;
-        struct al_ffblk ff;
         int (*InitDll)();
         int finished;
         int dllnum=0;
@@ -43,6 +42,8 @@ void opendlls(void)
         for (dllnum=0;dllnum<8;dllnum++) hinstLib[dllnum]=NULL;
         dllnum=0;
         
+#ifndef DISABLE_PODULES
+        struct al_ffblk ff;
         getcwd(olddir,sizeof(olddir));
         append_filename(fn,exname,"podules",sizeof(fn));
         if (chdir(fn)) { error("Cannot find podules directory %s",fn); exit(-1); }
@@ -97,7 +98,7 @@ void opendlls(void)
         al_findclose(&ff);
         chdir(olddir);
         
-//        FreeLibrary(hinstLib);
+#endif // !DISABLE_PODULES
 }
 #endif
 

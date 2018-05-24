@@ -202,6 +202,7 @@ uint8_t podule_memc_readb(int num, uint32_t addr)
         return 0xFF;
 }
 
+/*Run podule timers for t ms*/
 void runpoduletimers(int t)
 {
         int c,d;

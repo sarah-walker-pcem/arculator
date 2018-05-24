@@ -209,11 +209,8 @@ extern void writest506l(uint32_t addr, uint32_t val);
 int soundena,oshack;
 int fullscreen;
 
-#ifdef WIN32
+/*Causes a databort during RISC OS 3.11 startup*/
 #define mousehack 0
-#else
-#define mousehack 1
-#endif
 
 /*Mouse*/
 int ml,mr,mt,mb;

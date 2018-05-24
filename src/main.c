@@ -184,14 +184,16 @@ void arc_init()
         int c;
         al_init_main(0, NULL);
 
+#ifdef WIN32
         get_executable_name(exname,511);
         p = (char *)get_filename(exname);
         *p = 0;
+#endif
 
         loadconfig();
         
         initvid();
-//        set_config_file(fn);
+
 #if 0
         initarculfs();
 #endif
@@ -350,6 +352,7 @@ void arc_set_cpu(int cpu, int memc)
 static int ddnoise_frames = 0;
 void arc_run()
 {
+        LOG_EVENT_LOOP("arc_run()\n");
         execarm((speed_mhz * 1000000) / 100);
         cmostick();
         polljoy();
@@ -363,6 +366,7 @@ void arc_run()
                 ddnoise_frames = 0;
                 ddnoise_mix();
         }
+        LOG_EVENT_LOOP("END arc_run()\n");
 }
 
 void arc_close()
@@ -389,12 +393,124 @@ void updatewindowsize(int x, int y)
 {
 }
 
+void sdl_enable_mouse_capture() {
+        mouse_capture_enable();
+        SDL_SetWindowGrab(sdl_main_window, SDL_TRUE);
+        mousecapture = 1;
+        updatemips = 1;
+}
+
+void sdl_disable_mouse_capture() {
+        SDL_SetWindowGrab(sdl_main_window, SDL_FALSE);
+        mouse_capture_disable();
+        mousecapture = 0;
+        updatemips = 1;
+}
+
+static int quited = 0;
+
 int main(int argc, char *argv[])
 {
-    arc_init();
-    do {
-        arc_run();
-    } while (1);
-    arc_close();
+        strncpy(exname, argv[0], 511);
+        char *p = (char *)get_filename(exname);
+        *p = 0;
+
+        rpclog("Arculator startup\n");
+
+        arc_init();
+
+        if (!video_renderer_init(NULL))
+        {
+                fatal("Video renderer init failed");
+        }
+        input_init();
+
+        struct timeval tp;
+        time_t last_seconds = 0;
+
+        while (!quited)
+        {
+                LOG_EVENT_LOOP("event loop\n");
+                if (gettimeofday(&tp, NULL) == -1)
+                {
+                        perror("gettimeofday");
+                        fatal("gettimeofday failed\n");
+                }
+                else if (!last_seconds)
+                {
+                        last_seconds = tp.tv_sec;
+                        rpclog("start time = %d\n", last_seconds);
+                }
+                else if (last_seconds != tp.tv_sec)
+                {
+                        updateins();
+                        last_seconds = tp.tv_sec;
+                }
+                SDL_Event e;
+                while (SDL_PollEvent(&e) != 0)
+                {
+                        if (e.type == SDL_QUIT)
+                        {
+                                quited = 1;
+                        }
+                        if (e.type == SDL_MOUSEBUTTONUP)
+                        {
+                                if (!mousecapture)
+                                {
+                                        rpclog("Mouse click -- enabling mouse capture\n");
+                                        sdl_enable_mouse_capture();
+                                }
+                        }
+                        if (e.type == SDL_WINDOWEVENT)
+                        {
+                                switch (e.window.event)
+                                {
+                                        case SDL_WINDOWEVENT_FOCUS_LOST:
+                                        if (mousecapture)
+                                        {
+                                                rpclog("Focus lost -- disabling mouse capture\n");
+                                                sdl_disable_mouse_capture();
+                                        }
+                                        break;
+                                
+                                        default:
+                                        break;
+                                }
+                        }
+                        if ((key[KEY_LCONTROL] || key[KEY_RCONTROL])
+                            && key[KEY_END]
+                            && !fullscreen && mousecapture)
+                        {
+                                rpclog("CTRL-END pressed -- disabling mouse capture\n");
+                                sdl_disable_mouse_capture();
+                        }
+                }
+
+                // Run for 10 ms of processor time
+                arc_run();
+
+                // Sleep to make it up to 10 ms of real time
+                static Uint32 last_timer_ticks = 0;
+                static int timer_offset = 0;
+                Uint32 current_timer_ticks = SDL_GetTicks();
+                Uint32 ticks_since_last = current_timer_ticks - last_timer_ticks;
+                last_timer_ticks = current_timer_ticks;
+                timer_offset += 10 - (int)ticks_since_last;
+                // rpclog("timer_offset now %d; %d ticks since last; delaying %d\n", timer_offset, ticks_since_last, 10 - ticks_since_last);
+                if (timer_offset > 100 || timer_offset < -100)
+                {
+                        timer_offset = 0;
+                }
+                else if (timer_offset > 0)
+                {
+                        SDL_Delay(timer_offset);
+                }
+        }
+        rpclog("SHUTTING DOWN\n");
+
+        arc_close();
+
+        input_close();
+        video_renderer_close();
 }
 #endif

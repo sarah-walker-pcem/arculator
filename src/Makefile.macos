@@ -1,0 +1,85 @@
+# macOS build
+# -----------
+
+# Notes:
+
+# Sound and podules are currently disabled on macOS.
+
+# Prerequisites:
+
+# - Xcode command-line tools
+# - libSDL2: brew install sdl2
+
+# To build:
+
+#   cd src
+#   make -fMakefile.macos clean
+#   make -fMakefile.macos
+#   mv Arculator ../
+
+# Debugging:
+
+# By default most debug output is disabled.  You can disable it completely by
+# removing the -DDEBUG_LOG line from CFLAGS below, or you can enable debugging
+# for individual modules by removing the _off suffix from the other definitions.
+# Some of them are very verbose :)
+
+DEPDIR := .d
+$(shell mkdir -p $(DEPDIR) >/dev/null)
+DEPFLAGS = -MT $@ -MMD -MP -MF $(DEPDIR)/$*.Td
+POSTCOMPILE = @mv -f $(DEPDIR)/$*.Td $(DEPDIR)/$*.d && touch $@
+
+CPP  = g++
+CC   = gcc
+
+CFLAGS = $(DEPFLAGS) \
+	-O3 -ffast-math -fomit-frame-pointer \
+	-g \
+	-DLINUX \
+	\
+	-DDEBUG_LOG \
+	-DDEBUG_CMOS_off \
+	-DDEBUG_EVENT_LOOP_off \
+	-DDEBUG_KB_MOUSE_off \
+	-DDEBUG_MEMC_VIDEO_off \
+	-DDEBUG_VIDC_REGISTERS_off \
+	-DDEBUG_VIDC_TIMING_off \
+	-DDEBUG_VIDEO_FRAMES_off \
+	-DDEBUG_DATABORT \
+	\
+	-DDISABLE_PODULES \
+	-DDISABLE_SOUND
+
+LFLAGS =
+
+OBJ = 82c711.o 82c711_fdc.o arcrom.o arm.o cmos.o config.o cp15.o \
+	ddnoise.o disc.o disc_adf.o disc_apd.o disc_fdi.o disc_jfd.o disc_ssd.o \
+	eterna.o fdi2raw.o fpa.o hostfs.o ics.o ide.o input_sdl2.o ioc.o keyboard.o \
+	main.o mem.o memc.o podules.o podules-linux.o romload.o soundopenal.o \
+	st506.o vidc.o video_sdl2.o wd1770.o win.o
+
+LIBS = -lSDL2 -lz -lm -ldl
+# -lalut -lopenal32
+
+Arculator: $(OBJ)
+	$(CPP) $(LFLAGS) $(OBJ) -o Arculator $(LIBS)
+
+all : Arculator
+
+clean :
+	rm -rf *.o $(DEPDIR)
+
+%.o : %.c
+%.o : %.c $(DEPDIR)/%.d
+	$(CPP) $(CFLAGS) -c $<
+	$(POSTCOMPILE)
+
+%.o : %.cc
+%.o : %.cc $(DEPDIR)/%.d
+	$(CPP) $(CFLAGS) -c $<
+	$(POSTCOMPILE)
+
+$(DEPDIR)/%.d: ;
+.PRECIOUS: $(DEPDIR)/%.d
+
+include $(wildcard $(patsubst %,$(DEPDIR)/%.d,$(basename $(OBJ))))

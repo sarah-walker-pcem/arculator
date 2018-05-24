@@ -60,7 +60,9 @@ extern void fatal(const char *format, ...);
 #endif
 
 
-void arc_set_cpu(int cpu, int memc);
+extern void arc_set_cpu(int cpu, int memc);
+extern void arc_setspeed(int mhz);
+extern void updatewindowsize(int x, int y);
 
 /*ARM*/
 uint32_t *usrregs[16],userregs[16],superregs[16],fiqregs[16],irqregs[16];
@@ -69,18 +71,18 @@ int armirq,armfiq;
 #define PC ((armregs[15])&0x3FFFFFC)
 int ins,output;
 
-void resetarm();
-void execarm(int cycles);
-void dumpregs();
 int databort;
 uint32_t opcode,opcode2,opcode3;
+extern void resetarm();
+extern void execarm(int cycs);
+extern void dumpregs();
 
 int fpaena;
 
 /*CP15*/
-void resetcp15();
-uint32_t readcp15(int reg);
-void writecp15(int reg, uint32_t val);
+extern void resetcp15();
+extern uint32_t readcp15(int reg);
+extern void writecp15(int reg, uint32_t val);
 
 /*IOC*/
 struct
@@ -132,14 +134,15 @@ uint32_t vinit,vstart,vend;
 uint32_t cinit;
 uint32_t sstart,ssend,ssend2,sptr;
 
-void writememc(uint32_t a);
-void writecam(uint32_t a);
+extern void initmemc();
+extern void writememc(uint32_t a);
+extern void writecam(uint32_t a);
 
 /*Sound*/
-void initsound();
-void deinitsound();
-void mixsound();
-void pollsound();
+extern void initsound();
+extern void deinitsound();
+extern void mixsound();
+extern void pollsound();
 
 /*VIDC*/
 uint32_t vidcr[64];
@@ -149,13 +152,13 @@ int fullborders,noborders;
 int hires;
 int stereoimages[8];
 
-void initvid();
-void reinitvideo();
-void writevidc(uint32_t v);
-int vidcgetoverflow();
-void pollline();
-void setredrawall();
-void clearbitmap();
+extern void initvid();
+extern void reinitvideo();
+extern void writevidc(uint32_t v);
+extern int vidcgetoverflow();
+extern void pollline();
+extern void setredrawall();
+extern void clearbitmap();
 
 /*Disc*/
 char discname[4][512];
@@ -165,40 +168,40 @@ uint8_t disc[4][2][80][16][1024]; /*Disc - E format (2 sides, 80 tracks, 5 secto
 int fdctype;
 int readflash[4];
 
-void loaddisc(char *fn, int dosdisc, int drive);
-void updatedisc(char *fn, int drive);
+extern void loaddisc(char *fn, int dosdisc, int drive);
+extern void updatedisc(char *fn, int drive);
 
 /*1772*/
-void callback();
-uint8_t read1772(unsigned a);
-void write1772(unsigned addr, unsigned val);
-void giveup1772();
 int motoron;
+extern void callback();
+extern uint8_t read1772(unsigned a);
+extern void write1772(unsigned addr, unsigned val);
+extern void giveup1772();
 
 /*82c711*/
-void reset82c711();
-void callbackfdc();
-uint8_t read82c711(uint32_t addr);
-void write82c711(uint32_t addr, uint32_t val);
-uint8_t readfdcdma(uint32_t addr);
-void writefdcdma(uint32_t addr, uint8_t val);
+extern void reset82c711();
+extern void callbackfdc();
+extern uint8_t read82c711(uint32_t addr);
+extern void write82c711(uint32_t addr, uint32_t val);
+extern uint8_t readfdcdma(uint32_t addr);
+extern void writefdcdma(uint32_t addr, uint8_t val);
 
 /*IDE*/
 int idecallback;
-void resetide();
-uint16_t readidew();
-void writeidew(uint16_t val);
-uint8_t readide(uint32_t addr);
-void writeide(uint32_t addr, uint8_t val);
-void callbackide();
+extern void resetide();
+extern uint16_t readidew();
+extern void writeidew(uint16_t val);
+extern uint8_t readide(uint32_t addr);
+extern void writeide(uint32_t addr, uint8_t val);
+extern void callbackide();
 
 /*ST-506*/
-void resetst506();
-void callbackst506();
-uint8_t readst506(uint32_t a);
-uint32_t readst506l(uint32_t a);
-void writest506(uint32_t addr, uint8_t val);
-void writest506l(uint32_t addr, uint32_t val);
+extern void resetst506();
+extern void callbackst506();
+extern uint8_t readst506(uint32_t a);
+extern uint32_t readst506l(uint32_t a);
+extern void writest506(uint32_t addr, uint8_t val);
+extern void writest506l(uint32_t addr, uint32_t val);
 
 int soundena,oshack;
 int fullscreen;
@@ -212,17 +215,25 @@ int fullscreen;
 /*Mouse*/
 int ml,mr,mt,mb;
 
-void resetmouse();
+extern void doosmouse();
+extern void setmousepos(uint32_t a);
+extern void getunbufmouse(uint32_t a);
+extern void getosmouse();
+extern void setmouseparams(uint32_t a);
+extern void resetmouse();
 
 /*Keyboard*/
-void initkeyboard();
-void keycallback();
-void keycallback2();
-void updatekeys();
-void writekeyboard(uint8_t v);
-void sendkey(uint8_t v);
 
 char exname[512];
+extern void initkeyboard();
+extern void keycallback();
+extern void keycallback2();
+extern void updatekeys();
+extern void writekeyboard(uint8_t v);
+extern void sendkey(uint8_t v);
+extern void keyboard_poll();
+extern uint8_t keyboard_read();
+extern void keyboard_write(uint8_t val);
 
 /*Config*/
 int fastdisc,dblscan;
@@ -231,14 +242,17 @@ int stereo;
 
 #if 0
 /*ArculFS*/
-void initarculfs();
-void arculfs(int call);
+extern void initarculfs();
+extern void arculfs(int call);
 #endif
+
 /*CMOS / I2C*/
-void cmosi2cchange(int nuclock, int nudata);
-void loadcmos();
-void savecmos();
-void cmostick();
+extern int i2cclock,i2cdata;
+
+extern void cmosi2cchange(int nuclock, int nudata);
+extern void loadcmos();
+extern void savecmos();
+extern void cmostick();
 
 int hdensity;
 

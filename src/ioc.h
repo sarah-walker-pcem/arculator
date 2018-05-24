@@ -1,9 +1,9 @@
-void ioc_write(uint32_t addr, uint32_t v);
-uint8_t ioc_read(uint32_t addr);
+extern void ioc_write(uint32_t addr, uint32_t v);
+extern uint8_t ioc_read(uint32_t addr);
 
-void ioc_reset();
-void ioc_updatetimers();
-void ioc_updateirqs();
+extern void ioc_reset();
+extern void ioc_updatetimers();
+extern void ioc_updateirqs();
 
 extern void ioc_irqa(uint8_t v);
 extern void ioc_irqac(uint8_t v);
@@ -16,6 +16,10 @@ extern void ioc_fiqc(uint8_t num);
 
 extern void ioc_discchange(int drive);
 extern void ioc_discchange_clear(int drive);
+
+extern void initjoy();
+extern void polljoy();
+extern uint8_t readjoy(int addr);
 
 enum
 {

@@ -56,10 +56,12 @@
 # define mkdir(name, mode) _mkdir(name)
 #endif
 
+#if !defined(bool) && !defined(__cplusplus)
 typedef int bool;
 
 #define true  ((bool) 1)
 #define false ((bool) 0)
+#endif
 
 /** Registration states of HostFS module with backend code */
 typedef enum {
@@ -160,7 +162,7 @@ static void
 hostfs_ensure_buffer_size(size_t buffer_size_needed)
 {
   if (buffer_size_needed > buffer_size) {
-    buffer = realloc(buffer, buffer_size_needed);
+    buffer = (unsigned char *)realloc(buffer, buffer_size_needed);
     if (!buffer) {
       fprintf(stderr, "HostFS could not increase buffer size to %lu bytes\n",
               (unsigned long) buffer_size_needed);
@@ -1564,8 +1566,8 @@ hostfs_func_8_rename(ARMul_State *state)
 static int
 hostfs_directory_entry_compare(const void *e1, const void *e2)
 {
-  const cache_directory_entry *entry1 = e1;
-  const cache_directory_entry *entry2 = e2;
+  const cache_directory_entry *entry1 = (const cache_directory_entry *)e1;
+  const cache_directory_entry *entry2 = (const cache_directory_entry *)e2;
   const char *name1 = cache_names + entry1->name_offset;
   const char *name2 = cache_names + entry2->name_offset;
 
@@ -1593,10 +1595,10 @@ hostfs_cache_dir(const char *directory_name)
 
   /* Allocate memory initially */
   if (!cache_entries) {
-    cache_entries = malloc(cache_entries_capacity * sizeof(cache_directory_entry));
+    cache_entries = (cache_directory_entry *)malloc(cache_entries_capacity * sizeof(cache_directory_entry));
   }
   if (!cache_names) {
-    cache_names = malloc(cache_names_capacity);
+    cache_names = (char *)malloc(cache_names_capacity);
   }
   if ((!cache_entries) || (!cache_names)) {
     fprintf(stderr, "hostfs_cache_dir(): Out of memory\n");
@@ -1638,7 +1640,7 @@ hostfs_cache_dir(const char *directory_name)
     /* Check whether cache_names[] is large enough; increase if required */
     if (string_space > (cache_names_capacity - name_ptr)) {
       cache_names_capacity *= 2;
-      cache_names = realloc(cache_names, cache_names_capacity);
+      cache_names = (char *)realloc(cache_names, cache_names_capacity);
       if (!cache_names) {
         fprintf(stderr, "hostfs_cache_dir(): Out of memory\n");
         exit(1);
@@ -1656,7 +1658,7 @@ hostfs_cache_dir(const char *directory_name)
     entry_ptr++;
     if (entry_ptr == cache_entries_capacity) {
       cache_entries_capacity *= 2;
-      cache_entries = realloc(cache_entries, cache_entries_capacity * sizeof(cache_directory_entry));
+      cache_entries = (cache_directory_entry *)realloc(cache_entries, cache_entries_capacity * sizeof(cache_directory_entry));
       if (!cache_entries) {
         fprintf(stderr, "hostfs_cache_dir(): Out of memory\n");
         exit(1);

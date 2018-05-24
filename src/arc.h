@@ -64,21 +64,27 @@ extern void arc_set_cpu(int cpu, int memc);
 extern void arc_setspeed(int mhz);
 extern void updatewindowsize(int x, int y);
 
-/*ARM*/
-uint32_t *usrregs[16],userregs[16],superregs[16],fiqregs[16],irqregs[16];
-uint32_t armregs[16];
-int armirq,armfiq;
-extern int cycles;
-#define PC ((armregs[15])&0x3FFFFFC)
-int ins,output;
+extern int updatemips,inssec;
 
-int databort;
-uint32_t opcode,opcode2,opcode3;
+extern FILE *olog;
+
+/*ARM*/
+extern int cycles;
+extern uint32_t armregs[16];
+extern int armirq,armfiq;
+#define PC ((armregs[15])&0x3FFFFFC)
+extern int ins,output;
+extern int inscount;
+
 extern void resetarm();
 extern void execarm(int cycs);
 extern void dumpregs();
+extern int databort;
+extern uint32_t opcode;
 
-int fpaena;
+extern int fpaena;
+extern int fpaopcode(uint32_t opcode);
+extern void resetfpa();
 
 /*CP15*/
 extern void resetcp15();
@@ -178,11 +184,11 @@ extern void loaddisc(char *fn, int dosdisc, int drive);
 extern void updatedisc(char *fn, int drive);
 
 /*1772*/
-int motoron;
 extern void callback();
 extern uint8_t read1772(unsigned a);
 extern void write1772(unsigned addr, unsigned val);
 extern void giveup1772();
+extern int motoron;
 
 /*82c711*/
 extern void reset82c711();
@@ -193,7 +199,7 @@ extern uint8_t readfdcdma(uint32_t addr);
 extern void writefdcdma(uint32_t addr, uint8_t val);
 
 /*IDE*/
-int idecallback;
+extern int idecallback;
 extern void resetide();
 extern uint16_t readidew();
 extern void writeidew(uint16_t val);
@@ -209,8 +215,7 @@ extern uint32_t readst506l(uint32_t a);
 extern void writest506(uint32_t addr, uint8_t val);
 extern void writest506l(uint32_t addr, uint32_t val);
 
-int soundena,oshack;
-int fullscreen;
+extern int soundena,oshack;
 
 /*Causes a databort during RISC OS 3.11 startup*/
 #define mousehack 0
@@ -224,8 +229,6 @@ extern void setmouseparams(uint32_t a);
 extern void resetmouse();
 
 /*Keyboard*/
-
-char exname[512];
 extern void initkeyboard();
 extern void keycallback();
 extern void keycallback2();
@@ -236,10 +239,15 @@ extern void keyboard_poll();
 extern uint8_t keyboard_read();
 extern void keyboard_write(uint8_t val);
 
+extern char exname[512];
+
+/*Eterna*/
+extern uint8_t readeterna(uint32_t addr);
+extern void writeeterna(uint32_t addr, uint32_t val);
+
 /*Config*/
-int fastdisc,dblscan;
-int romset;
-int stereo;
+extern int romset;
+extern int stereo;
 
 #if 0
 /*ArculFS*/
@@ -255,7 +263,7 @@ extern void loadcmos();
 extern void savecmos();
 extern void cmostick();
 
-int hdensity;
+extern int hdensity;
 
 
 
@@ -264,12 +272,12 @@ extern int limitspeed;
 extern int soundena,stereo;
 
 extern int hires;
+extern int fullscreen;
 extern int fullborders,noborders;
 extern int firstfull;
 extern int dblscan;
 
 extern int arm3;
-extern int fpaena;
 
 extern int memsize;
 

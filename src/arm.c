@@ -32,6 +32,8 @@ int podule_time=8000;
 #include "sound.h"
 #include "vidc.h"
 
+uint32_t armregs[16];
+
 int cycles;
 int linecyc;
 
@@ -47,8 +49,15 @@ static int cyc_s, cyc_n;
 
 #define cyc_i (1 << 10)
 
+uint32_t opcode;
+static uint32_t opcode2,opcode3;
+static uint32_t *usrregs[16],userregs[16],superregs[16],fiqregs[16],irqregs[16];
+
 static int vidc_dma_pending = 0;
 int vidc_fetches = 0;
+
+int databort;
+
 static void CLOCK_N(uint32_t addr)
 {
 //	rpclog("CLOCK_N %i %i %i\n", vidc_dma_pending, arm_dmacount, cycles);
@@ -226,19 +235,15 @@ int swioutput=0;
 int keyscount=100;
 int idecallback;
 int fdci=200;
-int motoron;
 int fdccallback;
 int fdicount=16;
 int irq;
-int prefabort;
 uint8_t flaglookup[16][16];
 uint32_t rotatelookup[4096];
 int disccint=0;
 int timetolive=0;
 int inscount;
 int soundtime;
-int discint;
-int keydelay,keydelay2;
 int armirq=0;
 int output=0;
 

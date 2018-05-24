@@ -6,7 +6,7 @@
 
 void callbackst506();
 int printnext=0;
-int timetolive;
+// int timetolive;
 #define BUSY            0x80
 #define PARAMREJECT     0x40
 #define COMEND          0x20
@@ -15,7 +15,6 @@ int timetolive;
 #define ABNEND          0x04
 
 FILE *shdfile[2];
-int idecallback;
 
 struct
 {

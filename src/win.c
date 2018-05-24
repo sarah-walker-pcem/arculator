@@ -36,14 +36,11 @@ CRITICAL_SECTION cs;
 
 int limitspeed=0;
 
-int mousecapture;
 RECT oldclip,arcclip;
 
-int quited=0;
+static int quited=0;
 
 int pause = 0;
-
-extern int updatemips,inssec;
 
 extern int firstfull;
 

@@ -51,10 +51,11 @@ int romsavailable[6];
 void fdiclose();
 int firstfull=1;
 int memsize=4096;
-float inssecf;
-int inssec;
-int inscount,updatemips;
-int frameco=0;
+static float inssecf;  /*Millions of instructions executed in the last second*/
+int inssec;            /*Speed ratio percentage (100% = realtime emulation), updated by updateins()*/
+int updatemips;        /*1 if MIPS counter has not been updated since last updateins() call*/
+static int frameco=0;  /*Number of 1/100 second executions (arm_run() calls) since last updateins()*/
+char exname[512];
 
 int jint,jtotal;
 

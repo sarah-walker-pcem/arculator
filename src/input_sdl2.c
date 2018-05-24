@@ -1,5 +1,6 @@
 #include <SDL2/SDL.h>
 #include <string.h>
+#include "arc.h"
 #include "plat_input.h"
 #include "video_sdl2.h"
 

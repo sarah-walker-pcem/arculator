@@ -1,9 +1,12 @@
 #if defined(LINUX)
 #warning
-#include <stdio.h>
-#include "arc.h"
-#include "podules.h"
 #include <dlfcn.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include "arc.h"
+#include "config.h"
+#include "podules.h"
 
 #define HINSTANCE void *
 #define DWORD char *

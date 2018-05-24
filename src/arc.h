@@ -3,6 +3,7 @@
 
 //#define printf rpclog
 
+#include <stdio.h>
 #include <stdint.h>
 
 /*Misc*/

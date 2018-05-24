@@ -7,8 +7,9 @@
 #endif
 
 #include <stdio.h>
-#include "vidc.h"
+#include "arc.h"
 #include "plat_video.h"
+#include "vidc.h"
 #include "video_sdl2.h"
 
 static SDL_Texture *texture = NULL;

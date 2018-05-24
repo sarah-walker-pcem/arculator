@@ -1,6 +1,8 @@
 /*Arculator 0.8 by Tom Walker
   VIDC10 emulation*/
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #if WIN32
 #define BITMAP __win_BITMAP
 #include <windows.h>

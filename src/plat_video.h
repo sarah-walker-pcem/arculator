@@ -1,3 +1,5 @@
+#include "vidc.h"
+
 int video_renderer_init(void *main_window);
 void video_renderer_close();
 

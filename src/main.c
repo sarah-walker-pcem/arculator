@@ -1,10 +1,12 @@
 #include <stdio.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
-#include "arc.h"
+#include <sys/time.h>
 
 #include "82c711_fdc.h"
+#include "arc.h"
 #include "arm.h"
 #include "config.h"
 #include "ddnoise.h"
@@ -20,11 +22,13 @@
 #include "mem.h"
 #include "memc.h"
 #include "plat_input.h"
+#include "plat_video.h"
 #include "podules.h"
 #include "sound.h"
 #include "soundopenal.h"
-#include "wd1770.h"
 #include "vidc.h"
+#include "video_sdl2.h"
+#include "wd1770.h"
 
 #include "hostfs.h"
 

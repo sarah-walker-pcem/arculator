@@ -402,6 +402,8 @@ void resetarm()
                 }
         }
 
+        /*Build rotatelookup table used by rotate2 macro, which rotates
+          data[7:0] by data[11:8]<<1.*/
         for (data=0;data<4096;data++)
         {
                 rotval=data&0xFF;
@@ -452,7 +454,7 @@ void dumpregs()
         for (c=0x0000;c<0x100000;c++)
             putc(readmemb(c),f);
         fclose(f);*/
-        rpclog("R 0=%08X R 4=%08X R 8=%08X R12=%08X\nR 1=%08X R 5=%08X R 9=%08X R13=%08X\nR 2=%08X R 6=%08X R10=%08X R14=%08X\nR 3=%08X R 7=%08X R11=%08X R15=%08X\n%i %08X %08X\nf 8=%08X f 9=%08X f10=%08X f11=%08X\nf12=%08X f13=%08X f14=%08X",armregs[0],armregs[4],armregs[8],armregs[12],armregs[1],armregs[5],armregs[9],armregs[13],armregs[2],armregs[6],armregs[10],armregs[14],armregs[3],armregs[7],armregs[11],armregs[15],ins,opcode,opcode2,fiqregs[8],fiqregs[9],fiqregs[10],fiqregs[11],fiqregs[12],fiqregs[13],fiqregs[14]);
+        rpclog("R 0=%08X R 4=%08X R 8=%08X R12=%08X\nR 1=%08X R 5=%08X R 9=%08X R13=%08X\nR 2=%08X R 6=%08X R10=%08X R14=%08X\nR 3=%08X R 7=%08X R11=%08X R15=%08X\n%i %08X %08X\nf 8=%08X f 9=%08X f10=%08X f11=%08X\nf12=%08X f13=%08X f14=%08X\n",armregs[0],armregs[4],armregs[8],armregs[12],armregs[1],armregs[5],armregs[9],armregs[13],armregs[2],armregs[6],armregs[10],armregs[14],armregs[3],armregs[7],armregs[11],armregs[15],ins,opcode,opcode2,fiqregs[8],fiqregs[9],fiqregs[10],fiqregs[11],fiqregs[12],fiqregs[13],fiqregs[14]);
         indumpregs=0;
 }
 
@@ -896,19 +898,30 @@ int framecycs;
                         linecyc -= cyc
 
 int refreshcount = 32;
-int total_cycles;
+static int total_cycles;
 
-void execarm(int cycs)
+/*Execute ARM instructions for `cycs` clock ticks, typically 10 ms
+  (cycs=80k for an 8MHz ARM2).*/
+void execarm(int cycles_to_execute)
 {
         uint32_t templ,templ2,mask,addr,addr2;
-        int c,cyc,oldcyc,oldcyc2;
-        
+        int c;
+        int cyc; /*Number of clock ticks executed in the last loop*/
+        int oldcyc,oldcyc2;
 
-        total_cycles+=cycs << 10;
+        int pollline_call_count = 0;
+        int clock_ticks_executed = 0;
+        
+        LOG_EVENT_LOOP("execarm(%d)\n", cycles_to_execute);
+
+        total_cycles+=cycles_to_execute << 10;
 
         while (total_cycles>0)
         {
-                cycles += vidcgetcycs();
+                int vidc_cycles_to_execute = vidcgetcycs();
+                cycles += vidc_cycles_to_execute;
+                LOG_VIDC_TIMING("cycles (%d) += vidcgetcycs() (%d) --> %d (%d) to execute before pollline()\n",
+                        oldcyc, vidc_cycles_to_execute, cycles, cycles>>10);
                 oldcyc=cycles;
 //                framecycs+=linecyc;
                 while (cycles>0)
@@ -1774,7 +1787,9 @@ void execarm(int cycs)
                                                 }
                                         }
                                         else
-                                           setsub(GETADDR(RN),rotate2(opcode),GETADDR(RN)-rotate2(opcode));
+                                        {
+                                                setsub(GETADDR(RN),rotate2(opcode),GETADDR(RN)-rotate2(opcode));
+                                        }
                                         break;
 
                                         case 0x37: /*CMN imm*/
@@ -1792,7 +1807,9 @@ void execarm(int cycs)
                                                 }
                                         }
                                         else
-                                           setadd(GETADDR(RN),rotate2(opcode),GETADDR(RN)+rotate2(opcode));
+                                        {
+                                                setadd(GETADDR(RN),rotate2(opcode),GETADDR(RN)+rotate2(opcode));
+                                        }
                                         break;
 
                                         case 0x38: /*ORR imm*/
@@ -2752,9 +2769,17 @@ void execarm(int cycs)
                         ins++;
                 }
        
+                /*Finished executing one VIDC display line worth of cycles*/
+                cyc=(oldcyc-cycles) >> 10; /*Number of clock ticks executed*/
+                clock_ticks_executed += cyc;
+                LOG_VIDC_TIMING("pollline: inscount=%d, ins=%d, clocks executed=%d (should be ~500)\n", inscount, ins, cyc);
                 pollline();
+                pollline_call_count++;
                 total_cycles -= (oldcyc-cycles);
-                cyc=(oldcyc-cycles) >> 10;
+
+                /*Run all the various devices*/
+
+                /*Podule 1ms timer*/
                 podule_time-=cyc;
                 while (podule_time<=0)
                 {
@@ -2762,12 +2787,15 @@ void execarm(int cycs)
                         runpoduletimers(1);
                 }
 
+                /*Sound 4us timer*/
                 soundtime-=cyc;//(cyc>>1);
                 while (soundtime<0)
                 {
                         soundtime += sound_poll_time;
                         pollsound();
                 }
+
+                /*Keyboard 10ms timer*/
                 keyboard_poll_count -= cyc;
                 if (keyboard_poll_count < 0)
                 {
@@ -2786,6 +2814,8 @@ void execarm(int cycs)
                         if (!key_tx_callback)
                                 key_do_tx_callback();
                 }
+
+                /*IDE callback*/
                 if (idecallback)
                 {
                         idecallback-=10;
@@ -2803,5 +2833,6 @@ void execarm(int cycs)
                         keyscount=200;
                 }*/
         }
-//        rpclog("End of frame %i\n",cycles);
+        LOG_EVENT_LOOP("execarm() finished; cycles=%d, clock ticks=%d, and called pollline() %d times (should be ~160)\n",
+                cycles, clock_ticks_executed, pollline_call_count);
 }

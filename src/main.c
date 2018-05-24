@@ -69,11 +69,38 @@ void updateins()
         updatemips=1;
 }
 
-FILE *rlog;
-void rpclog(char *format, ...)
+FILE *rlog = NULL;
+void rpclog(const char *format, ...)
+{
+#ifdef DEBUG_LOG
+   char buf[1024];
+
+   if (!rlog)
+   {
+           rlog=fopen("arclog.txt","wt");
+           if (!rlog)
+           {
+                   perror("fopen");
+                   exit(-1);
+           }
+   }
+
+   va_list ap;
+   va_start(ap, format);
+   vsprintf(buf, format, ap);
+   va_end(ap);
+
+   fprintf(stderr, "%s", buf);
+
+   fputs(buf,rlog);
+   fflush(rlog);
+#endif
+}
+
+void fatal(const char *format, ...)
 {
    char buf[1024];
-   return;
+
    if (!rlog) rlog=fopen("arclog.txt","wt");
 
    va_list ap;
@@ -82,23 +109,30 @@ void rpclog(char *format, ...)
    va_end(ap);
    fputs(buf,rlog);
    fflush(rlog);
+
+   fprintf(stderr, "%s", buf);
+
+   dumpregs();
+   exit(-1);
 }
 
-void fatal(char *format, ...)
+#ifndef WIN32
+void error(const char *format, ...)
 {
    char buf[1024];
-//   return;
+
    if (!rlog) rlog=fopen("arclog.txt","wt");
-//turn;
+
    va_list ap;
    va_start(ap, format);
    vsprintf(buf, format, ap);
    va_end(ap);
    fputs(buf,rlog);
    fflush(rlog);
-        dumpregs();
-        exit(-1);
+
+   fprintf(stderr, "%s", buf);
 }
+#endif // !WIN32
 
 int limitspeed;
 

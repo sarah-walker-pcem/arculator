@@ -7,9 +7,58 @@
 #include <stdint.h>
 
 /*Misc*/
-void rpclog(char *format, ...);
-void error(char *format, ...);
-void fatal(char *format, ...);
+extern void rpclog(const char *format, ...);
+extern void error(const char *format, ...);
+extern void fatal(const char *format, ...);
+
+#ifdef DEBUG_CMOS
+#define LOG_CMOS rpclog
+#else
+#define LOG_CMOS(...) ((void)0)
+#endif
+
+#ifdef DEBUG_EVENT_LOOP
+#define LOG_EVENT_LOOP rpclog
+#else
+#define LOG_EVENT_LOOP(...) ((void)0)
+#endif
+
+#ifdef DEBUG_KB_MOUSE
+#define LOG_KB_MOUSE rpclog
+#else
+#define LOG_KB_MOUSE(...) ((void)0)
+#endif
+
+#ifdef DEBUG_MEMC_VIDEO
+#define LOG_MEMC_VIDEO rpclog
+#else
+#define LOG_MEMC_VIDEO(...) ((void)0)
+#endif
+
+#ifdef DEBUG_VIDC_REGISTERS
+#define LOG_VIDC_REGISTERS rpclog
+#else
+#define LOG_VIDC_REGISTERS(...) ((void)0)
+#endif
+
+#ifdef DEBUG_VIDC_TIMING
+#define LOG_VIDC_TIMING rpclog
+#else
+#define LOG_VIDC_TIMING(...) ((void)0)
+#endif
+
+#ifdef DEBUG_VIDEO_FRAMES
+#define LOG_VIDEO_FRAMES rpclog
+#else
+#define LOG_VIDEO_FRAMES(...) ((void)0)
+#endif
+
+#ifdef DEBUG_DATABORT
+#define LOG_DATABORT(...) do { rpclog(__VA_ARGS__); dumpregs(); } while (0)
+#else
+#define LOG_DATABORT(...) ((void)0)
+#endif
+
 
 void arc_set_cpu(int cpu, int memc);
 

@@ -32,10 +32,6 @@
 
 #include "hostfs.h"
 
-#ifdef LINUX
-#include "podules-linux.h"
-#endif
-
 /*0=Arthur
   1=RiscOS 2
   2=RiscOS 3.1 with WD1772

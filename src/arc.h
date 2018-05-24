@@ -173,18 +173,6 @@ void write82c711(uint32_t addr, uint32_t val);
 uint8_t readfdcdma(uint32_t addr);
 void writefdcdma(uint32_t addr, uint8_t val);
 
-/*FDI*/
-void fdiinit(void (*func)(), void (*func2)(), void (*func3)());
-void fdireadsector(int sector, int track, void (*func)(uint8_t dat, int last));
-void fdiseek(int track);
-void fdiload(char *fn, int drv, int type);
-void fdinextbit();
-int fdihd[2];
-int readtrack;
-int readidcommand;
-void readidresult(uint8_t *dat, int badcrc);
-int fdipos;
-
 /*IDE*/
 int idecallback;
 void resetide();

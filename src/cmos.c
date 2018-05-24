@@ -9,9 +9,6 @@
 #include "arc.h"
 #include "config.h"
 
-FILE *olog;
-int output;
-//uint32_t *armregs[16];
 int cmosstate=0;
 int i2cstate=0;
 int lastdata;
@@ -43,11 +40,10 @@ FILE *cmosf;
 
 void cmosgettime();
 
-int romset;
 void loadcmos()
 {
         char fn[512];
-//        rpclog("Read cmos %i\n",romset);
+        LOG_CMOS("Read cmos %i\n",romset);
         if (romset>3) return;
         switch (romset)
         {
@@ -56,22 +52,26 @@ void loadcmos()
                 case 2: append_filename(fn,exname,"cmos/riscos3_old/cmos.bin",511); break;
                 case 3: append_filename(fn,exname,"cmos/riscos3_new/cmos.bin",511); break;
         }
-//        rpclog("Reading %s\n",fn);
+
         cmosf=fopen(fn,"rb");
         if (cmosf)
         {
                 fread(cmosram,256,1,cmosf);
                 fclose(cmosf);
+                LOG_CMOS("Read CMOS contents from %s\n", fn);
         }
         else
+        {
+                LOG_CMOS("%s doesn't exist; resetting CMOS\n", fn);
                 memset(cmosram,0,256);
+        }
         cmosgettime();
 }
 
 void savecmos()
 {
         char fn[512];
-//        rpclog("Writing CMOS %i\n",romset);
+        LOG_CMOS("Writing CMOS %i\n",romset);
         if (romset>3) return;
         switch (romset)
         {
@@ -80,33 +80,28 @@ void savecmos()
                 case 2: append_filename(fn,exname,"cmos/riscos3_old/cmos.bin",511); break;
                 case 3: append_filename(fn,exname,"cmos/riscos3_new/cmos.bin",511); break;
         }
-//        rpclog("Writing %s\n",fn);
+        LOG_CMOS("Writing %s\n",fn);
         cmosf=fopen(fn,"wb");
-//        for (c=0;c<256;c++)
-//            putc(cmosram[(c-0x40)&0xFF],cmosf);
         fwrite(cmosram,256,1,cmosf);
         fclose(cmosf);
 }
 
 void cmosstop()
 {
+        LOG_CMOS("cmosstop()\n");
         cmosstate=CMOS_IDLE;
         i2ctransmit=ARM;
 }
 
 void cmosnextbyte()
 {
-//        cmosgettime();
+        LOG_CMOS("cmosnextbyte(%d)\n", cmosaddr);
         i2cbyte=cmosram[(cmosaddr++)&0xFF];
-}
-uint8_t cmosgetbyte()
-{
-        return cmosram[(cmosaddr++)&0xFF];
 }
 int rtcdisable=0;
 void cmosgettime()
 {
-/*        int c,d;*/
+        LOG_CMOS("cmosgettime()\n");
         if (rtcdisable) return;
 #ifdef WIN32
 /*        GetLocalTime(&systemtime);
@@ -137,7 +132,7 @@ void cmosgettime()
         d=systemtime.wYear%10;
         c=systemtime.wYear/10;
         cmosram[129]=d|(c<<4);*/
-//        rpclog("Read time - %02X %02X %02X %02X %02X %02X\n",cmosram[1],cmosram[2],cmosram[3],cmosram[4],cmosram[5],cmosram[6]);
+//        LOG_CMOS("Read time - %02X %02X %02X %02X %02X %02X\n",cmosram[1],cmosram[2],cmosram[3],cmosram[4],cmosram[5],cmosram[6]);
 /*        if (!olog) olog=fopen("olog.txt","wt");
         sprintf(s,"Read time - %02X %02X %02X %02X %02X %02X\n",cmosram[1],cmosram[2],cmosram[3],cmosram[4],cmosram[5],cmosram[6]);
         fputs(s,olog);*/
@@ -171,6 +166,7 @@ void cmostick()
 
 void cmoswrite(uint8_t byte)
 {
+        LOG_CMOS("cmoswrite()\n");
         switch (cmosstate)
         {
                 case CMOS_IDLE:

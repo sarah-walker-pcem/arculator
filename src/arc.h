@@ -216,8 +216,6 @@ int fullscreen;
 #define mousehack 0
 
 /*Mouse*/
-int ml,mr,mt,mb;
-
 extern void doosmouse();
 extern void setmousepos(uint32_t a);
 extern void getunbufmouse(uint32_t a);

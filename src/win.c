@@ -36,7 +36,7 @@ CRITICAL_SECTION cs;
 
 int limitspeed=0;
 
-int mousecapture=0;
+int mousecapture;
 RECT oldclip,arcclip;
 
 int quited=0;

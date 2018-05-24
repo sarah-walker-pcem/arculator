@@ -9,7 +9,8 @@
 
 static int mouse_b, mouse_x, mouse_y;
 
-int mousecapture;
+int mousecapture=0;
+int ml,mr,mt,mb;
 
 int keydat[512];
 
@@ -48,7 +49,7 @@ enum
 
 void keyboard_send_single(uint8_t val)
 {
-        rpclog("keyboard_send_single %02X\n", val);
+        LOG_KB_MOUSE("keyboard_send_single %02X\n", val);
         key_data[0] = val;
         
         keystat = KEYBOARD_DAT_SINGLE;
@@ -58,7 +59,7 @@ void keyboard_send_single(uint8_t val)
 
 void keyboard_send_double(uint8_t val1, uint8_t val2)
 {
-        rpclog("keyboard_send_double : %02X %02X\n", val1, val2);
+        LOG_KB_MOUSE("keyboard_send_double : %02X %02X\n", val1, val2);
         key_data[0] = val1;        
         key_data[1] = val2;
         
@@ -69,13 +70,13 @@ void keyboard_send_double(uint8_t val1, uint8_t val2)
 
 void key_do_rx_callback()
 {
-        rpclog("RX interrupt\n");
+        LOG_KB_MOUSE("RX interrupt\n");
         ioc_irqb(IOC_IRQB_KEYBOARD_RX);
 }
 
 void key_do_tx_callback()
 {
-        rpclog("TX interrupt\n");
+        LOG_KB_MOUSE("TX interrupt\n");
         ioc_irqb(IOC_IRQB_KEYBOARD_TX);
 }
 
@@ -83,7 +84,7 @@ int keyboard_keydown(int row, int col)
 {
         if (!keystat)
         {
-                rpclog("keydown\n");
+                LOG_KB_MOUSE("keydown\n");
                 keyboard_send_double(0xc0 | row, 0xc0 | col);
                 return 1;
         }
@@ -94,7 +95,7 @@ int keyboard_keyup(int row, int col)
 {
         if (!keystat)
         {
-                rpclog("keyup\n");
+                LOG_KB_MOUSE("keyup\n");
                 keyboard_send_double(0xd0 | row, 0xd0 | col);
                 return 1;
         }
@@ -126,11 +127,11 @@ void keyboard_write(uint8_t val)
 
         key_tx_callback = 10;
         
-        rpclog("Keyboard write %02X %i %08X\n", val, keystat, PC);
+        LOG_KB_MOUSE("Keyboard write %02X %i %08X\n", val, keystat, PC);
         switch (keystat)
         {
                 case KEYBOARD_RESET: /*Reset sequence*/
-                rpclog("Reset sequence - write %02X\n", val);
+                LOG_KB_MOUSE("Reset sequence - write %02X\n", val);
                 switch (val)
                 {
                         case KEYBOARD_HRST: /*HRST*/
@@ -155,7 +156,7 @@ void keyboard_write(uint8_t val)
                 break;
 
                 case KEYBOARD_IDLE: /*Normal*/
-//                rpclog("Normal - write %02X\n",v);
+//                LOG_KB_MOUSE("Normal - write %02X\n",v);
                 switch (val)
                 {
                         case 0x00: case 0x01: case 0x02: case 0x03: /*Keyboard LEDs*/
@@ -247,11 +248,11 @@ void keyboard_poll()
                 ioc_irqb(IOC_IRQB_PODULE_IRQ);
                 return;
         }
-//        rpclog("Updatekeys %i %i\n",keystat,keyena);
+//        LOG_KB_MOUSE("Updatekeys %i %i\n",keystat,keyena);
 //        int mouseb=mouse_b;
 //        mouse_b|=(key[KEY_MENU])?4:0;
 
-        rpclog("keyboard_poll %i %i\n", keystat, keyena);
+        if (keystat || keyena) LOG_KB_MOUSE("keyboard_poll %i %i\n", keystat, keyena);
         if (keystat != KEYBOARD_IDLE)
                 return;
         if (!keyena) 
@@ -278,6 +279,7 @@ void keyboard_poll()
         
         if ((mouse_buttons & 1) != mousedown[0]) /*Left button*/
         {
+                LOG_KB_MOUSE("mouse left click\n");
                 mousedown[0] = mouse_buttons & 1;
                 if (mousedown[0])
                         keyboard_send_double(0xc7, 0xc0);
@@ -287,6 +289,7 @@ void keyboard_poll()
         }
         if ((mouse_buttons & 2) != mousedown[1]) /*Right button*/
         {
+                LOG_KB_MOUSE("mouse right click\n");
                 mousedown[1] = mouse_buttons & 2;
                 if (mousedown[1])
                         keyboard_send_double(0xc7, 0xc2);
@@ -294,9 +297,14 @@ void keyboard_poll()
                         keyboard_send_double(0xd7, 0xd2);
                 return;
         }
-        if (((mouse_buttons & 4) | (key[KEY_MENU] ? 4 : 0)) != mousedown[2]) /*Middle button*/
+        /* There are three ways to perform a menu-click in Arculator:
+           - Click the middle mouse button, on a three-button mouse
+           - Press the Menu key (KEY_MENU), on a modern Windows keyboard
+           - Press the left Command key (KEY_LWIN), on a Mac*/
+        if (((mouse_buttons & 4) | ((key[KEY_MENU] || key[KEY_LWIN]) ? 4 : 0)) != mousedown[2]) /*Middle button*/
         {
-                mousedown[2] = (mouse_buttons & 4) | (key[KEY_MENU] ? 4 : 0);
+                LOG_KB_MOUSE("mouse middle click / menu key pressed\n");
+                mousedown[2] = (mouse_buttons & 4) | ((key[KEY_MENU] || key[KEY_LWIN]) ? 4 : 0);
                 if (mousedown[2])
                         keyboard_send_double(0xc7, 0xc1);
                 else
@@ -325,7 +333,7 @@ void keyboard_poll()
 
                 keyboard_send_double(mousex, mousey);
 
-                rpclog("Update mouse %i %i %i\n", mousex, mousey, keystat);
+                LOG_KB_MOUSE("Update mouse %i %i %i\n", mousex, mousey, keystat);
         }
 }
 
@@ -333,7 +341,7 @@ void doosmouse()
 {
         short temp;
         if (!mousehack || fullscreen) return;
-        rpclog("doosmouse\n");
+        LOG_KB_MOUSE("doosmouse\n");
         temp=1024-((mouse_y-offsety)<<1);
 //        if (temp<0) temp=0;
         if (temp<mt) temp=mt;
@@ -360,7 +368,7 @@ void doosmouse()
 void setmousepos(uint32_t a)
 {
         uint16_t temp,temp2;
-        rpclog("setmousepos\n");
+        LOG_KB_MOUSE("setmousepos\n");
         temp=readmemb(a+1)|(readmemb(a+2)<<8);
         temp=temp>>1;
         temp2=readmemb(a+3)|(readmemb(a+4)<<8);
@@ -371,7 +379,7 @@ void setmousepos(uint32_t a)
 void getunbufmouse(uint32_t a)
 {
         short temp;
-        rpclog("getunbufmouse\n");
+        LOG_KB_MOUSE("getunbufmouse\n");
         temp=1024-((mouse_y-offsety)<<1);
         if (temp<mt) temp=mt;
         if (temp>mb) temp=mb;
@@ -387,7 +395,7 @@ void getunbufmouse(uint32_t a)
 void getosmouse()
 {
         long temp;
-        rpclog("getosmouse\n");
+        LOG_KB_MOUSE("getosmouse\n");
         temp=1024-((mouse_y-offsety)<<1);
         if (temp<mt) temp=mt;
         if (temp>mb) temp=mb;
@@ -403,12 +411,12 @@ void getosmouse()
         if (key[KEY_MENU]) temp|=2;
         armregs[2]=temp;
         armregs[3]=0;
-        rpclog("%08X %08X %08X\n",armregs[0],armregs[1],armregs[2]);
+        LOG_KB_MOUSE("%08X %08X %08X\n",armregs[0],armregs[1],armregs[2]);
 }
 
 void setmouseparams(uint32_t a)
 {
-        rpclog("setmouseparams\n");
+        LOG_KB_MOUSE("setmouseparams\n");
         ml=readmemb(a+1)|(readmemb(a+2)<<8);
         mt=readmemb(a+3)|(readmemb(a+4)<<8);
         mr=readmemb(a+5)|(readmemb(a+6)<<8);

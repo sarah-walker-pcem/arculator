@@ -163,12 +163,13 @@ extern void setredrawall();
 extern void clearbitmap();
 
 /*Disc*/
-char discname[4][512];
-int curdrive;
-int discchange[4];
-uint8_t disc[4][2][80][16][1024]; /*Disc - E format (2 sides, 80 tracks, 5 sectors, 1024 bytes)*/
-int fdctype;
-int readflash[4];
+extern char discname[4][512];
+extern int curdrive;
+extern int discchange[4];
+extern uint8_t disc[4][2][80][16][1024]; /*Disc - E format (2 sides, 80 tracks, 5 sectors, 1024 bytes)*/
+extern int fdctype;
+extern int readflash[4];
+extern int fastdisc;
 
 extern void loaddisc(char *fn, int dosdisc, int drive);
 extern void updatedisc(char *fn, int drive);

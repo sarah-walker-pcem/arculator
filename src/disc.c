@@ -23,7 +23,13 @@ int disc_poll_time = 16;
 
 DRIVE drives[4];
 
+char discname[4][512];
 int curdrive = 0;
+int discchange[4];
+uint8_t disc[4][2][80][16][1024]; /*Disc - E format (2 sides, 80 tracks, 5 sectors, 1024 bytes)*/
+int fdctype;
+int readflash[4];
+int fastdisc;
 
 char discfns[4][260] = {"", ""};
 int defaultwriteprot = 0;
@@ -277,5 +283,5 @@ void disc_format(int drive, int track, int side, int density)
 void disc_stop(int drive)
 {
         if (drives[drive].stop)
-           drives[drive].stop(drive);
+           drives[drive].stop();
 }

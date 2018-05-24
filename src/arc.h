@@ -86,13 +86,14 @@ extern uint32_t readcp15(int reg);
 extern void writecp15(int reg, uint32_t val);
 
 /*IOC*/
-struct
+typedef struct IOC_t
 {
         uint8_t irqa,irqb,fiq;
         uint8_t mska,mskb,mskf;
         uint8_t ctrl;
         int timerc[4],timerl[4],timerr[4];
-} ioc;
+} IOC_t;
+extern IOC_t ioc;
 
 /*Memory*/
 extern int modepritabler[3][6],modepritablew[3][6];

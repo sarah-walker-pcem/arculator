@@ -6,9 +6,9 @@
 #include "ioc.h"
 #include "keyboard.h"
 
-int irq;
-int flyback,fdcready;
-int i2cclock,i2cdata;
+IOC_t ioc;
+
+extern int irq;
 int keyway=0;
 uint8_t tempkey,iockey,iockey2;
 int keydelay=0,keydelay2;
@@ -137,7 +137,7 @@ uint8_t ioc_read(uint32_t addr)
                 case 0x04: 
                 ioc_irqbc(IOC_IRQB_KEYBOARD_RX);
                 temp = keyboard_read();
-                rpclog("keyboard_read %02X\n", temp);
+                LOG_KB_MOUSE("keyboard_read %02X\n", temp);
                 return temp;
                 case 0x10: 
                 temp = ioc.irqa; 

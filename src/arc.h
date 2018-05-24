@@ -131,9 +131,10 @@ extern void writeics(uint32_t addr, uint8_t val);
 extern uint8_t readics(uint32_t addr);
 
 /*MEMC*/
-uint32_t vinit,vstart,vend;
-uint32_t cinit;
-uint32_t sstart,ssend,ssend2,sptr;
+extern uint32_t vinit,vstart,vend;
+extern uint32_t cinit;
+extern int osmode;
+extern int prefabort;
 
 extern void initmemc();
 extern void writememc(uint32_t a);
@@ -151,6 +152,7 @@ extern int offsetx,offsety;
 extern int fullscreen;
 extern int fullborders,noborders;
 extern int hires;
+extern int dblscan;
 extern int stereoimages[8];
 extern int flyback;
 

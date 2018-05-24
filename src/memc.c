@@ -24,17 +24,20 @@ int16_t soundbuf[8][50000],soundbuft[50000];
 int sinprog=0;
 int sdmaena=0;
 int bigcyc=0;
-char err2[256];
-FILE *olog;
 int logsound;
-int osmode;
 int pagesize;
 int memcpages[0x2000];
 int samppos=0,sampbuf=0;
 int spdcount;
 FILE *soundf;
-FILE *slogfile;
+// FILE *slogfile;
 int stereoimages[8];
+int stereo;
+int soundena;
+
+static uint32_t sstart,ssend,sptr;
+uint32_t vinit,vstart,vend;
+uint32_t cinit;
 
 #define BUFFERSIZE 2500
 
@@ -313,7 +316,7 @@ void mixsound()
         sampqueue--;
         sampbufr++;
         sampbufr&=7;
-        al_givebuffer(p2);
+        al_givebuffer((int16_t *)p2);
         #if 0
         while (!p)
         {
@@ -348,7 +351,7 @@ int16_t mixsample()
         int16_t *temp3;
         signed short temp=samples[0];//((signed short)((signed char)convbyte(samples[0])))*8;
 //        float tempf;
-        temp3=&temp2;
+        temp3=(int16_t *)&temp2;
         temp2+=temp;
 
         soundbuft[samppos++]=(int)fir((float)samples[2]);//temp;
@@ -376,7 +379,7 @@ int16_t mixsample()
 }
 
 
-int soundtime;
+// int soundtime;
 float sampdiff;
 uint32_t spos,soend,sendN,sstart2;
 int nextvalid;
@@ -392,10 +395,26 @@ void writememc(uint32_t a)
         }*/
         switch ((a>>17)&7)
         {
-                case 0: /*printf("MEMC write %08X - VINIT  = %05X\n",a,getdmaaddr(a)*4);*/ vinit=getdmaaddr(a); /*rpclog("Vinit write %08X %07X\n",vinit,PC);*/ return;
-                case 1: /*printf("MEMC write %08X - VSTART = %05X\n",a,getdmaaddr(a)*4);*/ vstart=getdmaaddr(a); /*rpclog("Vstart write %08X %07X\n",vstart,PC);*/return;
-                case 2: /*printf("MEMC write %08X - VEND   = %05X\n",a,getdmaaddr(a)*4);*/ vend=getdmaaddr(a); /*rpclog("Vend write %08X %07X\n",vend,PC);*/return;
-                case 3: /*printf("MEMC write %08X - CINIT  = %05X\n",a,getdmaaddr(a));*/ cinit=getdmaaddr(a); /*printf("CINIT=%05X\n",cinit<<2);*/ return;
+                case 0:
+                LOG_MEMC_VIDEO("MEMC write %08X - VINIT  = %05X\n",a,getdmaaddr(a)*4);
+                vinit=getdmaaddr(a);
+                LOG_MEMC_VIDEO("Vinit write %08X %07X\n",vinit,PC);
+                return;
+                case 1:
+                LOG_MEMC_VIDEO("MEMC write %08X - VSTART = %05X\n",a,getdmaaddr(a)*4);
+                vstart=getdmaaddr(a);
+                LOG_MEMC_VIDEO("Vstart write %08X %07X\n",vstart,PC);
+                return;
+                case 2:
+                LOG_MEMC_VIDEO("MEMC write %08X - VEND   = %05X\n",a,getdmaaddr(a)*4);
+                vend=getdmaaddr(a);
+                LOG_MEMC_VIDEO("Vend write %08X %07X\n",vend,PC);
+                return;
+                case 3:
+                LOG_MEMC_VIDEO("MEMC write %08X - CINIT  = %05X\n",a,getdmaaddr(a));
+                cinit=getdmaaddr(a);
+                LOG_MEMC_VIDEO("CINIT=%05X\n",cinit<<2);
+                return;
                 case 4:
 //                rpclog("%08i MEMC write %08X - SSTART = %05X %05X\n",bigcyc,a,getdmaaddr(a),spos);
 //                if (!logsound) return;
@@ -438,6 +457,7 @@ void writememc(uint32_t a)
                 pagesize=(a&0xC)>>2;
                 resetpagesize(pagesize);
                 memc_videodma_enable = a & 0x400;
+                LOG_MEMC_VIDEO("MEMC set memc_videodma_enable = %d\n", memc_videodma_enable);
                 switch ((a >> 6) & 3) /*High ROM speed*/
                 {
                         case 0: /*450ns*/
@@ -507,8 +527,6 @@ void pollsound()
                 }
         }
 }
-
-int output;
 
 void writecam(uint32_t a)
 {

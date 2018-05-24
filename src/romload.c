@@ -1,12 +1,13 @@
 /*Arculator v0.8 by Tom Walker
   'Flexible' ROM loader*/
+#include <dirent.h>
 #include <stdio.h>
-#include <io.h>
+#include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include "arc.h"
 #include "config.h"
 
-int romset;
 char romfns[17][256];
 int firstromload=1;
 char olddir[512];
@@ -98,15 +99,20 @@ int loadrom()
         int file=0;
         int c,d,e;
         int len,pos=0;
-        struct _finddata_t finddata;
         int find_file;
 //        char s[256];
         char fn[512];
         char *ext;
+        DIR *dirp;
+        struct dirent *dp;
         uint8_t *romb = (uint8_t *)rom;
 //        rpclog("Loading ROM set %i\n",romset);
-        if (firstromload) getcwd(olddir,511);
-        firstromload=0;
+        if (firstromload) {
+                getcwd(olddir,511);
+                firstromload=0;
+        } else {
+                chdir(olddir);
+        }
 //        append_filename(fn,exname,"roms\\",511);
         switch (romset)
         {
@@ -117,28 +123,35 @@ int loadrom()
                 case 5: append_filename(fn,exname,"roms/poizone",511); chdir(fn); return loadpoizone();
                 case 6: append_filename(fn,exname,"roms/wtiger",511); break;
         }
-        chdir(fn);
-        find_file = _findfirst("*.*", &finddata);
-        if (find_file == -1)
-        {
-                chdir(olddir);
-//                rpclog("No files found!\n");
+
+        rpclog("Loading ROM set %d from %s\n",romset, fn);
+        if (chdir(fn) != 0) {
+                perror(fn);
                 return -1;
         }
-        while (!finished && file<16)
+
+        dirp = opendir(".");
+        if (!dirp) {
+                perror("opendir: ");
+                fatal("Can't open rom dir %s\n", fn);
+        }
+        while (((dp = readdir(dirp)) != NULL) && file<16)
         {
-                ext = (char *)get_extension(finddata.name);
-                if (stricmp(ext,"txt"))
+                if (dp->d_type != DT_REG && dp->d_type != DT_LNK) {
+                        continue;
+                }
+                ext=get_extension(dp->d_name);
+                if (strcasecmp(ext,"txt"))
                 {
-//                        rpclog("Found %s\n",ff.name);
-                        strcpy(romfns[file],finddata.name);
+                        rpclog("Found %s\n", dp->d_name);
+                        strcpy(romfns[file], dp->d_name);
                         file++;
                 }
 //                else
 //                   rpclog("Skipping %s\n",ff.name);
-                finished = _findnext(find_file, &finddata);
         }
-        _findclose(find_file);
+        (void)closedir(dirp);
+
         if (file==0)
         {
                 chdir(olddir);

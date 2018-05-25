@@ -239,7 +239,7 @@ int fdccallback;
 int fdicount=16;
 int irq;
 uint8_t flaglookup[16][16];
-uint32_t rotatelookup[4096];
+static uint32_t rotatelookup[4096];
 int disccint=0;
 int timetolive=0;
 int inscount;
@@ -360,8 +360,7 @@ static int countbitstable[65536];
 
 void resetarm()
 {
-        int c,d,exec,data;
-        uint32_t rotval,rotamount;
+        int c,d,exec;
         for (c=0;c<65536;c++)
         {
                 countbitstable[c]=0;
@@ -404,12 +403,22 @@ void resetarm()
 
         /*Build rotatelookup table used by rotate2 macro, which rotates
           data[7:0] by data[11:8]<<1.*/
-        for (data=0;data<4096;data++)
+        uint32_t rotate_arg;
+        for (rotate_arg=0;rotate_arg<4096;rotate_arg++)
         {
-                rotval=data&0xFF;
-                rotamount=((data>>8)&0xF)<<1;
+                /*Shifter overflow is undefined behaviour, and unpredictably
+                  results in a broken lookup table on macOS, so we cast
+                  everything to 64-bit types while doing the arithmetic.*/
+                uint64_t rotval,rotamount;
+
+                rotval=rotate_arg&0xFF;
+                rotamount=((rotate_arg>>8)&0xF)<<1;
                 rotval=(rotval>>rotamount)|(rotval<<(32-rotamount));
-                rotatelookup[data]=rotval;
+                rotatelookup[rotate_arg]=(uint32_t)rotval;
+        }
+        /*Sanity check for the above overflow case*/
+        if (rotatelookup[1] != 1) {
+                fatal("Sanity check failure: rotatelookup[1] == 0x%08X, should be 1\n", rotatelookup[1]);
         }
 
         armregs[15]=0x0C00000B;

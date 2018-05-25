@@ -3,12 +3,13 @@
 
 # Notes:
 
-# Sound and podules are currently disabled on macOS.
+# Podules are currently disabled on macOS.
 
 # Prerequisites:
 
 # - Xcode command-line tools
 # - libSDL2: brew install sdl2
+# - openal-soft: brew install openal-soft
 
 # To build:
 
@@ -48,9 +49,9 @@ CFLAGS = $(DEPFLAGS) \
 	-DDEBUG_DATABORT \
 	\
 	-DDISABLE_PODULES \
-	-DDISABLE_SOUND
+	-I/usr/local/opt/openal-soft/include
 
-LFLAGS =
+LFLAGS = -L/usr/local/opt/openal-soft/lib
 
 OBJ = 82c711.o 82c711_fdc.o arcrom.o arm.o cmos.o config.o cp15.o \
 	ddnoise.o disc.o disc_adf.o disc_apd.o disc_fdi.o disc_jfd.o disc_ssd.o \
@@ -58,7 +59,7 @@ OBJ = 82c711.o 82c711_fdc.o arcrom.o arm.o cmos.o config.o cp15.o \
 	main.o mem.o memc.o podules.o podules-linux.o romload.o soundopenal.o \
 	st506.o vidc.o video_sdl2.o wd1770.o win.o
 
-LIBS = -lSDL2 -lz -lm -ldl
+LIBS = -lSDL2 -lz -lm -ldl -lopenal
 # -lalut -lopenal32
 
 Arculator: $(OBJ)

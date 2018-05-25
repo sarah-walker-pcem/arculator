@@ -3,8 +3,13 @@
 
 #include <string.h>  
 #include <stdio.h>
+#ifdef __APPLE__
+#include <OpenAL/al.h>
+#include <OpenAL/alc.h>
+#else
 #include <AL/al.h>
 #include <AL/alc.h>
+#endif
 #include "arc.h"
 #include "soundopenal.h"
 
@@ -38,7 +43,7 @@ ALvoid  alutInit(ALint *argc,ALbyte **argv)
 	ALCdevice *Device;
 	
 	//Open device
- 	Device=alcOpenDevice((void *)"");
+ 	Device=alcOpenDevice((const ALCchar *)"");
 	//Create context(s)
 	Context=alcCreateContext(Device,NULL);
 	//Set active context
@@ -46,7 +51,7 @@ ALvoid  alutInit(ALint *argc,ALbyte **argv)
 	//Register extensions
 }
 
-ALvoid  alutExit(ALvoid) 
+ALvoid  alutExit() 
 {
 	ALCcontext *Context;
 	ALCdevice *Device;

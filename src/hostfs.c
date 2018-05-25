@@ -26,7 +26,6 @@
 #include <string.h>
 
 #include <dirent.h>
-#include "direct.h"
 #ifdef _MSC_VER
 #define PATH_MAX 1024
 #else

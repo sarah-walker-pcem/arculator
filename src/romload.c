@@ -175,12 +175,15 @@ int loadrom()
         {
                 if (dp->d_type != DT_REG && dp->d_type != DT_LNK)
                         continue;
-                ext=get_extension(dp->d_name);
-                if (strcasecmp(ext,"txt"))
+                if (strcasecmp(dp->d_name, ".DS_Store"))
                 {
-                        rpclog("Found %s\n", dp->d_name);
-                        strcpy(romfns[file], dp->d_name);
-                        file++;
+                        ext=get_extension(dp->d_name);
+                        if (strcasecmp(ext,"txt"))
+                        {
+                                rpclog("Found %s\n", dp->d_name);
+                                strcpy(romfns[file], dp->d_name);
+                                file++;
+                        }
                 }
 //                else
 //                   rpclog("Skipping %s\n",ff.name);

@@ -95,6 +95,7 @@ void video_renderer_close()
                 SDL_DestroyRenderer(renderer);
                 renderer = NULL;
         }
+        SDL_Quit();
 }
 
 /*Update display texture from memory bitmap src.*/

@@ -488,6 +488,7 @@ int main(int argc, char *argv[])
                         }
                 }
 
+                /*Resize window to match screen mode*/
                 if (!fullscreen && win_doresize)
                 {
                         SDL_Rect rect;
@@ -504,6 +505,32 @@ int main(int argc, char *argv[])
                         }
                 }
 
+                /*Toggle fullscreen with RWIN-Enter (Alt-Enter, Cmd-Enter),
+                  or enter by selecting Fullscreen from the menu.*/
+                if (win_dofullscreen ||
+                        (key[KEY_RWIN] && key[KEY_ENTER] && !fullscreen)
+                )
+                {
+                        win_dofullscreen = 0;
+
+                        SDL_RaiseWindow(sdl_main_window);
+                        SDL_SetWindowFullscreen(sdl_main_window, SDL_WINDOW_FULLSCREEN_DESKTOP);
+                        sdl_enable_mouse_capture();
+                        fullscreen = 1;
+                } else if (fullscreen && (
+                        /*Exit fullscreen with Ctrl-End*/
+                        ((key[KEY_LCONTROL] || key[KEY_RCONTROL]) && key[KEY_END])
+                        /*Toggle with RWIN-Enter*/
+                        || (key[KEY_RWIN] && key[KEY_ENTER])
+                ))
+                {
+                        SDL_SetWindowFullscreen(sdl_main_window, 0);
+                        sdl_disable_mouse_capture();
+
+                        fullscreen=0;
+                        if (fullborders) updatewindowsize(800,600);
+                        else             updatewindowsize(672,544);
+                }
 
                 // Run for 10 ms of processor time
                 arc_run();
@@ -530,6 +557,8 @@ int main(int argc, char *argv[])
         arc_close();
 
         input_close();
+
+        SDL_DestroyWindow(sdl_main_window);
         video_renderer_close();
 }
 #endif

@@ -138,7 +138,9 @@ extern void writeics(uint32_t addr, uint8_t val);
 extern uint8_t readics(uint32_t addr);
 
 /*MEMC*/
-extern uint32_t vinit,vstart,vend;
+extern uint32_t vinit;
+extern uint32_t vstart; /*Start of video RAM*/
+extern uint32_t vend; /*End of video RAM*/
 extern uint32_t cinit;
 extern int osmode;
 extern int prefabort;

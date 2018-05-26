@@ -401,11 +401,13 @@ void writememc(uint32_t a)
                 LOG_MEMC_VIDEO("Vinit write %08X %07X\n",vinit,PC);
                 return;
                 case 1:
+                /*Set start of video RAM*/
                 LOG_MEMC_VIDEO("MEMC write %08X - VSTART = %05X\n",a,getdmaaddr(a)*4);
                 vstart=getdmaaddr(a);
                 LOG_MEMC_VIDEO("Vstart write %08X %07X\n",vstart,PC);
                 return;
                 case 2:
+                /*Set end of video RAM*/
                 LOG_MEMC_VIDEO("MEMC write %08X - VEND   = %05X\n",a,getdmaaddr(a)*4);
                 vend=getdmaaddr(a);
                 LOG_MEMC_VIDEO("Vend write %08X %07X\n",vend,PC);

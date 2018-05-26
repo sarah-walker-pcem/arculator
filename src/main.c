@@ -385,8 +385,14 @@ void arc_close()
 }
 
 #ifndef WIN32
+static int winsizex = 0, winsizey = 0;
+static int win_doresize = 0;
+static int win_dofullscreen;
+
 void updatewindowsize(int x, int y)
 {
+        winsizex = x; winsizey = y;
+        win_doresize = 1;
 }
 
 void sdl_enable_mouse_capture() {
@@ -481,6 +487,23 @@ int main(int argc, char *argv[])
                                 sdl_disable_mouse_capture();
                         }
                 }
+
+                if (!fullscreen && win_doresize)
+                {
+                        SDL_Rect rect;
+
+                        win_doresize = 0;
+
+                        SDL_GetWindowSize(sdl_main_window, &rect.w, &rect.h);
+                        if (rect.w != winsizex || rect.h != winsizey)
+                        {
+                                rpclog("Resizing window to %d, %d\n", winsizex, winsizey);
+                                SDL_GetWindowPosition(sdl_main_window, &rect.x, &rect.y);
+                                SDL_SetWindowSize(sdl_main_window, winsizex, winsizey);
+                                SDL_SetWindowPosition(sdl_main_window, rect.x, rect.y);
+                        }
+                }
+
 
                 // Run for 10 ms of processor time
                 arc_run();

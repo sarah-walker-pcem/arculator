@@ -4,6 +4,7 @@
 #include "arc.h"
 #include "arm.h"
 #include "config.h"
+#include "fpa.h"
 #include "memc.h"
 #include "video.h"
 
@@ -521,6 +522,7 @@ void loadconfig()
         arm_cpu_type = config_get_int(NULL, "cpu_type", 0);
         memc_type = config_get_int(NULL, "memc_type", 0);
         fpaena = config_get_int(NULL, "fpa", 0);
+        fpu_type = config_get_int(NULL, "fpu_type", 0);
         p=config_get_string(NULL,"hires",NULL);
         if (!p || strcmp(p,"1")) hires=0;
         else                     hires=1;
@@ -561,6 +563,7 @@ void saveconfig()
         config_set_int(NULL, "cpu_type", arm_cpu_type);
         config_set_int(NULL, "memc_type", memc_type);
         config_set_int(NULL, "fpa", fpaena);
+        config_set_int(NULL, "fpu_type", fpu_type);
         sprintf(s,"%i",hires);
         config_set_string(NULL,"hires",s);
         sprintf(s,"%i",fullborders);

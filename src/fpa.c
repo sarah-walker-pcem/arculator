@@ -12,6 +12,7 @@
 //#define undefined() exception(UNDEFINED,8,4)
 double fparegs[8] = {0.0}; /*No C variable type for 80-bit floating point, so use 64*/
 uint32_t fpsr = 0, fpcr = 0;
+int fpu_type;
 
 void dumpfpa(void)
 {
@@ -30,9 +31,13 @@ void resetfpa()
         tf=(double)(*tfs);
         rpclog("Double size %i Float size %i %f %f\n",sizeof(double),sizeof(float),*tfs,tf);
 //        fpsr=0;
-        fpsr=0x81000000; /*FPA system*/
+        if (fpu_type)
+                fpsr=0x80000000; /*FPPC system*/
+        else
+                fpsr=0x81000000; /*FPA system*/
         fpcr=0;
         atexit(dumpfpa);
+        rpclog("fpsr=%08x fpu_type=%i\n", fpsr, fpu_type);
 }
 
 #define FD ((opcode>>12)&7)
@@ -53,6 +58,12 @@ void resetfpa()
 #define FPA_PRECISION_DOUBLE   (1 << 7)
 #define FPA_PRECISION_EXTENDED (1 << 19)
 #define FPA_PRECISION_ILLEGAL  ((1 << 19) | (1 << 7))
+
+#define FPCR_SB (1 << 11) /*Store bounce*/
+#define FPCR_AB (1 << 10) /*Arithmetic bounce*/
+#define FPCR_DA (1 << 8)  /*FPA disable*/
+
+#define FPA_DISABLED (fpcr & FPCR_DA)
 
 void setsubf(double op1, double op2)
 {
@@ -128,10 +139,10 @@ void convert64to80(uint32_t *temp, double tf)
 //        rpclog(" %08X %08X %08X\n",temp[0],temp[1],temp[2]);
 }
 
-#define undeffpa                fpcr|= 0x00000800; \
+#define undeffpa if (!fpu_type) {               fpcr|= 0x00000800; \
                                 fpcr&=~0x00FFF07F; \
                                 fpcr|=(opcode&0x00FFF07F); \
-                                return 1;
+                                return 1; }
 
 
 int64_t fpa_round(double b, uint32_t opcode)
@@ -416,6 +427,8 @@ int fpaopcode(uint32_t opcode)
         switch ((opcode>>24)&0xF)
         {
                 case 0xC: case 0xD:
+                if (FPA_DISABLED)
+                        return 1;
 //                        rpclog("%08X %03X\n",opcode,opcode&0x100);
                 if (opcode&0x100) /*LDF/STF*/
                 {
@@ -767,6 +780,8 @@ int fpaopcode(uint32_t opcode)
                 {
                         if (RD == 15 && opcode & 0x100000) /*Compare*/
                         {
+                                if (FPA_DISABLED)
+                                        return 1;
                                 switch ((opcode >> 21) & 7)
                                 {
                                         case 4: /*CMF*/
@@ -794,40 +809,55 @@ int fpaopcode(uint32_t opcode)
                         switch ((opcode>>20)&0xF)
                         {
                                 case 0: /*FLT*/
+                                if (FPA_DISABLED)
+                                        return 1;
                                 fparegs[FN]=(double)(int32_t)armregs[RD];
                                 arm_clock_i(6);
 //                                rpclog("FLT F%i now %f from R%i %08X %i %07X\n",FN,fparegs[FN],RD,armregs[RD],armregs[RD],PC);
                                 return 0;
                                 case 1: /*FIX*/
+                                if (FPA_DISABLED)
+                                        return 1;
                                 armregs[RD]=(int32_t)fpa_round(fparegs[opcode&7],opcode);
                                 arm_clock_i(7);
 //                                rpclog("FIX F%i (%f) to R%i (%08X %i)\n",FN,fparegs[FN],RD,armregs[RD],armregs[RD]);
                                 return 0;
                                 case 2: /*WFS*/
+                                if (FPA_DISABLED)
+                                        return 1;
                                 fpsr=(armregs[RD]&0xFFFFFF)|(fpsr&0xFF000000);
                                 arm_clock_i(3);
                                 return 0;
                                 case 3: /*RFS*/
-//                                rpclog("Read FPSR - %08X\n",fpsr);
+                                if (FPA_DISABLED)
+                                        return 1;
+                                rpclog("Read FPSR - %08X\n",fpsr);
                                 armregs[RD]=fpsr|0x400;
                                 arm_clock_i(3);
                                 return 0;
                                 case 4: /*WFC*/
-                                fpcr=(fpcr&~0xD00)|(armregs[RD]&0xD00);
+                                if (ARM_USER_MODE)
+                                        return 1;
+                                fpcr = (fpcr & ~(FPCR_SB | FPCR_AB | FPCR_DA)) | (armregs[RD] & (FPCR_SB | FPCR_AB | FPCR_DA));
                                 arm_clock_i(3);
                                 return 0;
                                 case 5: /*RFC*/
+                                if (ARM_USER_MODE)
+                                        return 1;
 //                                rpclog("Read FPCR - %08X\n",fpcr);
                                 armregs[RD]=fpcr;
-                                fpcr&=~0xD00;
+                                if (!fpu_type) /*FPA clears SB, AB and DA on RFC. FPPC apparently doesn't*/
+                                        fpcr &= ~(FPCR_SB | FPCR_AB | FPCR_DA);
                                 arm_clock_i(3);
                                 return 0;
                         }
                         undeffpa
                 }
+                if (FPA_DISABLED)
+                        return 1;
                 if (opcode&8) tempf=fconstants[opcode&7];
                 else          tempf=fparegs[opcode&7];
-                if ((opcode&0x8000) && ((opcode&0xF08000)>=0x508000) && ((opcode&0xF08000)<0xE08000))
+                if (!fpu_type && (opcode&0x8000) && ((opcode&0xF08000)>=0x508000) && ((opcode&0xF08000)<0xE08000))
                 {
                         fpcr&=0xD00;
                         fpcr|=0x400; /*Arithmetic bounce*/
@@ -911,16 +941,18 @@ int fpaopcode(uint32_t opcode)
                         fparegs[FD]=fabs(tempf);
                         arm_clock_i(1);
                         return 0;
-#if 0
+
                         case 0x308000: /*RND*/
+                        undeffpa
                         fparegs[FD]=(double)fpa_round(tempf,opcode);
                         arm_clock_i(1);
                         return 0;
                         case 0x408000: /*SQT*/
+                        undeffpa
                         fparegs[FD]=sqrt(tempf);
                         arm_clock_i(5);
                         return 0;
-#endif                        
+                        
                         case 0xe08000: /*URD*/
                         fparegs[FD] = fpa_round(tempf, opcode);
                         arm_clock_i(2);
@@ -929,7 +961,7 @@ int fpaopcode(uint32_t opcode)
                         fparegs[FD] = tempf;
                         arm_clock_i(2);
                         return 0;
-                        #if 0
+
                         case 0x508000: /*LOG*/
                         undeffpa
                         fparegs[FD]=log10(tempf);
@@ -966,7 +998,6 @@ int fpaopcode(uint32_t opcode)
                         undeffpa
                         fparegs[FD]=atan(tempf);
                         return 0;
-                        #endif
                 }
                         fpcr&=0xD00;
                         fpcr|=0x400; /*Arithmetic bounce*/

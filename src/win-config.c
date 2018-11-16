@@ -3,6 +3,7 @@
 #include "arc.h"
 #include "arm.h"
 #include "config.h"
+#include "fpa.h"
 #include "memc.h"
 #include "resources.h"
 #include "win.h"
@@ -22,6 +23,7 @@ enum
 enum
 {
         FPU_NONE = 0,
+        FPU_FPPC,
         FPU_FPA10
 };
 
@@ -123,6 +125,8 @@ static void update_list(HWND hdlg, int cpu, int mem, int memc, int fpu, int io)
         h = GetDlgItem(hdlg, IDC_COMBO_FPU);
         SendMessage(h, CB_RESETCONTENT, 0, 0);
         SendMessage(h, CB_ADDSTRING, 0, (LPARAM)(LPCSTR)"None");
+        if (cpu == CPU_ARM2 && memc != MEMC_MEMC1)
+                SendMessage(h, CB_ADDSTRING, 0, (LPARAM)(LPCSTR)"FPPC");
         if (cpu != CPU_ARM2 && cpu != CPU_ARM250)
                 SendMessage(h, CB_ADDSTRING, 0, (LPARAM)(LPCSTR)"FPA10");
         SendMessage(h, CB_SETCURSEL, fpu ? 1 : 0, 0);
@@ -192,7 +196,7 @@ static BOOL CALLBACK config_dlgproc(HWND hdlg, UINT message, WPARAM wParam, LPAR
                         break;
                 }
 
-                config_fpu = fpaena ? FPU_FPA10 : FPU_NONE;
+                config_fpu = fpaena ? (fpu_type ? FPU_FPPC : FPU_FPA10) : FPU_NONE;
 
                 if (memc_is_memc1)
                         config_memc = MEMC_MEMC1;
@@ -308,7 +312,8 @@ static BOOL CALLBACK config_dlgproc(HWND hdlg, UINT message, WPARAM wParam, LPAR
                         }
                         arm_cpu_type = config_cpu;
                         
-                        fpaena = (config_fpu == FPU_FPA10) ? 1 : 0;
+                        fpaena = (config_fpu == FPU_NONE) ? 0 : 1;
+                        fpu_type = (config_cpu >= CPU_ARM3_20) ? 0 : 1;
                         fdctype = (config_io >= IO_NEW) ? 1 : 0;
                         
                         switch (config_mem)
@@ -374,13 +379,16 @@ static BOOL CALLBACK config_dlgproc(HWND hdlg, UINT message, WPARAM wParam, LPAR
                         else if (config_cpu == CPU_ARM2)
                         {
                                 /*ARM2 does not support FPA*/
-                                config_fpu = FPU_NONE;
+                                if (config_fpu != FPU_NONE)
+                                        config_fpu = FPU_FPPC;
                                 if (config_io == IO_NEW)
                                         config_io = IO_OLD_ST506;
                         }
                         else
                         {
                                 /*ARM3 only supports MEMC1A*/
+                                if (config_fpu != FPU_NONE)
+                                        config_fpu = FPU_FPA10;
                                 if (config_memc == MEMC_MEMC1)
                                         config_memc = MEMC_MEMC1A_8;
                         }
@@ -399,6 +407,9 @@ static BOOL CALLBACK config_dlgproc(HWND hdlg, UINT message, WPARAM wParam, LPAR
                                 config_memc += 2;
                         else if (config_cpu != CPU_ARM2)
                                 config_memc++;
+                        update_list(hdlg, config_cpu, config_mem, config_memc, config_fpu, config_io);
+                        if (config_memc == MEMC_MEMC1)
+                                config_fpu = FPU_NONE;
                         break;
 
                         case IDC_COMBO_FPU:

@@ -1156,7 +1156,7 @@ int vidcgetcycs()
         {
                 if (vidc.cyclesperline_display < 0)
                 {
-                        error("vidc.cyclesperline_display == %d, should be positive.  clock=%d\n",
+                        rpclog("vidc.cyclesperline_display == %d, should be positive.  clock=%d\n",
                                 vidc.cyclesperline_display, vidc.clock);
                         return 512 << 10;
                 }
@@ -1165,7 +1165,7 @@ int vidcgetcycs()
 
         if (vidc.cyclesperline_blanking < 0)
         {
-                error("vidc.cyclesperline_blanking == %d, should be positive.  clock=%d\n",
+                rpclog("vidc.cyclesperline_blanking == %d, should be positive.  clock=%d\n",
                         vidc.cyclesperline_blanking, vidc.clock);
                 return 512 << 10;
         }

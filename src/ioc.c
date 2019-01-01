@@ -141,7 +141,6 @@ uint8_t ioc_read(uint32_t addr)
                 return temp;
                 case 0x10: 
                 temp = ioc.irqa; 
-                ioc.irqa &= ~0x10;
                 return temp;
                 case 0x14: 
                 return (ioc.irqa | 0x80) & ioc.mska;

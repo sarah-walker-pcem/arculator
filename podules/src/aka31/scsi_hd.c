@@ -56,7 +56,7 @@ static void scsi_hd_close(void *p)
 static int scsi_hd_command(uint8_t *cdb, void *p)
 {
         scsi_hd_data *data = p;
-        int addr, len;
+        int len = 0;
         int i = 0;
 
         aka31_log("SCSI HD command %02x len %i\n", cdb[0], len);

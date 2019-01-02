@@ -109,6 +109,7 @@ uint8_t d71071l_read(uint32_t addr, podule *p)
                 case 0x21c:
                 return dma.mask;
         }
+	return 0;
 }
 
 int dma_read(int channel, podule *p)

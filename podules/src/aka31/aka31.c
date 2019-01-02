@@ -4,8 +4,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <stdarg.h>
 #include "podules.h"
 #include "aka31.h"
+#include "d71071l.h"
 #include "wd33c93a.h"
 
 #ifdef WIN32
@@ -282,6 +284,7 @@ int InitDll()
 {
         aka31_log("InitDll\n");
         aka31_init();
+	return 0;
 }
 
 #ifdef WIN32

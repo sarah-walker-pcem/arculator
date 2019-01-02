@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include "podules.h"
 #include "aka31.h"
+#include "d71071l.h"
 #include "wd33c93a.h"
 
 #include "scsi.h"

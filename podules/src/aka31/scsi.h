@@ -10,6 +10,7 @@ int scsi_add_data(uint8_t val);
 int scsi_get_data();
 void scsi_set_phase(uint8_t phase);
 void scsi_set_irq(uint8_t status);
+void scsi_send_complete();
 
 #define SCSI_TEST_UNIT_READY              0x00
 #define SCSI_READ_6                       0x08

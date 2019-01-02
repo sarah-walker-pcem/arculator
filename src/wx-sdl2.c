@@ -187,6 +187,17 @@ static int arc_main_thread(void *p)
                 {
                         SDL_Delay(timer_offset);
                 }
+
+                if (updatemips)
+                {
+                        char s[80];
+
+                        sprintf(s, "Arculator %s - %i%% - %s", __DATE__, inssec, mousecapture ? "Press CTRL-END to release mouse" : "Click to capture mouse");
+                        vidc_framecount = 0;
+                        if (!fullscreen)
+				SDL_SetWindowTitle(sdl_main_window, s);
+                        updatemips=0;
+                }
         }
         rpclog("SHUTTING DOWN\n");
 

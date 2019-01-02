@@ -133,24 +133,6 @@ void error(const char *format, ...)
    exit(-1);
 }
 
-#ifndef WIN32
-void error(const char *format, ...)
-{
-   char buf[1024];
-
-   if (!rlog) rlog=fopen("arclog.txt","wt");
-
-   va_list ap;
-   va_start(ap, format);
-   vsprintf(buf, format, ap);
-   va_end(ap);
-   fputs(buf,rlog);
-   fflush(rlog);
-
-   fprintf(stderr, "%s", buf);
-}
-#endif // !WIN32
-
 int limitspeed;
 
 /*Preference order : ROS3, ROS2, Arthur, Poizone, Erotactic/Tictac

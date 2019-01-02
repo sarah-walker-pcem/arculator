@@ -33,54 +33,35 @@ int skip512[2]={0,0};
 void resetide()
 {
         int c;
-        char fn[512];
+
         ide.drive=0;
         ide.atastat=0x40;
         idecallback=0;
-	hdfile[0]=hdfile[1]=NULL;
-	append_filename(fn,exname,"hd4.hdf",511);
-        if (!hdfile[0])
-        {
-                hdfile[0]=fopen(fn,"rb+");
-                if (!hdfile[0])
-                {
-                        hdfile[0]=fopen(fn,"wb");
-                        putc(0,hdfile[0]);
-                        fclose(hdfile[0]);
-                        hdfile[0]=fopen(fn,"rb+");
-                }
-                atexit(closeide);
-        }
-	append_filename(fn,exname,"hd5.hdf",511);
-        if (!hdfile[1])
-        {
-                hdfile[1]=fopen(fn,"rb+");
-                if (!hdfile[1])
-                {
-                        hdfile[1]=fopen(fn,"wb");
-                        putc(0,hdfile[1]);
-                        fclose(hdfile[1]);
-                        hdfile[1]=fopen(fn,"rb+");
-                }
-        }
         idebufferb=(uint8_t *)idebuffer;
-        for (c=0;c<2;c++)
+
+        closeide();
+
+        for (c = 0; c < 2; c++)
         {
-                fseek(hdfile[c],0xFC1,SEEK_SET);
-                ide.spt[c]=getc(hdfile[c]);
-                ide.hpc[c]=getc(hdfile[c]);
-                skip512[c]=1;
-                if (!ide.spt[c] || !ide.hpc[c])
+                hdfile[c] = fopen(hd_fn[c], "rb+");
+                if (hdfile[c])
                 {
-                        fseek(hdfile[c],0xDC1,SEEK_SET);
+                        fseek(hdfile[c],0xFC1,SEEK_SET);
                         ide.spt[c]=getc(hdfile[c]);
                         ide.hpc[c]=getc(hdfile[c]);
-                        skip512[c]=0;
+                        skip512[c]=1;
                         if (!ide.spt[c] || !ide.hpc[c])
                         {
-                                ide.spt[c]=63;
-                                ide.hpc[c]=16;
-                                skip512[c]=1;
+                                fseek(hdfile[c],0xDC1,SEEK_SET);
+                                ide.spt[c]=getc(hdfile[c]);
+                                ide.hpc[c]=getc(hdfile[c]);
+                                skip512[c]=0;
+                                if (!ide.spt[c] || !ide.hpc[c])
+                                {
+                                        ide.spt[c]=63;
+                                        ide.hpc[c]=16;
+                                        skip512[c]=1;
+                                }
                         }
                 }
 //        rpclog("Drive %i - %i %i\n",c,ide.spt[c],ide.hpc[c]);

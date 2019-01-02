@@ -7,7 +7,10 @@
 #include <windows.h>
 #endif
 #include "arc.h"
+#include "cmos.h"
 #include "config.h"
+
+int cmos_changed = 0;
 
 int cmosstate=0;
 int i2cstate=0;
@@ -43,15 +46,18 @@ void cmosgettime();
 void loadcmos()
 {
         char fn[512];
+        char cmos_name[512];
+        
         LOG_CMOS("Read cmos %i\n",romset);
         if (romset>3) return;
         switch (romset)
         {
-                case 0: append_filename(fn,exname,"cmos/arthur/cmos.bin",511); break;
-                case 1: append_filename(fn,exname,"cmos/riscos2/cmos.bin",511); break;
-                case 2: append_filename(fn,exname,"cmos/riscos3_old/cmos.bin",511); break;
-                case 3: append_filename(fn,exname,"cmos/riscos3_new/cmos.bin",511); break;
+                case 0: sprintf(cmos_name, "cmos/%s.arthur.cmos.bin", machine_config_name); break;
+                case 1: sprintf(cmos_name, "cmos/%s.riscos2.cmos.bin", machine_config_name); break;
+                case 2: sprintf(cmos_name, "cmos/%s.riscos3_old.cmos.bin", machine_config_name); break;
+                case 3: sprintf(cmos_name, "cmos/%s.riscos3_new.cmos.bin", machine_config_name); break;
         }
+        append_filename(fn, exname, cmos_name, 511);
 
         cmosf=fopen(fn,"rb");
         if (cmosf)
@@ -63,7 +69,22 @@ void loadcmos()
         else
         {
                 LOG_CMOS("%s doesn't exist; resetting CMOS\n", fn);
-                memset(cmosram,0,256);
+                switch (romset)
+                {
+                        case 0: append_filename(fn, exname, "cmos/arthur/cmos.bin", 511); break;
+                        case 1: append_filename(fn, exname, "cmos/riscos2/cmos.bin", 511); break;
+                        case 2: append_filename(fn, exname, "cmos/riscos3_old/cmos.bin", 511); break;
+                        case 3: append_filename(fn, exname, "cmos/riscos3_new/cmos.bin", 511); break;
+                }
+
+                cmosf = fopen(fn, "rb");
+                if (cmosf)
+                {
+                        fread(cmosram, 256, 1, cmosf);
+                        fclose(cmosf);
+                }
+                else
+                        memset(cmosram,0,256);
         }
         cmosgettime();
 }
@@ -71,15 +92,18 @@ void loadcmos()
 void savecmos()
 {
         char fn[512];
+        char cmos_name[512];
+        
         LOG_CMOS("Writing CMOS %i\n",romset);
         if (romset>3) return;
         switch (romset)
         {
-                case 0: append_filename(fn,exname,"cmos/arthur/cmos.bin",511); break;
-                case 1: append_filename(fn,exname,"cmos/riscos2/cmos.bin",511); break;
-                case 2: append_filename(fn,exname,"cmos/riscos3_old/cmos.bin",511); break;
-                case 3: append_filename(fn,exname,"cmos/riscos3_new/cmos.bin",511); break;
+                case 0: sprintf(cmos_name, "cmos/%s.arthur.cmos.bin", machine_config_name); break;
+                case 1: sprintf(cmos_name, "cmos/%s.riscos2.cmos.bin", machine_config_name); break;
+                case 2: sprintf(cmos_name, "cmos/%s.riscos3_old.cmos.bin", machine_config_name); break;
+                case 3: sprintf(cmos_name, "cmos/%s.riscos3_new.cmos.bin", machine_config_name); break;
         }
+        append_filename(fn, exname, cmos_name, 511);
         LOG_CMOS("Writing %s\n",fn);
         cmosf=fopen(fn,"wb");
         fwrite(cmosram,256,1,cmosf);
@@ -207,6 +231,8 @@ void cmoswrite(uint8_t byte)
 //                        sprintf(s,"Write CMOS %02X - %02X\n",cmosaddr,byte);
 //                        fputs(s,olog);
                 cmosram[((cmosaddr++))&0xFF]=byte;
+                if (!cmos_changed)
+                        cmos_changed = CMOS_CHANGE_DELAY;
                 break;
 
                 case CMOS_SENDDATA:

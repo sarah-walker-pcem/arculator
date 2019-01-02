@@ -6,14 +6,14 @@ enum
 
 extern int fdctype;
 
-extern float config_get_float(const char *head, const char *name, float def);
-extern int config_get_int(const char *head, const char *name, int def);
-extern const char *config_get_string(const char *head, const char *name, const char *def);
-extern void config_set_float(const char *head, const char *name, float val);
-extern void config_set_int(const char *head, const char *name, int val);
-extern void config_set_string(const char *head, const char *name, char *val);
+extern float config_get_float(int is_global, const char *head, const char *name, float def);
+extern int config_get_int(int is_global, const char *head, const char *name, int def);
+extern const char *config_get_string(int is_global, const char *head, const char *name, const char *def);
+extern void config_set_float(int is_global, const char *head, const char *name, float val);
+extern void config_set_int(int is_global, const char *head, const char *name, int val);
+extern void config_set_string(int is_global, const char *head, const char *name, char *val);
 
-extern int config_free_section(const char *name);
+extern int config_free_section(int is_global, const char *name);
 
 extern void add_config_callback(void(*loadconfig)(), void(*saveconfig)(), void(*onloaded)());
 
@@ -23,9 +23,16 @@ extern void append_slash(char *s, int size);
 extern void put_backslash(char *s);
 extern char *get_extension(char *s);
 
-extern void config_load(char *fn);
-extern void config_save(char *fn);
-extern void config_dump();
+extern void config_load(int is_global, char *fn);
+extern void config_save(int is_global, char *fn);
+extern void config_dump(int is_global);
 
 extern void loadconfig();
 extern void saveconfig();
+
+#define CFG_MACHINE 0
+#define CFG_GLOBAL  1
+
+extern char machine_config_name[256];
+extern char machine_config_file[256];
+extern char hd_fn[2][512];

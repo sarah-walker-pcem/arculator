@@ -8,6 +8,7 @@
 #include "82c711_fdc.h"
 #include "arc.h"
 #include "arm.h"
+#include "cmos.h"
 #include "config.h"
 #include "ddnoise.h"
 #include "disc.h"
@@ -27,6 +28,7 @@
 #include "sound.h"
 #include "soundopenal.h"
 #include "vidc.h"
+#include "video.h"
 #include "video_sdl2.h"
 #include "wd1770.h"
 
@@ -112,6 +114,24 @@ void fatal(const char *format, ...)
    dumpregs();
    exit(-1);
 }
+void error(const char *format, ...)
+{
+   char buf[1024];
+
+   if (!rlog) rlog=fopen("arclog.txt","wt");
+
+   va_list ap;
+   va_start(ap, format);
+   vsprintf(buf, format, ap);
+   va_end(ap);
+   fputs(buf,rlog);
+   fflush(rlog);
+
+   fprintf(stderr, "%s", buf);
+
+   dumpregs();
+   exit(-1);
+}
 
 #ifndef WIN32
 void error(const char *format, ...)
@@ -178,13 +198,6 @@ void arc_init()
         char *p;
         char s[512];
         int c;
-        al_init_main(0, NULL);
-
-#ifdef WIN32
-        get_executable_name(exname,511);
-        p = (char *)get_filename(exname);
-        *p = 0;
-#endif
 
         loadconfig();
         
@@ -195,23 +208,8 @@ void arc_init()
 #endif
         hostfs_init();
         resetide();
-        p = (char *)config_get_string(NULL,"mem_size",NULL);
-        if (!p || !strcmp(p,"4096")) memsize=4096;
-        else if (!strcmp(p,"8192"))  memsize=8192;
-        else if (!strcmp(p,"2048"))  memsize=2048;
-        else if (!strcmp(p,"1024"))  memsize=1024;
-        else if (!strcmp(p,"512"))   memsize=512;
-        else                         memsize=16384;
         initmem(memsize);
         
-        p = (char *)config_get_string(NULL,"rom_set",NULL);
-        if (!p || !strcmp(p,"3")) romset=3;
-        else if (!strcmp(p,"1"))  romset=1;
-        else if (!strcmp(p,"2"))  romset=2;
-        else if (!strcmp(p,"4"))  romset=4;
-        else if (!strcmp(p,"5"))  romset=5;
-        else if (!strcmp(p,"6"))  romset=6;
-        else                      romset=0;
         establishromavailability();
 
         resizemem(memsize);
@@ -246,7 +244,7 @@ void arc_init()
         for (c=0;c<4;c++)
         {
                 sprintf(s,"disc_name_%i",c);
-                p = (char *)config_get_string(NULL,s,NULL);
+                p = (char *)config_get_string(CFG_MACHINE, NULL,s,NULL);
                 if (p) {
                    disc_close(c);
                    strcpy(discname[c], p);
@@ -270,6 +268,11 @@ int speed_mhz;
 
 void arc_reset()
 {
+        if (cmos_changed)
+        {
+                cmos_changed = 0;
+                savecmos();
+        }
         loadrom();
         loadcmos();
         resizemem(memsize);
@@ -362,6 +365,12 @@ void arc_run()
                 ddnoise_frames = 0;
                 ddnoise_mix();
         }
+        if (cmos_changed)
+        {
+                cmos_changed--;
+                if (!cmos_changed)
+                        savecmos();
+        }
         LOG_EVENT_LOOP("END arc_run()\n");
 }
 
@@ -383,182 +392,3 @@ void arc_close()
         closevideo();
         rpclog("arc_close done\n");
 }
-
-#ifndef WIN32
-static int winsizex = 0, winsizey = 0;
-static int win_doresize = 0;
-static int win_dofullscreen;
-
-void updatewindowsize(int x, int y)
-{
-        winsizex = x; winsizey = y;
-        win_doresize = 1;
-}
-
-void sdl_enable_mouse_capture() {
-        mouse_capture_enable();
-        SDL_SetWindowGrab(sdl_main_window, SDL_TRUE);
-        mousecapture = 1;
-        updatemips = 1;
-}
-
-void sdl_disable_mouse_capture() {
-        SDL_SetWindowGrab(sdl_main_window, SDL_FALSE);
-        mouse_capture_disable();
-        mousecapture = 0;
-        updatemips = 1;
-}
-
-static int quited = 0;
-
-int main(int argc, char *argv[])
-{
-        strncpy(exname, argv[0], 511);
-        char *p = (char *)get_filename(exname);
-        *p = 0;
-
-        rpclog("Arculator startup\n");
-
-        arc_init();
-
-        if (!video_renderer_init(NULL))
-        {
-                fatal("Video renderer init failed");
-        }
-        input_init();
-
-        struct timeval tp;
-        time_t last_seconds = 0;
-
-        while (!quited)
-        {
-                LOG_EVENT_LOOP("event loop\n");
-                if (gettimeofday(&tp, NULL) == -1)
-                {
-                        perror("gettimeofday");
-                        fatal("gettimeofday failed\n");
-                }
-                else if (!last_seconds)
-                {
-                        last_seconds = tp.tv_sec;
-                        rpclog("start time = %d\n", last_seconds);
-                }
-                else if (last_seconds != tp.tv_sec)
-                {
-                        updateins();
-                        last_seconds = tp.tv_sec;
-                }
-                SDL_Event e;
-                while (SDL_PollEvent(&e) != 0)
-                {
-                        if (e.type == SDL_QUIT)
-                        {
-                                quited = 1;
-                        }
-                        if (e.type == SDL_MOUSEBUTTONUP)
-                        {
-                                if (!mousecapture)
-                                {
-                                        rpclog("Mouse click -- enabling mouse capture\n");
-                                        sdl_enable_mouse_capture();
-                                }
-                        }
-                        if (e.type == SDL_WINDOWEVENT)
-                        {
-                                switch (e.window.event)
-                                {
-                                        case SDL_WINDOWEVENT_FOCUS_LOST:
-                                        if (mousecapture)
-                                        {
-                                                rpclog("Focus lost -- disabling mouse capture\n");
-                                                sdl_disable_mouse_capture();
-                                        }
-                                        break;
-                                
-                                        default:
-                                        break;
-                                }
-                        }
-                        if ((key[KEY_LCONTROL] || key[KEY_RCONTROL])
-                            && key[KEY_END]
-                            && !fullscreen && mousecapture)
-                        {
-                                rpclog("CTRL-END pressed -- disabling mouse capture\n");
-                                sdl_disable_mouse_capture();
-                        }
-                }
-
-                /*Resize window to match screen mode*/
-                if (!fullscreen && win_doresize)
-                {
-                        SDL_Rect rect;
-
-                        win_doresize = 0;
-
-                        SDL_GetWindowSize(sdl_main_window, &rect.w, &rect.h);
-                        if (rect.w != winsizex || rect.h != winsizey)
-                        {
-                                rpclog("Resizing window to %d, %d\n", winsizex, winsizey);
-                                SDL_GetWindowPosition(sdl_main_window, &rect.x, &rect.y);
-                                SDL_SetWindowSize(sdl_main_window, winsizex, winsizey);
-                                SDL_SetWindowPosition(sdl_main_window, rect.x, rect.y);
-                        }
-                }
-
-                /*Toggle fullscreen with RWIN-Enter (Alt-Enter, Cmd-Enter),
-                  or enter by selecting Fullscreen from the menu.*/
-                if (win_dofullscreen ||
-                        (key[KEY_RWIN] && key[KEY_ENTER] && !fullscreen)
-                )
-                {
-                        win_dofullscreen = 0;
-
-                        SDL_RaiseWindow(sdl_main_window);
-                        SDL_SetWindowFullscreen(sdl_main_window, SDL_WINDOW_FULLSCREEN_DESKTOP);
-                        sdl_enable_mouse_capture();
-                        fullscreen = 1;
-                } else if (fullscreen && (
-                        /*Exit fullscreen with Ctrl-End*/
-                        ((key[KEY_LCONTROL] || key[KEY_RCONTROL]) && key[KEY_END])
-                        /*Toggle with RWIN-Enter*/
-                        || (key[KEY_RWIN] && key[KEY_ENTER])
-                ))
-                {
-                        SDL_SetWindowFullscreen(sdl_main_window, 0);
-                        sdl_disable_mouse_capture();
-
-                        fullscreen=0;
-                        if (fullborders) updatewindowsize(800,600);
-                        else             updatewindowsize(672,544);
-                }
-
-                // Run for 10 ms of processor time
-                arc_run();
-
-                // Sleep to make it up to 10 ms of real time
-                static Uint32 last_timer_ticks = 0;
-                static int timer_offset = 0;
-                Uint32 current_timer_ticks = SDL_GetTicks();
-                Uint32 ticks_since_last = current_timer_ticks - last_timer_ticks;
-                last_timer_ticks = current_timer_ticks;
-                timer_offset += 10 - (int)ticks_since_last;
-                // rpclog("timer_offset now %d; %d ticks since last; delaying %d\n", timer_offset, ticks_since_last, 10 - ticks_since_last);
-                if (timer_offset > 100 || timer_offset < -100)
-                {
-                        timer_offset = 0;
-                }
-                else if (timer_offset > 0)
-                {
-                        SDL_Delay(timer_offset);
-                }
-        }
-        rpclog("SHUTTING DOWN\n");
-
-        arc_close();
-
-        input_close();
-
-        SDL_DestroyWindow(sdl_main_window);
-        video_renderer_close();
-}
-#endif

@@ -306,3 +306,22 @@ void arc_init();
 void arc_reset();
 void arc_run();
 void arc_close();
+
+
+void arc_start_main_thread(void *wx_window, void *wx_menu);
+void arc_stop_main_thread();
+void arc_pause_main_thread();
+void arc_resume_main_thread();
+
+void arc_do_reset();
+void arc_disc_change(int drive, char *fn);
+void arc_disc_eject(int drive);
+void arc_set_display_mode(int new_display_mode);
+void arc_set_dblscan(int new_dblscan);
+void arc_set_hires(int new_hires);
+
+
+void arc_stop_emulation();
+void arc_popup_menu();
+void arc_update_menu();
+void *wx_getnativemenu(void *menu);

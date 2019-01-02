@@ -1,0 +1,641 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<resource xmlns="http://www.wxwidgets.org/wxxrc" version="2.5.3.0">
+	<object class="wxBitmap" name="BITMAP_HARDDISK">icons/16x16/drive.png</object>
+	<object class="wxBitmap" name="BITMAP_FLOPPY">icons/16x16/diskette.png</object>
+	<object class="wxBitmap" name="BITMAP_CDROM">icons/16x16/cd.png</object>
+	<object class="wxToolBar" name="tool_bar">
+		<style>wxTB_FLAT|wxTB_NODIVIDER</style>
+		<object class="tool" name="TOOLBAR_RUN">
+               		<bitmap>icons/24x24/play.png</bitmap>
+                	<label>Run</label>
+               	</object>
+		<object class="tool" name="TOOLBAR_PAUSE">
+               		<bitmap>icons/24x24/pause.png</bitmap>
+                	<label>Pause</label>
+               	</object>
+		<object class="tool" name="TOOLBAR_STOP">
+               		<bitmap>icons/24x24/stop.png</bitmap>
+                	<label>Stop</label>
+               	</object>
+		<object class="tool" name="TOOLBAR_RESET">
+               		<bitmap>icons/24x24/refresh.png</bitmap>
+                	<label>Hard reset</label>
+                </object>
+       	</object>
+
+	<object class="wxMenu" name="main_menu">
+		<object class="wxMenu">
+			<label>_File</label>
+			<object class="wxMenuItem" name="IDM_FILE_RESET">
+				<label>_Hard reset</label>
+			</object>
+			<object class="separator"/>
+			<object class="wxMenuItem" name="IDM_FILE_EXIT">
+				<label>_Exit</label>
+			</object>
+		</object>
+		<object class="wxMenu">
+			<label>_Disc</label>
+			<object class="wxMenuItem" name="IDM_DISC_CHANGE_0">
+				<label>Change drive _0:...</label>
+			</object>
+			<object class="wxMenuItem" name="IDM_DISC_CHANGE_1">
+				<label>Change drive _1:...</label>
+			</object>
+			<object class="wxMenuItem" name="IDM_DISC_CHANGE_2">
+				<label>Change drive _2:...</label>
+			</object>
+			<object class="wxMenuItem" name="IDM_DISC_CHANGE_3">
+				<label>Change drive _3:...</label>
+			</object>
+			<object class="separator"/>
+			<object class="wxMenuItem" name="IDM_DISC_EJECT_0">
+				<label>_Eject drive 0:</label>
+			</object>
+			<object class="wxMenuItem" name="IDM_DISC_EJECT_1">
+				<label>Eject drive 1:</label>
+			</object>
+			<object class="wxMenuItem" name="IDM_DISC_EJECT_2">
+				<label>Eject drive 2:</label>
+			</object>
+			<object class="wxMenuItem" name="IDM_DISC_EJECT_3">
+				<label>Eject drive 3:</label>
+			</object>
+			<object class="separator"/>
+			<object class="wxMenuItem" name="IDM_DISC_FAST">
+				<label>_Fast disc access</label>
+				<checkable>1</checkable>
+			</object>
+		</object>
+		<object class="wxMenu">
+			<label>_Options</label>
+			<object class="wxMenuItem" name="IDM_OPTIONS_SOUND">
+				<label>_Sound enable</label>
+				<checkable>1</checkable>
+			</object>
+			<object class="wxMenuItem" name="IDM_OPTIONS_STEREO">
+				<label>S_tereo sound</label>
+				<checkable>1</checkable>
+			</object>
+			<object class="wxMenuItem" name="IDM_OPTIONS_LIMIT">
+				<label>_Limit speed</label>
+				<checkable>1</checkable>
+			</object>
+		</object>
+		<object class="wxMenu">
+			<label>_Machine</label>
+			<object class="wxMenuItem" name="IDM_MACHINE_CONFIGURE">
+				<label>_Configure...</label>
+			</object>
+                        <object class="wxMenu">
+                                <label>_Monitor type</label>
+        			<object class="wxMenuItem" name="IDM_MONITOR_NORMAL">
+        				<label>_Normal</label>
+        				<radio>1</radio>
+        			</object>
+        			<object class="wxMenuItem" name="IDM_MONITOR_HIRES">
+        				<label>_Hi-res mono</label>
+        				<radio>1</radio>
+        			</object>
+                        </object>
+		</object>
+		<object class="wxMenu">
+			<label>Video</label>
+			<object class="wxMenuItem" name="IDM_VIDEO_FULLSCR">
+				<label>_Fullscreen</label>
+				<checkable>1</checkable>
+			</object>
+			<object class="wxMenu">
+				<label>_Display Mode</label>
+				<object class="wxMenuItem" name="IDM_VIDEO_NO_BORDERS">
+					<label>_No borders</label>
+					<radio>1</radio>
+				</object>
+				<object class="wxMenuItem" name="IDM_VIDEO_NATIVE_BORDERS">
+					<label>N_ative borders</label>
+					<radio>1</radio>
+				</object>
+				<object class="wxMenuItem" name="IDM_VIDEO_TV">
+					<label>_TV mode</label>
+					<radio>1</radio>
+				</object>
+			</object>
+			<object class="wxMenu">
+				<label>_Blit Method</label>
+				<object class="wxMenuItem" name="IDM_BLIT_SCAN">
+					<label>_Scanlines</label>
+					<radio>1</radio>
+				</object>
+				<object class="wxMenuItem" name="IDM_BLIT_SCALE">
+					<label>_Line doubling</label>
+					<radio>1</radio>
+				</object>
+			</object>
+		</object>
+	</object>
+
+	<object class="wxDialog" name="ConfigureDlg">
+		<style>wxDEFAULT_DIALOG_STYLE</style>
+		<size>304,358</size>
+		<title>Configure Arculator</title>
+		<centered>1</centered>
+		<object class="wxFlexGridSizer">
+			<rows>0</rows>
+			<cols>1</cols>
+			<vgap>0</vgap>
+			<hgap>0</hgap>
+			<growablecols></growablecols>
+			<growablerows></growablerows>
+			<object class="sizeritem">
+				<option>1</option>
+				<flag>wxALL|wxEXPAND</flag>
+				<border>5</border>
+				<object class="wxFlexGridSizer">
+					<rows>0</rows>
+					<cols>2</cols>
+					<vgap>0</vgap>
+					<hgap>0</hgap>
+					<growablecols></growablecols>
+					<growablerows></growablerows>
+					<object class="sizeritem">
+						<option>0</option>
+						<flag>wxALIGN_CENTER_VERTICAL</flag>
+						<border>5</border>
+						<object class="wxStaticText" name="m_staticText1">
+							<size>70,-1</size>
+							<label>Preset :</label>
+							<wrap>-1</wrap>
+						</object>
+					</object>
+					<object class="sizeritem">
+						<option>0</option>
+						<flag>wxALL</flag>
+						<border>5</border>
+						<object class="wxComboBox" name="IDC_COMBO_PRESET">
+        						<style>wxCB_DROPDOWN|wxCB_READONLY</style>
+							<size>200,-1</size>
+							<value></value>
+							<content />
+						</object>
+					</object>
+				</object>
+			</object>
+			<object class="sizeritem">
+				<option>0</option>
+				<flag>wxEXPAND|wxALL</flag>
+				<border>5</border>
+				<object class="wxStaticLine" name="m_staticline1">
+					<style>wxLI_HORIZONTAL</style>
+				</object>
+			</object>
+			<object class="sizeritem">
+				<option>1</option>
+				<flag>wxEXPAND</flag>
+				<border>5</border>
+				<object class="wxFlexGridSizer">
+					<rows>0</rows>
+					<cols>2</cols>
+					<vgap>0</vgap>
+					<hgap>0</hgap>
+					<growablecols></growablecols>
+					<growablerows></growablerows>
+					<object class="sizeritem">
+						<option>0</option>
+						<flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+						<border>5</border>
+						<object class="wxStaticText" name="m_staticText2">
+							<size>70,-1</size>
+							<label>CPU :</label>
+							<wrap>-1</wrap>
+						</object>
+					</object>
+					<object class="sizeritem">
+						<option>0</option>
+						<flag>wxALL</flag>
+						<border>5</border>
+						<object class="wxComboBox" name="IDC_COMBO_CPU">
+        						<style>wxCB_DROPDOWN|wxCB_READONLY</style>
+							<size>200,-1</size>
+							<value></value>
+							<content />
+						</object>
+					</object>
+					<object class="sizeritem">
+						<option>0</option>
+						<flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+						<border>5</border>
+						<object class="wxStaticText" name="m_staticText3">
+							<size>70,-1</size>
+							<label>FPU :</label>
+							<wrap>-1</wrap>
+						</object>
+					</object>
+					<object class="sizeritem">
+						<option>0</option>
+						<flag>wxALL</flag>
+						<border>5</border>
+						<object class="wxComboBox" name="IDC_COMBO_FPU">
+                                                        <style>wxCB_DROPDOWN|wxCB_READONLY</style>
+							<size>200,-1</size>
+							<value></value>
+							<content />
+						</object>
+					</object>
+					<object class="sizeritem">
+						<option>0</option>
+						<flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+						<border>5</border>
+						<object class="wxStaticText" name="m_staticText4">
+							<size>70,-1</size>
+							<label>Memory :</label>
+							<wrap>-1</wrap>
+						</object>
+					</object>
+					<object class="sizeritem">
+						<option>0</option>
+						<flag>wxALL</flag>
+						<border>5</border>
+						<object class="wxComboBox" name="IDC_COMBO_MEMORY">
+                                                        <style>wxCB_DROPDOWN|wxCB_READONLY</style>
+							<size>200,-1</size>
+							<value></value>
+							<content />
+						</object>
+					</object>
+					<object class="sizeritem">
+						<option>0</option>
+						<flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+						<border>5</border>
+						<object class="wxStaticText" name="m_staticText5">
+							<size>70,-1</size>
+							<label>MEMC :</label>
+							<wrap>-1</wrap>
+						</object>
+					</object>
+					<object class="sizeritem">
+						<option>0</option>
+						<flag>wxALL</flag>
+						<border>5</border>
+						<object class="wxComboBox" name="IDC_COMBO_MEMC">
+                                                        <style>wxCB_DROPDOWN|wxCB_READONLY</style>
+							<size>200,-1</size>
+							<value></value>
+							<content />
+						</object>
+					</object>
+					<object class="sizeritem">
+						<option>0</option>
+						<flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+						<border>5</border>
+						<object class="wxStaticText" name="m_staticText6">
+							<size>70,-1</size>
+							<label>IO :</label>
+							<wrap>-1</wrap>
+						</object>
+					</object>
+					<object class="sizeritem">
+						<option>0</option>
+						<flag>wxALL</flag>
+						<border>5</border>
+						<object class="wxComboBox" name="IDC_COMBO_IO">
+                                                        <style>wxCB_DROPDOWN|wxCB_READONLY</style>
+							<size>200,-1</size>
+							<value></value>
+							<content />
+						</object>
+					</object>
+					<object class="sizeritem">
+						<option>0</option>
+						<flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+						<border>5</border>
+						<object class="wxStaticText" name="m_staticText7">
+							<size>70,-1</size>
+							<label>OS :</label>
+							<wrap>-1</wrap>
+						</object>
+					</object>
+					<object class="sizeritem">
+						<option>0</option>
+						<flag>wxALL</flag>
+						<border>5</border>
+						<object class="wxComboBox" name="IDC_COMBO_OS">
+                                                        <style>wxCB_DROPDOWN|wxCB_READONLY</style>
+							<size>200,-1</size>
+							<value></value>
+							<content />
+						</object>
+					</object>
+				</object>
+			</object>
+			<object class="sizeritem">
+				<option>1</option>
+				<flag>wxALL|wxEXPAND</flag>
+				<border>5</border>
+				<object class="wxFlexGridSizer">
+					<rows>0</rows>
+					<cols>5</cols>
+					<vgap>0</vgap>
+					<hgap>0</hgap>
+					<growablecols></growablecols>
+					<growablerows></growablerows>
+					<object class="sizeritem">
+						<option>0</option>
+						<flag>wxALIGN_CENTER_VERTICAL</flag>
+						<border>5</border>
+						<object class="wxStaticText">
+							<size>70,-1</size>
+							<label>HD :4 :</label>
+							<wrap>-1</wrap>
+						</object>
+					</object>
+        				<object class="sizeritem">
+        					<option>1</option>
+        					<flag>wxALL|wxEXPAND</flag>
+        					<border>5</border>
+        					<object class="wxTextCtrl" name="IDC_EDIT_HD4">
+        						<style>wxTE_READONLY</style>
+        						<size>350,-1</size>
+        						<value></value>
+        					</object>
+        				</object>
+					<object class="sizeritem">
+						<option>0</option>
+						<flag>wxALIGN_CENTER_HORIZONTAL|wxALL</flag>
+						<border>5</border>
+						<object class="wxButton" name="IDC_SEL_HD4">
+							<label>...</label>
+							<size>30,-1</size>
+							<default>0</default>
+							<markup>0</markup>
+							<bitmap />
+						</object>
+					</object>
+					<object class="sizeritem">
+						<option>0</option>
+						<flag>wxALIGN_CENTER_HORIZONTAL|wxALL</flag>
+						<border>5</border>
+						<object class="wxButton" name="IDC_NEW_HD4">
+							<label>New</label>
+							<size>30,-1</size>
+							<default>0</default>
+							<markup>0</markup>
+							<bitmap />
+						</object>
+					</object>
+					<object class="sizeritem">
+						<option>0</option>
+						<flag>wxALIGN_CENTER_HORIZONTAL|wxALL</flag>
+						<border>5</border>
+						<object class="wxButton" name="IDC_EJECT_HD4">
+							<label>Eject</label>
+							<size>30,-1</size>
+							<default>0</default>
+							<markup>0</markup>
+							<bitmap />
+						</object>
+					</object>
+					<object class="sizeritem">
+						<option>0</option>
+						<flag>wxALIGN_CENTER_VERTICAL</flag>
+						<border>5</border>
+						<object class="wxStaticText">
+							<size>70,-1</size>
+							<label>HD :5 :</label>
+							<wrap>-1</wrap>
+						</object>
+					</object>
+        				<object class="sizeritem">
+        					<option>1</option>
+        					<flag>wxALL|wxEXPAND</flag>
+        					<border>5</border>
+        					<object class="wxTextCtrl" name="IDC_EDIT_HD5">
+        						<style>wxTE_READONLY</style>
+        						<size>350,-1</size>
+        						<value></value>
+        					</object>
+        				</object>
+					<object class="sizeritem">
+						<option>0</option>
+						<flag>wxALIGN_CENTER_HORIZONTAL|wxALL</flag>
+						<border>5</border>
+						<object class="wxButton" name="IDC_SEL_HD5">
+							<label>...</label>
+							<size>30,-1</size>
+							<default>0</default>
+							<markup>0</markup>
+							<bitmap />
+						</object>
+					</object>
+					<object class="sizeritem">
+						<option>0</option>
+						<flag>wxALIGN_CENTER_HORIZONTAL|wxALL</flag>
+						<border>5</border>
+						<object class="wxButton" name="IDC_NEW_HD5">
+							<label>New</label>
+							<size>30,-1</size>
+							<default>0</default>
+							<markup>0</markup>
+							<bitmap />
+						</object>
+					</object>
+					<object class="sizeritem">
+						<option>0</option>
+						<flag>wxALIGN_CENTER_HORIZONTAL|wxALL</flag>
+						<border>5</border>
+						<object class="wxButton" name="IDC_EJECT_HD5">
+							<label>Eject</label>
+							<size>30,-1</size>
+							<default>0</default>
+							<markup>0</markup>
+							<bitmap />
+						</object>
+					</object>
+				</object>
+			</object>
+			<object class="sizeritem">
+				<option>1</option>
+				<flag>wxALIGN_CENTER_HORIZONTAL|wxEXPAND</flag>
+				<border>5</border>
+				<object class="wxFlexGridSizer">
+					<rows>0</rows>
+					<cols>4</cols>
+					<vgap>0</vgap>
+					<hgap>0</hgap>
+					<growablecols></growablecols>
+					<growablerows></growablerows>
+					<object class="spacer">
+						<option>1</option>
+						<flag>wxEXPAND</flag>
+						<border>5</border>
+						<size>35,0</size>
+					</object>
+					<object class="sizeritem">
+						<option>0</option>
+						<flag>wxALIGN_CENTER_HORIZONTAL|wxALL</flag>
+						<border>5</border>
+						<object class="wxButton" name="wxID_OK">
+							<label>OK</label>
+							<default>0</default>
+							<markup>0</markup>
+							<bitmap />
+						</object>
+					</object>
+					<object class="sizeritem">
+						<option>0</option>
+						<flag>wxALIGN_CENTER_HORIZONTAL|wxALL</flag>
+						<border>5</border>
+						<object class="wxButton" name="wxID_CANCEL">
+							<label>Cancel</label>
+							<default>0</default>
+							<markup>0</markup>
+							<bitmap />
+						</object>
+					</object>
+					<object class="spacer">
+						<option>1</option>
+						<flag>wxEXPAND</flag>
+						<border>5</border>
+						<size>0,0</size>
+					</object>
+				</object>
+			</object>
+		</object>
+	</object>
+
+	<object class="wxDialog" name="ConfigureSelectionDlg">
+		<title>Arculator Configuration Manager</title>
+		<centered>1</centered>
+		<object class="wxFlexGridSizer">
+			<rows>1</rows>
+			<cols>1</cols>
+			<vgap>0</vgap>
+			<hgap>0</hgap>
+			<growablecols>0</growablecols>
+			<growablerows>0</growablerows>
+			<object class="sizeritem">
+				<option>1</option>
+				<flag>wxALL|wxEXPAND</flag>
+				<border>5</border>
+				<object class="wxFlexGridSizer">
+					<rows>2</rows>
+					<cols>2</cols>
+					<vgap>0</vgap>
+					<hgap>0</hgap>
+					<growablecols>0</growablecols>
+					<growablerows>0</growablerows>
+					<object class="sizeritem">
+						<option>1</option>
+						<flag>wxEXPAND</flag>
+						<border>5</border>
+						<object class="wxBoxSizer">
+							<orient>wxVERTICAL</orient>
+							<object class="sizeritem">
+								<option>1</option>
+								<flag>wxALL|wxEXPAND</flag>
+								<border>5</border>
+								<object class="wxListBox" name="IDC_LIST">
+									<style>wxLB_SINGLE</style>
+									<size>250,300</size>
+									<content />
+								</object>
+							</object>
+						</object>
+					</object>
+					<object class="sizeritem">
+						<option>1</option>
+						<flag>wxEXPAND</flag>
+						<border>5</border>
+						<object class="wxBoxSizer">
+							<orient>wxVERTICAL</orient>
+							<object class="sizeritem">
+								<option>0</option>
+								<flag>wxALL</flag>
+								<border>5</border>
+								<object class="wxBitmapButton" name="wxID_OK">
+									<style>wxBU_AUTODRAW</style>
+									<tooltip>Load</tooltip>
+									<bitmap>icons/32x32/control_play_blue.png</bitmap>
+									<default>1</default>
+								</object>
+							</object>
+							<object class="sizeritem">
+								<option>0</option>
+								<flag>wxALL</flag>
+								<border>5</border>
+								<object class="wxBitmapButton" name="IDC_CONFIG">
+									<style>wxBU_AUTODRAW</style>
+									<tooltip>Configure</tooltip>
+									<bitmap>icons/32x32/setting_tools.png</bitmap>
+									<default>0</default>
+								</object>
+							</object>
+                                                </object>
+					</object>
+					<object class="sizeritem">
+						<option>1</option>
+						<flag>wxEXPAND</flag>
+						<border>5</border>
+						<object class="wxBoxSizer">
+							<orient>wxHORIZONTAL</orient>
+							<object class="sizeritem">
+								<option>0</option>
+								<flag>wxALL</flag>
+								<border>5</border>
+								<object class="wxBitmapButton" name="IDC_NEW">
+									<style>wxBU_AUTODRAW</style>
+									<tooltip>New</tooltip>
+									<bitmap>icons/32x32/computer_add.png</bitmap>
+									<default>0</default>
+								</object>
+							</object>
+							<object class="sizeritem">
+								<option>0</option>
+								<flag>wxALL</flag>
+								<border>5</border>
+								<object class="wxBitmapButton" name="IDC_RENAME">
+									<style>wxBU_AUTODRAW</style>
+									<tooltip>Rename</tooltip>
+									<bitmap>icons/32x32/computer_edit.png</bitmap>
+									<default>0</default>
+								</object>
+							</object>
+							<object class="sizeritem">
+								<option>0</option>
+								<flag>wxALL</flag>
+								<border>5</border>
+								<object class="wxBitmapButton" name="IDC_COPY">
+									<style>wxBU_AUTODRAW</style>
+									<tooltip>Copy</tooltip>
+									<bitmap>icons/32x32/computer_go.png</bitmap>
+									<default>0</default>
+								</object>
+							</object>
+							<object class="sizeritem">
+								<option>0</option>
+								<flag>wxALL</flag>
+								<border>5</border>
+								<object class="wxBitmapButton" name="IDC_DELETE">
+									<style>wxBU_AUTODRAW</style>
+									<tooltip>Delete</tooltip>
+									<bitmap>icons/32x32/computer_delete.png</bitmap>
+									<default>0</default>
+								</object>
+							</object>
+						</object>
+					</object>
+					<object class="sizeritem">
+						<option>0</option>
+						<flag>wxALL</flag>
+						<border>5</border>
+						<object class="wxBitmapButton" name="wxID_CANCEL">
+							<style>wxBU_AUTODRAW</style>
+							<tooltip>Quit</tooltip>
+							<bitmap>icons/32x32/door_in.png</bitmap>
+							<default>0</default>
+						</object>
+					</object>
+				</object>
+			</object>
+		</object>
+	</object>
+</resource>

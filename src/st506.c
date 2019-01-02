@@ -44,32 +44,16 @@ void st506_updateinterrupts()
 }
 void resetst506()
 {
-        char fn[512];
-//        return;
         st506.status=0;
         st506.p=st506.wp=0;
         st506.drq=0;
         st506.first=0;
-        if (shdfile[0]) fclose(shdfile[0]);
-        append_filename(fn,exname,"HardImage1",511);
-        shdfile[0]=fopen(fn,"rb+");
-        if (!shdfile[0])
-        {
-                shdfile[0]=fopen(fn,"wb");
-                putc(0,shdfile[0]);
+        if (shdfile[0])
                 fclose(shdfile[0]);
-                shdfile[0]=fopen(fn,"rb+");
-        }
-        if (shdfile[1]) fclose(shdfile[1]);
-	append_filename(fn,exname,"HardImage2",511);
-        shdfile[1]=fopen(fn,"rb+");
-        if (!shdfile[1])
-        {
-                shdfile[1]=fopen(fn,"wb");
-                putc(0,shdfile[1]);
+        shdfile[0] = fopen(hd_fn[0], "rb+");
+        if (shdfile[1])
                 fclose(shdfile[1]);
-                shdfile[1]=fopen(fn,"rb+");
-        }
+        shdfile[1] = fopen(hd_fn[1],"rb+");
 }
 
 #define TOV 0x58

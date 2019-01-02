@@ -8,6 +8,8 @@
 #include "memc.h"
 #include "video.h"
 
+char hd_fn[2][512];
+
 char *get_filename(char *s)
 {
         int c = strlen(s) - 1;
@@ -65,6 +67,8 @@ char *get_extension(char *s)
 
 char config_file_default[256];
 char config_name[256];
+char machine_config_name[256];
+char machine_config_file[256];
 
 static char config_file[256];
 
@@ -73,7 +77,8 @@ typedef struct list_t
         struct list_t *next;
 } list_t;
 
-static list_t config_head;
+static list_t global_config_head;
+static list_t machine_config_head;
 
 typedef struct section_t
 {
@@ -103,10 +108,10 @@ typedef struct entry_t
                 (new)->next = NULL;                     \
         }
 
-void config_dump()
+void config_dump(int is_global)
 {
         section_t *current_section;
-        list_t *head = &config_head;
+        list_t *head = is_global ? &global_config_head : &machine_config_head;
                 
         rpclog("Config data :\n");
         
@@ -131,10 +136,10 @@ void config_dump()
         }
 }
 
-void config_free()
+void config_free(int is_global)
 {
         section_t *current_section;
-        list_t *head = &config_head;
+        list_t *head = is_global ? &global_config_head : &machine_config_head;
         current_section = (section_t *)head->next;
         
         while (current_section)
@@ -157,10 +162,10 @@ void config_free()
         }
 }
 
-int config_free_section(const char *name)
+int config_free_section(int is_global, const char *name)
 {
         section_t *current_section, *prev_section;
-        list_t *head = &config_head;
+        list_t *head = is_global ? &global_config_head : &machine_config_head;
         current_section = (section_t *)head->next;
         prev_section = 0;
 
@@ -194,11 +199,11 @@ int config_free_section(const char *name)
         return 0;
 }
 
-void config_load(char *fn)
+void config_load(int is_global, char *fn)
 {
         FILE *f = fopen(fn, "rt");
         section_t *current_section;
-        list_t *head = &config_head;
+        list_t *head = is_global ? &global_config_head : &machine_config_head;
         
         memset(head, 0, sizeof(list_t));
 
@@ -299,12 +304,12 @@ void config_new()
         fclose(f);
 }
 
-static section_t *find_section(const char *name)
+static section_t *find_section(const char *name, int is_global)
 {
         section_t *current_section;
         char blank[] = "";
-        list_t *head = &config_head;
-                
+        list_t *head = is_global ? &global_config_head : &machine_config_head;
+
         current_section = (section_t *)head->next;
         if (!name)
                 name = blank;
@@ -324,7 +329,7 @@ static entry_t *find_entry(section_t *section, const char *name)
         entry_t *current_entry;
         
         current_entry = (entry_t *)section->entry_head.next;
-        
+
         while (current_entry)
         {
                 if (!strncmp(current_entry->name, name, 256))
@@ -335,10 +340,10 @@ static entry_t *find_entry(section_t *section, const char *name)
         return NULL;
 }
 
-static section_t *create_section(const char *name)
+static section_t *create_section(const char *name, int is_global)
 {
         section_t *new_section = (section_t *)malloc(sizeof(section_t));
-        list_t *head = &config_head;
+        list_t *head = is_global ? &global_config_head : &machine_config_head;
         
         memset(new_section, 0, sizeof(section_t));
         strncpy(new_section->name, name, 256);
@@ -357,13 +362,13 @@ static entry_t *create_entry(section_t *section, const char *name)
         return new_entry;
 }
         
-int config_get_int(const char *head, const char *name, int def)
+int config_get_int(int is_global, const char *head, const char *name, int def)
 {
         section_t *section;
         entry_t *entry;
         int value;
 
-        section = find_section(head);
+        section = find_section(head, is_global);
         
         if (!section)
                 return def;
@@ -378,13 +383,13 @@ int config_get_int(const char *head, const char *name, int def)
         return value;
 }
 
-float config_get_float(const char *head, const char *name, float def)
+float config_get_float(int is_global, const char *head, const char *name, float def)
 {
         section_t *section;
         entry_t *entry;
         float value;
 
-        section = find_section(head);
+        section = find_section(head, is_global);
 
         if (!section)
                 return def;
@@ -399,12 +404,12 @@ float config_get_float(const char *head, const char *name, float def)
         return value;
 }
 
-const char *config_get_string(const char *head, const char *name, const char *def)
+const char *config_get_string(int is_global, const char *head, const char *name, const char *def)
 {
         section_t *section;
         entry_t *entry;
 
-        section = find_section(head);
+        section = find_section(head, is_global);
         
         if (!section)
                 return def;
@@ -417,15 +422,15 @@ const char *config_get_string(const char *head, const char *name, const char *de
         return entry->data; 
 }
 
-void config_set_int(const char *head, const char *name, int val)
+void config_set_int(int is_global, const char *head, const char *name, int val)
 {
         section_t *section;
         entry_t *entry;
 
-        section = find_section(head);
+        section = find_section(head, is_global);
         
         if (!section)
-                section = create_section(head);
+                section = create_section(head, is_global);
                 
         entry = find_entry(section, name);
 
@@ -435,15 +440,15 @@ void config_set_int(const char *head, const char *name, int val)
         sprintf(entry->data, "%i", val);
 }
 
-void config_set_float(const char *head, const char *name, float val)
+void config_set_float(int is_global, const char *head, const char *name, float val)
 {
         section_t *section;
         entry_t *entry;
 
-        section = find_section(head);
+        section = find_section(head, is_global);
 
         if (!section)
-                section = create_section(head);
+                section = create_section(head, is_global);
 
         entry = find_entry(section, name);
 
@@ -453,15 +458,15 @@ void config_set_float(const char *head, const char *name, float val)
         sprintf(entry->data, "%f", val);
 }
 
-void config_set_string(const char *head, const char *name, char *val)
+void config_set_string(int is_global, const char *head, const char *name, char *val)
 {
         section_t *section;
         entry_t *entry;
 
-        section = find_section(head);
+        section = find_section(head, is_global);
         
         if (!section)
-                section = create_section(head);
+                section = create_section(head, is_global);
                 
         entry = find_entry(section, name);
 
@@ -471,11 +476,11 @@ void config_set_string(const char *head, const char *name, char *val)
         strncpy(entry->data, val, 256);
 }
 
-void config_save(char *fn)
+void config_save(int is_global, char *fn)
 {
         FILE *f = fopen(fn, "wt");
         section_t *current_section;
-        list_t *head = &config_head;
+        list_t *head = is_global ? &global_config_head : &machine_config_head;
                 
         current_section = (section_t *)head->next;
         
@@ -509,38 +514,65 @@ void loadconfig()
 
         append_filename(config_file, exname, "arc.cfg", 511);
         rpclog("config_file=%s\n", config_file);
-        config_load(config_file);
-        config_dump();
+        config_load(CFG_GLOBAL, config_file);
+        config_dump(CFG_GLOBAL);
+        config_load(CFG_MACHINE, machine_config_file);
+        config_dump(CFG_MACHINE);
 
-        p=config_get_string(NULL,"limit_speed",NULL);
+        p=config_get_string(CFG_GLOBAL, NULL,"limit_speed",NULL);
         if (!p || strcmp(p,"0")) limitspeed=1;
         else                     limitspeed=0;
-        p=config_get_string(NULL,"sound_enable",NULL);
+        p=config_get_string(CFG_GLOBAL, NULL,"sound_enable",NULL);
         if (!p || strcmp(p,"0")) soundena=1;
         else                     soundena=0;
-        display_mode = config_get_int(NULL, "display_mode", DISPLAY_MODE_NO_BORDERS);
-        arm_cpu_type = config_get_int(NULL, "cpu_type", 0);
-        memc_type = config_get_int(NULL, "memc_type", 0);
-        fpaena = config_get_int(NULL, "fpa", 0);
-        fpu_type = config_get_int(NULL, "fpu_type", 0);
-        p=config_get_string(NULL,"hires",NULL);
+        display_mode = config_get_int(CFG_MACHINE, NULL, "display_mode", DISPLAY_MODE_NO_BORDERS);
+        arm_cpu_type = config_get_int(CFG_MACHINE, NULL, "cpu_type", 0);
+        memc_type = config_get_int(CFG_MACHINE, NULL, "memc_type", 0);
+        fpaena = config_get_int(CFG_MACHINE, NULL, "fpa", 0);
+        fpu_type = config_get_int(CFG_MACHINE, NULL, "fpu_type", 0);
+        p=config_get_string(CFG_MACHINE, NULL,"hires",NULL);
         if (!p || strcmp(p,"1")) hires=0;
         else                     hires=1;
-        p=config_get_string(NULL,"first_fullscreen",NULL);
+        p=config_get_string(CFG_GLOBAL, NULL,"first_fullscreen",NULL);
         if (!p || strcmp(p,"0")) firstfull=1;
         else                     firstfull=0;
-        p=config_get_string(NULL,"double_scan",NULL);
+        p=config_get_string(CFG_MACHINE, NULL,"double_scan",NULL);
         if (!p || strcmp(p,"0")) dblscan=1;
         else                     dblscan=0;
-        p=config_get_string(NULL,"fast_disc",NULL);
+        p=config_get_string(CFG_MACHINE, NULL,"fast_disc",NULL);
         if (!p || strcmp(p,"0")) fastdisc=1;
         else                     fastdisc=0;
-        p=config_get_string(NULL,"fdc_type",NULL);
+        p=config_get_string(CFG_MACHINE, NULL,"fdc_type",NULL);
         if (!p || strcmp(p,"0")) fdctype=1;
         else                     fdctype=0;
-        p=config_get_string(NULL,"stereo",NULL);
+        p=config_get_string(CFG_GLOBAL, NULL,"stereo",NULL);
         if (!p || strcmp(p,"0")) stereo=1;
         else                     stereo=0;
+        p = (char *)config_get_string(CFG_MACHINE, NULL,"mem_size",NULL);
+        if (!p || !strcmp(p,"4096")) memsize=4096;
+        else if (!strcmp(p,"8192"))  memsize=8192;
+        else if (!strcmp(p,"2048"))  memsize=2048;
+        else if (!strcmp(p,"1024"))  memsize=1024;
+        else if (!strcmp(p,"512"))   memsize=512;
+        else                         memsize=16384;
+        p = (char *)config_get_string(CFG_MACHINE, NULL,"rom_set",NULL);
+        if (!p || !strcmp(p,"3")) romset=3;
+        else if (!strcmp(p,"1"))  romset=1;
+        else if (!strcmp(p,"2"))  romset=2;
+        else if (!strcmp(p,"4"))  romset=4;
+        else if (!strcmp(p,"5"))  romset=5;
+        else if (!strcmp(p,"6"))  romset=6;
+        else                      romset=0;
+        p = (char *)config_get_string(CFG_MACHINE, NULL,"hd4_fn",NULL);
+        if (p)
+                strcpy(hd_fn[0], p);
+        else
+                hd_fn[0][0] = 0;
+        p = (char *)config_get_string(CFG_MACHINE, NULL,"hd5_fn",NULL);
+        if (p)
+                strcpy(hd_fn[1], p);
+        else
+                hd_fn[1][0] = 0;
 }
 
 void saveconfig()
@@ -550,35 +582,38 @@ void saveconfig()
 
         append_filename(config_file, exname, "arc.cfg", 511);
 
-        config_set_string(NULL,"disc_name_0",discname[0]);
-        config_set_string(NULL,"disc_name_1",discname[1]);
-        config_set_string(NULL,"disc_name_2",discname[2]);
-        config_set_string(NULL,"disc_name_3",discname[3]);
+        config_set_string(CFG_MACHINE, NULL,"disc_name_0",discname[0]);
+        config_set_string(CFG_MACHINE, NULL,"disc_name_1",discname[1]);
+        config_set_string(CFG_MACHINE, NULL,"disc_name_2",discname[2]);
+        config_set_string(CFG_MACHINE, NULL,"disc_name_3",discname[3]);
         sprintf(s,"%i",limitspeed);
-        config_set_string(NULL,"limit_speed",s);
+        config_set_string(CFG_GLOBAL, NULL,"limit_speed",s);
         sprintf(s,"%i",soundena);
-        config_set_string(NULL,"sound_enable",s);
+        config_set_string(CFG_GLOBAL, NULL,"sound_enable",s);
         sprintf(s,"%i",memsize);
-        config_set_string(NULL,"mem_size",s);
-        config_set_int(NULL, "cpu_type", arm_cpu_type);
-        config_set_int(NULL, "memc_type", memc_type);
-        config_set_int(NULL, "fpa", fpaena);
-        config_set_int(NULL, "fpu_type", fpu_type);
+        config_set_string(CFG_MACHINE, NULL,"mem_size",s);
+        config_set_int(CFG_MACHINE, NULL, "cpu_type", arm_cpu_type);
+        config_set_int(CFG_MACHINE, NULL, "memc_type", memc_type);
+        config_set_int(CFG_MACHINE, NULL, "fpa", fpaena);
+        config_set_int(CFG_MACHINE, NULL, "fpu_type", fpu_type);
         sprintf(s,"%i",hires);
-        config_set_string(NULL,"hires",s);
+        config_set_string(CFG_MACHINE, NULL,"hires",s);
         sprintf(s,"%i",fullborders);
-        config_set_int(NULL, "display_mode", display_mode);
-        config_set_string(NULL,"first_fullscreen",s);
+        config_set_int(CFG_MACHINE, NULL, "display_mode", display_mode);
+        config_set_string(CFG_GLOBAL, NULL,"first_fullscreen",s);
         sprintf(s,"%i",dblscan);
-        config_set_string(NULL,"double_scan",s);
+        config_set_string(CFG_MACHINE, NULL,"double_scan",s);
         sprintf(s,"%i",fastdisc);
-        config_set_string(NULL,"fast_disc",s);
+        config_set_string(CFG_MACHINE, NULL,"fast_disc",s);
         sprintf(s,"%i",fdctype);
-        config_set_string(NULL,"fdc_type",s);
+        config_set_string(CFG_MACHINE, NULL,"fdc_type",s);
         sprintf(s,"%i",romset);
-        config_set_string(NULL,"rom_set",s);
+        config_set_string(CFG_MACHINE, NULL,"rom_set",s);
         sprintf(s,"%i",stereo);
-        config_set_string(NULL,"stereo",s);
+        config_set_string(CFG_GLOBAL, NULL,"stereo",s);
+        config_set_string(CFG_MACHINE, NULL, "hd4_fn", hd_fn[0]);
+        config_set_string(CFG_MACHINE, NULL, "hd5_fn", hd_fn[1]);
         
-        config_save(config_file);
+        config_save(CFG_GLOBAL, config_file);
+        config_save(CFG_MACHINE, machine_config_file);
 }

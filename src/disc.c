@@ -207,8 +207,12 @@ void disc_new(int drive, char *fn)
 void disc_close(int drive)
 {
         rpclog("disc_close %i\n", drive);
-        if (loaders[driveloaders[drive]].close) loaders[driveloaders[drive]].close(drive);
-        drive_empty[drive] = 1;
+        if (!drive_empty[drive])
+        {
+                if (loaders[driveloaders[drive]].close)
+                        loaders[driveloaders[drive]].close(drive);
+                drive_empty[drive] = 1;
+        }
 }
 
 int disc_empty(int drive)

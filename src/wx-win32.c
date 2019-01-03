@@ -309,6 +309,11 @@ void arc_disc_eject(int drive)
         SDL_UnlockMutex(main_thread_mutex);
 }
 
+void arc_enter_fullscreen()
+{
+        win_dofullscreen = 1;
+}
+
 void arc_set_display_mode(int new_display_mode)
 {
         SDL_LockMutex(main_thread_mutex);

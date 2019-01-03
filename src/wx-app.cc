@@ -241,6 +241,18 @@ void Frame::OnMenuCommand(wxCommandEvent &event)
                 
                 arc_set_hires(1);
         }
+        else if (event.GetId() == XRCID("IDM_VIDEO_FULLSCR"))
+        {
+                if (firstfull)
+                {
+                        firstfull = 0;
+                        
+                        arc_pause_main_thread();
+                        wxMessageBox("Use CTRL + END to return to windowed mode", "Arculator", wxOK | wxCENTRE | wxSTAY_ON_TOP);
+                        arc_resume_main_thread();
+                }
+                arc_enter_fullscreen();
+        }
         else if (event.GetId() == XRCID("IDM_VIDEO_NO_BORDERS"))
         {
                 wxMenuItem *item = ((wxMenu*)menu)->FindItem(event.GetId());

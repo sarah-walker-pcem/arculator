@@ -307,3 +307,8 @@ void arc_set_hires(int new_hires)
 
         SDL_UnlockMutex(main_thread_mutex);
 }
+
+void arc_enter_fullscreen()
+{
+        win_dofullscreen = 1;
+}

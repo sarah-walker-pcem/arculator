@@ -129,6 +129,17 @@
 			</object>
 			<object class="separator"/>
 			<object class="wxMenu">
+				<label>Scale filtering</label>
+				<object class="wxMenuItem" name="IDM_VIDEO_SCALE_NEAREST">
+					<label>_Nearest</label>
+					<radio>1</radio>
+				</object>
+				<object class="wxMenuItem" name="IDM_VIDEO_SCALE_LINEAR">
+					<label>_Linear</label>
+					<radio>1</radio>
+				</object>
+			</object>
+			<object class="wxMenu">
 				<label>Output stretch-mode</label>
 				<object class="wxMenuItem" name="IDM_VIDEO_FS_FULL">
 					<label>_None</label>

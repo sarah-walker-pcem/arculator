@@ -15,6 +15,7 @@
 static int winsizex = 0, winsizey = 0;
 static int win_doresize = 0;
 static int win_dofullscreen;
+static int win_renderer_reset = 0;
 
 void updatewindowsize(int x, int y)
 {
@@ -165,6 +166,14 @@ static int arc_main_thread(void *p)
                         else             updatewindowsize(672,544);
                 }
 
+                if (win_renderer_reset)
+                {
+                        win_renderer_reset = 0;
+
+                        if (!video_renderer_reinit(NULL))
+                                fatal("Video renderer init failed");
+                }
+
                 // Run for 10 ms of processor time
                 SDL_LockMutex(main_thread_mutex);
                 if (!pause_main_thread)
@@ -275,6 +284,11 @@ void arc_disc_eject(int drive)
         discname[drive][0] = 0;
 
         SDL_UnlockMutex(main_thread_mutex);
+}
+
+void arc_renderer_reset()
+{
+        win_renderer_reset = 1;
 }
 
 void arc_set_display_mode(int new_display_mode)

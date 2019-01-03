@@ -33,6 +33,7 @@
 
 int display_mode;
 int video_fullscreen_scale;
+int video_linear_filtering;
 
 static uint32_t vidcr[64];
 

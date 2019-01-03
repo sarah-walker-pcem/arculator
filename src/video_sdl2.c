@@ -18,45 +18,13 @@ static SDL_Renderer *renderer = NULL;
 SDL_Window *sdl_main_window = NULL;
 static SDL_Rect texture_rect;
 
-int video_renderer_init(void *main_window)
+static int video_renderer_create(void *main_window)
 {
         SDL_Rect screen_rect;
-        
-        rpclog("video_renderer_init()\n");
-        SDL_SetHint(SDL_HINT_WINDOWS_DISABLE_THREAD_NAMING, "1");
-        SDL_Init(SDL_INIT_EVERYTHING);
 
-        rpclog("create SDL window\n");
-        if (main_window == NULL)
-        {
-                sdl_main_window = SDL_CreateWindow(
-                        "Arculator",
-                        SDL_WINDOWPOS_CENTERED,
-                        SDL_WINDOWPOS_CENTERED,
-                        768,
-                        576,
-                        0
-                );
-        }
-        else
-        {
-                sdl_main_window = SDL_CreateWindowFrom(main_window);
-        }
         screen_rect.w = screen_rect.h = 2048;
 
-        if (!sdl_main_window)
-        {
-                char message[200];
-                sprintf(message,
-                                "SDL_CreateWindowFrom could not be created! Error: %s\n",
-                                SDL_GetError());
-#if WIN32
-                MessageBox(main_window, message, "SDL Error", MB_OK);
-#else
-                printf("%s", message);
-#endif                
-                return SDL_FALSE;
-        }
+        SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, video_linear_filtering ? "1" : "0");
 
         rpclog("create SDL renderer\n");
         renderer = SDL_CreateRenderer(sdl_main_window, -1, SDL_RENDERER_ACCELERATED);
@@ -82,6 +50,61 @@ int video_renderer_init(void *main_window)
 
         rpclog("video initialized\n");
         return SDL_TRUE;
+}
+
+int video_renderer_init(void *main_window)
+{
+        rpclog("video_renderer_init()\n");
+        SDL_SetHint(SDL_HINT_WINDOWS_DISABLE_THREAD_NAMING, "1");
+        SDL_Init(SDL_INIT_EVERYTHING);
+
+        rpclog("create SDL window\n");
+        if (main_window == NULL)
+        {
+                sdl_main_window = SDL_CreateWindow(
+                        "Arculator",
+                        SDL_WINDOWPOS_CENTERED,
+                        SDL_WINDOWPOS_CENTERED,
+                        768,
+                        576,
+                        0
+                );
+        }
+        else
+        {
+                sdl_main_window = SDL_CreateWindowFrom(main_window);
+        }
+
+        if (!sdl_main_window)
+        {
+                char message[200];
+                sprintf(message,
+                                "SDL_CreateWindowFrom could not be created! Error: %s\n",
+                                SDL_GetError());
+#if WIN32
+                MessageBox(main_window, message, "SDL Error", MB_OK);
+#else
+                printf("%s", message);
+#endif
+                return SDL_FALSE;
+        }
+
+        return video_renderer_create(main_window);
+}
+
+int video_renderer_reinit(void *main_window)
+{
+        if (texture)
+        {
+                SDL_DestroyTexture(texture);
+                texture = NULL;
+        }
+        if (renderer)
+        {
+                SDL_DestroyRenderer(renderer);
+                renderer = NULL;
+        }
+        return video_renderer_create(main_window);
 }
 
 void video_renderer_close()

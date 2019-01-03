@@ -137,6 +137,11 @@ void Frame::UpdateMenu(wxMenu *menu)
         else if (video_fullscreen_scale == FULLSCR_SCALE_INT)
                 item = ((wxMenu*)menu)->FindItem(XRCID("IDM_VIDEO_FS_INT"));
         item->Check(true);
+        if (video_linear_filtering)
+                item = ((wxMenu*)menu)->FindItem(XRCID("IDM_VIDEO_SCALE_LINEAR"));
+        else
+                item = ((wxMenu*)menu)->FindItem(XRCID("IDM_VIDEO_SCALE_NEAREST"));
+        item->Check(true);
 }
 
 void Frame::OnPopupMenuEvent(PopupMenuEvent &event)
@@ -282,6 +287,22 @@ void Frame::OnMenuCommand(wxCommandEvent &event)
                 item->Check(true);
 
                 arc_set_display_mode(DISPLAY_MODE_TV);
+        }
+        else if (event.GetId() == XRCID("IDM_VIDEO_SCALE_NEAREST"))
+        {
+                wxMenuItem *item = ((wxMenu*)menu)->FindItem(event.GetId());
+                item->Check(true);
+
+                video_linear_filtering = 0;
+                arc_renderer_reset();
+        }
+        else if (event.GetId() == XRCID("IDM_VIDEO_SCALE_LINEAR"))
+        {
+                wxMenuItem *item = ((wxMenu*)menu)->FindItem(event.GetId());
+                item->Check(true);
+
+                video_linear_filtering = 1;
+                arc_renderer_reset();
         }
         else if (event.GetId() == XRCID("IDM_VIDEO_FS_FULL"))
         {

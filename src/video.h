@@ -16,3 +16,5 @@ enum
         FULLSCR_SCALE_SQ,
         FULLSCR_SCALE_INT
 };
+
+extern int video_linear_filtering;

@@ -40,6 +40,7 @@ LRESULT CALLBACK WindowProcedure (HWND, UINT, WPARAM, LPARAM);
 static int winsizex = 0, winsizey = 0;
 static int win_doresize = 0;
 static int win_dofullscreen = 0;
+static int win_renderer_reset = 0;
 
 static int pause_main_thread = 0;
 
@@ -185,6 +186,17 @@ void mainthread(LPVOID param)
                         fullscreen = 1;
 
                 }
+                
+                if (win_renderer_reset)
+                {
+                        win_renderer_reset = 0;
+
+                        if (!video_renderer_reinit(ghwnd))
+                        {
+                                MessageBox(ghwnd, "Video renderer init failed", "Arculator error", MB_OK);
+                                exit(-1);
+                        }
+                }
 
                 if ((key[KEY_LCONTROL] || key[KEY_RCONTROL]) && key[KEY_END] && fullscreen)
                 {
@@ -312,6 +324,11 @@ void arc_disc_eject(int drive)
 void arc_enter_fullscreen()
 {
         win_dofullscreen = 1;
+}
+
+void arc_renderer_reset()
+{
+        win_renderer_reset = 1;
 }
 
 void arc_set_display_mode(int new_display_mode)

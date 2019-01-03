@@ -99,6 +99,9 @@
 			<label>Video</label>
 			<object class="wxMenuItem" name="IDM_VIDEO_FULLSCR">
 				<label>_Fullscreen</label>
+			</object>
+			<object class="wxMenuItem" name="IDM_VIDEO_RESIZEABLE">
+				<label>_Resizeable Window</label>
 				<checkable>1</checkable>
 			</object>
 			<object class="wxMenu">
@@ -129,7 +132,7 @@
 			</object>
 			<object class="separator"/>
 			<object class="wxMenu" name="IDM_VIDEO_RENDER_DRIVER">
-				<label>_Render driver</label>
+				<label>Render _driver</label>
 				<object class="wxMenuItem" name="IDM_DRIVER_AUTO">
 					<label>_Auto</label>
 					<radio>1</radio>
@@ -148,7 +151,7 @@
 				</object>
 			</object>
 			<object class="wxMenu">
-				<label>Scale filtering</label>
+				<label>_Scale filtering</label>
 				<object class="wxMenuItem" name="IDM_VIDEO_SCALE_NEAREST">
 					<label>_Nearest</label>
 					<radio>1</radio>
@@ -159,7 +162,7 @@
 				</object>
 			</object>
 			<object class="wxMenu">
-				<label>Output stretch-mode</label>
+				<label>_Output stretch-mode</label>
 				<object class="wxMenuItem" name="IDM_VIDEO_FS_FULL">
 					<label>_None</label>
 					<radio>1</radio>

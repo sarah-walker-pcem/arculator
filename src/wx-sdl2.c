@@ -14,7 +14,8 @@
 
 static int winsizex = 0, winsizey = 0;
 static int win_doresize = 0;
-static int win_dofullscreen;
+static int win_dofullscreen = 0;
+static int win_dosetresize = 0;
 static int win_renderer_reset = 0;
 
 void updatewindowsize(int x, int y)
@@ -57,7 +58,8 @@ static int arc_main_thread(void *p)
         input_init();
 
         arc_update_menu();
-        
+        SDL_SetWindowResizable(sdl_main_window, video_window_resizeable);
+
         struct timeval tp;
         time_t last_seconds = 0;
 
@@ -125,7 +127,7 @@ static int arc_main_thread(void *p)
                 }
 
                 /*Resize window to match screen mode*/
-                if (!fullscreen && win_doresize)
+                if (!fullscreen && win_doresize && !video_window_resizeable)
                 {
                         SDL_Rect rect;
 
@@ -139,6 +141,19 @@ static int arc_main_thread(void *p)
                                 SDL_SetWindowSize(sdl_main_window, winsizex, winsizey);
                                 SDL_SetWindowPosition(sdl_main_window, rect.x, rect.y);
                         }
+                }
+
+                if (win_dosetresize)
+                {
+                        SDL_Rect rect;
+
+                        win_dosetresize = 0;
+
+                        SDL_GetWindowSize(sdl_main_window, &rect.w, &rect.h);
+                        SDL_SetWindowResizable(sdl_main_window, video_window_resizeable);
+                        SDL_SetWindowSize(sdl_main_window, rect.w, rect.h);
+                        
+                        win_doresize = 1;
                 }
 
                 /*Toggle fullscreen with RWIN-Enter (Alt-Enter, Cmd-Enter),
@@ -322,6 +337,11 @@ void arc_set_hires(int new_hires)
         reinitvideo();
 
         SDL_UnlockMutex(main_thread_mutex);
+}
+
+void arc_set_resizeable()
+{
+        win_dosetresize = 1;
 }
 
 void arc_enter_fullscreen()

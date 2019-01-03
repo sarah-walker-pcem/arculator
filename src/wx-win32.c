@@ -40,6 +40,7 @@ LRESULT CALLBACK WindowProcedure (HWND, UINT, WPARAM, LPARAM);
 static int winsizex = 0, winsizey = 0;
 static int win_doresize = 0;
 static int win_dofullscreen = 0;
+static int win_dosetresize = 0;
 static int win_renderer_reset = 0;
 
 static int pause_main_thread = 0;
@@ -136,6 +137,7 @@ void mainthread(LPVOID param)
         input_init();
         
         arc_update_menu();
+        SDL_SetWindowResizable(sdl_main_window, video_window_resizeable);
 
         old_time = GetTickCount();
         while (!quited)
@@ -162,7 +164,7 @@ void mainthread(LPVOID param)
                         Sleep(1);
                 }
 
-                if (!fullscreen && win_doresize)
+                if (!fullscreen && win_doresize && !video_window_resizeable)
                 {
                         SDL_Rect rect;
 
@@ -198,6 +200,17 @@ void mainthread(LPVOID param)
                                 MessageBox(ghwnd, "Video renderer init failed", "Arculator error", MB_OK);
                                 exit(-1);
                         }
+                }
+                
+                if (win_dosetresize)
+                {
+                        SDL_Rect rect;
+                        
+                        win_dosetresize = 0;
+
+                        SDL_GetWindowSize(sdl_main_window, &rect.w, &rect.h);
+                        SDL_SetWindowResizable(sdl_main_window, video_window_resizeable);
+                        SDL_SetWindowSize(sdl_main_window, rect.w, rect.h);
                 }
 
                 if ((key[KEY_LCONTROL] || key[KEY_RCONTROL]) && key[KEY_END] && fullscreen)
@@ -362,6 +375,11 @@ void arc_set_hires(int new_hires)
         reinitvideo();
 
         SDL_UnlockMutex(main_thread_mutex);
+}
+
+void arc_set_resizeable()
+{
+        win_dosetresize = 1;
 }
 
 #define TIMER_1SEC 1

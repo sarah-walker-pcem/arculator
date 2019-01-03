@@ -18,3 +18,5 @@ enum
 };
 
 extern int video_linear_filtering;
+
+extern int video_window_resizeable;

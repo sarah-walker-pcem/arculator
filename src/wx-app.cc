@@ -121,6 +121,8 @@ void Frame::UpdateMenu(wxMenu *menu)
         else
                 item = ((wxMenu*)menu)->FindItem(XRCID("IDM_MONITOR_NORMAL"));
         item->Check(true);
+        item = ((wxMenu*)menu)->FindItem(XRCID("IDM_VIDEO_RESIZEABLE"));
+        item->Check(video_window_resizeable);
         if (display_mode == DISPLAY_MODE_NO_BORDERS)
                 item = ((wxMenu*)menu)->FindItem(XRCID("IDM_VIDEO_NO_BORDERS"));
         else if (display_mode == DISPLAY_MODE_NATIVE_BORDERS)
@@ -279,6 +281,14 @@ void Frame::OnMenuCommand(wxCommandEvent &event)
                         arc_resume_main_thread();
                 }
                 arc_enter_fullscreen();
+        }
+        else if (event.GetId() == XRCID("IDM_VIDEO_RESIZEABLE"))
+        {
+                video_window_resizeable ^= 1;
+                arc_set_resizeable();
+
+                wxMenuItem *item = ((wxMenu*)menu)->FindItem(event.GetId());
+                item->Check(video_window_resizeable);
         }
         else if (event.GetId() == XRCID("IDM_VIDEO_NO_BORDERS"))
         {

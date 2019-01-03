@@ -127,6 +127,26 @@
 					<radio>1</radio>
 				</object>
 			</object>
+			<object class="separator"/>
+			<object class="wxMenu">
+				<label>Output stretch-mode</label>
+				<object class="wxMenuItem" name="IDM_VIDEO_FS_FULL">
+					<label>_None</label>
+					<radio>1</radio>
+				</object>
+				<object class="wxMenuItem" name="IDM_VIDEO_FS_43">
+					<label>_4:3</label>
+					<radio>1</radio>
+				</object>
+				<object class="wxMenuItem" name="IDM_VIDEO_FS_SQ">
+					<label>_Square pixels</label>
+					<radio>1</radio>
+				</object>
+				<object class="wxMenuItem" name="IDM_VIDEO_FS_INT">
+					<label>_Integer scale</label>
+					<radio>1</radio>
+				</object>
+			</object>
 		</object>
 	</object>
 

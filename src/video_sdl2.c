@@ -10,6 +10,7 @@
 #include "arc.h"
 #include "plat_video.h"
 #include "vidc.h"
+#include "video.h"
 #include "video_sdl2.h"
 
 static SDL_Texture *texture = NULL;
@@ -154,8 +155,65 @@ void video_renderer_update(BITMAP *src, int src_x, int src_y, int dest_x, int de
         SDL_UpdateTexture(texture, &texture_rect, &((uint32_t *)src->dat)[src_y * src->w + src_x], src->w * 4);
 }
 
+static void sdl_scale(int scale, SDL_Rect src, SDL_Rect *dst, int w, int h)
+{
+        double t, b, l, r;
+        int ratio_w, ratio_h;
+        switch (scale)
+        {
+                case FULLSCR_SCALE_43:
+                t = 0;
+                b = src.h;
+                l = (src.w / 2) - ((src.h * 4) / (3 * 2));
+                r = (src.w / 2) + ((src.h * 4) / (3 * 2));
+                if (l < 0)
+                {
+                        l = 0;
+                        r = src.w;
+                        t = (src.h / 2) - ((src.w * 3) / (4 * 2));
+                        b = (src.h / 2) + ((src.w * 3) / (4 * 2));
+                }
+                break;
+                case FULLSCR_SCALE_SQ:
+                t = 0;
+                b = src.h;
+                l = (src.w / 2) - ((src.h * w) / (h * 2));
+                r = (src.w / 2) + ((src.h * w) / (h * 2));
+                if (l < 0)
+                {
+                        l = 0;
+                        r = src.w;
+                        t = (src.h / 2) - ((src.w * h) / (w * 2));
+                        b = (src.h / 2) + ((src.w * h) / (w * 2));
+                }
+                break;
+                case FULLSCR_SCALE_INT:
+                ratio_w = src.w / w;
+                ratio_h = src.h / h;
+                if (ratio_h < ratio_w)
+                        ratio_w = ratio_h;
+                l = (src.w / 2) - ((w * ratio_w) / 2);
+                r = (src.w / 2) + ((w * ratio_w) / 2);
+                t = (src.h / 2) - ((h * ratio_w) / 2);
+                b = (src.h / 2) + ((h * ratio_w) / 2);
+                break;
+                case FULLSCR_SCALE_FULL:
+                default:
+                l = 0;
+                t = 0;
+                r = src.w;
+                b = src.h;
+                break;
+        }
+
+        dst->x = l;
+        dst->y = t;
+        dst->w = r - l;
+        dst->h = b - t;
+}
+
 /*Render display texture to video window.*/
-void video_renderer_present(int src_x, int src_y, int src_w, int src_h)
+void video_renderer_present(int src_x, int src_y, int src_w, int src_h, int dblscan)
 {
         LOG_VIDEO_FRAMES("video_renderer_present: %d,%d + %d,%d\n", src_x, src_y, src_w, src_h);
 
@@ -170,6 +228,14 @@ void video_renderer_present(int src_x, int src_y, int src_w, int src_h)
         texture_rect.w = src_w;
         texture_rect.h = src_h;
 
+        if (fullscreen)
+        {
+                if (dblscan)
+                        sdl_scale(video_fullscreen_scale, window_rect, &window_rect, texture_rect.w, texture_rect.h*2);
+                else
+                        sdl_scale(video_fullscreen_scale, window_rect, &window_rect, texture_rect.w, texture_rect.h);
+        }
+        
         /*Clear the renderer backbuffer*/
         SDL_RenderClear(renderer);
 /*rpclog("Present %i,%i %i,%i -> %i,%i %i,%i\n", texture_rect.x, texture_rect.y, texture_rect.w, texture_rect.h,

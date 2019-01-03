@@ -528,6 +528,7 @@ void loadconfig()
         hires = config_get_int(CFG_MACHINE, NULL, "hires", 0);
         firstfull = config_get_int(CFG_GLOBAL, NULL, "first_fullscreen", 1);
         dblscan = config_get_int(CFG_MACHINE, NULL, "double_scan", 1);
+        video_fullscreen_scale = config_get_int(CFG_MACHINE, NULL, "video_fullscreen_scale", FULLSCR_SCALE_FULL);
         fastdisc = config_get_int(CFG_MACHINE, NULL, "fast_disc", 1);
         fdctype = config_get_int(CFG_MACHINE, NULL, "fdc_type", 1);
         stereo = config_get_int(CFG_GLOBAL, NULL, "stereo", 1);
@@ -565,6 +566,7 @@ void saveconfig()
         config_set_int(CFG_MACHINE, NULL, "display_mode", display_mode);
         config_set_int(CFG_GLOBAL, NULL, "first_fullscreen", firstfull);
         config_set_int(CFG_MACHINE, NULL, "double_scan", dblscan);
+        config_set_int(CFG_MACHINE, NULL, "video_fullscreen_scale", video_fullscreen_scale);
         config_set_int(CFG_MACHINE, NULL, "fast_disc", fastdisc);
         config_set_int(CFG_MACHINE, NULL, "fdc_type", fdctype);
         config_set_int(CFG_MACHINE, NULL, "rom_set", romset);

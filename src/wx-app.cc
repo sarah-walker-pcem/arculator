@@ -128,6 +128,15 @@ void Frame::UpdateMenu(wxMenu *menu)
         else
                 item = ((wxMenu*)menu)->FindItem(XRCID("IDM_VIDEO_TV"));
         item->Check(true);
+        if (video_fullscreen_scale == FULLSCR_SCALE_FULL)
+                item = ((wxMenu*)menu)->FindItem(XRCID("IDM_VIDEO_FS_FULL"));
+        else if (video_fullscreen_scale == FULLSCR_SCALE_43)
+                item = ((wxMenu*)menu)->FindItem(XRCID("IDM_VIDEO_FS_43"));
+        else if (video_fullscreen_scale == FULLSCR_SCALE_SQ)
+                item = ((wxMenu*)menu)->FindItem(XRCID("IDM_VIDEO_FS_SQ"));
+        else if (video_fullscreen_scale == FULLSCR_SCALE_INT)
+                item = ((wxMenu*)menu)->FindItem(XRCID("IDM_VIDEO_FS_INT"));
+        item->Check(true);
 }
 
 void Frame::OnPopupMenuEvent(PopupMenuEvent &event)
@@ -273,6 +282,34 @@ void Frame::OnMenuCommand(wxCommandEvent &event)
                 item->Check(true);
 
                 arc_set_display_mode(DISPLAY_MODE_TV);
+        }
+        else if (event.GetId() == XRCID("IDM_VIDEO_FS_FULL"))
+        {
+                wxMenuItem *item = ((wxMenu*)menu)->FindItem(event.GetId());
+                item->Check(true);
+
+                video_fullscreen_scale = FULLSCR_SCALE_FULL;
+        }
+        else if (event.GetId() == XRCID("IDM_VIDEO_FS_43"))
+        {
+                wxMenuItem *item = ((wxMenu*)menu)->FindItem(event.GetId());
+                item->Check(true);
+
+                video_fullscreen_scale = FULLSCR_SCALE_43;
+        }
+        else if (event.GetId() == XRCID("IDM_VIDEO_FS_SQ"))
+        {
+                wxMenuItem *item = ((wxMenu*)menu)->FindItem(event.GetId());
+                item->Check(true);
+
+                video_fullscreen_scale = FULLSCR_SCALE_SQ;
+        }
+        else if (event.GetId() == XRCID("IDM_VIDEO_FS_INT"))
+        {
+                wxMenuItem *item = ((wxMenu*)menu)->FindItem(event.GetId());
+                item->Check(true);
+                
+                video_fullscreen_scale = FULLSCR_SCALE_INT;
         }
         else if (event.GetId() == XRCID("IDM_BLIT_SCAN"))
         {

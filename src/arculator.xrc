@@ -128,6 +128,25 @@
 				</object>
 			</object>
 			<object class="separator"/>
+			<object class="wxMenu" name="IDM_VIDEO_RENDER_DRIVER">
+				<label>_Render driver</label>
+				<object class="wxMenuItem" name="IDM_DRIVER_AUTO">
+					<label>_Auto</label>
+					<radio>1</radio>
+				</object>
+				<object class="wxMenuItem" name="IDM_DRIVER_DIRECT3D">
+					<label>_Direct3D</label>
+					<radio>1</radio>
+				</object>
+				<object class="wxMenuItem" name="IDM_DRIVER_OPENGL">
+					<label>_OpenGL</label>
+					<radio>1</radio>
+				</object>
+				<object class="wxMenuItem" name="IDM_DRIVER_SOFTWARE">
+					<label>_Software</label>
+					<radio>1</radio>
+				</object>
+			</object>
 			<object class="wxMenu">
 				<label>Scale filtering</label>
 				<object class="wxMenuItem" name="IDM_VIDEO_SCALE_NEAREST">

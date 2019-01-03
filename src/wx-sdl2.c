@@ -56,6 +56,8 @@ static int arc_main_thread(void *p)
         }
         input_init();
 
+        arc_update_menu();
+        
         struct timeval tp;
         time_t last_seconds = 0;
 

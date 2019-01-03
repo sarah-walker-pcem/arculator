@@ -6,6 +6,7 @@
 #include "config.h"
 #include "fpa.h"
 #include "memc.h"
+#include "plat_video.h"
 #include "video.h"
 
 char hd_fn[2][512];
@@ -510,7 +511,7 @@ void config_save(int is_global, char *fn)
 void loadconfig()
 {
         char config_file[512];
-        const char *p;
+        char *p;
 
         append_filename(config_file, exname, "arc.cfg", 511);
         rpclog("config_file=%s\n", config_file);
@@ -545,6 +546,8 @@ void loadconfig()
                 strcpy(hd_fn[1], p);
         else
                 hd_fn[1][0] = 0;
+        p = (char *)config_get_string(CFG_MACHINE, NULL, "renderer_driver", "auto");
+        selected_video_renderer = video_renderer_get_id(p);
 }
 
 void saveconfig()
@@ -575,6 +578,7 @@ void saveconfig()
         config_set_int(CFG_GLOBAL, NULL, "stereo", stereo);
         config_set_string(CFG_MACHINE, NULL, "hd4_fn", hd_fn[0]);
         config_set_string(CFG_MACHINE, NULL, "hd5_fn", hd_fn[1]);
+        config_set_string(CFG_MACHINE, NULL, "renderer_driver", video_renderer_get_name(selected_video_renderer));
         
         config_save(CFG_GLOBAL, config_file);
         config_save(CFG_MACHINE, machine_config_file);

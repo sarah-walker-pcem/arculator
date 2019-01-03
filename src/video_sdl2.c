@@ -18,12 +18,52 @@ static SDL_Renderer *renderer = NULL;
 SDL_Window *sdl_main_window = NULL;
 static SDL_Rect texture_rect;
 
+int selected_video_renderer;
+
+typedef struct sdl_render_driver_t
+{
+        int id;
+        char *sdl_id;
+        int available;
+} sdl_render_driver_t;
+
+static sdl_render_driver_t sdl_render_drivers[] =
+{
+        {RENDERER_AUTO, "auto", 1},
+        {RENDERER_DIRECT3D, "direct3d", 0},
+        {RENDERER_OPENGL, "opengl", 0},
+        {RENDERER_SOFTWARE, "software", 0}
+};
+
+int video_renderer_available(int id)
+{
+        return sdl_render_drivers[id].available;
+}
+
+char *video_renderer_get_name(int id)
+{
+        return sdl_render_drivers[id].sdl_id;
+}
+int video_renderer_get_id(char *name)
+{
+        int c;
+        
+        for (c = 0; c < RENDERER_COUNT; c++)
+        {
+                if (!strcmp(sdl_render_drivers[c].sdl_id, name))
+                        return c;
+        }
+        
+        return 0;
+}
+
 static int video_renderer_create(void *main_window)
 {
         SDL_Rect screen_rect;
 
         screen_rect.w = screen_rect.h = 2048;
 
+        SDL_SetHint(SDL_HINT_RENDER_DRIVER, sdl_render_drivers[selected_video_renderer].sdl_id);
         SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, video_linear_filtering ? "1" : "0");
 
         rpclog("create SDL renderer\n");
@@ -54,10 +94,24 @@ static int video_renderer_create(void *main_window)
 
 int video_renderer_init(void *main_window)
 {
+        int c, d;
+        
         rpclog("video_renderer_init()\n");
         SDL_SetHint(SDL_HINT_WINDOWS_DISABLE_THREAD_NAMING, "1");
         SDL_Init(SDL_INIT_EVERYTHING);
 
+        for (c = 0; c < SDL_GetNumRenderDrivers(); c++)
+        {
+                SDL_RendererInfo renderInfo;
+                SDL_GetRenderDriverInfo(c, &renderInfo);
+
+                for (d = 0; d < RENDERER_COUNT; d++)
+                {
+                        if (!strcmp(sdl_render_drivers[d].sdl_id, renderInfo.name))
+                                sdl_render_drivers[d].available = 1;
+                }
+        }
+        
         rpclog("create SDL window\n");
         if (main_window == NULL)
         {

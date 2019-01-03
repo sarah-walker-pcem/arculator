@@ -1,12 +1,11 @@
-#include "wx-app.h"
-
-#include <wx/xrc/xmlres.h>
-#include <wx/event.h>
-
 #include <sstream>
 
 #ifdef _WIN32
 #define BITMAP WINDOWS_BITMAP
+#include "wx-app.h"
+#include <wx/xrc/xmlres.h>
+#include <wx/event.h>
+
 #include <windows.h>
 #include <windowsx.h>
 #undef BITMAP
@@ -18,6 +17,7 @@
 extern "C"
 {
         #include "arc.h"
+        #include "plat_video.h"
         #include "video.h"
 }
 
@@ -142,6 +142,19 @@ void Frame::UpdateMenu(wxMenu *menu)
         else
                 item = ((wxMenu*)menu)->FindItem(XRCID("IDM_VIDEO_SCALE_NEAREST"));
         item->Check(true);
+        
+        item = ((wxMenu*)menu)->FindItem(XRCID("IDM_DRIVER_AUTO"));
+        item->Enable(video_renderer_available(RENDERER_AUTO) ? true : false);
+        item->Check((selected_video_renderer == RENDERER_AUTO) ? true : false);
+        item = ((wxMenu*)menu)->FindItem(XRCID("IDM_DRIVER_DIRECT3D"));
+        item->Enable(video_renderer_available(RENDERER_DIRECT3D) ? true : false);
+        item->Check((selected_video_renderer == RENDERER_DIRECT3D) ? true : false);
+        item = ((wxMenu*)menu)->FindItem(XRCID("IDM_DRIVER_OPENGL"));
+        item->Enable(video_renderer_available(RENDERER_OPENGL) ? true : false);
+        item->Check((selected_video_renderer == RENDERER_OPENGL) ? true : false);
+        item = ((wxMenu*)menu)->FindItem(XRCID("IDM_DRIVER_SOFTWARE"));
+        item->Enable(video_renderer_available(RENDERER_SOFTWARE) ? true : false);
+        item->Check((selected_video_renderer == RENDERER_SOFTWARE) ? true : false);
 }
 
 void Frame::OnPopupMenuEvent(PopupMenuEvent &event)
@@ -287,6 +300,38 @@ void Frame::OnMenuCommand(wxCommandEvent &event)
                 item->Check(true);
 
                 arc_set_display_mode(DISPLAY_MODE_TV);
+        }
+        else if (event.GetId() == XRCID("IDM_DRIVER_AUTO"))
+        {
+                wxMenuItem *item = ((wxMenu*)menu)->FindItem(event.GetId());
+                item->Check(true);
+
+                selected_video_renderer = RENDERER_AUTO;
+                arc_renderer_reset();
+        }
+        else if (event.GetId() == XRCID("IDM_DRIVER_DIRECT3D"))
+        {
+                wxMenuItem *item = ((wxMenu*)menu)->FindItem(event.GetId());
+                item->Check(true);
+
+                selected_video_renderer = RENDERER_DIRECT3D;
+                arc_renderer_reset();
+        }
+        else if (event.GetId() == XRCID("IDM_DRIVER_OPENGL"))
+        {
+                wxMenuItem *item = ((wxMenu*)menu)->FindItem(event.GetId());
+                item->Check(true);
+
+                selected_video_renderer = RENDERER_OPENGL;
+                arc_renderer_reset();
+        }
+        else if (event.GetId() == XRCID("IDM_DRIVER_SOFTWARE"))
+        {
+                wxMenuItem *item = ((wxMenu*)menu)->FindItem(event.GetId());
+                item->Check(true);
+
+                selected_video_renderer = RENDERER_SOFTWARE;
+                arc_renderer_reset();
         }
         else if (event.GetId() == XRCID("IDM_VIDEO_SCALE_NEAREST"))
         {

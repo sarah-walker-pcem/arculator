@@ -134,6 +134,8 @@ void mainthread(LPVOID param)
                 exit(-1);
         }
         input_init();
+        
+        arc_update_menu();
 
         old_time = GetTickCount();
         while (!quited)

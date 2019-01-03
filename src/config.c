@@ -519,47 +519,20 @@ void loadconfig()
         config_load(CFG_MACHINE, machine_config_file);
         config_dump(CFG_MACHINE);
 
-        p=config_get_string(CFG_GLOBAL, NULL,"sound_enable",NULL);
-        if (!p || strcmp(p,"0")) soundena=1;
-        else                     soundena=0;
+        soundena = config_get_int(CFG_GLOBAL, NULL, "sound_enable", 1);
         display_mode = config_get_int(CFG_MACHINE, NULL, "display_mode", DISPLAY_MODE_NO_BORDERS);
         arm_cpu_type = config_get_int(CFG_MACHINE, NULL, "cpu_type", 0);
         memc_type = config_get_int(CFG_MACHINE, NULL, "memc_type", 0);
         fpaena = config_get_int(CFG_MACHINE, NULL, "fpa", 0);
         fpu_type = config_get_int(CFG_MACHINE, NULL, "fpu_type", 0);
-        p=config_get_string(CFG_MACHINE, NULL,"hires",NULL);
-        if (!p || strcmp(p,"1")) hires=0;
-        else                     hires=1;
-        p=config_get_string(CFG_GLOBAL, NULL,"first_fullscreen",NULL);
-        if (!p || strcmp(p,"0")) firstfull=1;
-        else                     firstfull=0;
-        p=config_get_string(CFG_MACHINE, NULL,"double_scan",NULL);
-        if (!p || strcmp(p,"0")) dblscan=1;
-        else                     dblscan=0;
-        p=config_get_string(CFG_MACHINE, NULL,"fast_disc",NULL);
-        if (!p || strcmp(p,"0")) fastdisc=1;
-        else                     fastdisc=0;
-        p=config_get_string(CFG_MACHINE, NULL,"fdc_type",NULL);
-        if (!p || strcmp(p,"0")) fdctype=1;
-        else                     fdctype=0;
-        p=config_get_string(CFG_GLOBAL, NULL,"stereo",NULL);
-        if (!p || strcmp(p,"0")) stereo=1;
-        else                     stereo=0;
-        p = (char *)config_get_string(CFG_MACHINE, NULL,"mem_size",NULL);
-        if (!p || !strcmp(p,"4096")) memsize=4096;
-        else if (!strcmp(p,"8192"))  memsize=8192;
-        else if (!strcmp(p,"2048"))  memsize=2048;
-        else if (!strcmp(p,"1024"))  memsize=1024;
-        else if (!strcmp(p,"512"))   memsize=512;
-        else                         memsize=16384;
-        p = (char *)config_get_string(CFG_MACHINE, NULL,"rom_set",NULL);
-        if (!p || !strcmp(p,"3")) romset=3;
-        else if (!strcmp(p,"1"))  romset=1;
-        else if (!strcmp(p,"2"))  romset=2;
-        else if (!strcmp(p,"4"))  romset=4;
-        else if (!strcmp(p,"5"))  romset=5;
-        else if (!strcmp(p,"6"))  romset=6;
-        else                      romset=0;
+        hires = config_get_int(CFG_MACHINE, NULL, "hires", 0);
+        firstfull = config_get_int(CFG_GLOBAL, NULL, "first_fullscreen", 1);
+        dblscan = config_get_int(CFG_MACHINE, NULL, "double_scan", 1);
+        fastdisc = config_get_int(CFG_MACHINE, NULL, "fast_disc", 1);
+        fdctype = config_get_int(CFG_MACHINE, NULL, "fdc_type", 1);
+        stereo = config_get_int(CFG_GLOBAL, NULL, "stereo", 1);
+        memsize = config_get_int(CFG_MACHINE, NULL, "mem_size", 4096);
+        romset = config_get_int(CFG_MACHINE, NULL, "rom_set", 3);
         p = (char *)config_get_string(CFG_MACHINE, NULL,"hd4_fn",NULL);
         if (p)
                 strcpy(hd_fn[0], p);
@@ -574,7 +547,6 @@ void loadconfig()
 
 void saveconfig()
 {
-        char s[80];
         char config_file[512];
 
         append_filename(config_file, exname, "arc.cfg", 511);
@@ -583,29 +555,20 @@ void saveconfig()
         config_set_string(CFG_MACHINE, NULL,"disc_name_1",discname[1]);
         config_set_string(CFG_MACHINE, NULL,"disc_name_2",discname[2]);
         config_set_string(CFG_MACHINE, NULL,"disc_name_3",discname[3]);
-        sprintf(s,"%i",soundena);
-        config_set_string(CFG_GLOBAL, NULL,"sound_enable",s);
-        sprintf(s,"%i",memsize);
-        config_set_string(CFG_MACHINE, NULL,"mem_size",s);
+        config_set_int(CFG_GLOBAL, NULL, "sound_enable", soundena);
+        config_set_int(CFG_MACHINE, NULL, "mem_size", memsize);
         config_set_int(CFG_MACHINE, NULL, "cpu_type", arm_cpu_type);
         config_set_int(CFG_MACHINE, NULL, "memc_type", memc_type);
         config_set_int(CFG_MACHINE, NULL, "fpa", fpaena);
         config_set_int(CFG_MACHINE, NULL, "fpu_type", fpu_type);
-        sprintf(s,"%i",hires);
-        config_set_string(CFG_MACHINE, NULL,"hires",s);
-        sprintf(s,"%i",fullborders);
+        config_set_int(CFG_MACHINE, NULL, "hires",hires);
         config_set_int(CFG_MACHINE, NULL, "display_mode", display_mode);
-        config_set_string(CFG_GLOBAL, NULL,"first_fullscreen",s);
-        sprintf(s,"%i",dblscan);
-        config_set_string(CFG_MACHINE, NULL,"double_scan",s);
-        sprintf(s,"%i",fastdisc);
-        config_set_string(CFG_MACHINE, NULL,"fast_disc",s);
-        sprintf(s,"%i",fdctype);
-        config_set_string(CFG_MACHINE, NULL,"fdc_type",s);
-        sprintf(s,"%i",romset);
-        config_set_string(CFG_MACHINE, NULL,"rom_set",s);
-        sprintf(s,"%i",stereo);
-        config_set_string(CFG_GLOBAL, NULL,"stereo",s);
+        config_set_int(CFG_GLOBAL, NULL, "first_fullscreen", firstfull);
+        config_set_int(CFG_MACHINE, NULL, "double_scan", dblscan);
+        config_set_int(CFG_MACHINE, NULL, "fast_disc", fastdisc);
+        config_set_int(CFG_MACHINE, NULL, "fdc_type", fdctype);
+        config_set_int(CFG_MACHINE, NULL, "rom_set", romset);
+        config_set_int(CFG_GLOBAL, NULL, "stereo", stereo);
         config_set_string(CFG_MACHINE, NULL, "hd4_fn", hd_fn[0]);
         config_set_string(CFG_MACHINE, NULL, "hd5_fn", hd_fn[1]);
         

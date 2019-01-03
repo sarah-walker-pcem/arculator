@@ -97,7 +97,7 @@ public:
 private:
 	void OnOK(wxCommandEvent &event);
 	void OnCancel(wxCommandEvent &event);
-	void OnComboPreset(wxCommandEvent &event);
+	void OnPreset(wxCommandEvent &event);
 	void OnComboCPU(wxCommandEvent &event);
 	void OnComboFPU(wxCommandEvent &event);
 	void OnComboIO(wxCommandEvent &event);
@@ -119,14 +119,12 @@ private:
 
 void ConfigDialog::CommonInit(wxWindow *parent, bool is_running)
 {
-        int c;
-
         running = is_running;
         wxXmlResource::Get()->LoadDialog(this, parent, "ConfigureDlg");
 
         Bind(wxEVT_BUTTON, &ConfigDialog::OnOK, this, wxID_OK);
         Bind(wxEVT_BUTTON, &ConfigDialog::OnCancel, this, wxID_CANCEL);
-        Bind(wxEVT_COMBOBOX, &ConfigDialog::OnComboPreset, this, XRCID("IDC_COMBO_PRESET"));
+        Bind(wxEVT_BUTTON, &ConfigDialog::OnPreset, this, XRCID("IDC_LOAD_PRESET"));
         Bind(wxEVT_COMBOBOX, &ConfigDialog::OnComboCPU, this, XRCID("IDC_COMBO_CPU"));
         Bind(wxEVT_COMBOBOX, &ConfigDialog::OnComboFPU, this, XRCID("IDC_COMBO_FPU"));
         Bind(wxEVT_COMBOBOX, &ConfigDialog::OnComboIO, this, XRCID("IDC_COMBO_IO"));
@@ -140,13 +138,6 @@ void ConfigDialog::CommonInit(wxWindow *parent, bool is_running)
         Bind(wxEVT_BUTTON, &ConfigDialog::OnHDEject, this, XRCID("IDC_EJECT_HD4"));
         Bind(wxEVT_BUTTON, &ConfigDialog::OnHDEject, this, XRCID("IDC_EJECT_HD5"));
         
-        wxComboBox *cbox = (wxComboBox *)this->FindWindow(XRCID("IDC_COMBO_PRESET"));
-        cbox->SetValue("");
-        cbox->Clear();
-        c = 0;
-        while (presets[c].name[0])
-                cbox->Append(presets[c++].name);
-
         hd_fns[0] = wxString(hd_fn[0]);
         hd_fns[1] = wxString(hd_fn[1]);
 
@@ -395,18 +386,20 @@ void ConfigDialog::OnCancel(wxCommandEvent &event)
 {
         EndModal(-1);
 }
-void ConfigDialog::OnComboPreset(wxCommandEvent &event)
+void ConfigDialog::OnPreset(wxCommandEvent &event)
 {
-        wxComboBox *cbox = (wxComboBox *)this->FindWindow(event.GetId());
-        int preset = cbox->GetCurrentSelection();
+        int preset = ShowPresetList();
+        
+        if (preset != -1)
+        {
+                config_cpu  = presets[preset].cpu;
+                config_mem  = presets[preset].mem;
+                config_memc = presets[preset].memc;
+                config_fpu  = presets[preset].fpu;
+                config_io   = presets[preset].io;
 
-        config_cpu  = presets[preset].cpu;
-        config_mem  = presets[preset].mem;
-        config_memc = presets[preset].memc;
-        config_fpu  = presets[preset].fpu;
-        config_io   = presets[preset].io;
-
-        UpdateList(config_cpu, config_mem, config_memc, config_fpu, config_io);
+                UpdateList(config_cpu, config_mem, config_memc, config_fpu, config_io);
+        }
 }
 
 void ConfigDialog::OnComboCPU(wxCommandEvent &event)

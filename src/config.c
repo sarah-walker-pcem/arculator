@@ -519,9 +519,6 @@ void loadconfig()
         config_load(CFG_MACHINE, machine_config_file);
         config_dump(CFG_MACHINE);
 
-        p=config_get_string(CFG_GLOBAL, NULL,"limit_speed",NULL);
-        if (!p || strcmp(p,"0")) limitspeed=1;
-        else                     limitspeed=0;
         p=config_get_string(CFG_GLOBAL, NULL,"sound_enable",NULL);
         if (!p || strcmp(p,"0")) soundena=1;
         else                     soundena=0;
@@ -586,8 +583,6 @@ void saveconfig()
         config_set_string(CFG_MACHINE, NULL,"disc_name_1",discname[1]);
         config_set_string(CFG_MACHINE, NULL,"disc_name_2",discname[2]);
         config_set_string(CFG_MACHINE, NULL,"disc_name_3",discname[3]);
-        sprintf(s,"%i",limitspeed);
-        config_set_string(CFG_GLOBAL, NULL,"limit_speed",s);
         sprintf(s,"%i",soundena);
         config_set_string(CFG_GLOBAL, NULL,"sound_enable",s);
         sprintf(s,"%i",memsize);

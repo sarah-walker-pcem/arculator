@@ -77,10 +77,6 @@
 				<label>S_tereo sound</label>
 				<checkable>1</checkable>
 			</object>
-			<object class="wxMenuItem" name="IDM_OPTIONS_LIMIT">
-				<label>_Limit speed</label>
-				<checkable>1</checkable>
-			</object>
 		</object>
 		<object class="wxMenu">
 			<label>_Machine</label>

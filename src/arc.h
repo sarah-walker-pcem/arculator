@@ -269,8 +269,6 @@ extern int hdensity;
 
 
 
-extern int limitspeed;
-
 extern int soundena,stereo;
 
 extern int hires;

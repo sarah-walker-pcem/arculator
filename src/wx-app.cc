@@ -110,8 +110,6 @@ void Frame::UpdateMenu(wxMenu *menu)
         item->Check(soundena);
         item = ((wxMenu*)menu)->FindItem(XRCID("IDM_OPTIONS_STEREO"));
         item->Check(stereo);
-        item = ((wxMenu*)menu)->FindItem(XRCID("IDM_OPTIONS_LIMIT"));
-        item->Check(limitspeed);
 
         if (dblscan)
                 item = ((wxMenu*)menu)->FindItem(XRCID("IDM_BLIT_SCALE"));
@@ -223,13 +221,6 @@ void Frame::OnMenuCommand(wxCommandEvent &event)
                 wxMenuItem *item = ((wxMenu*)menu)->FindItem(event.GetId());
                 item->Check(stereo);
         }
-        else if (event.GetId() == XRCID("IDM_OPTIONS_LIMIT"))
-        {
-                limitspeed ^= 1;
-                
-                wxMenuItem *item = ((wxMenu*)menu)->FindItem(event.GetId());
-                item->Check(limitspeed);
-        }
         else if (event.GetId() == XRCID("IDM_MACHINE_CONFIGURE"))
         {
                 arc_pause_main_thread();
@@ -239,49 +230,49 @@ void Frame::OnMenuCommand(wxCommandEvent &event)
         else if (event.GetId() == XRCID("IDM_MONITOR_NORMAL"))
         {
                 wxMenuItem *item = ((wxMenu*)menu)->FindItem(event.GetId());
-                item->Check(limitspeed);
+                item->Check(true);
                 
                 arc_set_hires(0);
         }
         else if (event.GetId() == XRCID("IDM_MONITOR_MONO"))
         {
                 wxMenuItem *item = ((wxMenu*)menu)->FindItem(event.GetId());
-                item->Check(limitspeed);
+                item->Check(true);
                 
                 arc_set_hires(1);
         }
         else if (event.GetId() == XRCID("IDM_VIDEO_NO_BORDERS"))
         {
                 wxMenuItem *item = ((wxMenu*)menu)->FindItem(event.GetId());
-                item->Check(limitspeed);
+                item->Check(true);
                 
                 arc_set_display_mode(DISPLAY_MODE_NO_BORDERS);
         }
         else if (event.GetId() == XRCID("IDM_VIDEO_NATIVE_BORDERS"))
         {
                 wxMenuItem *item = ((wxMenu*)menu)->FindItem(event.GetId());
-                item->Check(limitspeed);
+                item->Check(true);
                 
                 arc_set_display_mode(DISPLAY_MODE_NATIVE_BORDERS);
         }
         else if (event.GetId() == XRCID("IDM_VIDEO_TV"))
         {
                 wxMenuItem *item = ((wxMenu*)menu)->FindItem(event.GetId());
-                item->Check(limitspeed);
+                item->Check(true);
 
                 arc_set_display_mode(DISPLAY_MODE_TV);
         }
         else if (event.GetId() == XRCID("IDM_BLIT_SCAN"))
         {
                 wxMenuItem *item = ((wxMenu*)menu)->FindItem(event.GetId());
-                item->Check(limitspeed);
+                item->Check(true);
                 
                 arc_set_dblscan(0);
         }
         else if (event.GetId() == XRCID("IDM_BLIT_SCALE"))
         {
                 wxMenuItem *item = ((wxMenu*)menu)->FindItem(event.GetId());
-                item->Check(limitspeed);
+                item->Check(true);
 
                 arc_set_dblscan(1);
         }

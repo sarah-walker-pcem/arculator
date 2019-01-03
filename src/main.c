@@ -133,8 +133,6 @@ void error(const char *format, ...)
    exit(-1);
 }
 
-int limitspeed;
-
 /*Preference order : ROS3, ROS2, Arthur, Poizone, Erotactic/Tictac
   ROS3 with WD1772 is not considered, if ROS3 is available run with 82c711 as
   this is of more use to most users*/
@@ -205,7 +203,6 @@ void arc_init()
 
         fullscreen=0;
         //mousehack=0;
-        limitspeed=1;
         reinitvideo();
         if (soundena) 
            al_init();

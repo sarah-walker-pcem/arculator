@@ -225,6 +225,9 @@ void video_renderer_update(BITMAP *src, int src_x, int src_y, int dest_x, int de
         if ((texture_rect.y + texture_rect.h) > 2047)
                 texture_rect.h = 2048 - texture_rect.y;
 
+        if (texture_rect.w <= 0 || texture_rect.h <= 0)
+                return;
+                
         LOG_VIDEO_FRAMES("SDL_UpdateTexture (%d, %d)+(%d, %d) from src (%d, %d) w %d\n",
                 texture_rect.x, texture_rect.y,
                 texture_rect.w, texture_rect.h,

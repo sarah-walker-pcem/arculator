@@ -41,176 +41,163 @@
 
 #define DMA_MODE_PIO 0
 
-struct
-{
-        uint8_t aux_status;
-        uint8_t cdb[12];
-        uint8_t command;
-        uint8_t command_phase;
-        uint8_t ctrl;
-        uint8_t destid;
-        uint8_t ownid;
-        uint8_t status;
-        uint8_t target_status;
-        uint32_t transfer_count;
-        
-        uint8_t fifo[12];
-        int fifo_read, fifo_write;
-        
-        int disconnect_pending;
-
-        uint8_t info;
-        
-        int addr_reg;
-        podule *p;
-} wd;
-
 static scsi_device_t *devices[8];
 static void *device_data[8];
 
-void wd33c93a_init()
+void wd33c93a_init(wd33c93a_t *wd, podule_t *podule, d71071l_t *dma)
 {
-        memset(&wd, 0, sizeof(wd));
+        memset(wd, 0, sizeof(wd33c93a_t));
+        wd->podule = podule;
+        wd->dma = dma;
         memset(devices, 0, sizeof(devices));
         
         devices[0] = &scsi_hd;
-        device_data[0] = devices[0]->init();
+        device_data[0] = devices[0]->init(wd);
 }
 
-int scsi_add_data(uint8_t val)
+int scsi_add_data(void *controller_p, uint8_t val)
 {
-        if (wd.command & CMD_SBT)
+        wd33c93a_t *wd = controller_p;
+        
+        if (wd->command & CMD_SBT)
         {
-                wd.fifo[(wd.fifo_write++) % 12] = val;
+                wd->fifo[(wd->fifo_write++) % 12] = val;
 
                 aka31_log("Command complete\n");
-                switch (wd.command & CMD_MASK)
+                switch (wd->command & CMD_MASK)
                 {
                         case CMD_TRANSFER_INFO:
-                        wd.status = 0x18;
+                        wd->status = 0x18;
                         break;
                         default:
-                        wd.status = 0x16;
+                        wd->status = 0x16;
                         break;
                 }
-                wd.aux_status = AUX_STATUS_DBR;
-//                wd.p->irq = 1;
+                wd->aux_status = AUX_STATUS_DBR;
+//                wd->p->irq = 1;
         }
         else
-//        if (DMA_MODE(wd.ctrl) == DMA_MODE_PIO)
+//        if (DMA_MODE(wd->ctrl) == DMA_MODE_PIO)
         {
-                aka31_log("scsi_add_data: transfer_count=%d\n", wd.transfer_count);
-                if (dma_write(0, val, wd.p))
+                aka31_log("scsi_add_data: transfer_count=%d\n", wd->transfer_count);
+                if (dma_write(wd->dma, 0, val))
                 {
                         aka31_log("No data\n");
                         return -1;
                 }
-//                wd.fifo[(wd.fifo_write++) % 12] = val;
-                if (wd.transfer_count)
-                        wd.transfer_count--;
-                if (!wd.transfer_count)
+//                wd->fifo[(wd->fifo_write++) % 12] = val;
+                if (wd->transfer_count)
+                        wd->transfer_count--;
+                if (!wd->transfer_count)
                 {
                         aka31_log("Command complete\n");
-                        switch (wd.command & CMD_MASK)
+                        switch (wd->command & CMD_MASK)
                         {
                                 case CMD_TRANSFER_INFO:
-                                wd.status = 0x18;
+                                wd->status = 0x18;
                                 break;
                                 default:
-                                wd.status = 0x16;
+                                wd->status = 0x16;
                                 break;
                         }
-                        wd.aux_status = AUX_STATUS_INT;
-                        aka31_sbic_int(wd.p);
+                        wd->aux_status = AUX_STATUS_INT;
+                        aka31_sbic_int(wd->podule);
                         return 0x100;
                 }
         }
         return 0;
 }
 
-int scsi_get_data()
+int scsi_get_data(void *controller_p)
 {
-        int val = dma_read(0, wd.p);
+        wd33c93a_t *wd = controller_p;
+        int val = dma_read(wd->dma, 0);
         
         if (val == -1)
                 return -1;
 
-//                wd.fifo[(wd.fifo_write++) % 12] = val;
-        if (wd.transfer_count)
-                wd.transfer_count--;
-        if (!wd.transfer_count)
+//                wd->fifo[(wd->fifo_write++) % 12] = val;
+        if (wd->transfer_count)
+                wd->transfer_count--;
+        if (!wd->transfer_count)
         {
                 aka31_log("Command complete\n");
-                switch (wd.command & CMD_MASK)
+                switch (wd->command & CMD_MASK)
                 {
                         case CMD_TRANSFER_INFO:
-                        wd.status = 0x18;
+                        wd->status = 0x18;
                         break;
                         default:
-                        wd.status = 0x16;
+                        wd->status = 0x16;
                         break;
                 }
-                wd.aux_status = AUX_STATUS_INT;
-                aka31_sbic_int(wd.p);
+                wd->aux_status = AUX_STATUS_INT;
+                aka31_sbic_int(wd->podule);
                 return val | 0x100;
         }
         
         return val;
 }
 
-void scsi_send_complete()
+void scsi_send_complete(void *controller_p)
 {
-        wd.status = 0x16;
-        wd.aux_status = AUX_STATUS_INT;
-        aka31_sbic_int(wd.p);
+        wd33c93a_t *wd = controller_p;
+        
+        wd->status = 0x16;
+        wd->aux_status = AUX_STATUS_INT;
+        aka31_sbic_int(wd->podule);
 }
 
-void scsi_illegal_field()
+void scsi_illegal_field(void *controller_p)
 {
-        wd.status = 0x4b;
-        wd.aux_status = AUX_STATUS_INT;
-        aka31_sbic_int(wd.p);
-        wd.info = 2;
+        wd33c93a_t *wd = controller_p;
+        
+        wd->status = 0x4b;
+        wd->aux_status = AUX_STATUS_INT;
+        aka31_sbic_int(wd->podule);
+        wd->info = 2;
 }
 
-void scsi_set_phase(uint8_t phase)
+void scsi_set_phase(void *controller_p, uint8_t phase)
 {
-        wd.command_phase = phase;
+        wd33c93a_t *wd = controller_p;
+        
+        wd->command_phase = phase;
 }
 
-void scsi_set_irq(uint8_t status)
+void scsi_set_irq(void *controller_p, uint8_t status)
 {
-        wd.status = status;
-        wd.aux_status = AUX_STATUS_INT;
-        aka31_sbic_int(wd.p);
+        wd33c93a_t *wd = controller_p;
+        
+        wd->status = status;
+        wd->aux_status = AUX_STATUS_INT;
+        aka31_sbic_int(wd->podule);
 }
 
-void wd33c93a_reset(podule *p)
+void wd33c93a_reset(wd33c93a_t *wd)
 {
 	aka31_log("wd33c93a_reset\n");
-	wd.aux_status = AUX_STATUS_INT;
-        wd.status = 0x00; /*Reset*/
-        aka31_sbic_int(wd.p);
+	wd->aux_status = AUX_STATUS_INT;
+        wd->status = 0x00; /*Reset*/
+        aka31_sbic_int(wd->podule);
 }
         
-void wd33c93a_poll(podule *p)
+void wd33c93a_poll(wd33c93a_t *wd)
 {
-        int id = wd.destid & 7;
+        int id = wd->destid & 7;
         
-        wd.p = p;
-        
-        if (wd.aux_status & AUX_STATUS_CIP)
+        if (wd->aux_status & AUX_STATUS_CIP)
         {
-                switch (wd.command & CMD_MASK)
+                switch (wd->command & CMD_MASK)
                 {
                         case CMD_RESET:
                         aka31_log("Reset command processed\n");
-                        wd.aux_status = AUX_STATUS_INT;
-                        if (wd.ownid & OWNID_EAF)
-                                wd.status = 0x01; /*Reset with advanced features enabled*/
+                        wd->aux_status = AUX_STATUS_INT;
+                        if (wd->ownid & OWNID_EAF)
+                                wd->status = 0x01; /*Reset with advanced features enabled*/
                         else
-                                wd.status = 0x00; /*Reset*/
-			aka31_sbic_int(wd.p);
+                                wd->status = 0x00; /*Reset*/
+			aka31_sbic_int(wd->podule);
                         break;
                         
                         case CMD_SEL_W_ATN_AND_TRANSFER:
@@ -218,121 +205,121 @@ void wd33c93a_poll(podule *p)
                         aka31_log("Sel and transfer command %i %p\n", id, (void *)devices[id]);
                         if (!devices[id])
                         {
-                                wd.aux_status = AUX_STATUS_INT;
-                                wd.status = 0x42; /*Timeout during Select*/
-                                wd.command_phase = 0;
-                                aka31_sbic_int(wd.p);
+                                wd->aux_status = AUX_STATUS_INT;
+                                wd->status = 0x42; /*Timeout during Select*/
+                                wd->command_phase = 0;
+                                aka31_sbic_int(wd->podule);
                         }
                         else
                         {
-                                if (devices[id]->command(wd.cdb, device_data[0]))
+                                if (devices[id]->command(wd->cdb, device_data[0]))
                                 {
                                         aka31_log("command over\n");
-                                        wd.aux_status &= ~AUX_STATUS_CIP;
-                                        wd.disconnect_pending = 15;
+                                        wd->aux_status &= ~AUX_STATUS_CIP;
+                                        wd->disconnect_pending = 15;
                                 }
                         }
                         break;
                         
                         case CMD_TRANSFER_INFO:
-                        scsi_add_data(wd.info);
-                        wd.aux_status &= ~AUX_STATUS_CIP;
-                        wd.disconnect_pending = 15;
+                        scsi_add_data(wd, wd->info);
+                        wd->aux_status &= ~AUX_STATUS_CIP;
+                        wd->disconnect_pending = 15;
                         break;
                 }
         }
-        else if (wd.disconnect_pending)
+        else if (wd->disconnect_pending)
         {
-                wd.disconnect_pending--;
-                if (!wd.disconnect_pending)
+                wd->disconnect_pending--;
+                if (!wd->disconnect_pending)
                 {
                         aka31_log("Disconnect IRQ\n");
-                        wd.status = 0x85;
-                        wd.aux_status = AUX_STATUS_INT | 1;
-                        wd.target_status = 0;
-                        aka31_sbic_int(wd.p);
+                        wd->status = 0x85;
+                        wd->aux_status = AUX_STATUS_INT | 1;
+                        wd->target_status = 0;
+                        aka31_sbic_int(wd->podule);
                 }
         }
 }
 
-void wd33c93a_write(uint32_t addr, uint8_t val, podule *p)
+void wd33c93a_write(wd33c93a_t *wd, uint32_t addr, uint8_t val)
 {
         int reg;
         aka31_log("wd33c93a_write %04x %02x\n", addr, val);
         if (!(addr & 4))
         {
-                wd.addr_reg = val & 0x1f;
+                wd->addr_reg = val & 0x1f;
                 return;
         }
 
-        reg = wd.addr_reg;
-        if (wd.addr_reg < 0x18)
-                wd.addr_reg = (wd.addr_reg + 1) & 0x1f;
+        reg = wd->addr_reg;
+        if (wd->addr_reg < 0x18)
+                wd->addr_reg = (wd->addr_reg + 1) & 0x1f;
         
         switch (reg)
         {
                 case REG_OWNID:
-                wd.ownid = val;
+                wd->ownid = val;
                 break;
                 case REG_CDB:
-                wd.cdb[0] = val;
+                wd->cdb[0] = val;
                 break;
                 case REG_CDB+1:
-                wd.cdb[1] = val;
+                wd->cdb[1] = val;
                 break;
                 case REG_CDB+2:
-                wd.cdb[2] = val;
+                wd->cdb[2] = val;
                 break;
                 case REG_CDB+3:
-                wd.cdb[3] = val;
+                wd->cdb[3] = val;
                 break;
                 case REG_CDB+4:
-                wd.cdb[4] = val;
+                wd->cdb[4] = val;
                 break;
                 case REG_CDB+5:
-                wd.cdb[5] = val;
+                wd->cdb[5] = val;
                 break;
                 case REG_CDB+6:
-                wd.cdb[6] = val;
+                wd->cdb[6] = val;
                 break;
                 case REG_CDB+7:
-                wd.cdb[7] = val;
+                wd->cdb[7] = val;
                 break;
                 case REG_CDB+8:
-                wd.cdb[8] = val;
+                wd->cdb[8] = val;
                 break;
                 case REG_CDB+9:
-                wd.cdb[9] = val;
+                wd->cdb[9] = val;
                 break;
                 case REG_CDB+10:
-                wd.cdb[10] = val;
+                wd->cdb[10] = val;
                 break;
                 case REG_CDB+11:
-                wd.cdb[11] = val;
+                wd->cdb[11] = val;
                 break;
 
                 case REG_TRANSFER:
-                wd.transfer_count = (wd.transfer_count & 0x00ffff) | (val << 16);
+                wd->transfer_count = (wd->transfer_count & 0x00ffff) | (val << 16);
                 break;
                 case REG_TRANSFER+1:
-                wd.transfer_count = (wd.transfer_count & 0xff00ff) | (val << 8);
+                wd->transfer_count = (wd->transfer_count & 0xff00ff) | (val << 8);
                 break;
                 case REG_TRANSFER+2:
-                wd.transfer_count = (wd.transfer_count & 0xffff00) | val;
+                wd->transfer_count = (wd->transfer_count & 0xffff00) | val;
                 break;
                 
                 case REG_DESTID:
-                wd.destid = val;
+                wd->destid = val;
                 break;
                 case REG_CMD:
-                if (wd.aux_status & AUX_STATUS_CIP)
+                if (wd->aux_status & AUX_STATUS_CIP)
                 {
                         aka31_log("Tried to start new command while old in progress\n");
                         return;
                 }
                 aka31_log("Start command %02x\n", val);
-                wd.aux_status |= AUX_STATUS_CIP;
-                wd.command = val;
+                wd->aux_status |= AUX_STATUS_CIP;
+                wd->command = val;
                 break;
                 
                 default:
@@ -341,81 +328,81 @@ void wd33c93a_write(uint32_t addr, uint8_t val, podule *p)
         }
 }
 
-uint8_t wd33c93a_read(uint32_t addr, podule *p)
+uint8_t wd33c93a_read(wd33c93a_t *wd, uint32_t addr)
 {
         int reg;
         
         if (!(addr & 4))
         {
-                uint8_t temp = wd.aux_status;
+                uint8_t temp = wd->aux_status;
                 
-                if (wd.fifo_read != wd.fifo_write)
+                if (wd->fifo_read != wd->fifo_write)
                         temp |= AUX_STATUS_DBR;
                         
                 return temp;
         }
         
-        reg = wd.addr_reg;
-        if (wd.addr_reg < 0x18)
-                wd.addr_reg = (wd.addr_reg + 1) & 0x1f;
+        reg = wd->addr_reg;
+        if (wd->addr_reg < 0x18)
+                wd->addr_reg = (wd->addr_reg + 1) & 0x1f;
         
         switch (reg)
         {
                 case REG_CMD_PHASE:
-                return wd.command_phase;
+                return wd->command_phase;
 
                 case REG_CDB:
-                return wd.cdb[0];
+                return wd->cdb[0];
                 case REG_CDB+1:
-                return wd.cdb[1];
+                return wd->cdb[1];
                 case REG_CDB+2:
-                return wd.cdb[2];
+                return wd->cdb[2];
                 case REG_CDB+3:
-                return wd.cdb[3];
+                return wd->cdb[3];
                 case REG_CDB+4:
-                return wd.cdb[4];
+                return wd->cdb[4];
                 case REG_CDB+5:
-                return wd.cdb[5];
+                return wd->cdb[5];
                 case REG_CDB+6:
-                return wd.cdb[6];
+                return wd->cdb[6];
                 case REG_CDB+7:
-                return wd.cdb[7];
+                return wd->cdb[7];
                 case REG_CDB+8:
-                return wd.cdb[8];
+                return wd->cdb[8];
                 case REG_CDB+9:
-                return wd.cdb[9];
+                return wd->cdb[9];
                 case REG_CDB+10:
-                return wd.cdb[10];
+                return wd->cdb[10];
                 case REG_CDB+11:
-                return wd.cdb[11];
+                return wd->cdb[11];
 
                 case REG_TARGETSTAT:
-                return wd.target_status;
+                return wd->target_status;
                 
                 case REG_TRANSFER:
-                return (wd.transfer_count >> 16) & 0xff;
+                return (wd->transfer_count >> 16) & 0xff;
                 case REG_TRANSFER+1:
-                return (wd.transfer_count >> 8) & 0xff;
+                return (wd->transfer_count >> 8) & 0xff;
                 case REG_TRANSFER+2:
-                return wd.transfer_count & 0xff;
+                return wd->transfer_count & 0xff;
 
                 case REG_DESTID:
-                return wd.destid;
+                return wd->destid;
 
                 case REG_STATUS:
-                wd.aux_status &= ~AUX_STATUS_INT;
-                aka31_sbic_int_clear(p);
+                wd->aux_status &= ~AUX_STATUS_INT;
+                aka31_sbic_int_clear(wd->podule);
 //                p->irq = 0;
-                aka31_log("Read status %02x\n", wd.status);
-                return wd.status;
+                aka31_log("Read status %02x\n", wd->status);
+                return wd->status;
                 
                 case REG_CMD:
-                return wd.command;
+                return wd->command;
                 
                 case REG_DATA:
-                if (wd.fifo_read != wd.fifo_write)
-                        return wd.fifo[(wd.fifo_write++) % 12];
-                return wd.fifo[wd.fifo_write % 12];
+                if (wd->fifo_read != wd->fifo_write)
+                        return wd->fifo[(wd->fifo_write++) % 12];
+                return wd->fifo[wd->fifo_write % 12];
                 
                 default:
                 aka31_log("Read from bad WD reg %02x\n", reg);

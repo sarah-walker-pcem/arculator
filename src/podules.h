@@ -1,65 +1,46 @@
 #ifndef PODULES_H
 #define PODULES_H
 
-void writepodulel(int num, int easi, uint32_t addr, uint32_t val);
-void writepodulew(int num, int easi, uint32_t addr, uint32_t val);
-void writepoduleb(int num, int easi, uint32_t addr, uint8_t val);
-uint32_t  readpodulel(int num, int easi, uint32_t addr);
-uint32_t readpodulew(int num, int easi, uint32_t addr);
-uint8_t  readpoduleb(int num, int easi, uint32_t addr);
+#include "podule_api.h"
 
-void podule_memc_writew(int num, uint32_t addr, uint32_t val);
-void podule_memc_writeb(int num, uint32_t addr, uint8_t  val);
-uint32_t podule_memc_readw(int num, uint32_t addr);
-uint8_t  podule_memc_readb(int num, uint32_t addr);
+void podules_init(void);
+void podules_reset(void);
+void podules_close(void);
+void podule_add(const podule_header_t *header);
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+void podule_write_b(int num, uint32_t addr, uint8_t val);
+void podule_write_w(int num, uint32_t addr, uint32_t val);
+uint8_t  podule_read_b(int num, uint32_t addr);
+uint32_t podule_read_w(int num, uint32_t addr);
 
-typedef struct podule
+void podule_memc_write_w(int num, uint32_t addr, uint32_t val);
+void podule_memc_write_b(int num, uint32_t addr, uint8_t  val);
+uint32_t podule_memc_read_w(int num, uint32_t addr);
+uint8_t  podule_memc_read_b(int num, uint32_t addr);
+
+void podule_build_list(void);
+const char *podule_get_name(int c);
+const char *podule_get_short_name(int c);
+uint32_t podule_get_flags(int c);
+
+extern char podule_names[4][16];
+
+typedef struct podule_internal_state_t
 {
-        void (*writeb)(struct podule *p, int easi, uint32_t addr, uint8_t val);
-        void (*writew)(struct podule *p, int easi, uint32_t addr, uint16_t val);
-        void (*writel)(struct podule *p, int easi, uint32_t addr, uint32_t val);
-        uint8_t  (*readb)(struct podule *p, int easi, uint32_t addr);
-        uint16_t (*readw)(struct podule *p, int easi, uint32_t addr);
-        uint32_t (*readl)(struct podule *p, int easi, uint32_t addr);
-        void (*memc_writeb)(struct podule *p, uint32_t addr, uint8_t val);
-        void (*memc_writew)(struct podule *p, uint32_t addr, uint16_t val);
-        uint8_t  (*memc_readb)(struct podule *p, uint32_t addr);
-        uint16_t (*memc_readw)(struct podule *p, uint32_t addr);
-        int (*timercallback)(struct podule *p);
-        void (*reset)(struct podule *p);
-        int irq,fiq;
-        int msectimer;
-        int broken;
-} podule;
-
-#ifdef __cplusplus
-}
-#endif
+        podule_t podule;
+        int irq, fiq;
+} podule_internal_state_t;
 
 void rethinkpoduleints(void);
-
-podule *addpodule(void (*writel)(podule *p, int easi, uint32_t addr, uint32_t val),
-              void (*writew)(podule *p, int easi, uint32_t addr, uint16_t val),
-              void (*writeb)(podule *p, int easi, uint32_t addr, uint8_t val),
-              uint32_t (*readl)(podule *p, int easi, uint32_t addr),
-              uint16_t (*readw)(podule *p, int easi, uint32_t addr),
-              uint8_t  (*readb)(podule *p, int easi, uint32_t addr),
-              void (*memc_writew)(podule *p, uint32_t addr, uint16_t val),
-              void (*memc_writeb)(podule *p, uint32_t addr, uint8_t val),
-              uint16_t (*memc_readw)(podule *p, uint32_t addr),
-              uint8_t  (*memc_readb)(podule *p, uint32_t addr),
-              int (*timercallback)(podule *p),
-              void (*reset)(podule *p),
-              int broken);
 
 void runpoduletimers(int t);
 void podules_reset(void);
 uint8_t podule_irq_state();
 
 void opendlls(void);
+
+void podule_set_irq(podule_t *podule, int state);
+
+extern const podule_callbacks_t podule_callbacks_def;
 
 #endif

@@ -1,4 +1,3 @@
-void resetarcrom();
+#include "podule_api.h"
 
-void writearcrom(uint32_t addr, uint8_t val);
-uint8_t readarcrom(uint32_t addr);
+const podule_header_t *arcrom_probe(const podule_callbacks_t *callbacks, char *path);

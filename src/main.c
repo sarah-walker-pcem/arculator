@@ -237,10 +237,8 @@ void arc_init()
         arc_set_cpu(arm_cpu_type, memc_type);
 
         resetst506();
-        resetics();
-        
-        podules_reset();
-        opendlls();
+
+        podules_init();
 }
 
 int speed_mhz;
@@ -264,8 +262,8 @@ void arc_reset()
         wd1770_reset();
         c82c711_fdc_reset();
         resetst506();
-        resetics();
-        podules_reset();
+        podules_close();
+        podules_init();
 }
 
 void arc_setspeed(int mhz)
@@ -361,6 +359,7 @@ void arc_close()
         dumpregs();
         savecmos();
         saveconfig();
+        podules_close();
         disc_close(0);
         disc_close(1);
         disc_close(2);

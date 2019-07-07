@@ -5,6 +5,7 @@ extern "C"
 {
         #include "arc.h"
         #include "config.h"
+        #include "podules.h"
         #include "soundopenal.h"
 }
 
@@ -15,6 +16,9 @@ int main(int argc, char **argv)
         strncpy(exname, argv[0], 511);
         char *p = (char *)get_filename(exname);
         *p = 0;
+
+        podule_build_list();
+        opendlls();
         
         wxApp::SetInstance(new App());
         wxEntry(argc, argv);

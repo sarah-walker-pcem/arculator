@@ -6,88 +6,80 @@
 #include "config.h"
 #include "podules.h"
 
-HINSTANCE hinstLib[8];
+static HINSTANCE hinstLib[8];
 
 static void closedlls(void)
 {
         int c;
-        for (c=0;c<8;c++)
+        
+        for (c = 0; c < 8; c++)
         {
-                if (hinstLib[c]) FreeLibrary(hinstLib[c]);
+                if (hinstLib[c])
+                        FreeLibrary(hinstLib[c]);
         }
 }
 
 void opendlls(void)
 {
-        char olddir[512],fn[512];
-        podule tempp;
+        char fn[512];
+        char podule_path[512];
         struct _finddata_t finddata;
         int file;
-        int (*InitDll)();
-        int finished;
         int dllnum=0;
-        int i;
-        
+
         atexit(closedlls);
-        for (dllnum=0;dllnum<8;dllnum++) hinstLib[dllnum]=NULL;
-        dllnum=0;
-        
-        getcwd(olddir,sizeof(olddir));
-        append_filename(fn,exname,"podules",sizeof(fn));
-        if (chdir(fn)) { error("Cannot find podules directory %s",fn); exit(-1); }
-        file = _findfirst("*.dll", &finddata);
+        memset(hinstLib, 0, sizeof(hinstLib));
+
+        append_filename(podule_path, exname, "podules\\", sizeof(podule_path));
+        append_filename(fn, podule_path, "*.dll", sizeof(fn));
+        rpclog("Looking for DLLs in %s\n", fn);
+        file = _findfirst(fn, &finddata);
         if (file == -1)
         {
-                chdir(olddir);
+                rpclog("Found nothing\n");
                 return;
         }
-        while (!finished && dllnum<6)
+        while (dllnum<6)
         {
-                rpclog("Loading %s\n", finddata.name);
+                const podule_header_t *(*podule_probe)(const podule_callbacks_t *callbacks, char *path);
+                const podule_header_t *header;
+
+                append_filename(fn, podule_path, finddata.name, sizeof(fn));
+                rpclog("Loading %s %s\n", finddata.name, fn);
                 SetErrorMode(0);
-                hinstLib[dllnum] = LoadLibrary(finddata.name);
+                hinstLib[dllnum] = LoadLibrary(fn);
                 if (hinstLib[dllnum] == NULL)
                 {
                         DWORD lasterror = GetLastError();
                         rpclog("Failed to open DLL %s %x\n", finddata.name, lasterror);
                         goto nextdll;
                 }
-                InitDll = (const void *) GetProcAddress(hinstLib[dllnum], "InitDll");
-                if (InitDll == NULL)
+                
+                podule_probe = (const void *)GetProcAddress(hinstLib[dllnum], "podule_probe");
+                if (!podule_probe)
                 {
-                        rpclog("Couldn't find InitDll in %s\n", finddata.name);
+                        rpclog("Couldn't find podule_probe in %s\n", finddata.name);
+                        FreeLibrary(hinstLib[dllnum]);
                         goto nextdll;
                 }
-                InitDll();
-                tempp.readb = (const void *) GetProcAddress(hinstLib[dllnum],"readb");
-                tempp.readw = (const void *) GetProcAddress(hinstLib[dllnum],"readw");
-                tempp.readl = (const void *) GetProcAddress(hinstLib[dllnum],"readl");
-                tempp.writeb = (const void *) GetProcAddress(hinstLib[dllnum],"writeb");
-                tempp.writew = (const void *) GetProcAddress(hinstLib[dllnum],"writew");
-                tempp.writel = (const void *) GetProcAddress(hinstLib[dllnum],"writel");
-                tempp.memc_readb = (const void *) GetProcAddress(hinstLib[dllnum],"memc_readb");
-                tempp.memc_readw = (const void *) GetProcAddress(hinstLib[dllnum],"memc_readw");
-                tempp.memc_writeb = (const void *) GetProcAddress(hinstLib[dllnum],"memc_writeb");
-                tempp.memc_writew = (const void *) GetProcAddress(hinstLib[dllnum],"memc_writew");
-                tempp.timercallback = (const void *) GetProcAddress(hinstLib[dllnum],"timercallback");
-                tempp.reset = (const void *) GetProcAddress(hinstLib[dllnum],"reset");
-                i=(GetProcAddress(hinstLib[dllnum],"broken")!=NULL);
-                rpclog("Podule is %s\n",(i)?"broken":"normal");
-                rpclog("%08X %08X %08X %08X %08X %08X %08X %08X\n",tempp.writel,tempp.writew,tempp.writeb,tempp.readl,tempp.readw,tempp.readb,tempp.timercallback,tempp.reset);
-                addpodule(tempp.writel, tempp.writew, tempp.writeb,
-                          tempp.readl,  tempp.readw,  tempp.readb,
-                          tempp.memc_writew, tempp.memc_writeb,
-                          tempp.memc_readw,  tempp.memc_readb,                          
-                          tempp.timercallback, tempp.reset, i);
+                header = podule_probe(&podule_callbacks_def, podule_path);
+                if (!header)
+                {
+                        rpclog("podule_probe failed\n", finddata.name);
+                        FreeLibrary(hinstLib[dllnum]);
+                        goto nextdll;
+                }
+                rpclog("podule_probe returned %p\n", header);
+                podule_add(header);
                 dllnum++;
-                
-                nextdll:
-                finished = _findnext(file, &finddata);
+
+nextdll:
+                if (_findnext(file, &finddata))
+                        break;
         }
 
         _findclose(file);
-        chdir(olddir);
-        
+
 //        FreeLibrary(hinstLib);
 }
 #endif

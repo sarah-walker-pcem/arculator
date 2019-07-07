@@ -17,23 +17,29 @@ typedef struct scsi_hd_data
         int sector_pos;
         
         uint8_t buf[512];
+        
+        void *controller_p;
 } scsi_hd_data;
 
-static void *scsi_hd_init()
+static void *scsi_hd_init(void *controller_p)
 {
+        char hd_fn[512];
         scsi_hd_data *data = malloc(sizeof(scsi_hd_data));
         memset(data, 0, sizeof(scsi_hd_data));
         
-        data->f = fopen("scsihd4.hdf", "rb+");
+        data->controller_p = controller_p;
+        
+        sprintf(hd_fn, "%sscsihd4.hdf", podule_path);
+        data->f = fopen(hd_fn, "rb+");
         if (!data->f)
         {
-                data->f = fopen("scsihd4.hdf", "wb");
+                data->f = fopen(hd_fn, "wb");
                 if (!data->f)
                         aka31_log("Failed to open hdf\n");
 
                 putc(0, data->f);
                 fclose(data->f);
-                data->f = fopen("scsihd4.hdf", "rb+");
+                data->f = fopen(hd_fn, "rb+");
         }
         aka31_log("Opened %p\n", (void *)data->f);
         
@@ -50,7 +56,7 @@ static void scsi_hd_close(void *p)
 
 #define add_data_len(v)                 \
         if (i < len)                    \
-                scsi_add_data(v);       \
+                scsi_add_data(data->controller_p, v);      \
         i++;
 
 static int scsi_hd_command(uint8_t *cdb, void *p)
@@ -64,7 +70,7 @@ static int scsi_hd_command(uint8_t *cdb, void *p)
         switch (cdb[0])
         {
 		case SCSI_TEST_UNIT_READY:
-                scsi_send_complete();
+                scsi_send_complete(data->controller_p);
                 data->cmd_pos = 0;
                 return 1;
 
@@ -181,7 +187,7 @@ static int scsi_hd_command(uint8_t *cdb, void *p)
                 return 1;
                 
                 case SCSI_PREVENT_ALLOW_MEDIUM_REMOVAL:
-                scsi_send_complete();
+                scsi_send_complete(data->controller_p);
                 data->cmd_pos = 0;
                 return 1;
                 
@@ -235,14 +241,14 @@ static int scsi_hd_command(uint8_t *cdb, void *p)
                 return 1;
                 
                 case SCSI_READ_CAPACITY_10:
-                scsi_add_data((528807 >> 24) & 0xff);
-                scsi_add_data((528807 >> 16) & 0xff);
-                scsi_add_data((528807 >> 8)  & 0xff);
-                scsi_add_data( 528807        & 0xff);
-                scsi_add_data((512    >> 24) & 0xff);
-                scsi_add_data((512    >> 16) & 0xff);
-                scsi_add_data((512    >> 8)  & 0xff);
-                scsi_add_data( 512           & 0xff);
+                scsi_add_data(data->controller_p, (528807 >> 24) & 0xff);
+                scsi_add_data(data->controller_p, (528807 >> 16) & 0xff);
+                scsi_add_data(data->controller_p, (528807 >> 8)  & 0xff);
+                scsi_add_data(data->controller_p,  528807        & 0xff);
+                scsi_add_data(data->controller_p, (512    >> 24) & 0xff);
+                scsi_add_data(data->controller_p, (512    >> 16) & 0xff);
+                scsi_add_data(data->controller_p, (512    >> 8)  & 0xff);
+                scsi_add_data(data->controller_p,  512           & 0xff);
                 data->cmd_pos = 0;
                 return 1;
 
@@ -268,7 +274,7 @@ static int scsi_hd_command(uint8_t *cdb, void *p)
                         data->cmd_pos = 2;
                         for (; data->sector_pos < 512; data->sector_pos++)
                         {
-                                int ret = scsi_add_data(data->buf[data->sector_pos]);
+                                int ret = scsi_add_data(data->controller_p, data->buf[data->sector_pos]);
                                 
                                 if (ret == -1)
                                         return 0;
@@ -306,7 +312,7 @@ static int scsi_hd_command(uint8_t *cdb, void *p)
                         data->cmd_pos = 2;
                         for (; data->sector_pos < 512; data->sector_pos++)
                         {
-                                int ret = scsi_add_data(data->buf[data->sector_pos]);
+                                int ret = scsi_add_data(data->controller_p, data->buf[data->sector_pos]);
                                 aka31_log("SCSI_READ_10 sector_pos=%i %x\n", data->sector_pos, ftell(data->f));                                
                                 if (ret == -1)
                                         return 0;
@@ -343,7 +349,7 @@ static int scsi_hd_command(uint8_t *cdb, void *p)
                 {
                         for (; data->sector_pos < 512; data->sector_pos++)
                         {
-                                int ret = scsi_get_data();
+                                int ret = scsi_get_data(data->controller_p);
                                 if (ret == -1)
                                         return 0;
                                 data->buf[data->sector_pos] = ret & 0xff;
@@ -378,7 +384,7 @@ static int scsi_hd_command(uint8_t *cdb, void *p)
                 {
                         for (; data->sector_pos < 512; data->sector_pos++)
                         {
-                                int ret = scsi_get_data();
+                                int ret = scsi_get_data(data->controller_p);
                                 aka31_log("SCSI_WRITE_10 sector_pos=%i %x\n", data->sector_pos, ftell(data->f));
                                 if (ret == -1)
                                         return 0;

@@ -7,6 +7,7 @@
 #include "fpa.h"
 #include "memc.h"
 #include "plat_video.h"
+#include "podules.h"
 #include "video.h"
 
 char hd_fn[2][512];
@@ -549,6 +550,26 @@ void loadconfig()
                 hd_fn[1][0] = 0;
         p = (char *)config_get_string(CFG_MACHINE, NULL, "renderer_driver", "auto");
         selected_video_renderer = video_renderer_get_id(p);
+        p = (char *)config_get_string(CFG_MACHINE, NULL, "podule_0", NULL);
+        if (p)
+                strncpy(podule_names[0], p, 15);
+        else
+                strcpy(podule_names[0], "");
+        p = (char *)config_get_string(CFG_MACHINE, NULL, "podule_1", NULL);
+        if (p)
+                strncpy(podule_names[1], p, 15);
+        else
+                strcpy(podule_names[1], "");
+        p = (char *)config_get_string(CFG_MACHINE, NULL, "podule_2", NULL);
+        if (p)
+                strncpy(podule_names[2], p, 15);
+        else
+                strcpy(podule_names[2], "");
+        p = (char *)config_get_string(CFG_MACHINE, NULL, "podule_3", NULL);
+        if (p)
+                strncpy(podule_names[3], p, 15);
+        else
+                strcpy(podule_names[3], "");
 }
 
 void saveconfig()
@@ -581,7 +602,11 @@ void saveconfig()
         config_set_string(CFG_MACHINE, NULL, "hd4_fn", hd_fn[0]);
         config_set_string(CFG_MACHINE, NULL, "hd5_fn", hd_fn[1]);
         config_set_string(CFG_MACHINE, NULL, "renderer_driver", video_renderer_get_name(selected_video_renderer));
-        
+        config_set_string(CFG_MACHINE, NULL, "podule_0", podule_names[0]);
+        config_set_string(CFG_MACHINE, NULL, "podule_1", podule_names[1]);
+        config_set_string(CFG_MACHINE, NULL, "podule_2", podule_names[2]);
+        config_set_string(CFG_MACHINE, NULL, "podule_3", podule_names[3]);
+
         config_save(CFG_GLOBAL, config_file);
         config_save(CFG_MACHINE, machine_config_file);
 }

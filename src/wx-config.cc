@@ -14,6 +14,7 @@ extern "C"
         #include "config.h"
         #include "fpa.h"
         #include "memc.h"
+        #include "podules.h"
 };
 
 enum
@@ -104,15 +105,19 @@ private:
 	void OnComboMEMC(wxCommandEvent &event);
 	void OnComboMemory(wxCommandEvent &event);
 	void OnComboOS(wxCommandEvent &event);
+        void OnComboPodule(wxCommandEvent &event);
 	void OnHDSel(wxCommandEvent &event);
 	void OnHDNew(wxCommandEvent &event);
 	void OnHDEject(wxCommandEvent &event);
 
         void CommonInit(wxWindow *parent, bool is_running);
 	void UpdateList(int cpu, int mem, int memc, int fpu, int io);
+	void PopulatePoduleList(int nr, wxComboBox *cbox);
+	void PopulatePoduleLists(void);
 	
 	int config_cpu, config_mem, config_memc, config_fpu, config_io, config_rom;
         wxString hd_fns[2];
+        char config_podules[4][16];
 	
 	bool running;
 };
@@ -131,6 +136,10 @@ void ConfigDialog::CommonInit(wxWindow *parent, bool is_running)
         Bind(wxEVT_COMBOBOX, &ConfigDialog::OnComboMEMC, this, XRCID("IDC_COMBO_MEMC"));
         Bind(wxEVT_COMBOBOX, &ConfigDialog::OnComboMemory, this, XRCID("IDC_COMBO_MEMORY"));
         Bind(wxEVT_COMBOBOX, &ConfigDialog::OnComboOS, this, XRCID("IDC_COMBO_OS"));
+        Bind(wxEVT_COMBOBOX, &ConfigDialog::OnComboPodule, this, XRCID("IDC_COMBO_PODULE0"));
+        Bind(wxEVT_COMBOBOX, &ConfigDialog::OnComboPodule, this, XRCID("IDC_COMBO_PODULE1"));
+        Bind(wxEVT_COMBOBOX, &ConfigDialog::OnComboPodule, this, XRCID("IDC_COMBO_PODULE2"));
+        Bind(wxEVT_COMBOBOX, &ConfigDialog::OnComboPodule, this, XRCID("IDC_COMBO_PODULE3"));
         Bind(wxEVT_BUTTON, &ConfigDialog::OnHDSel, this, XRCID("IDC_SEL_HD4"));
         Bind(wxEVT_BUTTON, &ConfigDialog::OnHDSel, this, XRCID("IDC_SEL_HD5"));
         Bind(wxEVT_BUTTON, &ConfigDialog::OnHDNew, this, XRCID("IDC_NEW_HD4"));
@@ -149,6 +158,8 @@ void ConfigDialog::CommonInit(wxWindow *parent, bool is_running)
 
 ConfigDialog::ConfigDialog(wxWindow *parent, bool is_running)
 {
+        int c;
+        
         CommonInit(parent, is_running);
 
         config_cpu = arm_cpu_type;
@@ -184,6 +195,11 @@ ConfigDialog::ConfigDialog(wxWindow *parent, bool is_running)
                 config_rom = romset;
 
         UpdateList(config_cpu, config_mem, config_memc, config_fpu, config_io);
+
+        for (c = 0; c < 4; c++)
+                strncpy(config_podules[c], podule_names[c], 15);
+
+        PopulatePoduleLists();
 }
 
 ConfigDialog::ConfigDialog(wxWindow *parent, bool is_running, int preset)
@@ -195,8 +211,16 @@ ConfigDialog::ConfigDialog(wxWindow *parent, bool is_running, int preset)
         config_memc = presets[preset].memc;
         config_fpu  = presets[preset].fpu;
         config_io   = presets[preset].io;
-
+        
         UpdateList(config_cpu, config_mem, config_memc, config_fpu, config_io);
+        
+        /*Default to HostFS in the first podule slot, and the rest empty*/
+        strncpy(config_podules[0], "arculator_rom", 15);
+        strncpy(config_podules[1], "", 15);
+        strncpy(config_podules[2], "", 15);
+        strncpy(config_podules[3], "", 15);
+
+        PopulatePoduleLists();
 }
 
 void ConfigDialog::UpdateList(int cpu, int mem, int memc, int fpu, int io)
@@ -273,8 +297,39 @@ void ConfigDialog::UpdateList(int cpu, int mem, int memc, int fpu, int io)
         cbox->Select((cpu == CPU_ARM250) ? config_rom-2 : config_rom);
 }
 
+void ConfigDialog::PopulatePoduleList(int slot_nr, wxComboBox *cbox)
+{
+        int c = 0;
+        
+        cbox->Clear();
+        cbox->Append("None");
+        cbox->SetValue("None");
+        while (podule_get_name(c))
+        {
+                cbox->Append(podule_get_name(c));
+                if (!strcmp(config_podules[slot_nr], podule_get_short_name(c)))
+                        cbox->SetValue(podule_get_name(c));
+                c++;
+        }
+}
+
+void ConfigDialog::PopulatePoduleLists(void)
+{
+        PopulatePoduleList(0, (wxComboBox *)this->FindWindow(XRCID("IDC_COMBO_PODULE0")));
+        PopulatePoduleList(1, (wxComboBox *)this->FindWindow(XRCID("IDC_COMBO_PODULE1")));
+        PopulatePoduleList(2, (wxComboBox *)this->FindWindow(XRCID("IDC_COMBO_PODULE2")));
+        PopulatePoduleList(3, (wxComboBox *)this->FindWindow(XRCID("IDC_COMBO_PODULE3")));
+
+        ((wxComboBox *)this->FindWindow(XRCID("IDC_CONFIG_PODULE0")))->Enable(false);
+        ((wxComboBox *)this->FindWindow(XRCID("IDC_CONFIG_PODULE1")))->Enable(false);
+        ((wxComboBox *)this->FindWindow(XRCID("IDC_CONFIG_PODULE2")))->Enable(false);
+        ((wxComboBox *)this->FindWindow(XRCID("IDC_CONFIG_PODULE3")))->Enable(false);
+}
+
 void ConfigDialog::OnOK(wxCommandEvent &event)
 {
+        int c;
+        
         if (running)
         {
                 if (wxMessageBox("This will reset Arculator!\nOkay to continue?", "Arculator", wxYES_NO | wxCENTRE | wxSTAY_ON_TOP, this) != wxYES)
@@ -376,6 +431,9 @@ void ConfigDialog::OnOK(wxCommandEvent &event)
         tctrl = (wxTextCtrl *)this->FindWindow(XRCID("IDC_EDIT_HD5"));
         strcpy(hd_fn[1], tctrl->GetValue().mb_str());
 
+        for (c = 0; c < 4; c++)
+                strncpy(podule_names[c], config_podules[c], 15);
+                
         saveconfig();
         if (running)
                 arc_reset();
@@ -551,6 +609,61 @@ void ConfigDialog::OnHDEject(wxCommandEvent &event)
                 tctrl = (wxTextCtrl *)this->FindWindow(XRCID("IDC_EDIT_HD4"));
         tctrl->SetValue("");
 }
+
+void ConfigDialog::OnComboPodule(wxCommandEvent &event)
+{
+        wxComboBox *cbox = (wxComboBox *)this->FindWindow(event.GetId());
+        int sel_nr = cbox->GetCurrentSelection();
+        int slot_nr;
+        
+        if (event.GetId() == XRCID("IDC_COMBO_PODULE0"))
+                slot_nr = 0;
+        else if (event.GetId() == XRCID("IDC_COMBO_PODULE1"))
+                slot_nr = 1;
+        else if (event.GetId() == XRCID("IDC_COMBO_PODULE2"))
+                slot_nr = 2;
+        else
+                slot_nr = 3;
+
+        if (!sel_nr)
+                strcpy(config_podules[slot_nr], "");
+        else
+        {
+                strncpy(config_podules[slot_nr], podule_get_short_name(sel_nr-1), 15);
+
+                if (podule_get_flags(sel_nr-1) & PODULE_FLAGS_UNIQUE)
+                {
+                        /*Clear out any duplicates*/
+                        int c;
+
+                        for (c = 0; c < 4; c++)
+                        {
+                                if (c != slot_nr && !strcmp(config_podules[c], config_podules[slot_nr]))
+                                {
+                                        strcpy(config_podules[c], "");
+                                        switch (c)
+                                        {
+                                                case 0:
+                                                cbox = (wxComboBox *)this->FindWindow(XRCID("IDC_COMBO_PODULE0"));
+                                                break;
+                                                case 1:
+                                                cbox = (wxComboBox *)this->FindWindow(XRCID("IDC_COMBO_PODULE1"));
+                                                break;
+                                                case 2:
+                                                cbox = (wxComboBox *)this->FindWindow(XRCID("IDC_COMBO_PODULE2"));
+                                                break;
+                                                case 3:
+                                                cbox = (wxComboBox *)this->FindWindow(XRCID("IDC_COMBO_PODULE3"));
+                                                break;
+                                        }
+                                        cbox->Select(0);
+                                }
+                        }
+                }
+        }
+}
+
+
 
 int ShowConfig(bool running)
 {

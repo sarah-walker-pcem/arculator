@@ -1,15 +1,170 @@
+#include <stdlib.h>
 #include <string.h>
 
 #include "arc.h"
+#include "arcrom.h"
+#include "config.h"
+#include "ide_riscdev.h"
 #include "ioc.h"
 #include "podules.h"
+
+typedef struct podule_list
+{
+        const podule_header_t *header;
+        struct podule_list *next;
+} podule_list;
+
+static podule_list *podule_list_head = NULL;
+
+static const podule_header_t *(*internal_podules[])(const podule_callbacks_t *callbacks, char *path) =
+{
+        arcrom_probe,
+        riscdev_ide_probe
+};
+
+#define NR_INTERNAL_PODULES (sizeof(internal_podules) / sizeof(internal_podules[0]))
+static int nr_podules = 0;
 
 /*Podules -
   0 is reserved for extension ROMs
   1 is for additional IDE interface
   2-3 are free*/
-static podule podules[4];
-static int freepodule;
+static podule_internal_state_t podules[4];
+static const podule_functions_t *podule_functions[4];
+char podule_names[4][16];
+
+void podule_add(const podule_header_t *header)
+{
+        podule_list *current = malloc(sizeof(podule_list));
+        podule_list *last_entry = podule_list_head;
+        
+        while (last_entry && last_entry->next)
+                last_entry = last_entry->next;
+        
+        current->header = header;
+        current->next = NULL;
+
+        if (last_entry)
+                last_entry->next = current;
+        last_entry = current;
+
+        if (!podule_list_head)
+                podule_list_head = current;
+
+        nr_podules++;
+}
+
+void podule_build_list(void)
+{
+        int c;
+
+        for (c = 0; c < NR_INTERNAL_PODULES; c++)
+        {
+                const podule_header_t *header = internal_podules[c](&podule_callbacks_def, exname);
+                
+                podule_add(header);
+        }
+}
+
+const char *podule_get_name(int c)
+{
+        podule_list *current = podule_list_head;
+
+        while (c--)
+        {
+                current = current->next;
+                if (!current)
+                        return NULL;
+        }
+        
+        return current->header->name;
+}
+
+const char *podule_get_short_name(int c)
+{
+        podule_list *current = podule_list_head;
+
+        while (c--)
+        {
+                current = current->next;
+                if (!current)
+                        return NULL;
+        }
+
+        return current->header->short_name;
+}
+
+uint32_t podule_get_flags(int c)
+{
+        podule_list *current = podule_list_head;
+
+        while (c--)
+        {
+                current = current->next;
+                if (!current)
+                        return 0;
+        }
+
+        return current->header->flags;
+}
+
+static const podule_header_t *podule_find(const char *short_name)
+{
+        podule_list *current = podule_list_head;
+
+        while (current)
+        {
+                if (!strcmp(short_name, current->header->short_name))
+                        return current->header;
+                current = current->next;
+        }
+        
+        return NULL;
+}
+
+void podules_init(void)
+{
+        int c;
+        
+        podules_close();
+        
+        for (c = 0; c < 4; c++)
+        {
+                const podule_header_t *header = podule_find(podule_names[c]);
+                
+                memset(&podules[c], sizeof(podule_internal_state_t), 0);
+                
+                if (header)
+                {
+                        podules[c].podule.header = header;
+                        podule_functions[c] = &header->functions;
+                        
+                        if (podule_functions[c]->init)
+                        {
+                                int ret = podule_functions[c]->init(&podules[c].podule);
+                                
+                                if (ret)
+                                {
+                                        /*Podule init failed, clear structs*/
+                                        rpclog("Failed to init podule %i : %s\n", c, header->short_name);
+                                        podules[c].podule.header = NULL;
+                                        podule_functions[c] = NULL;
+                                }
+                        }
+                }
+        }
+}
+
+void podules_reset(void)
+{
+        int c;
+
+	for (c = 0; c < 4; c++)
+        {
+                if (podule_functions[c] && podule_functions[c]->reset)
+                        podule_functions[c]->reset(&podules[c].podule);
+        }
+}
 
 /**
  * Reset and empty all the podule slots
@@ -17,61 +172,22 @@ static int freepodule;
  * Safe to call on program startup and user instigated virtual machine
  * reset.
  */
-void
-podules_reset(void)
+void podules_close(void)
 {
 	int c;
 
 	/* Call any reset functions that an open podule may have to allow
 	   then to tidy open files etc */
-	for (c = 0; c < 4; c++) {
-		if (podules[c].reset) {
-                        podules[c].reset(&podules[c]);
-                }
+	for (c = 0; c < 4; c++)
+        {
+                if (podule_functions[c] && podule_functions[c]->close)
+                        podule_functions[c]->close(&podules[c].podule);
+
+                podules[c].podule.header = NULL;
+                podule_functions[c] = NULL;
 	}
-
-	/* Blank all 8 podules */
-	memset(podules, 0, 4 * sizeof(podule));
-
-	freepodule = 2;
 }
   
-podule *addpodule(void (*writel)(podule *p, int easi, uint32_t addr, uint32_t val),
-              void (*writew)(podule *p, int easi, uint32_t addr, uint16_t val),
-              void (*writeb)(podule *p, int easi, uint32_t addr, uint8_t val),
-              uint32_t  (*readl)(podule *p, int easi, uint32_t addr),
-              uint16_t (*readw)(podule *p, int easi, uint32_t addr),
-              uint8_t  (*readb)(podule *p, int easi, uint32_t addr),
-              void (*memc_writew)(podule *p, uint32_t addr, uint16_t val),
-              void (*memc_writeb)(podule *p, uint32_t addr, uint8_t val),
-              uint16_t (*memc_readw)(podule *p, uint32_t addr),
-              uint8_t  (*memc_readb)(podule *p, uint32_t addr),
-              int (*timercallback)(podule *p),
-              void (*reset)(podule *p),
-              int broken)
-{
-//        return NULL;
-        if (freepodule==4) return NULL; /*All podules in use!*/
-        podules[freepodule].readl=readl;
-        podules[freepodule].readw=readw;
-        podules[freepodule].readb=readb;
-        podules[freepodule].writel=writel;
-        podules[freepodule].writew=writew;
-        podules[freepodule].writeb=writeb;
-        podules[freepodule].memc_readw = memc_readw;
-        podules[freepodule].memc_readb = memc_readb;
-        podules[freepodule].memc_writew = memc_writew;
-        podules[freepodule].memc_writeb = memc_writeb;
-        podules[freepodule].timercallback=timercallback;
-        podules[freepodule].reset=reset;
-        podules[freepodule].broken=broken;
-        if (reset)
-                reset(&podules[freepodule]);
-//        rpclog("Podule added at %i\n",freepodule);
-        freepodule++;
-        return &podules[freepodule-1];
-}
-
 void rethinkpoduleints(void)
 {
         int c;
@@ -93,150 +209,104 @@ void rethinkpoduleints(void)
         ioc_updateirqs();
 }
 
-void writepodulel(int num, int easi, uint32_t addr, uint32_t val)
+void podule_set_irq(podule_t *podule, int state)
 {
-        if (podules[num].writel)
-           podules[num].writel(&podules[num], easi,addr,val);
-/*        if (oldirq!=podules[num].irq || oldfiq!=podules[num].fiq) */rethinkpoduleints();
+        podule_internal_state_t *internal = container_of(podule, podule_internal_state_t, podule);
+
+        internal->irq = state;
+        rethinkpoduleints();
+}
+void podule_set_fiq(podule_t *podule, int state)
+{
+        podule_internal_state_t *internal = container_of(podule, podule_internal_state_t, podule);
+
+        internal->fiq = state;
+        rethinkpoduleints();
 }
 
-void writepodulew(int num, int easi, uint32_t addr, uint32_t val)
+void podule_write_b(int num, uint32_t addr, uint8_t val)
 {
-        if (podules[num].writew)
-        {
-//                rpclog("WRITE PODULEw 1 %08X %08X %04X\n",addr,armregs[15]-8,val);
-                if (podules[num].broken) podules[num].writel(&podules[num], easi,addr,val);
-                else                     podules[num].writew(&podules[num], easi,addr,val>>16);
-        }
-/*        if (oldirq!=podules[num].irq || oldfiq!=podules[num].fiq) */rethinkpoduleints();
+        if (podule_functions[num] && podule_functions[num]->write_b)
+                podule_functions[num]->write_b(&podules[num].podule, PODULE_IO_TYPE_IOC, addr, val);
 }
 
-void writepoduleb(int num, int easi, uint32_t addr, uint8_t val)
+void podule_write_w(int num, uint32_t addr, uint32_t val)
 {
-        if (podules[num].writeb)
-        {
-//                rpclog("WRITE PODULEb 1 %08X %08X %02X\n",addr,armregs[15]-8,val);
-                podules[num].writeb(&podules[num], easi,addr,val);
-        }
-/*        if (oldirq!=podules[num].irq || oldfiq!=podules[num].fiq) */rethinkpoduleints();
+//        rpclog("podule_write_w: addr=%08x val=%08x\n", addr, val);
+        if (podule_functions[num] && podule_functions[num]->write_w)
+                podule_functions[num]->write_w(&podules[num].podule, PODULE_IO_TYPE_IOC, addr, val >> 16);
 }
 
-void podule_memc_writew(int num, uint32_t addr, uint32_t val)
+void podule_memc_write_b(int num, uint32_t addr, uint8_t val)
 {
-        if (podules[num].memc_writew)
-        {
-//                rpclog("WRITE MEMC PODULEw 1 %08X %08X %04X\n",addr,armregs[15]-8,val);
-                podules[num].memc_writew(&podules[num], addr, val >> 16);
-        }
-/*        if (oldirq!=podules[num].irq || oldfiq!=podules[num].fiq) */rethinkpoduleints();
+        if (podule_functions[num] && podule_functions[num]->write_b)
+                podule_functions[num]->write_b(&podules[num].podule, PODULE_IO_TYPE_MEMC, addr, val);
 }
 
-void podule_memc_writeb(int num, uint32_t addr, uint8_t val)
+void podule_memc_write_w(int num, uint32_t addr, uint32_t val)
 {
-        if (podules[num].memc_writeb)
-        {
-//                rpclog("WRITE MEMC PODULEb 1 %08X %08X %02X\n",addr,armregs[15]-8,val);
-                podules[num].memc_writeb(&podules[num], addr, val);
-        }
-/*        if (oldirq!=podules[num].irq || oldfiq!=podules[num].fiq) */rethinkpoduleints();
+//        rpclog("podule_memc_write_w: addr=%08x val=%08x\n", addr, val);
+        if (podule_functions[num] && podule_functions[num]->write_w)
+                podule_functions[num]->write_w(&podules[num].podule, PODULE_IO_TYPE_MEMC, addr, val >> 16);
 }
 
-uint32_t readpodulel(int num, int easi, uint32_t addr)
+
+uint8_t podule_read_b(int num, uint32_t addr)
 {
-        uint32_t temp;
-        if (podules[num].readl)
-        {
-//                if (num==1) rpclog("READ PODULEl 1 %08X %08X\n",addr,armregs[15]-8);
-                temp=podules[num].readl(&podules[num], easi, addr);
-                return temp;
-        }
-        return 0xFFFFFFFF;
+        uint8_t temp = 0xff;
+        
+        if (podule_functions[num] && podule_functions[num]->read_b)
+                temp = podule_functions[num]->read_b(&podules[num].podule, PODULE_IO_TYPE_IOC, addr);
+
+        return temp;
 }
 
-uint32_t readpodulew(int num, int easi, uint32_t addr)
+uint32_t podule_read_w(int num, uint32_t addr)
 {
-        uint32_t temp;
-        if (podules[num].readw)
-        {
-//                rpclog("READ PODULEw 1 %08X %08X\n",addr,armregs[15]-8);
-                if (podules[num].broken) temp=podules[num].readl(&podules[num],easi, addr);
-                else                     temp=podules[num].readw(&podules[num],easi, addr);
-                return temp;
-        }
-        return 0xFFFF;
+        uint16_t temp = 0xffff;
+
+        if (podule_functions[num] && podule_functions[num]->read_w)
+                temp = podule_functions[num]->read_w(&podules[num].podule, PODULE_IO_TYPE_IOC, addr);
+
+        return temp;
 }
 
-uint8_t readpoduleb(int num, int easi, uint32_t addr)
+uint8_t podule_memc_read_b(int num, uint32_t addr)
 {
-        uint8_t temp;
-        if (podules[num].readb)
-        {
-                temp=podules[num].readb(&podules[num], easi, addr);
-//                rpclog("READ PODULEb %i %08X %08X %02x\n", num, addr, armregs[15]-8, temp);
-                return temp;
-        }
-        return 0xFF;
+        uint8_t temp = 0xff;
+
+        if (podule_functions[num] && podule_functions[num]->read_b)
+                temp = podule_functions[num]->read_b(&podules[num].podule, PODULE_IO_TYPE_MEMC, addr);
+
+        return temp;
 }
 
-uint32_t podule_memc_readw(int num, uint32_t addr)
+uint32_t podule_memc_read_w(int num, uint32_t addr)
 {
-        uint32_t temp;
-        if (podules[num].memc_readw)
-        {
-//                rpclog("READ MEMC PODULEw 1 %08X %08X\n",addr,armregs[15]-8);
-                temp = podules[num].memc_readw(&podules[num], addr);
-                return temp;
-        }
-        return 0xFFFF;
-}
+        uint16_t temp = 0xffff;
 
-uint8_t podule_memc_readb(int num, uint32_t addr)
-{
-        uint8_t temp;
-        if (podules[num].memc_readb)
-        {
-//                rpclog("READ MEMC PODULEb %i %08X %08X\n", num, addr, armregs[15]-8);
-                temp = podules[num].memc_readb(&podules[num], addr);
-                return temp;
-        }
-        return 0xFF;
+        if (podule_functions[num] && podule_functions[num]->read_w)
+                temp = podule_functions[num]->read_w(&podules[num].podule, PODULE_IO_TYPE_MEMC, addr);
+
+        return temp;
 }
 
 /*Run podule timers for t ms*/
 void runpoduletimers(int t)
 {
-        int c,d;
+        int c;
 //        return;
-        for (c=0;c<4;c++)
+        for (c = 0; c < 4; c++)
         {
-                if (podules[c].timercallback && podules[c].msectimer)
-                {
-                        podules[c].msectimer-=t;
-                        d=1;
-                        while (podules[c].msectimer<=0 && d)
-                        {
-//                                rpclog("Callback! podule %i  %i %i\n",c,podules[c].irq,podules[c].fiq);
-                                d=podules[c].timercallback(&podules[c]);
-                                if (!d)
-                                {
-                                        podules[c].msectimer=0;
-                                }
-                                else podules[c].msectimer+=d;
-//                                rpclog("%i %i\n", d, podules[c].irq);
-/*                                if (oldirq!=podules[c].irq || oldfiq!=podules[c].fiq)
-                                {
-                                        rpclog("Now rethinking podule ints...\n");*/
-                                        rethinkpoduleints();
-/*                                }*/
-                        }
-                }
+                if (podule_functions[c] && podule_functions[c]->run)
+                        podule_functions[c]->run(&podules[c].podule, 0);
         }
 }
 
 uint8_t podule_irq_state()
 {
         uint8_t state = 0;
-        
+
         if (podules[0].irq)
                 state |= 0x01;
         if (podules[1].irq)
@@ -245,6 +315,64 @@ uint8_t podule_irq_state()
                 state |= 0x04;
         if (podules[3].irq)
                 state |= 0x08;
-        
+
         return state;
 }
+
+static int podule_get_nr(podule_t *podule)
+{
+        podule_internal_state_t *internal = container_of(podule, podule_internal_state_t, podule);
+        
+        return ((uintptr_t)internal - (uintptr_t)&podules[0]) / sizeof(podule_internal_state_t);
+}
+
+static int podule_config_get_int(podule_t *podule, const char *name, int def)
+{
+        char section_name[20];
+        int slot_nr = podule_get_nr(podule);
+        
+        snprintf(section_name, 20, "%s.%i", podule->header->short_name, slot_nr);
+        
+        return config_get_int(CFG_MACHINE, section_name, name, def);
+}
+
+static const char *podule_config_get_string(podule_t *podule, const char *name, const char *def)
+{
+        char section_name[20];
+        int slot_nr = podule_get_nr(podule);
+
+        snprintf(section_name, 20, "%s.%i", podule->header->short_name, slot_nr);
+
+        return config_get_string(CFG_MACHINE, section_name, name, def);
+}
+
+static void podule_config_set_int(podule_t *podule, const char *name, int val)
+{
+        char section_name[20];
+        int slot_nr = podule_get_nr(podule);
+
+        snprintf(section_name, 20, "%s.%i", podule->header->short_name, slot_nr);
+
+        config_set_int(CFG_MACHINE, section_name, name, val);
+}
+
+static void podule_config_set_string(podule_t *podule, const char *name, char *val)
+{
+        char section_name[20];
+        int slot_nr = podule_get_nr(podule);
+
+        snprintf(section_name, 20, "%s.%i", podule->header->short_name, slot_nr);
+
+        config_set_string(CFG_MACHINE, section_name, name, val);
+}
+
+
+const podule_callbacks_t podule_callbacks_def =
+{
+        .set_irq = podule_set_irq,
+        .set_fiq = podule_set_fiq,
+        .config_get_int = podule_config_get_int,
+        .config_get_string = podule_config_get_string,
+        .config_set_int = podule_config_set_int,
+        .config_set_string = podule_config_set_string
+};

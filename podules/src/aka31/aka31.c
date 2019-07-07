@@ -5,33 +5,22 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdarg.h>
-#include "podules.h"
+#include "podule_api.h"
 #include "aka31.h"
 #include "d71071l.h"
 #include "wd33c93a.h"
 
 #ifdef WIN32
-extern __declspec(dllexport) int InitDll();
-extern __declspec(dllexport) uint8_t  readb(podule *p, int easi, uint32_t addr);
-extern __declspec(dllexport) uint16_t readw(podule *p, int easi, uint32_t addr);
-//extern __declspec(dllexport) uint32_t readl(podule *p, int easi, uint32_t addr);
-extern __declspec(dllexport) void writeb(podule *p, int easi, uint32_t addr, uint8_t val);
-extern __declspec(dllexport) void writew(podule *p, int easi, uint32_t addr, uint16_t val);
-//extern __declspec(dllexport) void writel(podule *p, int easi, uint32_t addr, uint32_t val);
-
-extern __declspec(dllexport) void memc_writew(podule *p, uint32_t addr, uint16_t val);
-extern __declspec(dllexport) void memc_writeb(podule *p, uint32_t addr, uint8_t  val);
-extern __declspec(dllexport) uint16_t memc_readw(podule *p, uint32_t addr);
-extern __declspec(dllexport) uint8_t  memc_readb(podule *p, uint32_t addr);
-
-extern __declspec(dllexport) void reset(podule *p);
-extern __declspec(dllexport) int timercallback(podule *p);
+extern __declspec(dllexport) const podule_header_t *podule_probe(const podule_callbacks_t *callbacks, char *path);
 #else
 #define BOOL int
 #define APIENTRY
 #endif
 
-void aka31_update_ints(podule *p);
+static const podule_callbacks_t *podule_callbacks;
+char podule_path[512];
+
+void aka31_update_ints(podule_t *p);
 
 #define AKA31_POD_IRQ  0x01
 #define AKA31_TC_IRQ   0x02
@@ -41,11 +30,19 @@ void aka31_update_ints(podule *p);
 #define AKA31_ENABLE_INTS 0x40
 #define AKA31_RESET       0x80
 
-static uint8_t aka31_rom[0x10000];
-uint8_t aka31_ram[0x10000];
-static int aka31_page;
+typedef struct aka31_t
+{
+        uint8_t rom[0x10000];
+        uint8_t ram[0x10000];
+        
+        int page;
+        uint8_t intstat;
+        
+        wd33c93a_t wd;
+        d71071l_t dma;
+} aka31_t;
+
 static FILE *aka31_logf;
-static uint8_t aka31_intstat;
 
 void aka31_log(const char *format, ...)
 {
@@ -64,22 +61,35 @@ void aka31_log(const char *format, ...)
    	fflush(aka31_logf);
 }
 
-uint8_t readb(podule *p, int easi, uint32_t addr)
+void aka31_write_ram(podule_t *podule, uint16_t addr, uint8_t val)
 {
-        int temp;
+        aka31_t *aka31 = podule->p;
+
+        aka31->ram[addr] = val;
+}
+uint8_t aka31_read_ram(podule_t *podule, uint16_t addr)
+{
+        aka31_t *aka31 = podule->p;
+
+        return aka31->ram[addr];
+}
+
+static uint8_t aka31_ioc_readb(podule_t *podule, uint32_t addr)
+{
+        aka31_t *aka31 = podule->p;
 
         aka31_log("Read aka31 B %04X\n", addr);
-                
+
         switch (addr & 0x3000)
         {
                 case 0x0000: case 0x1000:
-                temp = ((addr & 0x1ffc) | ((aka31_page & AKA31_PAGE_MASK) << 13)) >> 2;
-                //aka31_log("  ROM %05X %02X\n", temp, aka31_rom[temp]);
-                return aka31_rom[temp];
+                addr = ((addr & 0x1ffc) | ((aka31->page & AKA31_PAGE_MASK) << 13)) >> 2;
+                //aka31_log("  ROM %05X %02X\n", addr, aka31->rom[addr]);
+                return aka31->rom[addr];
 
-		case 0x2000:                
-                aka31_log("Read intstat %02x\n", aka31_intstat);
-                return aka31_intstat;
+		case 0x2000:
+                aka31_log("Read intstat %02x\n", aka31->intstat);
+                return aka31->intstat;
 
                 default:
                 aka31_log("Read aka31 %04X\n", addr);
@@ -89,32 +99,77 @@ uint8_t readb(podule *p, int easi, uint32_t addr)
         return 0xff;
 }
 
-uint16_t readw(podule *p, int easi, uint32_t addr)
+static uint8_t aka31_memc_readb(podule_t *podule, uint32_t addr)
 {
-        aka31_log("Read aka31 W %04X\n", addr);
-        return readb(p, easi, addr);
+        aka31_t *aka31 = podule->p;
+
+        int temp;
+
+        aka31_log("Read aka31 MEMC B %04X\n", addr);
+
+        if (!(addr & 0x2000))
+        {
+                temp = ((addr & 0x1ffe) | ((aka31->page & AKA31_PAGE_MASK) << 13)) >> 1;
+                aka31_log("Read aka31 MEMC B %04X %04x %02x\n", addr, temp, aka31->ram[temp | (addr & 1)]);
+                return aka31->ram[temp | (addr & 1)];
+        }
+
+	if (aka31->page & AKA31_RESET)
+		return 0xff;
+
+        switch (addr & 0x3000)
+        {
+                case 0x2000:
+                return wd33c93a_read(&aka31->wd, addr);
+
+                case 0x3000:
+                return d71071l_read(&aka31->dma, addr);
+
+                default:
+                aka31_log("Read aka31 %04X\n", addr);
+                return 0xff;
+        }
+
+        return 0xff;
 }
 
-void writeb(podule *p, int easi, uint32_t addr, uint8_t val)
-{     
+
+static uint16_t aka31_memc_readw(podule_t *podule, uint32_t addr)
+{
+        aka31_t *aka31 = podule->p;
+
+        if (!(addr & 0x2000))
+        {
+                addr = ((addr & 0x1ffe) | ((aka31->page & AKA31_PAGE_MASK) << 13)) >> 1;
+//                aka31_log("Read aka31 MEMC W %04X %04x %04x\n", addr, temp, aka31->ram[temp] | (aka31->ram[temp+1] << 8));
+                return aka31->ram[addr] | (aka31->ram[addr+1] << 8);
+        }
+        return aka31_memc_readb(podule, addr);
+}
+
+
+static void aka31_ioc_writeb(podule_t *podule, uint32_t addr, uint8_t val)
+{
+        aka31_t *aka31 = podule->p;
+
         aka31_log("Write aka31 B %04X %02X\n", addr, val);
         switch (addr & 0x3000)
         {
                 case 0x2000:
                 aka31_log("Write intclear\n");
-                aka31_intstat &= ~AKA31_TC_IRQ;
-                if (!(aka31_intstat & AKA31_SBIC_IRQ))
+                aka31->intstat &= ~AKA31_TC_IRQ;
+                if (!(aka31->intstat & AKA31_SBIC_IRQ))
                 {
-                        aka31_intstat = 0;
-                        p->irq = 0;
+                        aka31->intstat = 0;
+                        podule_callbacks->set_irq(podule, 0);
                 }
                 break;
                 case 0x3000:
                 aka31_log("Write page %02x\n", val);
-		if (!(val & AKA31_RESET) && (aka31_page & AKA31_RESET))
-			wd33c93a_reset(p);
-                aka31_page = val; 
-		aka31_update_ints(p);
+		if (!(val & AKA31_RESET) && (aka31->page & AKA31_RESET))
+			wd33c93a_reset(&aka31->wd);
+                aka31->page = val;
+		aka31_update_ints(podule);
                 return;
 
                 default:
@@ -122,169 +177,214 @@ void writeb(podule *p, int easi, uint32_t addr, uint8_t val)
         }
 }
 
-void writew(podule *p, int easi, uint32_t addr, uint16_t val)
+static void aka31_memc_writeb(podule_t *podule, uint32_t addr, uint8_t val)
 {
-        aka31_log("Write aka31 W %04X %02X\n", addr, val);
-        writeb(p, easi, addr, val);
-}
+        aka31_t *aka31 = podule->p;
 
-uint8_t memc_readb(podule *p, uint32_t addr)
-{
-        int temp;
-
-        aka31_log("Read aka31 MEMC B %04X %i\n", addr, p->msectimer);
-
-        if (!(addr & 0x2000))
-        {
-                temp = ((addr & 0x1ffe) | ((aka31_page & AKA31_PAGE_MASK) << 13)) >> 1;
-                aka31_log("Read aka31 MEMC B %04X %04x %02x\n", addr, temp, aka31_ram[temp | (addr & 1)]);
-                return aka31_ram[temp | (addr & 1)];
-        }
-
-	if (aka31_page & AKA31_RESET)
-		return 0xff;
-                
-        switch (addr & 0x3000)
-        {
-                case 0x2000:
-                return wd33c93a_read(addr, p);
-                
-                case 0x3000:
-                return d71071l_read(addr, p);
-
-                default:
-                aka31_log("Read aka31 %04X\n", addr);
-                return 0xff;
-        }
-
-        return 0xff;
-}
-
-uint16_t memc_readw(podule *p, uint32_t addr)
-{
-        int temp;
-        if (!(addr & 0x2000))
-        {
-                temp = ((addr & 0x1ffe) | ((aka31_page & AKA31_PAGE_MASK) << 13)) >> 1;
-//                aka31_log("Read aka31 MEMC W %04X %04x %04x\n", addr, temp, aka31_ram[temp] | (aka31_ram[temp+1] << 8));
-                return aka31_ram[temp] | (aka31_ram[temp+1] << 8);
-        }
-        return memc_readb(p, addr);
-}
-
-void memc_writeb(podule *p, uint32_t addr, uint8_t val)
-{     
         aka31_log("Write aka31 MEMC B %04X %02X\n", addr, val);
 
         if (!(addr & 0x2000))
         {
-                int temp = ((addr & 0x1ffe) | ((aka31_page & AKA31_PAGE_MASK) << 13)) >> 1;
+                int temp = ((addr & 0x1ffe) | ((aka31->page & AKA31_PAGE_MASK) << 13)) >> 1;
                 aka31_log(" Write to RAM %04x\n", temp);
-                aka31_ram[temp | (addr & 1)] = val;
+                aka31->ram[temp | (addr & 1)] = val;
                 return;
         }
 
-	if (aka31_page & AKA31_RESET)
+	if (aka31->page & AKA31_RESET)
 		return;
 
         switch (addr & 0x3000)
         {
                 case 0x2000:
-                wd33c93a_write(addr, val, p);
+                wd33c93a_write(&aka31->wd, addr, val);
                 break;
 
                 case 0x3000:
-                d71071l_write(addr, val, p);
+                d71071l_write(&aka31->dma, addr, val);
                 break;
 
                 default:
                 aka31_log("Write aka31 %04X %02X\n", addr, val);
         }
 }
-void memc_writew(podule *p, uint32_t addr, uint16_t val)
+
+
+static void aka31_memc_writew(podule_t *podule, uint32_t addr, uint16_t val)
 {
-        int temp;
+        aka31_t *aka31 = podule->p;
+
         aka31_log("Write aka31 MEMC W %04X %02X\n", addr, val);
         if (!(addr & 0x2000))
         {
-                temp = ((addr & 0x1ffe) | ((aka31_page & AKA31_PAGE_MASK) << 13)) >> 1;
-                aka31_log(" Write to RAM %04x\n", temp);
-                aka31_ram[temp] = val & 0xff;
-                aka31_ram[temp+1] = (val >> 8);
+                addr = ((addr & 0x1ffe) | ((aka31->page & AKA31_PAGE_MASK) << 13)) >> 1;
+                aka31_log(" Write to RAM %04x\n", addr);
+                aka31->ram[addr] = val & 0xff;
+                aka31->ram[addr+1] = (val >> 8);
                 return;
         }
-        memc_writeb(p, addr, val);
+        aka31_memc_writeb(podule, addr, val);
 }
 
-void reset(podule *p)
+
+static uint8_t aka31_read_b(struct podule_t *podule, podule_io_type type, uint32_t addr)
 {
-        aka31_log("Reset aka31\n");
-        p->msectimer = 5;
-        aka31_page = 0;
+        if (type == PODULE_IO_TYPE_IOC)
+                return aka31_ioc_readb(podule, addr);
+        else if (type == PODULE_IO_TYPE_MEMC)
+                return aka31_memc_readb(podule, addr);
+
+        return 0xff;
 }
 
-static void aka31_init()
+static uint16_t aka31_read_w(struct podule_t *podule, podule_io_type type, uint32_t addr)
+{
+        if (type == PODULE_IO_TYPE_IOC)
+                return aka31_ioc_readb(podule, addr);
+        else if (type == PODULE_IO_TYPE_MEMC)
+                return aka31_memc_readw(podule, addr);
+
+        return 0xffff;
+}
+
+static void aka31_write_b(struct podule_t *podule, podule_io_type type, uint32_t addr, uint8_t val)
+{
+        if (type == PODULE_IO_TYPE_IOC)
+                aka31_ioc_writeb(podule, addr, val);
+        else if (type == PODULE_IO_TYPE_MEMC)
+                aka31_memc_writeb(podule, addr, val);
+}
+
+static void aka31_write_w(struct podule_t *podule, podule_io_type type, uint32_t addr, uint16_t val)
+{
+        if (type == PODULE_IO_TYPE_IOC)
+                aka31_ioc_writeb(podule, addr, val);
+        else if (type == PODULE_IO_TYPE_MEMC)
+                aka31_memc_writew(podule, addr, val);
+}
+
+
+
+
+static void aka31_reset(struct podule_t *podule)
+{
+        aka31_t *aka31 = podule->p;
+
+        aka31_log("Reset aka31\n");
+        aka31->page = 0;
+}
+
+static int aka31_init(struct podule_t *podule)
 {
         FILE *f;
+        char rom_fn[512];
+        aka31_t *aka31 = malloc(sizeof(aka31_t));
+        memset(aka31, 0, sizeof(aka31_t));
+
 //        append_filename(fn,exname,"zidefs",sizeof(fn));
-        f = fopen("scsirom", "rb");
+        sprintf(rom_fn, "%sscsirom", podule_path);
+        aka31_log("SCSIROM %s\n", rom_fn);
+        f = fopen(rom_fn, "rb");
         if (!f)
         {
                 aka31_log("Failed to open SCSIROM!\n");
-                return;
+                return -1;
         }
-        fread(aka31_rom, 0x10000, 1, f);
+        fread(aka31->rom, 0x10000, 1, f);
         fclose(f);
         
-        aka31_page = 0;
-        wd33c93a_init();
+        aka31->page = 0;
+        d71071l_init(&aka31->dma, podule);
+        wd33c93a_init(&aka31->wd, podule, &aka31->dma);
 //        addpodule(NULL,icswritew,icswriteb,NULL,icsreadw,icsreadb,NULL);
         aka31_log("aka31 Initialised!\n");
+        
+        podule->p = aka31;
+        return 0;
 }
 
-int timercallback(podule *p)
+static void aka31_close(struct podule_t *podule)
 {
-        aka31_log("callback %i\n", p->msectimer);
-        wd33c93a_poll(p);
+        aka31_t *aka31 = podule->p;
+        
+        free(aka31);
+}
+
+static int aka31_run(struct podule_t *podule, int timeslice_us)
+{
+        aka31_t *aka31 = podule->p;
+
+//        aka31_log("callback\n");
+        wd33c93a_poll(&aka31->wd);
         return 5;
 }
 
-void aka31_update_ints(podule *p)
+void aka31_update_ints(podule_t *podule)
 {
-	if (aka31_intstat && (aka31_page & AKA31_ENABLE_INTS))
-		p->irq = 1;
+        aka31_t *aka31 = podule->p;
+
+	if (aka31->intstat && (aka31->page & AKA31_ENABLE_INTS))
+                podule_callbacks->set_irq(podule, 1);
 	else
-		p->irq = 0;
+                podule_callbacks->set_irq(podule, 0);
 }
 
-void aka31_sbic_int(podule *p)
+void aka31_sbic_int(podule_t *podule)
 {
-        aka31_intstat |= AKA31_SBIC_IRQ | AKA31_POD_IRQ;
-        if (aka31_page & AKA31_ENABLE_INTS)
-                p->irq = 1;
+        aka31_t *aka31 = podule->p;
+
+        aka31->intstat |= AKA31_SBIC_IRQ | AKA31_POD_IRQ;
+        if (aka31->page & AKA31_ENABLE_INTS)
+                podule_callbacks->set_irq(podule, 1);
 }
-void aka31_sbic_int_clear(podule *p)
+void aka31_sbic_int_clear(podule_t *podule)
 {
+        aka31_t *aka31 = podule->p;
+
         aka31_log("aka31_sbic_int_clear\n");
-        aka31_intstat &= ~AKA31_SBIC_IRQ;
-        if (!(aka31_intstat & AKA31_TC_IRQ))
+        aka31->intstat &= ~AKA31_SBIC_IRQ;
+        if (!(aka31->intstat & AKA31_TC_IRQ))
         {
-                aka31_intstat = 0;
-                p->irq = 0;
+                aka31->intstat = 0;
+                podule_callbacks->set_irq(podule, 0);
         }
 }
-void aka31_tc_int(podule *p)
+void aka31_tc_int(podule_t *podule)
 {
-        aka31_intstat |= AKA31_TC_IRQ | AKA31_POD_IRQ;
-        if (aka31_page & AKA31_ENABLE_INTS)
-                p->irq = 1;
+        aka31_t *aka31 = podule->p;
+
+        aka31->intstat |= AKA31_TC_IRQ | AKA31_POD_IRQ;
+        if (aka31->page & AKA31_ENABLE_INTS)
+                podule_callbacks->set_irq(podule, 1);
 }
 
-int InitDll()
+static const podule_header_t aka31_podule_header =
 {
-        aka31_log("InitDll\n");
-        aka31_init();
-	return 0;
+        .version = PODULE_API_VERSION,
+        .flags = PODULE_FLAGS_UNIQUE,
+        .short_name = "aka31",
+        .name = "Acorn SCSI podule (AKA31)",
+        .functions =
+        {
+                .init = aka31_init,
+                .close = aka31_close,
+                .reset = aka31_reset,
+                .read_b = aka31_read_b,
+                .read_w = aka31_read_w,
+                .write_b = aka31_write_b,
+                .write_w = aka31_write_w,
+                .run = aka31_run
+        }
+};
+
+const podule_header_t *podule_probe(const podule_callbacks_t *callbacks, char *path)
+{
+        aka31_log("podule_probe %p path=%s\n", &aka31_podule_header, path);
+        
+        podule_callbacks = callbacks;
+        strcpy(podule_path, path);
+
+        return &aka31_podule_header;
 }
 
 #ifdef WIN32

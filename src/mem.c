@@ -7,7 +7,6 @@
 #include "arm.h"
 #include "82c711.h"
 #include "82c711_fdc.h"
-#include "arcrom.h"
 #include "cp15.h"
 #include "eterna.h"
 #include "ide.h"
@@ -234,7 +233,7 @@ uint8_t readmemfb(uint32_t a)
                 case 0x32: /*IOC*/
                 case 0x33:
                 if (!(a & ((1 << 16) | (1 << 17) | (1 << 21)))) /*MEMC podule space*/
-                        return podule_memc_readb((a & 0xc000) >> 14, a & 0x3fff);
+                        return podule_memc_read_b((a & 0xc000) >> 14, a & 0x3fff);
 
                 if (romset == 3 && a>=0x3012000 && a<=0x302A000)
                         return c82c711_fdc_dmaread(a);
@@ -261,16 +260,7 @@ uint8_t readmemfb(uint32_t a)
                                 if ((a&~0x1F)==0x3340000) return readeterna(a);
                                 if ((a&~0x1F)==0x33C0000) return readeterna(a);
                         }
-                        if (romset<3 && !(a&0xC000)) /*ICS interface lives in slot 0*/
-                        {
-//                                printf("Read ICS B %08X %07X\n",a,PC);
-                                if ((a&0x3FFF)<0x2800) return readics(a);
-                                if ((a&0x3FFF)<0x3020) { /*rpclog("Read IDE %08X\n",a);*/ return readide(((a>>2)&7)+0x1F0); }
-                        }
-                        if ((a&0xC000)==0x4000) /*Extension ROMs in slot 1*/
-                           return readarcrom(a);
-                        if (a&0x8000) return readpoduleb((a&0xC000)>>14,0,a&0x3FFF);
-                        return 0xFF;
+                        return podule_read_b((a & 0xC000) >> 14, a & 0x3FFF);
                         case 5: /*Internal latches*/
                         switch (a&0xFFFC)
                         {
@@ -346,7 +336,7 @@ uint32_t readmemfl(uint32_t a)
                 case 0x32: /*IOC*/
                 case 0x33:
                 if (!(a & ((1 << 16) | (1 << 17) | (1 << 21)))) /*MEMC podule space*/
-                        return podule_memc_readw((a & 0xc000) >> 14, a & 0x3fff);
+                        return podule_memc_read_w((a & 0xc000) >> 14, a & 0x3fff);
 
                 if (romset == 3 && a>=0x3012000 && a<=0x302A000)
                         return c82c711_fdc_dmaread(a);
@@ -375,18 +365,7 @@ uint32_t readmemfl(uint32_t a)
                                 if ((a&~0x1F)==0x3340000) return readeterna(a);
                                 if ((a&~0x1F)==0x33C0000) return readeterna(a);
                         }
-                        if (romset<3 && !(a&0xC000)) /*ICS interface lives in slot 0*/
-                        {
-//                                printf("Read ICS W %08X\n",a);
-                                if ((a&0x3FFF)==0x2800) return readidew(&ide_internal);
-                                if ((a&0x3FFF)<0x2800) return readics(a);
-                                if ((a&0x3FFF)<0x3020) return readide(((a>>2)&7)+0x1F0);
-
-                        }
-                        if ((a&0xC000)==0x4000) /*Extension ROMs in slot 1*/
-                           return readarcrom(a);
-                        if (a&0x8000) return readpodulew((a&0xC000)>>14,0,a&0x3FFF);
-                        return 0xFFFF;
+                        return podule_read_w((a & 0xC000) >> 14, a & 0x3FFF);
                         case 5: /*Internal latches*/
                         switch (a&0xFFFC)
                         {
@@ -455,7 +434,7 @@ void writememfb(uint32_t a,uint8_t v)
                 case 0x33:
                 if (!(a & ((1 << 16) | (1 << 17) | (1 << 21)))) /*MEMC podule space*/
                 {
-                        podule_memc_writeb((a & 0xc000) >> 14, a & 0x3fff, v);
+                        podule_memc_write_b((a & 0xc000) >> 14, a & 0x3fff, v);
                         return;
                 }
 
@@ -490,15 +469,7 @@ void writememfb(uint32_t a,uint8_t v)
                                 if ((a&~0x1F)==0x3340000) { writeeterna(a,v); return; }
                                 if ((a&~0x1F)==0x33C0000) { writeeterna(a,v); return; }
                         }
-                        if (romset<3 && !(a&0xC000)) /*ICS interface lives in slot 0*/
-                        {
-//                                printf("Write ICS B %08X %02X\n",a,v);
-                                if ((a&0x3FFF)<0x2800) { writeics(a,v); return; }
-                                if ((a&0x3FFF)<0x3020) { /*rpclog("Write IDE %08X %02X\n",a,v); */writeide(((a>>2)&7)+0x1F0,v); return; }
-                        }
-                        if ((a&0xC000)==0x4000) /*Extension ROMs in slot 1*/
-                        { writearcrom(a,v); return; }
-                        if (a&0x8000) { writepoduleb((a&0xC000)>>14,0,a&0x3FFF,v); return; }
+                        podule_write_b((a & 0xC000) >> 14, a & 0x3FFF, v);
                         return;
                         case 5: /*Internal latches*/
                         switch (a&0xFFFC)
@@ -585,7 +556,7 @@ void writememfl(uint32_t a,uint32_t v)
                 case 0x33:
                 if (!(a & ((1 << 16) | (1 << 17) | (1 << 21)))) /*MEMC podule space*/
                 {
-                        podule_memc_writew((a & 0xc000) >> 14, a & 0x3fff, v);
+                        podule_memc_write_w((a & 0xc000) >> 14, a & 0x3fff, v);
                         return;
                 }
                 if (romset == 3 && a >= 0x3012000 && a <= 0x302A000)
@@ -625,16 +596,7 @@ void writememfl(uint32_t a,uint32_t v)
                                 if ((a&~0x1F)==0x3340000) { writeeterna(a,v); return; }
                                 if ((a&~0x1F)==0x33C0000) { writeeterna(a,v); return; }
                         }
-                        if (romset<3 && !(a&0xC000)) /*ICS interface lives in slot 0*/
-                        {
-//                                printf("Write ICS W %08X %04X\n",a,v>>16);
-                                if ((a&0x3FFF)==0x2800) { writeidew(&ide_internal, v >> 16); return; }
-                                if ((a&0x3FFF)<0x2800) { writeics(a,v); return; }
-                                if ((a&0x3FFF)<0x3020) { /*rpclog("Write IDE %08X %02X\n",a,v); */writeide(((a>>2)&7)+0x1F0,v); return; }
-                        }
-                        if ((a&0xC000)==0x4000) /*Extension ROMs in slot 1*/
-                        { writearcrom(a,v); return; }
-                        if (a&0x8000) { writepodulew((a&0xC000)>>14,0,a&0x3FFF,v); return; }
+                        podule_write_w((a & 0xC000) >> 14, a & 0x3FFF, v);
                         return;
                         case 5: /*Internal latches*/
                         v>>=16;

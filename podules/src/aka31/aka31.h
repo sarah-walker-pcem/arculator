@@ -8,10 +8,11 @@
 #endif /* Not BUILDING_DLL */
 
 void aka31_log(const char *format, ...);
-extern uint8_t aka31_ram[0x10000];
 
 void aka31_sbic_int();
 void aka31_sbic_int_clear();
 void aka31_tc_int();
+
+extern char podule_path[512];
 
 #endif /* _DLL_H_ */

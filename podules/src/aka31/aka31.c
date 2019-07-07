@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdarg.h>
+#include <string.h>
 #include "podule_api.h"
 #include "aka31.h"
 #include "d71071l.h"

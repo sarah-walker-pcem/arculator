@@ -4,6 +4,7 @@
 #include "arc.h"
 #include "arcrom.h"
 #include "config.h"
+#include "ide_idea.h"
 #include "ide_riscdev.h"
 #include "ioc.h"
 #include "podules.h"
@@ -19,6 +20,7 @@ static podule_list *podule_list_head = NULL;
 static const podule_header_t *(*internal_podules[])(const podule_callbacks_t *callbacks, char *path) =
 {
         arcrom_probe,
+        idea_ide_probe,
         riscdev_ide_probe
 };
 

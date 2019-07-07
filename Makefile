@@ -206,14 +206,14 @@ AM_DEFAULT_VERBOSITY = 1
 AUTOCONF = ${SHELL} /home/me/arculator/missing autoconf
 AUTOHEADER = ${SHELL} /home/me/arculator/missing autoheader
 AUTOMAKE = ${SHELL} /home/me/arculator/missing automake-1.15
-AWK = gawk
+AWK = mawk
 CC = gcc
 CCDEPMODE = depmode=gcc3
-CFLAGS = -O3
+CFLAGS = -Wall -O0 -g -D_DEBUG
 CPPFLAGS = 
 CXX = g++
 CXXDEPMODE = depmode=gcc3
-CXXFLAGS = -O3
+CXXFLAGS = -Wall -O0 -g -D_DEBUG
 CYGPATH_W = echo
 DEFS = -DPACKAGE_NAME=\"Arculator\" -DPACKAGE_TARNAME=\"arculator\" -DPACKAGE_VERSION=\"v1.0\" -DPACKAGE_STRING=\"Arculator\ v1.0\" -DPACKAGE_BUGREPORT=\"Sarah\ Walker\ \<pcem@pcem-emulator.co.uk\>\" -DPACKAGE_URL=\"\" -DPACKAGE=\"arculator\" -DVERSION=\"v1.0\" -DHAVE_LIBZ=1 -DHAVE_LIBPTHREAD=1 -DHAVE_LIBOPENAL=1
 DEPDIR = .deps

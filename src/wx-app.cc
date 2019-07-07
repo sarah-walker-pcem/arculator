@@ -9,6 +9,10 @@
 #include <windows.h>
 #include <windowsx.h>
 #undef BITMAP
+#else
+#include "wx-app.h"
+#include <wx/xrc/xmlres.h>
+#include <wx/event.h>
 #endif
 
 #include "wx-config.h"

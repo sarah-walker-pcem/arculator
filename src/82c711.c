@@ -1,6 +1,9 @@
 #include "arc.h"
 #include "82c711.h"
 #include "82c711_fdc.h"
+#include "config.h"
+#include "ide.h"
+#include "ioc.h"
 
 static int configmode, configindex;
 static uint8_t configregs[16];
@@ -40,7 +43,7 @@ void c82c711_write(uint32_t addr, uint8_t val)
 
 
         if ((addr & ~7) == 0x1f0 || addr == 0x3F6)
-           writeide(addr,val);
+           writeide(&ide_internal, addr, val);
 
         if ((addr & ~7) == 0x3f0 && addr != 0x3f6)
            c82c711_fdc_write(addr & 7, val);
@@ -61,10 +64,24 @@ uint8_t c82c711_read(uint32_t addr)
         if (addr == 0x3FF) return 0x55;
 
         if ((addr & ~7) == 0x1f0 || addr == 0x3F6)
-           return readide(addr);
+           return readide(&ide_internal, addr);
 
         if ((addr & ~7) == 0x3f0)
            return c82c711_fdc_read(addr & 7);
 
         return 0xff;
+}
+
+static void c82c711_ide_irq_raise(ide_t *ide)
+{
+        ioc_irqb(IOC_IRQB_IDE);
+}
+static void c82c711_ide_irq_clear(ide_t *ide)
+{
+        ioc_irqbc(IOC_IRQB_IDE);
+}
+
+void c82c711_init(void)
+{
+        resetide(&ide_internal, hd_fn[0], hd_fn[1], c82c711_ide_irq_raise, c82c711_ide_irq_clear);
 }

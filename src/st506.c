@@ -4,6 +4,8 @@
 #include "config.h"
 #include "ioc.h"
 
+/*TODO: remove*/
+static int idecallback;
 void callbackst506();
 int printnext=0;
 // int timetolive;

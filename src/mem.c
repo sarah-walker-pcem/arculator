@@ -10,7 +10,7 @@
 #include "arcrom.h"
 #include "cp15.h"
 #include "eterna.h"
-#include "ics.h"
+#include "ide.h"
 #include "ioc.h"
 #include "memc.h"
 #include "podules.h"
@@ -362,7 +362,7 @@ uint32_t readmemfl(uint32_t a)
                         case 1: /*1772 FDC*/
                         if (romset<3) return wd1770_read(a);
                         if ((a&0xFFF)==0x7C0)
-                                return readidew();
+                                return readidew(&ide_internal);
                         return c82c711_read(a);
                         case 2: /*Econet*/
                         return 0xFFFF;
@@ -378,7 +378,7 @@ uint32_t readmemfl(uint32_t a)
                         if (romset<3 && !(a&0xC000)) /*ICS interface lives in slot 0*/
                         {
 //                                printf("Read ICS W %08X\n",a);
-                                if ((a&0x3FFF)==0x2800) return readidew(); 
+                                if ((a&0x3FFF)==0x2800) return readidew(&ide_internal);
                                 if ((a&0x3FFF)<0x2800) return readics(a);
                                 if ((a&0x3FFF)<0x3020) return readide(((a>>2)&7)+0x1F0);
 
@@ -608,7 +608,7 @@ void writememfl(uint32_t a,uint32_t v)
                         {
                                 if ((a&0xFFF)==0x7C0)
                                 {
-                                        writeidew(v>>16);
+                                        writeidew(&ide_internal, v >> 16);
                                         return;
                                 }
                                 c82c711_write(a,v);
@@ -628,7 +628,7 @@ void writememfl(uint32_t a,uint32_t v)
                         if (romset<3 && !(a&0xC000)) /*ICS interface lives in slot 0*/
                         {
 //                                printf("Write ICS W %08X %04X\n",a,v>>16);
-                                if ((a&0x3FFF)==0x2800) { writeidew(v>>16); return; }
+                                if ((a&0x3FFF)==0x2800) { writeidew(&ide_internal, v >> 16); return; }
                                 if ((a&0x3FFF)<0x2800) { writeics(a,v); return; }
                                 if ((a&0x3FFF)<0x3020) { /*rpclog("Write IDE %08X %02X\n",a,v); */writeide(((a>>2)&7)+0x1F0,v); return; }
                         }

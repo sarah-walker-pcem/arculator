@@ -23,7 +23,7 @@ int podule_time=8000;
 #include "disc.h"
 #include "fpa.h"
 #include "hostfs.h"
-#include "ics.h"
+#include "ide.h"
 #include "ioc.h"
 #include "keyboard.h"
 #include "mem.h"
@@ -233,7 +233,6 @@ int fpaena=0;
 int swioutput=0;
 
 int keyscount=100;
-int idecallback;
 int fdci=200;
 int fdccallback;
 int fdicount=16;
@@ -429,9 +428,7 @@ void resetarm()
         refillpipeline2();
         resetcp15();
         resetfpa();
-        resetics();
-        resetarcrom();
-        
+
         memset(arm3_cache, 0, sizeof(arm3_cache));
         memset(arm3_cache_tag, TAG_INVALID, sizeof(arm3_cache_tag));
 }
@@ -2825,13 +2822,13 @@ void execarm(int cycles_to_execute)
                 }
 
                 /*IDE callback*/
-                if (idecallback)
+                if (ide_internal.callback)
                 {
-                        idecallback-=10;
-                        if (idecallback<=0)
+                        ide_internal.callback -= 10;
+                        if (ide_internal.callback <= 0)
                         {
-                                idecallback=0;
-                                if (fdctype) callbackide();
+                                ide_internal.callback = 0;
+                                if (fdctype) callbackide(&ide_internal);
                                 else         callbackst506();
                         }
                 }

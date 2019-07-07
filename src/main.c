@@ -5,6 +5,7 @@
 #include <stdarg.h>
 #include <sys/time.h>
 
+#include "82c711.h"
 #include "82c711_fdc.h"
 #include "arc.h"
 #include "arm.h"
@@ -17,7 +18,7 @@
 #include "disc_fdi.h"
 #include "disc_jfd.h"
 #include "disc_ssd.h"
-#include "ics.h"
+#include "ide.h"
 #include "ioc.h"
 #include "keyboard.h"
 #include "mem.h"
@@ -187,7 +188,6 @@ void arc_init()
         initarculfs();
 #endif
         hostfs_init();
-        resetide();
         initmem(memsize);
         
         establishromavailability();
@@ -208,7 +208,7 @@ void arc_init()
            al_init();
         initjoy();
 
-
+        c82c711_init();
         disc_init();
         adf_init();
         apd_init();

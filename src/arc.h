@@ -5,6 +5,7 @@
 
 #include <stdio.h>
 #include <stdint.h>
+#include <stddef.h>
 
 /*Misc*/
 extern void rpclog(const char *format, ...);
@@ -59,6 +60,11 @@ extern void fatal(const char *format, ...);
 #define LOG_DATABORT(...) ((void)0)
 #endif
 
+
+#define container_of(ptr, type, member) ({                      \
+        const typeof( ((type *)0)->member ) *__mptr = (ptr);    \
+        (type *)( (char *)__mptr - offsetof(type,member) );})
+        
 
 extern void arc_set_cpu(int cpu, int memc);
 extern void arc_setspeed(int mhz);
@@ -199,15 +205,6 @@ extern uint8_t read82c711(uint32_t addr);
 extern void write82c711(uint32_t addr, uint32_t val);
 extern uint8_t readfdcdma(uint32_t addr);
 extern void writefdcdma(uint32_t addr, uint8_t val);
-
-/*IDE*/
-extern int idecallback;
-extern void resetide();
-extern uint16_t readidew();
-extern void writeidew(uint16_t val);
-extern uint8_t readide(uint32_t addr);
-extern void writeide(uint32_t addr, uint8_t val);
-extern void callbackide();
 
 /*ST-506*/
 extern void resetst506();

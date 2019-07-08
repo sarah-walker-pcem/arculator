@@ -9,6 +9,7 @@ int flybacklines;
 #include "mem.h"
 #include "memc.h"
 #include "soundopenal.h"
+#include "timer.h"
 #include "vidc.h"
 
 int memc_videodma_enable;
@@ -17,7 +18,7 @@ int memc_is_memc1 = 1;
 int memc_refresh_time;
 int memc_type;
 
-int sound_poll_time;
+static timer_t sound_timer;
 
 uint32_t memctrl;
 int16_t soundbuf[8][50000],soundbuft[50000];
@@ -498,8 +499,9 @@ int vollevels[2][2][8]=
         }
 };
 
-void pollsound()
+void pollsound(void *p)
 {
+        timer_advance_u64(&sound_timer, 4 * TIMER_USEC);
         mixsample();
         if (!sdmaena) return;
         sampledelay += 4 << 10;
@@ -616,4 +618,7 @@ void initmemc()
 {
         int c;
         for (c=0;c<0x2000;c++) memstat[c]=0;
+        for (c=0x3400;c<0x3800;c++) memstat[c]=0;
+
+        timer_add(&sound_timer, pollsound, NULL, 1);
 }

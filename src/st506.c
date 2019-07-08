@@ -3,9 +3,8 @@
 #include "arc.h"
 #include "config.h"
 #include "ioc.h"
+#include "timer.h"
 
-/*TODO: remove*/
-static int idecallback;
 void callbackst506();
 int printnext=0;
 // int timetolive;
@@ -32,6 +31,8 @@ struct
         uint8_t ssb;
         int drq;
         int first;
+        
+        timer_t timer;
 } st506;
 uint8_t st506buffer[272];
 
@@ -56,6 +57,7 @@ void resetst506()
         if (shdfile[1])
                 fclose(shdfile[1]);
         shdfile[1] = fopen(hd_fn[1],"rb+");
+        timer_add(&st506.timer, callbackst506, NULL, 0);
 }
 
 #define TOV 0x58
@@ -117,7 +119,7 @@ uint8_t readst506(uint32_t a)
                         {
                                 st506.drq=0;
                                 st506_updateinterrupts();
-                                idecallback=40;
+                                timer_set_delay_u64(&st506.timer, 5000 * TIMER_USEC);
                         }
 //                        rpclog("Read HDC %08X %08X %07X %02X\n",a,temp,PC,ioc.irqb);
                         return temp;
@@ -198,7 +200,7 @@ void writest506l(uint32_t a, uint32_t v)
                         if (st506.lsect>31)  { st506error(TOV); readdataerror(); return; }
                         fseek(shdfile[st506.drive],(((((st506.lcyl*8)+st506.lhead)*32)+st506.lsect)*256),SEEK_SET);
 //                        rpclog("Seeked to %08X\n",(((((st506.lcyl*8)+st506.lhead)*32)+st506.lsect)*256));
-                        idecallback=100;
+                        timer_set_delay_u64(&st506.timer, 5000 * TIMER_USEC);
                         st506.status|=0x80;
                         return;
                         case 0x48: /*Check data*/
@@ -213,7 +215,7 @@ void writest506l(uint32_t a, uint32_t v)
                         if (st506.lhead>7)   { st506error(IPH); readdataerror(); return; }
                         if (st506.lsect>31)  { st506error(TOV); readdataerror(); return; }
                         fseek(shdfile[st506.drive],(((((st506.lcyl*8)+st506.lhead)*32)+st506.lsect)*256),SEEK_SET);
-                        idecallback=100;
+                        timer_set_delay_u64(&st506.timer, 5000 * TIMER_USEC);
                         st506.status|=0x80;
                         return;
                         case 0x87: /*Write data*/
@@ -229,7 +231,7 @@ void writest506l(uint32_t a, uint32_t v)
                         if (st506.lsect>31)  { st506error(TOV); readdataerror(); return; }
                         fseek(shdfile[st506.drive],(((((st506.lcyl*8)+st506.lhead)*32)+st506.lsect)*256),SEEK_SET);
 //                        rpclog("Seeked to %08X\n",(((((st506.lcyl*8)+st506.lhead)*32)+st506.lsect)*256));
-                        idecallback=100;
+                        timer_set_delay_u64(&st506.timer, 5000 * TIMER_USEC);
                         st506.status|=0x80;
                         st506.first=1;
                         return;
@@ -245,7 +247,7 @@ void writest506l(uint32_t a, uint32_t v)
                         if (st506.lhead>7)   { st506error(IPH); readdataerror(); return; }
                         if (st506.lsect>31)  { st506error(TOV); readdataerror(); return; }
                         fseek(shdfile[st506.drive],(((((st506.lcyl*8)+st506.lhead)*32)+st506.lsect)*256),SEEK_SET);
-                        idecallback=100;
+                        timer_set_delay_u64(&st506.timer, 5000 * TIMER_USEC);
                         st506.status|=0x80;
                         st506.first=1;
                         return;
@@ -314,7 +316,7 @@ void writest506l(uint32_t a, uint32_t v)
                         {
                                 st506.drq=0;
                                 st506_updateinterrupts();
-                                idecallback=20;
+                                timer_set_delay_u64(&st506.timer, 5000 * TIMER_USEC);
                         }
 //                        rpclog("Write HDC %08X %08X %i %07X %i %02X  %02X %02X\n",a,temp,st506.p,PC,st506.drq,ioc.irqb,st506.status,st506.OM1);
                         return;
@@ -353,7 +355,7 @@ uint32_t readst506l(uint32_t a)
                         {
                                 st506.drq=0;
                                 st506_updateinterrupts();
-                                idecallback=20;
+                                timer_set_delay_u64(&st506.timer, 5000 * TIMER_USEC);
                         }
 //                        rpclog("Read HDC %08X %08X %i %07X\n",a,temp,st506.p,PC);
                         return temp;
@@ -477,7 +479,7 @@ void callbackst506()
                                 }
                         }
                         st506.oplen--;
-                        idecallback=100;
+                        timer_set_delay_u64(&st506.timer, 5000 * TIMER_USEC);
 //                        rpclog("Check data next callback\n");
                 }
                 else

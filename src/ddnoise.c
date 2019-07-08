@@ -6,6 +6,7 @@
 #include "disc.h"
 #include "ddnoise.h"
 #include "soundopenal.h"
+#include "timer.h"
 
 int ddnoise_vol=3;
 int ddnoise_type=0;
@@ -82,7 +83,7 @@ void ddnoise_close()
 
 void ddnoise_seek(int len)
 {
-        fdc_time = 20000;
+        timer_set_delay_u64(&fdc_timer, 2500 * TIMER_USEC);
 #if 0
         rpclog("Seek %i tracks\n",len);
         ddnoise_sdir = (len < 0) ? 1 : 0;

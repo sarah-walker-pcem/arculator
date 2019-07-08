@@ -8,6 +8,10 @@
 #include "ide_riscdev.h"
 #include "ioc.h"
 #include "podules.h"
+#include "timer.h"
+
+static timer_t podule_timer;
+void runpoduletimers(void *p);
 
 typedef struct podule_list
 {
@@ -155,6 +159,8 @@ void podules_init(void)
                         }
                 }
         }
+        
+        timer_add(&podule_timer, runpoduletimers, NULL, 1);
 }
 
 void podules_reset(void)
@@ -294,9 +300,12 @@ uint32_t podule_memc_read_w(int num, uint32_t addr)
 }
 
 /*Run podule timers for t ms*/
-void runpoduletimers(int t)
+void runpoduletimers(void *p)
 {
         int c;
+
+        timer_advance_u64(&podule_timer, TIMER_USEC * 1000);
+
 //        return;
         for (c = 0; c < 4; c++)
         {

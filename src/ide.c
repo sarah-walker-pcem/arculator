@@ -7,6 +7,7 @@
 #include "config.h"
 #include "ide.h"
 #include "ioc.h"
+#include "timer.h"
 
 ide_t ide_internal;
 
@@ -38,7 +39,6 @@ void resetide(ide_t *ide, char *fn_pri, char *fn_sec, void (*irq_raise)(ide_t *i
 
         ide->drive=0;
         ide->atastat=0x40;
-        ide->callback = 0;
         ide->idebufferb = (uint8_t *)ide->idebuffer;
         ide->irq_raise = irq_raise;
         ide->irq_clear = irq_clear;
@@ -81,6 +81,8 @@ void resetide(ide_t *ide, char *fn_pri, char *fn_sec, void (*irq_raise)(ide_t *i
 //        ide->hpc=16;
 //        ide->spt=16;
 //        ide->hpc=14;
+
+        timer_add(&ide->timer, callbackide, ide, 0);
 }
 
 void writeidew(ide_t *ide, uint16_t val)
@@ -92,7 +94,7 @@ void writeidew(ide_t *ide, uint16_t val)
         {
                 ide->pos=0;
                 ide->atastat=0x80;
-                ide->callback = 200;
+                timer_set_delay_u64(&ide->timer, 1000 * TIMER_USEC);
         }
 }
 
@@ -107,7 +109,7 @@ void writeide(ide_t *ide, uint32_t addr, uint8_t val)
                 {
                         ide->pos=0;
                         ide->atastat=0x80;
-                        ide->callback = 1000;
+                        timer_set_delay_u64(&ide->timer, 1000 * TIMER_USEC);
                 }
                 return;
                 case 0x1F1:
@@ -141,7 +143,7 @@ void writeide(ide_t *ide, uint32_t addr, uint8_t val)
                         case 0x10: /*Restore*/
                         case 0x70: /*Seek*/
                         ide->atastat=0x40;
-                        ide->callback = 100;
+                        timer_set_delay_u64(&ide->timer, 1000 * TIMER_USEC);
                         return;
                         case 0x20: /*Read sector*/
                         case 0x21: /*Read sector, no retry*/
@@ -152,7 +154,7 @@ void writeide(ide_t *ide, uint32_t addr, uint8_t val)
                         }*/
                         rpclog("Read %i sectors from sector %i cylinder %i head %i\n",ide->secount,ide->sector,ide->cylinder,ide->head);
                         ide->atastat=0x80;
-                        ide->callback = 100;
+                        timer_set_delay_u64(&ide->timer, 1000 * TIMER_USEC);
                         return;
                         case 0x30: /*Write sector*/
                         case 0x31: /*Write sector, no retry*/
@@ -169,7 +171,7 @@ void writeide(ide_t *ide, uint32_t addr, uint8_t val)
                         case 0x41:
 //                        rpclog("Read verify %i sectors from sector %i cylinder %i head %i\n",ide->secount,ide->sector,ide->cylinder,ide->head);
                         ide->atastat=0x80;
-                        ide->callback = 200;
+                        timer_set_delay_u64(&ide->timer, 1000 * TIMER_USEC);
                         return;
                         case 0x50:
 //                        rpclog("Format track %i head %i\n",ide->cylinder,ide->head);
@@ -179,20 +181,20 @@ void writeide(ide_t *ide, uint32_t addr, uint8_t val)
                         return;
                         case 0x91: /*Set parameters*/
                         ide->atastat=0x80;
-                        ide->callback = 200;
+                        timer_set_delay_u64(&ide->timer, 1000 * TIMER_USEC);
                         return;
                         case 0xA1: /*Identify packet device*/
                         case 0xE3: /*Idle*/
                         ide->atastat=0x80;
-                        ide->callback = 200;
+                        timer_set_delay_u64(&ide->timer, 1000 * TIMER_USEC);
                         return;
                         case 0xEC: /*Identify device*/
                         ide->atastat=0x80;
-                        ide->callback = 200;
+                        timer_set_delay_u64(&ide->timer, 1000 * TIMER_USEC);
                         return;
                         case 0xE5: /*Standby power check*/
                         ide->atastat=0x80;
-                        ide->callback = 200;
+                        timer_set_delay_u64(&ide->timer, 1000 * TIMER_USEC);
                         return;
                 }
                 error("Bad IDE command %02X\n",val);
@@ -201,7 +203,7 @@ void writeide(ide_t *ide, uint32_t addr, uint8_t val)
                 case 0x3F6:
                 if ((ide->fdisk&4) && !(val&4))
                 {
-                        ide->callback = 500;
+                        timer_set_delay_u64(&ide->timer, 5000 * TIMER_USEC);
                         ide->reset=1;
                         ide->atastat=0x80;
 //                        rpclog("IDE Reset\n");
@@ -287,7 +289,7 @@ uint16_t readidew(ide_t *ide)
                                         }
                                 }
                                 ide->atastat=0x80;
-                                ide->callback = 200;
+                                timer_set_delay_u64(&ide->timer, 1000 * TIMER_USEC);
                         }
                 }
         }
@@ -296,14 +298,15 @@ uint16_t readidew(ide_t *ide)
 
 void resetide_drive(ide_t *ide)
 {
-        ide->callback = 500;
+        timer_set_delay_u64(&ide->timer, 1000 * TIMER_USEC);
         ide->reset=1;
         ide->atastat=0x80;
         rpclog("Requested reset\n");
 }
 
-void callbackide(ide_t *ide)
+void callbackide(void *p)
 {
+        ide_t *ide = p;
         int addr,c;
         rpclog("IDE callback: drive=%i reset=%i command=%02x skip512=%i %p\n", ide->drive, ide->reset, ide->command, ide->skip512[ide->drive], ide);
 //        rpclog("IDE callback %08X %i %02X\n",hdfile[ide->drive],ide->drive,ide->command);

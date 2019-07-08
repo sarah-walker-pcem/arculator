@@ -28,6 +28,7 @@
 #include "podules.h"
 #include "sound.h"
 #include "soundopenal.h"
+#include "timer.h"
 #include "vidc.h"
 #include "video.h"
 #include "video_sdl2.h"
@@ -184,6 +185,8 @@ void arc_init()
         
         initvid();
 
+        arc_set_cpu(arm_cpu_type, memc_type);
+        timer_reset();
 #if 0
         initarculfs();
 #endif
@@ -234,8 +237,6 @@ void arc_init()
         if (romset==3) fdctype=1;
         else	       fdctype=0;
 
-        arc_set_cpu(arm_cpu_type, memc_type);
-
         resetst506();
 
         podules_init();
@@ -245,6 +246,7 @@ int speed_mhz;
 
 void arc_reset()
 {
+        timer_reset();
         if (cmos_changed)
         {
                 cmos_changed = 0;
@@ -259,6 +261,7 @@ void arc_reset()
         resetmouse();
         ioc_reset();
         keyboard_init();
+        disc_init();
         wd1770_reset();
         c82c711_fdc_reset();
         resetst506();
@@ -269,11 +272,7 @@ void arc_reset()
 void arc_setspeed(int mhz)
 {
         rpclog("arc_setspeed : %i MHz\n", mhz);
-//        ioc_recalctimers(mhz);
         speed_mhz = mhz;
-        disc_poll_time = 2 * mhz;
-        sound_poll_time = 4 * mhz;
-        keyboard_poll_time = 10000 * mhz;
 	memc_refresh_time = ((32 << 10) * speed_mhz) / 8;
         rpclog("memc_refresh_time=%i\n", memc_refresh_time);
 }

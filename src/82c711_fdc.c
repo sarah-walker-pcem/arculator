@@ -7,10 +7,11 @@
 #include "config.h"
 #include "disc.h"
 #include "ioc.h"
+#include "timer.h"
 
 int discint = -1;
 
-void c82c711_fdc_callback();
+void c82c711_fdc_callback(void *p);
 void c82c711_fdc_data(uint8_t dat);
 void c82c711_fdc_spindown();
 void c82c711_fdc_finishread();
@@ -59,13 +60,13 @@ void c82c711_fdc_reset()
         fdc.lock = 0;
         fdc.head = 0;
 
-fdc.inread = 0;
+        fdc.inread = 0;
         rpclog("Reset 82c711\n");
-        fdc_time = 0;
+
         if (fdctype == FDC_82C711)
         {
                 rpclog("82c711 present\n");
-                fdc_callback       = c82c711_fdc_callback;
+                timer_add(&fdc_timer, c82c711_fdc_callback, NULL, 0);
                 fdc_data           = c82c711_fdc_data;
                 fdc_spindown       = c82c711_fdc_spindown;
                 fdc_finishread     = c82c711_fdc_finishread;
@@ -103,10 +104,11 @@ void c82c711_fdc_write(uint16_t addr, uint8_t val)
                 {
 //                        rpclog("Reset through 3f2\n");
                         c82c711_fdc_reset();
-                        fdc_time=128;
+                        timer_set_delay_u64(&fdc_timer, 16 * TIMER_USEC);
                         discint=-1;
                 }
                 motoron = (val & 0xf0) ? 1 : 0;                  
+                disc_set_motor(motoron);
                 disc_drivesel = val & 3;
                 fdc.dor=val;
 //                rpclog("DOR now %02X\n",val);
@@ -116,7 +118,7 @@ void c82c711_fdc_write(uint16_t addr, uint8_t val)
                 {
 //                        rpclog("Reset through 3f4\n");
                         c82c711_fdc_reset();
-                        fdc_time=128;
+                        timer_set_delay_u64(&fdc_timer, 16 * TIMER_USEC);
                         discint=-1;
                 }
                 return;
@@ -169,7 +171,7 @@ void c82c711_fdc_write(uint16_t addr, uint8_t val)
 //                                fdc_time=1024;
                                 discint = 8;
                                 fdc.pos = 0;
-                                c82c711_fdc_callback();
+                                c82c711_fdc_callback(NULL);
                                 break;
                                 case 10: /*Read sector ID*/
                                 fdc.pnum=0;
@@ -193,13 +195,13 @@ void c82c711_fdc_write(uint16_t addr, uint8_t val)
                                 fdc.lastdrive = curdrive;
                                 discint = 0x0e;
                                 fdc.pos = 0;
-                                c82c711_fdc_callback();
+                                c82c711_fdc_callback(NULL);
                                 break;
                                 case 0x10: /*Get version*/
                                 fdc.lastdrive = curdrive;
                                 discint = 0x10;
                                 fdc.pos = 0;
-                                c82c711_fdc_callback();
+                                c82c711_fdc_callback(NULL);
                                 break;
                                 case 0x12: /*Set perpendicular mode*/
                                 fdc.pnum=0;
@@ -218,13 +220,13 @@ void c82c711_fdc_write(uint16_t addr, uint8_t val)
                                 fdc.lastdrive = curdrive;
                                 discint = fdc.command;
                                 fdc.pos = 0;
-                                c82c711_fdc_callback();
+                                c82c711_fdc_callback(NULL);
                                 break;
 
                                 case 0x18:
                                 fdc.stat = 0x10;
                                 discint  = 0xfc;
-                                c82c711_fdc_callback();
+                                c82c711_fdc_callback(NULL);
                                 break;
 
                                 default:
@@ -233,7 +235,7 @@ void c82c711_fdc_write(uint16_t addr, uint8_t val)
                                 exit(-1);
                                 fdc.stat=0x10;
                                 discint=0xfc;
-                                fdc_time=200;
+                                timer_set_delay_u64(&fdc_timer, 25 * TIMER_USEC);
                                 break;
                         }
                 }
@@ -245,7 +247,7 @@ void c82c711_fdc_write(uint16_t addr, uint8_t val)
 //                                rpclog("Got all params %02X\n", fdc.command);
                                 fdc.stat=0x30;
                                 discint=fdc.command&0x1F;
-                                fdc_time=1024;
+                                timer_set_delay_u64(&fdc_timer, 128 * TIMER_USEC);
                                 curdrive = fdc.params[0] & 3;
                                 switch (discint)
                                 {
@@ -255,7 +257,7 @@ void c82c711_fdc_write(uint16_t addr, uint8_t val)
                                         fdc.sector=fdc.params[3];
                                         fdc.eot[curdrive] = fdc.params[4];
                                         disc_writesector(curdrive, fdc.sector, fdc.track[curdrive], fdc.head, fdc.density);
-                                        fdc_time = 0;
+                                        timer_disable(&fdc_timer);
                                         fdc.written = 0;
                                         readflash[curdrive] = 1;
                                         fdc.pos = 0;
@@ -268,14 +270,14 @@ void c82c711_fdc_write(uint16_t addr, uint8_t val)
                                         fdc.sector=fdc.params[3];
                                         fdc.eot[curdrive] = fdc.params[4];
                                         disc_readsector(curdrive, fdc.sector, fdc.track[curdrive], fdc.head, fdc.density);
-                                        fdc_time = 0;
+                                        timer_disable(&fdc_timer);
                                         readflash[curdrive] = 1;
                                 fdc.inread = 1;
                                         break;
                                         
                                         case 7: /*Recalibrate*/
                                         fdc.stat =  1 << curdrive;
-                                        fdc_time = 0;
+                                        timer_disable(&fdc_timer);
                                         disc_seek(curdrive, 0);
                                         break;
 
@@ -288,12 +290,12 @@ void c82c711_fdc_write(uint16_t addr, uint8_t val)
                                         case 0xf: /*Seek*/
                                         fdc.stat =  1 << curdrive;
                                         fdc.head = (fdc.params[0] & 4) ? 1 : 0;
-                                        fdc_time = 0;
+                                        timer_disable(&fdc_timer);
                                         disc_seek(curdrive, fdc.params[1]);
                                         break;
                                         
                                         case 10: /*Read sector ID*/
-                                        fdc_time = 0;
+                                        timer_disable(&fdc_timer);
                                         fdc.head = (fdc.params[0] & 4) ? 1 : 0;                                        
 //                                        rpclog("Read sector ID %i %i\n", fdc.rate, curdrive);
                                         disc_readaddress(curdrive, fdc.track[curdrive], fdc.head, fdc.density);
@@ -350,7 +352,7 @@ uint8_t c82c711_fdc_read(uint16_t addr)
                         else
                         {
                                 fdc.stat|=0xC0;
-//                                c82c711_fdc_callback();
+//                                c82c711_fdc_callback(NULL);
                         }
                 }
                 else
@@ -363,7 +365,7 @@ uint8_t c82c711_fdc_read(uint16_t addr)
                 }
                 if (discint==0xA) 
                 {
-                        fdc_time=1024;
+                        timer_set_delay_u64(&fdc_timer, 128 * TIMER_USEC);
                 }
                 fdc.stat &= 0xf0;
                 break;
@@ -395,7 +397,7 @@ void c82c711_fdc_abort()
 }
 
 static int fdc_reset_stat = 0;
-void c82c711_fdc_callback()
+void c82c711_fdc_callback(void *p)
 {
         int temp;
 //        if (fdc.inread)
@@ -426,7 +428,6 @@ void c82c711_fdc_callback()
                 fdc.stat = (fdc.stat & 0xf) | 0xd0;
                 paramstogo = 1;
                 discint = 0;
-                fdc_time = 0;
                 return;
                 case 5: /*Write data*/
                 readflash[curdrive] = 1;
@@ -511,7 +512,7 @@ void c82c711_fdc_callback()
 //                if (!driveempty[fdc.dor & 1]) discchanged[fdc.dor & 1] = 0;
                 fdc.st0=0x20|curdrive|(fdc.head?4:0);
                 discint=-3;
-                fdc_time=2048;
+                timer_advance_u64(&fdc_timer, 256 * TIMER_USEC);
 //                printf("Recalibrate complete!\n");
                 fdc.stat = 0x80 | (1 << curdrive);
                 return;
@@ -533,7 +534,6 @@ void c82c711_fdc_callback()
 
                 paramstogo = 2;
                 discint = 0;
-                fdc_time = 0;
                 return;
                 
                 case 0x0d: /*Format track*/
@@ -542,20 +542,20 @@ void c82c711_fdc_callback()
                 {
                         ioc_fiq(IOC_FIQ_DISC_DATA);
                         fdc.format_state = 2;
-                        fdc_time = 128;
-                }                
+                        timer_advance_u64(&fdc_timer, 16 * TIMER_USEC);
+                }
                 else if (fdc.format_state == 2)
                 {
                         temp = c82c711_fdc_getdata(fdc.pos == ((fdc.params[2] * 4) - 1));
                         if (temp == -1)
                         {
-                                fdc_time = 128;
+                                timer_advance_u64(&fdc_timer, 16 * TIMER_USEC);
                                 return;
                         }
                         fdc.format_dat[fdc.pos++] = temp;
                         if (fdc.pos == (fdc.params[2] * 4))
                            fdc.format_state = 3;
-                        fdc_time = 128;
+                        timer_advance_u64(&fdc_timer, 16 * TIMER_USEC);
                 }
                 else if (fdc.format_state == 4)
                 {
@@ -586,7 +586,7 @@ void c82c711_fdc_callback()
 //                printf("Seeked to track %i %i\n",fdc.track[curdrive], curdrive);
                 fdc.st0=0x20|curdrive|(fdc.head?4:0);
                 discint=-3;
-                fdc_time=2048;
+                timer_advance_u64(&fdc_timer, 256 * TIMER_USEC);
                 fdc.stat = 0x80 | (1 << curdrive);
 //                pclog("Stat %02X ST0 %02X\n", fdc.stat, fdc.st0);
                 return;
@@ -602,7 +602,6 @@ void c82c711_fdc_callback()
                 fdc.res[10] = (fdc.perp & 0x7f) | ((fdc.lock) ? 0x80 : 0);
                 paramstogo=10;
                 discint=0;
-                fdc_time=0;
                 return;
 
                 case 0x10: /*Version*/
@@ -610,20 +609,17 @@ void c82c711_fdc_callback()
                 fdc.res[10] = 0x90;
                 paramstogo=1;
                 discint=0;
-                fdc_time=0;
                 return;
                 
                 case 0x12:
                 fdc.perp = fdc.params[0];
                 fdc.stat = 0x80;
-                fdc_time = 0;
 //                picint(0x40);
                 return;
                 case 0x13: /*Configure*/
                 fdc.config = fdc.params[1];
                 fdc.pretrk = fdc.params[2];
                 fdc.stat = 0x80;
-                fdc_time = 0;
 //                picint(0x40);
                 return;
                 case 0x14: /*Unlock*/
@@ -632,7 +628,6 @@ void c82c711_fdc_callback()
                 fdc.res[10] = 0;
                 paramstogo=1;
                 discint=0;
-                fdc_time=0;
                 return;
                 case 0x94: /*Lock*/
                 fdc.lock = 1;
@@ -640,7 +635,6 @@ void c82c711_fdc_callback()
                 fdc.res[10] = 0x10;
                 paramstogo=1;
                 discint=0;
-                fdc_time=0;
                 return;
 
 
@@ -653,7 +647,6 @@ void c82c711_fdc_callback()
                 fdc.res[10] = fdc.st0;
                 paramstogo=1;
                 discint=0;
-                fdc_time=0;
                 return;
         }
 //        printf("Bad FDC disc int %i\n",discint);
@@ -683,13 +676,13 @@ void c82c711_fdc_data(uint8_t dat)
 void c82c711_fdc_finishread()
 {
         fdc.inread = 0;
-        fdc_time = 200;
+        timer_set_delay_u64(&fdc_timer, 25 * TIMER_USEC);
 //        rpclog("fdc_finishread\n");
 }
 
 void c82c711_fdc_notfound()
 {
-        fdc_time = 0;
+        timer_disable(&fdc_timer);
 
         ioc_irqb(IOC_IRQB_DISC_IRQ);
         fdc.stat=0xD0;
@@ -706,7 +699,7 @@ void c82c711_fdc_notfound()
 
 void c82c711_fdc_datacrcerror()
 {
-        fdc_time = 0;
+        timer_disable(&fdc_timer);
 
         ioc_irqb(IOC_IRQB_DISC_IRQ);
         fdc.stat=0xD0;
@@ -723,7 +716,7 @@ void c82c711_fdc_datacrcerror()
 
 void c82c711_fdc_headercrcerror()
 {
-        fdc_time = 0;
+        timer_disable(&fdc_timer);
 
         ioc_irqb(IOC_IRQB_DISC_IRQ);
         fdc.stat=0xD0;

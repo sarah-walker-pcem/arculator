@@ -17,9 +17,11 @@
 #include "ddnoise.h"
 
 #include "ioc.h"
+#include "timer.h"
+
+static timer_t disc_timer;
 
 int disc_drivesel = 0;
-int disc_poll_time = 16;
 
 DRIVE drives[4];
 
@@ -34,8 +36,6 @@ int fastdisc;
 char discfns[4][260] = {"", ""};
 int defaultwriteprot = 0;
 
-int fdc_time;
-int disc_time;
 
 int fdc_ready;
 
@@ -46,7 +46,6 @@ int motoron;
 
 int fdc_indexcount = 52;
 
-void (*fdc_callback)();
 void (*fdc_data)(uint8_t dat);
 void (*fdc_spindown)();
 void (*fdc_finishread)();
@@ -57,6 +56,8 @@ void (*fdc_writeprotect)();
 int  (*fdc_getdata)(int last);
 void (*fdc_sectorid)(uint8_t track, uint8_t side, uint8_t sector, uint8_t size, uint8_t crc1, uint8_t crc2);
 void (*fdc_indexpulse)();
+
+timer_t fdc_timer;
 
 static struct
 {
@@ -228,10 +229,12 @@ void disc_init()
         drives[0].seek = drives[1].seek = 0;
         drives[0].readsector = drives[1].readsector = 0;
         curdrive = 0;
+        timer_add(&disc_timer, disc_poll, NULL, 0);
 }
 
-void disc_poll()
+void disc_poll(void *p)
 {
+        timer_advance_u64(&disc_timer, 4 * TIMER_USEC);
         if (drives[disc_drivesel].poll) drives[disc_drivesel].poll();
         if (disc_notfound)
         {
@@ -288,4 +291,12 @@ void disc_stop(int drive)
 {
         if (drives[drive].stop)
            drives[drive].stop();
+}
+
+void disc_set_motor(int enable)
+{
+        if (!enable)
+                timer_disable(&disc_timer);
+        else if (!timer_is_enabled(&disc_timer))
+                timer_set_delay_u64(&disc_timer, 4 * TIMER_USEC);
 }

@@ -7,11 +7,12 @@
 #include "config.h"
 #include "disc.h"
 #include "ioc.h"
+#include "timer.h"
 #include "wd1770.h"
 
 #define ABS(x) (((x)>0)?(x):-(x))
 
-void wd1770_callback();
+void wd1770_callback(void *p);
 void wd1770_data(uint8_t dat);
 void wd1770_spindown();
 void wd1770_finishread();
@@ -41,11 +42,10 @@ void wd1770_reset()
         wd1770.status = 0;
         motorspin = 0;
         rpclog("Reset 1770\n");
-        fdc_time = 0;
         if (fdctype == FDC_WD1770)
         {
                 rpclog("WD1770 present\n");
-                fdc_callback       = wd1770_callback;
+                timer_add(&fdc_timer, wd1770_callback, NULL, 0);
                 fdc_data           = wd1770_data;
                 fdc_spindown       = wd1770_spindown;
                 fdc_finishread     = wd1770_finishread;
@@ -163,7 +163,7 @@ void wd1770_write(uint16_t addr, uint8_t val)
                         break;
                         case 0xD: /*Force interrupt*/
 //                        rpclog("Force interrupt\n");
-                        fdc_time = 0;
+                        timer_disable(&fdc_timer);
                         wd1770.status = 0x80 | track0;
                         if (val & 8)
                            ioc_fiq(IOC_FIQ_DISC_IRQ);
@@ -176,7 +176,7 @@ void wd1770_write(uint16_t addr, uint8_t val)
                         
                         default:
 //                                rpclog("Bad 1770 command %02X\n",val);
-                        fdc_time = 0;
+                        timer_disable(&fdc_timer);
                         ioc_fiq(IOC_FIQ_DISC_IRQ);
                         wd1770.status = 0x90;
                         wd1770_spindown();
@@ -234,6 +234,7 @@ void wd1770_writelatch_a(uint8_t val)
         ioc_updateirqs();
         wd1770.curside = (val & 0x10) ? 0 : 1;
         motoron = !(val & 0x20);
+        disc_set_motor(motoron);
         if (motoron && !disc_empty(curdrive))
            fdc_ready = 0;
         else
@@ -245,10 +246,10 @@ void wd1770_writelatch_b(uint8_t val)
         wd1770.density = !(val & 2);
 }
 
-void wd1770_callback()
+void wd1770_callback(void *p)
 {
         rpclog("FDC callback %02X\n", wd1770.command);
-        fdc_time = 0;
+
         switch (wd1770.command >> 4)
         {
                 case 0: /*Restore*/
@@ -322,13 +323,13 @@ void wd1770_data(uint8_t dat)
 void wd1770_finishread()
 {
 //        rpclog("fdc_time set by wd1770_finishread\n");
-        fdc_time = 200;
+        timer_set_delay_u64(&fdc_timer, 25 * TIMER_USEC);
 }
 
 void wd1770_notfound()
 {
 //        rpclog("Not found\n");
-        fdc_time = 0;
+        timer_disable(&fdc_timer);
         ioc_fiq(IOC_FIQ_DISC_IRQ);
         wd1770.status = 0x90;
         wd1770_spindown();
@@ -337,7 +338,7 @@ void wd1770_notfound()
 void wd1770_datacrcerror()
 {
 //        rpclog("Data CRC\n");
-        fdc_time = 0;
+        timer_disable(&fdc_timer);
         ioc_fiq(IOC_FIQ_DISC_IRQ);
         wd1770.status = 0x88;
         wd1770_spindown();
@@ -346,7 +347,7 @@ void wd1770_datacrcerror()
 void wd1770_headercrcerror()
 {
 //        rpclog("Header CRC\n");
-        fdc_time = 0;
+        timer_disable(&fdc_timer);
         ioc_fiq(IOC_FIQ_DISC_IRQ);
         wd1770.status = 0x98;
         wd1770_spindown();
@@ -367,7 +368,7 @@ int wd1770_getdata(int last)
 
 void wd1770_writeprotect()
 {
-        fdc_time = 0;
+        timer_disable(&fdc_timer);
         ioc_fiq(IOC_FIQ_DISC_IRQ);
         wd1770.status = 0xC0;
         wd1770_spindown();

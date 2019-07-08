@@ -6,7 +6,11 @@
 #include "keyboard.h"
 #include "plat_input.h"
 #include "keytable.h"
+#include "timer.h"
 
+static timer_t keyboard_timer;
+static timer_t keyboard_rx_timer;
+static timer_t keyboard_tx_timer;
 static int mouse_b, mouse_x, mouse_y;
 
 int mousecapture=0;
@@ -23,11 +27,6 @@ int keyrow,keycol;
 uint8_t mousex,mousey;
 
 static uint8_t key_data[2];
-
-int key_rx_callback = 0;
-int key_tx_callback = 0;
-int keyboard_poll_time;
-int keyboard_poll_count;
 
 enum
 {
@@ -54,7 +53,7 @@ void keyboard_send_single(uint8_t val)
         
         keystat = KEYBOARD_DAT_SINGLE;
         
-        key_rx_callback = 25;
+        timer_set_delay_u64(&keyboard_rx_timer, 1000 * TIMER_USEC);
 }
 
 void keyboard_send_double(uint8_t val1, uint8_t val2)
@@ -65,7 +64,7 @@ void keyboard_send_double(uint8_t val1, uint8_t val2)
         
         keystat = KEYBOARD_DAT1;
         
-        key_rx_callback = 25;
+        timer_set_delay_u64(&keyboard_rx_timer, 1000 * TIMER_USEC);
 }
 
 void key_do_rx_callback()
@@ -125,8 +124,8 @@ void keyboard_write(uint8_t val)
 {
         int c;
 
-        key_tx_callback = 10;
-        
+        timer_set_delay_u64(&keyboard_tx_timer, 1000 * TIMER_USEC);
+
         LOG_KB_MOUSE("Keyboard write %02X %i %08X\n", val, keystat, PC);
         switch (keystat)
         {
@@ -184,7 +183,7 @@ void keyboard_write(uint8_t val)
                 {
                         case KEYBOARD_BACK:
                         keystat = KEYBOARD_DAT2;
-                        key_rx_callback = 25;
+                        timer_set_delay_u64(&keyboard_rx_timer, 1000 * TIMER_USEC);
                         break;
                         
                         case KEYBOARD_HRST:
@@ -217,7 +216,6 @@ void keyboard_init()
 {
         int c, d;
         
-        key_rx_callback = 0;
         keyboard_send_single(KEYBOARD_HRST);
         keystat = KEYBOARD_RESET;        
         for (c = 0; c < 512; c++)
@@ -234,15 +232,22 @@ void keyboard_init()
                 if (keys[c][0] == -1)
                         d = 1;
         }
+        
+        timer_add(&keyboard_timer, keyboard_poll, NULL, 1);
+        timer_add(&keyboard_rx_timer, key_do_rx_callback, NULL, 0);
+        timer_add(&keyboard_tx_timer, key_do_tx_callback, NULL, 0);
 }
 
 FILE *klog;
-void keyboard_poll()
+void keyboard_poll(void *p)
 {
         int mx,my;
         int mouse_buttons;
         int c;
         uint8_t dx, dy;
+        
+        timer_advance_u64(&keyboard_timer, TIMER_USEC * 10000);
+        
         if (romset > 3)
         {
                 ioc_irqb(IOC_IRQB_PODULE_IRQ);

@@ -58,8 +58,7 @@ void initmem(int memsize)
         mempoint[0]=rom;
         for (c=0;c<0x4000;c++) mempointb[c]=(uint8_t *)mempoint[c];
         realmemsize=memsize;
-        initmemc();
-        
+
         for (c = 0; c < 0x3000; c++)
         {
                 mem_speed[c][0] = 1 * mem_spd_multi;
@@ -123,8 +122,6 @@ void resizemem(int memsize) /*memsize is 4096,8192,16384*/
         for (c=0x2000;c<0x3000;c++) mempointb[c]=(uint8_t *)mempoint[c];
         memset(ram,0,memsize*1024);
         realmemsize=memsize;
-        initmemc();
-        for (c=0x3400;c<0x3800;c++) memstat[c]=0;
         for (c=0;c<0x4000;c++) mempointb[c]=(uint8_t *)mempoint[c];
 }
 

@@ -176,24 +176,6 @@ static void riscdev_ide_write_w(struct podule_t *podule, podule_io_type type, ui
         }
 }
 
-static int riscdev_ide_run(struct podule_t *podule, int timeslice_us)
-{
-        riscdev_ide_t *riscdev = podule->p;
-
-        if (riscdev->ide.callback)
-        {
-                riscdev->ide.callback -= 100;
-                if (riscdev->ide.callback <= 0)
-                {
-                        riscdev->ide.callback = 0;
-//                        rpclog("ICS callback\n");
-                        callbackide(&riscdev->ide);
-                }
-        }
-        
-        return 0;
-}
-
 static const podule_header_t riscdev_ide_podule_header =
 {
         .version = PODULE_API_VERSION,
@@ -208,8 +190,7 @@ static const podule_header_t riscdev_ide_podule_header =
                 .read_b = riscdev_ide_read_b,
                 .read_w = riscdev_ide_read_w,
                 .write_b = riscdev_ide_write_b,
-                .write_w = riscdev_ide_write_w,
-                .run = riscdev_ide_run
+                .write_w = riscdev_ide_write_w
         }
 };
 

@@ -207,24 +207,6 @@ static void idea_ide_write_w(struct podule_t *podule, podule_io_type type, uint3
         }
 }
 
-static int idea_ide_run(struct podule_t *podule, int timeslice_us)
-{
-        idea_ide_t *idea = podule->p;
-
-        if (idea->ide.callback)
-        {
-                idea->ide.callback -= 100;
-                if (idea->ide.callback <= 0)
-                {
-                        idea->ide.callback = 0;
-//                        rpclog("ICS callback\n");
-                        callbackide(&idea->ide);
-                }
-        }
-
-        return 0;
-}
-
 static const podule_header_t idea_ide_podule_header =
 {
         .version = PODULE_API_VERSION,
@@ -239,8 +221,7 @@ static const podule_header_t idea_ide_podule_header =
                 .read_b = idea_ide_read_b,
                 .read_w = idea_ide_read_w,
                 .write_b = idea_ide_write_b,
-                .write_w = idea_ide_write_w,
-                .run = idea_ide_run
+                .write_w = idea_ide_write_w
         }
 };
 

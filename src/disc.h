@@ -1,3 +1,5 @@
+#include "timer.h"
+
 typedef struct
 {
         void (*seek)(int drive, int track);
@@ -25,11 +27,9 @@ void disc_readaddress(int drive, int track, int side, int density);
 void disc_format(int drive, int track, int side, int density);
 void disc_stop(int drive);
 int disc_empty(int drive);
-extern int disc_time;
-extern int disc_poll_time;
+void disc_set_motor(int enable);
 extern int disc_drivesel;
 
-extern void (*fdc_callback)();
 extern void (*fdc_data)(uint8_t dat);
 extern void (*fdc_spindown)();
 extern void (*fdc_finishread)();
@@ -40,7 +40,6 @@ extern void (*fdc_writeprotect)();
 extern int  (*fdc_getdata)(int last);
 extern void (*fdc_sectorid)(uint8_t track, uint8_t side, uint8_t sector, uint8_t size, uint8_t crc1, uint8_t crc2);
 extern void (*fdc_indexpulse)();
-extern int fdc_time;
 extern int fdc_ready;
 extern int fdc_indexcount;
 
@@ -51,3 +50,5 @@ extern int defaultwriteprot;
 extern char discfns[4][260];
 
 extern int writeprot[4], fwriteprot[4];
+
+extern timer_t fdc_timer;

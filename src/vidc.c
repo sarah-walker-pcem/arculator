@@ -15,6 +15,7 @@
 #include "mem.h"
 #include "memc.h"
 #include "sound.h"
+#include "timer.h"
 #include "vidc.h"
 #include "video.h"
 #include "plat_video.h"
@@ -136,6 +137,8 @@ struct
         int y_min, y_max;
         
         int border_was_disabled, display_was_disabled;
+        
+        timer_t timer;
 } vidc;
 
 int vidc_getline()
@@ -427,7 +430,7 @@ void archline(uint8_t *bp, int x1, int y, int x2, uint32_t col)
                 ((uint32_t *)bp)[x]=col;
 }
 
-void pollline()
+static void vidc_poll(void *__p)
 {
         int c;
         int mode;
@@ -440,7 +443,11 @@ void pollline()
         int l=(vidc.line-16);
         int xoffset,xoffset2;
         int old_display_on = vidc.displayon;
+        int vidc_cycles;
   
+        vidc_cycles = vidcgetcycs();
+        timer_advance_u64(&vidc.timer, (uint64_t)vidc_cycles << (32-10));
+
         if (!vidc.in_display)
         {
                 vidc.in_display = 1;
@@ -1011,7 +1018,7 @@ void pollline()
                         if (readflash[3]) rectfill(bout,592,4,608,8,makecol(255,160,32));
                 }
                 readflash[0]=readflash[1]=readflash[2]=readflash[3]=0;*/
-                LOG_VIDEO_FRAMES("Blit\n");
+//                LOG_VIDEO_FRAMES("Blit\n");
 
                 /*Clear the buffer now so we don't get a persistent ghost when changing
                   from a high vertical res mode to a line-doubled mode.*/
@@ -1180,7 +1187,7 @@ int vidc_update_cycles()
 	{
 		vidc_dma_length = memc_refreshon ? mem_speed[0][1] : 0;
 //		rpclog("!displayon %i %i\n", vidc.cyclesperline_display + vidc.cyclesperline_blanking, cycles);
-		return memc_refresh_time;//cycles;
+		return memc_refresh_time;
 	}
 	if (vidc.in_display && vidc.disp_count < vidc.disp_len)
 	{
@@ -1196,7 +1203,7 @@ int vidc_update_cycles()
 		vidc_dma_length = 0;
 		if (!vidc.in_display)
 			vidc.disp_count = 0;
-		return cycles;
+		return 10000;
 	}
 }
 
@@ -1219,4 +1226,9 @@ void vidc_setclock(int clock)
 int vidc_getclock()
 {
         return vidc.clock;
+}
+
+void vidc_reset()
+{
+        timer_add(&vidc.timer, vidc_poll, NULL, 1);
 }

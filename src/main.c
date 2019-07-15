@@ -201,6 +201,7 @@ void arc_init()
         resetarm();
         loadcmos();
         ioc_reset();
+        vidc_reset();
         keyboard_init();
         resetmouse();
 
@@ -260,6 +261,7 @@ void arc_reset()
         memset(ram,0,memsize*1024);
         resetmouse();
         ioc_reset();
+        vidc_reset();
         keyboard_init();
         disc_init();
         wd1770_reset();

@@ -13,7 +13,7 @@ extern void closevideo();
 extern int vidc_framecount;
 extern int vidc_dma_length;
 
-
+void vidc_reset();
 
 
 

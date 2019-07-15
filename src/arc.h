@@ -75,7 +75,6 @@ extern int updatemips,inssec;
 extern FILE *olog;
 
 /*ARM*/
-extern int cycles;
 extern uint32_t armregs[16];
 extern int armirq,armfiq;
 #define PC ((armregs[15])&0x3FFFFFC)

@@ -5,6 +5,7 @@
 #include "disc.h"
 #include "ioc.h"
 #include "keyboard.h"
+#include "timer.h"
 
 IOC_t ioc;
 
@@ -34,6 +35,23 @@ void dumpiocregs()
 {
         printf("IOC regs :\n");
         printf("STAT : %02X %02X %02X  MASK : %02X %02X %02X\n",ioc.irqa,ioc.irqb,ioc.fiq,ioc.mska,ioc.mskb,ioc.mskf);
+}
+
+static void load_timer(int timer_nr)
+{
+        if (ioc.timerl[timer_nr])
+                timer_set_delay_u64(&ioc.timers[timer_nr], ((ioc.timerl[timer_nr] + 1) * TIMER_USEC) / 2);
+        else
+                timer_set_delay_u64(&ioc.timers[timer_nr], ((0x10000 + 1) * TIMER_USEC) / 2);
+}
+
+static uint16_t read_timer(int timer_nr)
+{
+        uint64_t remaining = timer_get_remaining_u64(&ioc.timers[timer_nr]);
+        
+        remaining = (remaining * 2) / TIMER_USEC;
+        
+        return remaining & 0xffff;
 }
 
 //int genpoll,genpol;
@@ -79,11 +97,11 @@ void ioc_write(uint32_t addr, uint32_t v)
                 ioc.timerl[0] = (ioc.timerl[0] & 0x00ff) | (v << 8);
                 return;
                 case 0x48:
-                ioc.timerc[0] = (ioc.timerl[0] + 1) * ((speed_mhz << 10) >> 1);
+                load_timer(0);
 //                rpclog("T0 count = %08X %i\n", ioc.timerc[0], ioc.timerl[0]);
                 return;
                 case 0x4C:
-                ioc.timerr[0] = ioc.timerc[0] / ((speed_mhz << 10) >> 1);
+                ioc.timerr[0] = read_timer(0);
 //                rpclog("T0 read  = %08X %i\n", ioc.timerc[0], ioc.timerr[0]);
                 return;
                 case 0x50: 
@@ -93,10 +111,10 @@ void ioc_write(uint32_t addr, uint32_t v)
                 ioc.timerl[1] = (ioc.timerl[1] & 0x00ff) | (v << 8);
                 return;
                 case 0x58:
-                ioc.timerc[1] = (ioc.timerl[1] + 1) * ((speed_mhz << 10) >> 1);
+                load_timer(1);
                 return;
                 case 0x5C:
-                ioc.timerr[1] = ioc.timerc[1] / ((speed_mhz << 10) >> 1);
+                ioc.timerr[1] = read_timer(1);
                 return;
                 case 0x60: 
                 ioc.timerl[2] = (ioc.timerl[2] & 0xff00) | v; 
@@ -218,30 +236,16 @@ void ioc_irqbc(uint8_t v)
         ioc_updateirqs();
 }
 
-void ioc_updatetimers()
+static void ioc_timer_callback(void *p)
 {
-        if (ioc.timerc[0] < 0)
-        {
-                ioc_irqa(IOC_IRQA_TIMER_0);
-                while (ioc.timerc[0] < 0)
-                {
-                        if (ioc.timerl[0])
-                                ioc.timerc[0] += (ioc.timerl[0] + 1) * ((speed_mhz << 10) >> 1);
-                        else
-                                ioc.timerc[0] += 0x10000 * ((speed_mhz << 10) >> 1);
-                }
-        }
-        if (ioc.timerc[1] < 0)
-        {
-                ioc_irqa(IOC_IRQA_TIMER_1);
-                while (ioc.timerc[1] < 0)
-                {
-                        if (ioc.timerl[1])
-                                ioc.timerc[1] += (ioc.timerl[1] + 1) * ((speed_mhz << 10) >> 1);
-                        else
-                                ioc.timerc[1] += 0x10000 * ((speed_mhz << 10) >> 1);
-                }
-        }
+        int timer_nr = (int)p;
+        
+        ioc_irqa(timer_nr ? IOC_IRQA_TIMER_1 : IOC_IRQA_TIMER_0);
+        
+        if (ioc.timerl[timer_nr])
+                timer_advance_u64(&ioc.timers[timer_nr], ((ioc.timerl[timer_nr] + 1) * TIMER_USEC) / 2);
+        else
+                timer_advance_u64(&ioc.timers[timer_nr], ((0x10000 + 1) * TIMER_USEC) / 2);
 }
 
 void ioc_reset()
@@ -251,6 +255,8 @@ void ioc_reset()
         ioc.fiq  = ioc.mskf = 0;
         ioc.irqa=0x10;
         ioc.irqb = 2;
+        timer_add(&ioc.timers[0], ioc_timer_callback, (void *)0, 1);
+        timer_add(&ioc.timers[1], ioc_timer_callback, (void *)1, 1);
 }
 
 void ioc_discchange(int drive)

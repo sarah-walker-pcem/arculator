@@ -901,10 +901,6 @@ int framecycs;
 */
 #define ARM_POLLTIME_NODMA()                                                    \
                         cyc = (oldcyc2 - cycles);                               \
-                        ioc.timerc[0] -= cyc;                           \
-                        ioc.timerc[1] -= cyc;                          \
-                        if ((ioc.timerc[0] < 0) || (ioc.timerc[1] < 0))         \
-                                ioc_updatetimers();                             \
                         linecyc -= cyc
                         
 int refreshcount = 32;

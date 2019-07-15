@@ -1,8 +1,19 @@
+#include "timer.h"
+
+typedef struct IOC_t
+{
+        uint8_t irqa,irqb,fiq;
+        uint8_t mska,mskb,mskf;
+        uint8_t ctrl;
+        int timerc[4],timerl[4],timerr[4];
+        timer_t timers[2];
+} IOC_t;
+extern IOC_t ioc;
+
 extern void ioc_write(uint32_t addr, uint32_t v);
 extern uint8_t ioc_read(uint32_t addr);
 
 extern void ioc_reset();
-extern void ioc_updatetimers();
 extern void ioc_updateirqs();
 
 extern void ioc_irqa(uint8_t v);

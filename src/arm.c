@@ -861,6 +861,21 @@ static void exception(uint32_t vector, int new_mode, int pc_offset)
 #define EXCEPTION_IRQ()        exception(0x1c, IRQ, 0)
 #define EXCEPTION_FIQ()        exception(0x20, FIQ, 0)
 
+#define LOAD_R15(v) do \
+                { \
+                        armregs[15] = (((v) + 4) & 0x3fffffc) | (armregs[15] & 0xfc000003); \
+                        refillpipeline(); \
+                } while (0)
+
+#define LOAD_R15_S(v) do \
+                { \
+                        if (armregs[15] & 3) \
+                                armregs[15] = (v) + 4; \
+                        else \
+                                armregs[15] = (((v) + 4) & 0xf3fffffc) | (armregs[15] & 0x0c000003); \
+                        refillpipeline(); \
+                } while (0)
+
 int refreshcount = 32;
 static int total_cycles;
 
@@ -927,8 +942,7 @@ void execarm(int cycles_to_execute)
                                         if (RD == 15)
                                         {
                                                 templ = shift2(opcode);
-                                                armregs[15] = (((GETADDR(RN) & templ) + 4) & 0x3FFFFFC) | (armregs[15] & 0xFC000003);
-                                                refillpipeline();
+                                                LOAD_R15(GETADDR(RN) & templ);
                                         }
                                         else
                                         {
@@ -951,8 +965,7 @@ void execarm(int cycles_to_execute)
                                         if (RD == 15)
                                         {
                                                 templ = shift2(opcode);
-                                                armregs[15] = (GETADDR(RN) & templ) + 4;
-                                                refillpipeline();
+                                                LOAD_R15_S(GETADDR(RN) & templ);
                                         }
                                         else
                                         {
@@ -976,8 +989,7 @@ void execarm(int cycles_to_execute)
                                         if (RD == 15)
                                         {
                                                 templ = shift2(opcode);
-                                                armregs[15] = (((GETADDR(RN) ^ templ) + 4) & 0x3FFFFFC) | (armregs[15] & 0xFC000003);
-                                                refillpipeline();
+                                                LOAD_R15(GETADDR(RN) ^ templ);
                                         }
                                         else
                                         {
@@ -1000,8 +1012,7 @@ void execarm(int cycles_to_execute)
                                         if (RD == 15)
                                         {
                                                 templ = shift2(opcode);
-                                                armregs[15] = (GETADDR(RN) ^ templ) + 4;
-                                                refillpipeline();
+                                                LOAD_R15_S(GETADDR(RN) ^ templ);
                                         }
                                         else
                                         {
@@ -1016,8 +1027,7 @@ void execarm(int cycles_to_execute)
                                 if (RD == 15)
                                 {
                                         templ = shift2(opcode);
-                                        armregs[15] = (((GETADDR(RN) - templ) + 4) & 0x3FFFFFC) | (armregs[15] & 0xFC000003);
-                                        refillpipeline();
+                                        LOAD_R15(GETADDR(RN) - templ);
                                 }
                                 else
                                 {
@@ -1029,8 +1039,7 @@ void execarm(int cycles_to_execute)
                                 if (RD == 15)
                                 {
                                         templ = shift2(opcode);
-                                        armregs[15] = (GETADDR(RN) - templ) + 4;
-                                        refillpipeline();
+                                        LOAD_R15_S(GETADDR(RN) - templ);
                                 }
                                 else
                                 {
@@ -1044,8 +1053,7 @@ void execarm(int cycles_to_execute)
                                 if (RD == 15)
                                 {
                                         templ = shift2(opcode);
-                                        armregs[15] = (((templ - GETADDR(RN)) + 4) & 0x3FFFFFC) | (armregs[15] & 0xFC000003);
-                                        refillpipeline();
+                                        LOAD_R15(templ - GETADDR(RN));
                                 }
                                 else
                                 {
@@ -1057,8 +1065,7 @@ void execarm(int cycles_to_execute)
                                 if (RD == 15)
                                 {
                                         templ = shift2(opcode);
-                                        armregs[15] = (templ - GETADDR(RN)) + 4;
-                                        refillpipeline();
+                                        LOAD_R15_S(templ - GETADDR(RN));
                                 }
                                 else
                                 {
@@ -1072,8 +1079,7 @@ void execarm(int cycles_to_execute)
                                 if (RD == 15)
                                 {
                                         templ = shift2(opcode);
-                                        armregs[15] = ((GETADDR(RN) + templ + 4) & 0x3FFFFFC) | (armregs[15] & 0xFC000003);
-                                        refillpipeline();
+                                        LOAD_R15(GETADDR(RN) + templ);
                                 }
                                 else
                                 {
@@ -1085,7 +1091,7 @@ void execarm(int cycles_to_execute)
                                 if (RD == 15)
                                 {
                                         templ = shift2(opcode);
-                                        armregs[15] = GETADDR(RN) + templ + 4;
+                                        LOAD_R15_S(GETADDR(RN) + templ);
                                         refillpipeline();
                                 }
                                 else
@@ -1101,8 +1107,7 @@ void execarm(int cycles_to_execute)
                                 {
                                         templ2 = CFSET;
                                         templ = shift2(opcode);
-                                        armregs[15] = ((GETADDR(RN) + templ + templ2 + 4)&0x3FFFFFC) | (armregs[15] & 0xFC000003);
-                                        refillpipeline();
+                                        LOAD_R15(GETADDR(RN) + templ + templ2);
                                 }
                                 else
                                 {
@@ -1116,8 +1121,7 @@ void execarm(int cycles_to_execute)
                                 {
                                         templ2 = CFSET;
                                         templ = shift2(opcode);
-                                        armregs[15] = GETADDR(RN) + templ + templ2 + 4;
-                                        refillpipeline();
+                                        LOAD_R15_S(GETADDR(RN) + templ + templ2);
                                 }
                                 else
                                 {
@@ -1133,8 +1137,7 @@ void execarm(int cycles_to_execute)
                                 if (RD == 15)
                                 {
                                         templ = shift2(opcode);
-                                        armregs[15] = (((GETADDR(RN) - (templ + templ2)) + 4) & 0x3FFFFFC) | (armregs[15] & 0xFC000003);
-                                        refillpipeline();
+                                        LOAD_R15(GETADDR(RN) - (templ + templ2));
                                 }
                                 else
                                 {
@@ -1147,8 +1150,7 @@ void execarm(int cycles_to_execute)
                                 if (RD == 15)
                                 {
                                         templ = shift2(opcode);
-                                        armregs[15] = (GETADDR(RN) - (templ + templ2)) + 4;
-                                        refillpipeline();
+                                        LOAD_R15_S(GETADDR(RN) - (templ + templ2));
                                 }
                                 else
                                 {
@@ -1162,8 +1164,7 @@ void execarm(int cycles_to_execute)
                                 if (RD == 15)
                                 {
                                         templ = shift2(opcode);
-                                        armregs[15] = (((templ - (GETADDR(RN) + templ2)) + 4) & 0x3FFFFFC) | (armregs[15] & 0xFC000003);
-                                        refillpipeline();
+                                        LOAD_R15(templ - (GETADDR(RN) + templ2));
                                 }
                                 else
                                 {
@@ -1176,8 +1177,7 @@ void execarm(int cycles_to_execute)
                                 if (RD == 15)
                                 {
                                         templ = shift2(opcode);
-                                        armregs[15] = (templ - (GETADDR(RN) + templ2)) + 4;
-                                        refillpipeline();
+                                        LOAD_R15_S(templ - (GETADDR(RN) + templ2));
                                 }
                                 else
                                 {
@@ -1311,8 +1311,7 @@ void execarm(int cycles_to_execute)
                                 if (RD == 15)
                                 {
                                         templ = shift2(opcode);
-                                        armregs[15] = (((GETADDR(RN) | templ) + 4) & 0x3FFFFFC) | (armregs[15] & 0xFC000003);
-                                        refillpipeline();
+                                        LOAD_R15(GETADDR(RN) | templ);
                                 }
                                 else
                                 {
@@ -1324,8 +1323,7 @@ void execarm(int cycles_to_execute)
                                 if (RD == 15)
                                 {
                                         templ = shift2(opcode);
-                                        armregs[15] = (GETADDR(RN) | templ) + 4;
-                                        refillpipeline();
+                                        LOAD_R15_S(GETADDR(RN) | templ);
                                 }
                                 else
                                 {
@@ -1337,22 +1335,13 @@ void execarm(int cycles_to_execute)
 
                                 case 0x1A: /*MOV reg*/
                                 if (RD == 15)
-                                {
-                                        armregs[15] = (armregs[15] & 0xFC000003) | ((shift2(opcode) + 4) & 0x3FFFFFC);
-                                        refillpipeline();
-                                }
+                                        LOAD_R15(shift2(opcode));
                                 else
-                                        armregs[RD]=shift2(opcode);
+                                        armregs[RD] = shift2(opcode);
                                 break;
                                 case 0x1B: /*MOVS reg*/
                                 if (RD == 15)
-                                {
-                                        if (armregs[15] & 3)
-                                                armregs[15] = shift2(opcode) + 4;
-                                        else
-                                                armregs[15] = ((shift2(opcode) + 4) & 0xF3FFFFFC) | (armregs[15] & 0xC000003);
-                                        refillpipeline();
-                                }
+                                        LOAD_R15_S(shift2(opcode));
                                 else
                                 {
                                         armregs[RD] = shift(opcode);
@@ -1364,8 +1353,7 @@ void execarm(int cycles_to_execute)
                                 if (RD == 15)
                                 {
                                         templ = shift2(opcode);
-                                        armregs[15] = (((GETADDR(RN) & ~templ) + 4) & 0x3FFFFFC) | (armregs[15] & 0xFC000003);
-                                        refillpipeline();
+                                        LOAD_R15(GETADDR(RN) & ~templ);
                                 }
                                 else
                                 {
@@ -1377,8 +1365,7 @@ void execarm(int cycles_to_execute)
                                 if (RD == 15)
                                 {
                                         templ = shift2(opcode);
-                                        armregs[15] = (GETADDR(RN) & ~templ) + 4;
-                                        refillpipeline();
+                                        LOAD_R15_S(GETADDR(RN) & ~templ);
                                 }
                                 else
                                 {
@@ -1390,19 +1377,13 @@ void execarm(int cycles_to_execute)
 
                                 case 0x1E: /*MVN reg*/
                                 if (RD == 15)
-                                {
-                                        armregs[15] = (armregs[15] & 0xFC000003) | (((~shift2(opcode)) + 4) & 0x3FFFFFC);
-                                        refillpipeline();
-                                }
+                                        LOAD_R15(~shift2(opcode));
                                 else
                                         armregs[RD] = ~shift2(opcode);
                                 break;
                                 case 0x1F: /*MVNS reg*/
                                 if (RD == 15)
-                                {
-                                        armregs[15] = (~shift2(opcode)) + 4;
-                                        refillpipeline();
-                                }
+                                        LOAD_R15_S(~shift2(opcode));
                                 else
                                 {
                                         armregs[RD] = ~shift(opcode);
@@ -1414,8 +1395,7 @@ void execarm(int cycles_to_execute)
                                 if (RD == 15)
                                 {
                                         templ = rotate2(opcode);
-                                        armregs[15] = (((GETADDR(RN) & templ) + 4) & 0x3FFFFFC) | (armregs[15] & 0xFC000003);
-                                        refillpipeline();
+                                        LOAD_R15(GETADDR(RN) & templ);
                                 }
                                 else
                                 {
@@ -1427,8 +1407,7 @@ void execarm(int cycles_to_execute)
                                 if (RD == 15)
                                 {
                                         templ = rotate2(opcode);
-                                        armregs[15] = (GETADDR(RN) & templ) + 4;
-                                        refillpipeline();
+                                        LOAD_R15_S(GETADDR(RN) & templ);
                                 }
                                 else
                                 {
@@ -1442,8 +1421,7 @@ void execarm(int cycles_to_execute)
                                 if (RD == 15)
                                 {
                                         templ = rotate2(opcode);
-                                        armregs[15] = (((GETADDR(RN) ^ templ) + 4) & 0x3FFFFFC) | (armregs[15] & 0xFC000003);
-                                        refillpipeline();
+                                        LOAD_R15(GETADDR(RN) ^ templ);
                                 }
                                 else
                                 {
@@ -1455,8 +1433,7 @@ void execarm(int cycles_to_execute)
                                 if (RD == 15)
                                 {
                                         templ = rotate2(opcode);
-                                        armregs[15] = (GETADDR(RN) ^ templ) + 4;
-                                        refillpipeline();
+                                        LOAD_R15_S(GETADDR(RN) ^ templ);
                                 }
                                 else
                                 {
@@ -1470,8 +1447,7 @@ void execarm(int cycles_to_execute)
                                 if (RD == 15)
                                 {
                                         templ = rotate2(opcode);
-                                        armregs[15] = (((GETADDR(RN) - templ) + 4) & 0x3FFFFFC) | (armregs[15] & 0xFC000003);
-                                        refillpipeline();
+                                        LOAD_R15(GETADDR(RN) - templ);
                                 }
                                 else
                                 {
@@ -1483,8 +1459,7 @@ void execarm(int cycles_to_execute)
                                 if (RD == 15)
                                 {
                                         templ = rotate2(opcode);
-                                        armregs[15] = (GETADDR(RN) - templ) + 4;
-                                        refillpipeline();
+                                        LOAD_R15_S(GETADDR(RN) - templ);
                                 }
                                 else
                                 {
@@ -1498,8 +1473,7 @@ void execarm(int cycles_to_execute)
                                 if (RD == 15)
                                 {
                                         templ = rotate2(opcode);
-                                        armregs[15] = (((templ - GETADDR(RN)) + 4) & 0x3FFFFFC) | (armregs[15] & 0xFC000003);
-                                        refillpipeline();
+                                        LOAD_R15(templ - GETADDR(RN));
                                 }
                                 else
                                 {
@@ -1511,8 +1485,7 @@ void execarm(int cycles_to_execute)
                                 if (RD == 15)
                                 {
                                         templ = rotate2(opcode);
-                                        armregs[15] = (templ - GETADDR(RN)) + 4;
-                                        refillpipeline();
+                                        LOAD_R15_S(templ - GETADDR(RN));
                                 }
                                 else
                                 {
@@ -1526,8 +1499,7 @@ void execarm(int cycles_to_execute)
                                 if (RD == 15)
                                 {
                                         templ = rotate2(opcode);
-                                        armregs[15] = (((GETADDR(RN) + templ) + 4) & 0x3FFFFFC) | (armregs[15] & 0xFC000003);
-                                        refillpipeline();
+                                        LOAD_R15(GETADDR(RN) + templ);
                                 }
                                 else
                                 {
@@ -1539,8 +1511,7 @@ void execarm(int cycles_to_execute)
                                 if (RD == 15)
                                 {
                                         templ = rotate2(opcode);
-                                        armregs[15] = GETADDR(RN) + templ + 4;
-                                        refillpipeline();
+                                        LOAD_R15_S(GETADDR(RN) + templ);
                                 }
                                 else
                                 {
@@ -1555,8 +1526,7 @@ void execarm(int cycles_to_execute)
                                 {
                                         templ2 = CFSET;
                                         templ = rotate2(opcode);
-                                        armregs[15] = ((GETADDR(RN) + templ + templ2 + 4) & 0x3FFFFFC) | (armregs[15] & 0xFC000003);
-                                        refillpipeline();
+                                        LOAD_R15(GETADDR(RN) + templ + templ2);
                                 }
                                 else
                                 {
@@ -1570,8 +1540,7 @@ void execarm(int cycles_to_execute)
                                 {
                                         templ2 = CFSET;
                                         templ = rotate2(opcode);
-                                        armregs[15] = GETADDR(RN) + templ + templ2 + 4;
-                                        refillpipeline();
+                                        LOAD_R15_S(GETADDR(RN) + templ + templ2);
                                 }
                                 else
                                 {
@@ -1587,8 +1556,7 @@ void execarm(int cycles_to_execute)
                                 if (RD == 15)
                                 {
                                         templ = rotate2(opcode);
-                                        armregs[15] = (((GETADDR(RN) - (templ + templ2)) + 4) & 0x3FFFFFC) | (armregs[15] & 0xFC000003);
-                                        refillpipeline();
+                                        LOAD_R15(GETADDR(RN) - (templ + templ2));
                                 }
                                 else
                                 {
@@ -1601,8 +1569,7 @@ void execarm(int cycles_to_execute)
                                 if (RD == 15)
                                 {
                                         templ = rotate2(opcode);
-                                        armregs[15] = (GETADDR(RN) - (templ + templ2)) + 4;
-                                        refillpipeline();
+                                        LOAD_R15_S(GETADDR(RN) - (templ + templ2));
                                 }
                                 else
                                 {
@@ -1616,8 +1583,7 @@ void execarm(int cycles_to_execute)
                                 if (RD == 15)
                                 {
                                         templ = rotate2(opcode);
-                                        armregs[15] = (((templ - (GETADDR(RN) + templ2)) + 4) & 0x3FFFFFC) | (armregs[15] & 0xFC000003);
-                                        refillpipeline();
+                                        LOAD_R15(templ - (GETADDR(RN) + templ2));
                                 }
                                 else
                                 {
@@ -1630,8 +1596,7 @@ void execarm(int cycles_to_execute)
                                 if (RD == 15)
                                 {
                                         templ = rotate2(opcode);
-                                        armregs[15] = (templ - (GETADDR(RN) + templ2)) + 4;
-                                        refillpipeline();
+                                        LOAD_R15_S(templ - (GETADDR(RN) + templ2));
                                 }
                                 else
                                 {
@@ -1731,8 +1696,7 @@ void execarm(int cycles_to_execute)
                                 if (RD == 15)
                                 {
                                         templ = rotate2(opcode);
-                                        armregs[15] = (((GETADDR(RN) | templ) + 4) & 0x3FFFFFC) | (armregs[15] & 0xFC000003);
-                                        refillpipeline();
+                                        LOAD_R15(GETADDR(RN) | templ);
                                 }
                                 else
                                 {
@@ -1744,11 +1708,7 @@ void execarm(int cycles_to_execute)
                                 if (RD == 15)
                                 {
                                         templ = rotate2(opcode);
-                                        if (armregs[15] & 3)
-                                                armregs[15] = (GETADDR(RN) | templ) + 4;
-                                        else
-                                                armregs[15] = (((GETADDR(RN) | templ) + 4) & 0xF3FFFFFC) | (armregs[15] & 0xC000003);
-                                        refillpipeline();
+                                        LOAD_R15_S(GETADDR(RN) | templ);
                                 }
                                 else
                                 {
@@ -1760,19 +1720,13 @@ void execarm(int cycles_to_execute)
 
                                 case 0x3A: /*MOV imm*/
                                 if (RD == 15)
-                                {
-                                        armregs[15] = (armregs[15] & 0xFC000003) | ((rotate2(opcode) + 4) & 0x3FFFFFC);
-                                        refillpipeline();
-                                }
+                                        LOAD_R15(rotate2(opcode));
                                 else
                                         armregs[RD] = rotate2(opcode);
                                 break;
                                 case 0x3B: /*MOVS imm*/
                                 if (RD == 15)
-                                {
-                                        armregs[15] = rotate2(opcode) + 4;
-                                        refillpipeline();
-                                }
+                                        LOAD_R15_S(rotate2(opcode));
                                 else
                                 {
                                         armregs[RD] = rotate(opcode);
@@ -1784,8 +1738,7 @@ void execarm(int cycles_to_execute)
                                 if (RD == 15)
                                 {
                                         templ = rotate2(opcode);
-                                        armregs[15] = (((GETADDR(RN) & ~templ) + 4) & 0x3FFFFFC) | (armregs[15] & 0xFC000003);
-                                        refillpipeline();
+                                        LOAD_R15(GETADDR(RN) & ~templ);
                                 }
                                 else
                                 {
@@ -1797,11 +1750,7 @@ void execarm(int cycles_to_execute)
                                 if (RD == 15)
                                 {
                                         templ = rotate2(opcode);
-                                        if (armregs[15] & 3)
-                                                armregs[15] = (GETADDR(RN) & ~templ) + 4;
-                                        else
-                                                armregs[15] = (((GETADDR(RN) & ~templ) + 4) & 0xF3FFFFFC) | (armregs[15] & 0xC000003);
-                                        refillpipeline();
+                                        LOAD_R15_S(GETADDR(RN) & ~templ);
                                 }
                                 else
                                 {
@@ -1813,19 +1762,13 @@ void execarm(int cycles_to_execute)
 
                                 case 0x3E: /*MVN imm*/
                                 if (RD == 15)
-                                {
-                                        armregs[15] = (armregs[15] & 0xFC000003) | (((~rotate2(opcode)) + 4) & 0x3FFFFFC);
-                                        refillpipeline();
-                                }
+                                        LOAD_R15(~rotate2(opcode));
                                 else
                                         armregs[RD] = ~rotate2(opcode);
                                 break;
                                 case 0x3F: /*MVNS imm*/
                                 if (RD == 15)
-                                {
-                                        armregs[15] = (~rotate2(opcode)) + 4;
-                                        refillpipeline();
-                                }
+                                        LOAD_R15_S(~rotate2(opcode));
                                 else
                                 {
                                         armregs[RD] = ~rotate(opcode);

@@ -747,17 +747,6 @@ int ldrlookup[4]={0,8,16,24};
 
 #define ldrresult(v,a) ((v>>ldrlookup[addr&3])|(v<<(32-ldrlookup[addr&3])))
 
-#define undefined()\
-                                                rpclog("Illegal instruction %08X\n",opcode); \
-                                        templ=armregs[15]-4; \
-                                        armregs[15]|=3;\
-                                        updatemode(SUPERVISOR);\
-                                        armregs[14]=templ;\
-                                        armregs[15]&=0xFC000003;\
-                                        armregs[15]|=0x08000008;\
-                                        refillpipeline();\
-                                        CLOCK_I(); tsc += cyc_i
-
 #define readmemfff(addr,opcode) \
                         if ((addr>>12)==pccache) \
                            opcode=pccache2[(addr&0xFFF)>>2]; \
@@ -849,6 +838,28 @@ int framecycs;
                                         if (v >> 28) { CLOCK_I(); tsc += cyc_i; }            \
                                 }
 
+
+static void exception(uint32_t vector, int new_mode, int pc_offset)
+{
+        uint32_t old_pc;
+
+        old_pc = armregs[15] + pc_offset;
+        armregs[15] &= 0xFC000000;
+        armregs[15] |= 0x08000000 | vector | new_mode;
+        if (new_mode == FIQ)
+                armregs[15] |= 0x0c000000;
+        updatemode(new_mode);
+        armregs[14] = old_pc;
+        refillpipeline();
+}
+
+#define EXCEPTION_UNDEFINED()  exception(0x08, SUPERVISOR, -4)
+#define EXCEPTION_SWI()        exception(0x0c, SUPERVISOR, -4)
+#define EXCEPTION_PREF_ABORT() exception(0x10, SUPERVISOR, 0)
+#define EXCEPTION_DATA_ABORT() exception(0x14, SUPERVISOR, 0)
+#define EXCEPTION_ADDRESS()    exception(0x18, SUPERVISOR, 0)
+#define EXCEPTION_IRQ()        exception(0x1c, IRQ, 0)
+#define EXCEPTION_FIQ()        exception(0x20, FIQ, 0)
 
 int refreshcount = 32;
 static int total_cycles;
@@ -1195,15 +1206,7 @@ void execarm(int cycles_to_execute)
                                         tsc += cyc_n * 2;
                                 }
                                 else
-                                {
-                                        templ=armregs[15]-4;
-                                        armregs[15]|=3;
-                                        updatemode(SUPERVISOR);
-                                        armregs[14]=templ;
-                                        armregs[15]&=0xFC000003;
-                                        armregs[15]|=0x08000008;
-                                        refillpipeline();
-                                }
+                                        EXCEPTION_UNDEFINED();
                                 break;
                                 
                                 case 0x11: /*TST reg*/
@@ -1265,15 +1268,7 @@ void execarm(int cycles_to_execute)
                                         tsc += cyc_n * 2;
                                 }
                                 else
-                                {
-                                        templ=armregs[15]-4;
-                                        armregs[15]|=3;
-                                        updatemode(SUPERVISOR);
-                                        armregs[14]=templ;
-                                        armregs[15]&=0xFC000003;
-                                        armregs[15]|=0x08000008;
-                                        refillpipeline();
-                                }
+                                        EXCEPTION_UNDEFINED();
                                 break;
 
                                 case 0x15: /*CMP reg*/
@@ -1667,13 +1662,6 @@ void execarm(int cycles_to_execute)
                                 break;
 
                                 case 0x32:
-/*                                                templ=armregs[15]-4;
-                                        armregs[15]|=3;
-                                        updatemode(SUPERVISOR);
-                                        armregs[14]=templ;
-                                        armregs[15]&=0xFC000003;
-                                        armregs[15]|=0x08000008;*/
-//                                                refillpipeline();
                                 break;
 
                                 case 0x33: /*TEQ imm*/
@@ -2032,7 +2020,7 @@ void execarm(int cycles_to_execute)
                                 case 0x71: case 0x73: case 0x79: case 0x7B:
                                 if ((opcode & 0x2000010) == 0x2000010)
                                 {
-                                        undefined();
+                                        EXCEPTION_UNDEFINED();
                                         break;
                                 }
                                 addr = GETADDR(RN);
@@ -2065,7 +2053,7 @@ void execarm(int cycles_to_execute)
                                 case 0x75: case 0x77: case 0x7D: case 0x7F:
                                 if (opcode & 0x10)
                                 {
-                                        undefined();
+                                        EXCEPTION_UNDEFINED();
                                         break;
                                 }
                                 case 0x45: case 0x4D: /*LDRB*/
@@ -2408,31 +2396,14 @@ void execarm(int cycles_to_execute)
                                 if (fpaena && MULRS == 1)
                                 {
                                         if (fpaopcode(opcode))
-                                        {
-                                                templ=armregs[15]-4;
-                                                armregs[15]|=3;
-                                                updatemode(SUPERVISOR);
-                                                armregs[14]=templ;
-                                                armregs[15]&=0xFC000003;
-                                                armregs[15]|=0x08000008;
-                                                refillpipeline();
-                                        }
+                                                EXCEPTION_UNDEFINED();
                                 }
                                 else if (MULRS == 15 && (opcode & 0x10) && arm_has_cp15)
                                 {
                                         writecp15(RN,armregs[RD]);
                                 }
                                 else
-                                {
-//                                                rpclog("Illegal instruction %08X\n",opcode);
-                                        templ=armregs[15]-4;
-                                        armregs[15]|=3;
-                                        updatemode(SUPERVISOR);
-                                        armregs[14]=templ;
-                                        armregs[15]&=0xFC000003;
-                                        armregs[15]|=0x08000008;
-                                        refillpipeline();
-                                }
+                                        EXCEPTION_UNDEFINED();
                                 break;
 
                                 case 0xE1: case 0xE3: case 0xE5: case 0xE7: /*MRC*/
@@ -2440,15 +2411,7 @@ void execarm(int cycles_to_execute)
                                 if (fpaena && MULRS == 1)
                                 {
                                         if (fpaopcode(opcode))
-                                        {
-                                                templ=armregs[15]-4;
-                                                armregs[15]|=3;
-                                                updatemode(SUPERVISOR);
-                                                armregs[14]=templ;
-                                                armregs[15]&=0xFC000003;
-                                                armregs[15]|=0x08000008;
-                                                refillpipeline();
-                                        }
+                                                EXCEPTION_UNDEFINED();
                                 }
                                 else if (MULRS == 15 && (opcode & 0x10) && arm_has_cp15)
                                 {
@@ -2456,16 +2419,7 @@ void execarm(int cycles_to_execute)
                                         else          armregs[RD] = readcp15(RN);
                                 }
                                 else
-                                {
-//                                                rpclog("Illegal instruction %08X\n",opcode);
-                                        templ=armregs[15]-4;
-                                        armregs[15]|=3;
-                                        updatemode(SUPERVISOR);
-                                        armregs[14]=templ;
-                                        armregs[15]&=0xFC000003;
-                                        armregs[15]|=0x08000008;
-                                        refillpipeline();
-                                }
+                                        EXCEPTION_UNDEFINED();
                                 break;
                                 
                                 case 0xC0: case 0xC1: case 0xC2: case 0xC3: /*Co-pro*/
@@ -2479,27 +2433,10 @@ void execarm(int cycles_to_execute)
                                 if (((opcode & 0xF00) == 0x100 || (opcode & 0xF00) == 0x200) && fpaena)
                                 {
                                         if (fpaopcode(opcode))
-                                        {
-                                                templ=armregs[15]-4;
-                                                armregs[15]|=3;
-                                                updatemode(SUPERVISOR);
-                                                armregs[14]=templ;
-                                                armregs[15]&=0xFC000003;
-                                                armregs[15]|=0x08000008;
-                                                refillpipeline();
-                                        }
+                                                EXCEPTION_UNDEFINED();
                                 }
                                 else
-                                {
-//                                                rpclog("Illegal instruction %08X\n",opcode);
-                                        templ=armregs[15]-4;
-                                        armregs[15]|=3;
-                                        updatemode(SUPERVISOR);
-                                        armregs[14]=templ;
-                                        armregs[15]&=0xFC000003;
-                                        armregs[15]|=0x08000008;
-                                        refillpipeline();
-                                }
+                                        EXCEPTION_UNDEFINED();
                                 break;
 
                                 case 0xF0: case 0xF1: case 0xF2: case 0xF3: /*SWI*/
@@ -2545,32 +2482,12 @@ void execarm(int cycles_to_execute)
                                         armregs[15]&=~VFLAG;
                                 }
                                 else
-                                {
-/*                                                rpclog("SWI %05X at %07X  %08X %08X %08X %08X  %08X %08X %08X %08X %c\n",opcode&0x5FFFF,PC-8,armregs[0],armregs[1],armregs[2],armregs[3],armregs[4],armregs[5],armregs[6],armregs[7],(armregs[0]>31)?armregs[0]:'.');*/
-                                        templ=armregs[15]-4;
-                                        armregs[15]|=3;
-                                        updatemode(SUPERVISOR);
-                                        armregs[14]=templ;
-                                        armregs[15]&=0xFC000003;
-                                        armregs[15]|=0x0800000C;
-                                        refillpipeline();
-                                }
+                                        EXCEPTION_SWI();
                                 break;
 
                                 default:
-                                        rpclog("Illegal instruction %08X %07X\n",opcode, PC);
-                                dumpregs();
-                                exit(-1);
-                                        templ=armregs[15]-4;
-                                        armregs[15]|=3;
-                                        updatemode(SUPERVISOR);
-                                        armregs[14]=templ;
-                                        armregs[15]&=0xFC000003;
-                                        armregs[15]|=0x08000008;
-                                        refillpipeline();
-//                                        error("Bad opcode %02X %08X at %07X\n",(opcode>>20)&0xFF,opcode,PC);
-//                                        dumpregs();
-//                                        exit(-1);
+                                rpclog("Illegal instruction %08X %07X\n",opcode, PC);
+                                EXCEPTION_UNDEFINED();
                         }
                 }
                 else if (!prefabort)
@@ -2582,65 +2499,28 @@ void execarm(int cycles_to_execute)
                 {
                         if (prefabort)       /*Prefetch abort*/
                         {
-//                                        rpclog("Pref abort at %07X %i\n",PC,ins);
-                                templ=armregs[15];
-                                armregs[15]|=3;
-                                updatemode(SUPERVISOR);
-                                armregs[14]=templ;
-                                armregs[15]&=0xFC000003;
-                                armregs[15]|=0x08000010;
-                                refillpipeline();
-                                prefabort=0;
+                                prefabort = 1;
+                                EXCEPTION_PREF_ABORT();
                         }
-                        else if (databort==1)     /*Data abort*/
+                        else if (databort == 1)     /*Data abort*/
                         {
-//                                        rpclog("Dat abort at %07X %i - opcode %08X R1 %08X R11 %08X\n",PC,ins,opcode,armregs[1],armregs[11]);
-//                                        if (PC > 0x18a2a00 && PC < 0x18a2b00)
-//                                                fatal("Dead\n");
-                                templ=armregs[15];
-                                armregs[15]|=3;
-                                updatemode(SUPERVISOR);
-                                armregs[14]=templ;
-                                armregs[15]&=0xFC000003;
-                                armregs[15]|=0x08000014;
-                                refillpipeline();
-                                databort=0;
+                                databort = 0;
+                                EXCEPTION_DATA_ABORT();
                         }
-                        else if (databort==2) /*Address Exception*/
+                        else if (databort == 2) /*Address Exception*/
                         {
-//                                        rpclog("Address Exception at %07X %08X %08X %08X\n",PC,opcode,armregs[1],armregs[11]);
-                                templ=armregs[15];
-                                armregs[15]|=3;
-                                updatemode(SUPERVISOR);
-                                armregs[14]=templ;
-                                armregs[15]&=0xFC000003;
-                                armregs[15]|=0x08000018;
-                                refillpipeline();
-                                databort=0;
+                                databort = 0;
+                                EXCEPTION_ADDRESS();
                         }
                         else if ((armirq&2) && !(armregs[15]&0x4000000)) /*FIQ*/
                         {
-//                                        rpclog("FIQ %02X %i\n",ioc.fiq&ioc.mskf, 0);
-//                                        if (output) rpclog("FIQ\n");
-                                templ=armregs[15];
-                                armregs[15]|=3;
-                                updatemode(FIQ);
-                                armregs[14]=templ;
-                                armregs[15]&=0xFC000001;
-                                armregs[15]|=0x0C000020;
-                                refillpipeline();
+//                                rpclog("FIQ %02X %i\n",ioc.fiq&ioc.mskf, 0);
+                                EXCEPTION_FIQ();
                         }
                         else if ((armirq&1) && !(armregs[15]&0x8000000)) /*IRQ*/
                         {
-//                                        rpclog("IRQ %02X %02X\n",ioc.irqa&ioc.mska,ioc.irqb&ioc.mskb);
-//                                        if (output) rpclog("IRQ\n");
-                                templ=armregs[15];
-                                armregs[15]|=3;
-                                updatemode(IRQ);
-                                armregs[14]=templ;
-                                armregs[15]&=0xFC000002;
-                                armregs[15]|=0x0800001C;
-                                refillpipeline();
+//                                rpclog("IRQ %02X %02X\n",ioc.irqa&ioc.mska,ioc.irqb&ioc.mskb);
+                                EXCEPTION_IRQ();
                         }
                 }
                 armirq = irq;

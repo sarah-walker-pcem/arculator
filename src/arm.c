@@ -2476,11 +2476,6 @@ void execarm(int cycles_to_execute)
                                 case 0xD4: case 0xD5: case 0xD6: case 0xD7:
                                 case 0xD8: case 0xD9: case 0xDA: case 0xDB:
                                 case 0xDC: case 0xDD: case 0xDE: case 0xDF:
-#if 0
-                                if ((opcode>=0xEC500000) && (opcode<=0xEC500008))
-                                   arculfs(opcode&15);
-                                else 
-#endif                                        
                                 if (((opcode & 0xF00) == 0x100 || (opcode & 0xF00) == 0x200) && fpaena)
                                 {
                                         if (fpaopcode(opcode))

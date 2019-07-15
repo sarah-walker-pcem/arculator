@@ -873,1187 +873,1227 @@ void execarm(int cycles_to_execute)
         {
 //                LOG_VIDC_TIMING("cycles (%d) += vidcgetcycs() (%d) --> %d (%d) to execute before pollline()\n",
 //                        oldcyc, vidc_cycles_to_execute, 0, 0);
-                oldcyc=(int)tsc;
-                        opcode=opcode2;
-                        opcode2=opcode3;
-                        if ((PC>>12)==pccache)
-                           opcode3=pccache2[(PC&0xFFF)>>2];
+                oldcyc = (int)tsc;
+
+                opcode = opcode2;
+                opcode2 = opcode3;
+                if ((PC >> 12) == pccache)
+                        opcode3 = pccache2[(PC & 0xFFF) >> 2];
+                else
+                {
+                        templ2 = PC >> 12;
+                        templ = memstat[PC >> 12];
+                        if (modepritabler[memmode][templ])
+                        {
+                                pccache = templ2;
+                                pccache2 = mempoint[templ2];
+                                opcode3 = mempoint[templ2][(PC & 0xFFF) >> 2];
+                                cyc_s = mem_speed[templ2 & 0x3fff][0];
+                                cyc_n = mem_speed[templ2 & 0x3fff][1];
+                        }
                         else
                         {
-                                templ2=PC>>12;
-                                templ=memstat[PC>>12];
-                                if (modepritabler[memmode][templ])
+                                opcode3 = readmemf(PC);
+                                pccache = 0xFFFFFFFF;
+                        }
+                }
+                cache_read_timing(PC, (PC & 0xc) ? 0 : 1);
+
+                if (flaglookup[opcode >> 28][armregs[15] >> 28] && !prefabort)
+                {
+                        switch ((opcode >> 20) & 0xFF)
+                        {
+                                case 0x00: /*AND reg*/
+                                if ((opcode&0xF0) == 0x90) /*MUL*/
                                 {
-                                        pccache=templ2;//PC>>15;
-                                        pccache2=mempoint[templ2];
-                                        opcode3=mempoint[templ2][(PC&0xFFF)>>2];
-                                        cyc_s = mem_speed[templ2 & 0x3fff][0];
-                                        cyc_n = mem_speed[templ2 & 0x3fff][1];
+                                        arm_mul_timing(armregs[MULRS]);
+                                        armregs[MULRD] = (armregs[MULRM]) * (armregs[MULRS]);
+                                        if (MULRD == MULRM)
+                                                armregs[MULRD] = 0;
                                 }
                                 else
                                 {
-                                        opcode3=readmemf(PC);
-                                        pccache=0xFFFFFFFF;
+                                        if (RD == 15)
+                                        {
+                                                templ = shift2(opcode);
+                                                armregs[15] = (((GETADDR(RN) & templ) + 4) & 0x3FFFFFC) | (armregs[15] & 0xFC000003);
+                                                refillpipeline();
+                                        }
+                                        else
+                                        {
+                                                templ = shift2(opcode);
+                                                armregs[RD] = GETADDR(RN) & templ;
+                                        }
                                 }
-                        }
-                        cache_read_timing(PC, (PC & 0xc) ? 0 : 1);
-
-                        if (flaglookup[opcode>>28][armregs[15]>>28] && !prefabort)
-                        {
-                                switch ((opcode>>20)&0xFF)
+                                break;
+                                case 0x01: /*ANDS reg*/
+                                if ((opcode & 0xF0) == 0x90) /*MULS*/
                                 {
-                                        case 0x00: /*AND reg*/
-                                        if (((opcode&0xF0)==0x90)) /*MUL*/
+                                        arm_mul_timing(armregs[MULRS]);
+                                        armregs[MULRD] = (armregs[MULRM]) * (armregs[MULRS]);
+                                        if (MULRD == MULRM)
+                                                armregs[MULRD]=0;
+                                        setzn(armregs[MULRD]);
+                                }
+                                else
+                                {
+                                        if (RD == 15)
                                         {
-                                                arm_mul_timing(armregs[MULRS]);
-                                                armregs[MULRD]=(armregs[MULRM])*(armregs[MULRS]);
-                                                if (MULRD==MULRM) armregs[MULRD]=0;
+                                                templ = shift2(opcode);
+                                                armregs[15] = (GETADDR(RN) & templ) + 4;
+                                                refillpipeline();
                                         }
                                         else
                                         {
-                                                if (RD==15)
-                                                {
-                                                        templ=shift2(opcode);
-                                                        armregs[15]=(((GETADDR(RN)&templ)+4)&0x3FFFFFC)|(armregs[15]&0xFC000003);
-                                                        refillpipeline();
-                                                }
-                                                else
-                                                {
-                                                        templ=shift2(opcode);
-                                                        armregs[RD]=GETADDR(RN)&templ;
-                                                }
+                                                templ = shift(opcode);
+                                                armregs[RD] = GETADDR(RN) & templ;
+                                                setzn(armregs[RD]);
                                         }
-                                        break;
-                                        case 0x01: /*ANDS reg*/
-                                        if (((opcode&0xF0)==0x90)) /*MULS*/
-                                        {
-                                                arm_mul_timing(armregs[MULRS]);
-                                                armregs[MULRD]=(armregs[MULRM])*(armregs[MULRS]);
-                                                if (MULRD==MULRM) armregs[MULRD]=0;
-                                                setzn(armregs[MULRD]);
-                                        }
-                                        else
-                                        {
-                                                if (RD==15)
-                                                {
-                                                        templ=shift2(opcode);
-                                                        armregs[15]=(GETADDR(RN)&templ)+4;
-                                                        refillpipeline();
-                                                }
-                                                else
-                                                {
-                                                        templ=shift(opcode);
-                                                        armregs[RD]=GETADDR(RN)&templ;
-                                                        setzn(armregs[RD]);
-                                                }
-                                        }
-                                        break;
+                                }
+                                break;
 
-                                        case 0x02: /*EOR reg*/
-                                        if (((opcode&0xF0)==0x90)) /*MLA*/
+                                case 0x02: /*EOR reg*/
+                                if ((opcode & 0xF0) == 0x90) /*MLA*/
+                                {
+                                        arm_mul_timing(armregs[MULRS]);
+                                        armregs[MULRD] = ((armregs[MULRM]) * (armregs[MULRS])) + armregs[MULRN];
+                                        if (MULRD == MULRM)
+                                                armregs[MULRD] = 0;
+                                }
+                                else
+                                {
+                                        if (RD == 15)
                                         {
-                                                arm_mul_timing(armregs[MULRS]);
-                                                armregs[MULRD]=((armregs[MULRM])*(armregs[MULRS]))+armregs[MULRN];
-                                                if (MULRD==MULRM) armregs[MULRD]=0;
+                                                templ = shift2(opcode);
+                                                armregs[15] = (((GETADDR(RN) ^ templ) + 4) & 0x3FFFFFC) | (armregs[15] & 0xFC000003);
+                                                refillpipeline();
                                         }
                                         else
                                         {
-                                                if (RD==15)
-                                                {
-                                                        templ=shift2(opcode);
-                                                        armregs[15]=(((GETADDR(RN)^templ)+4)&0x3FFFFFC)|(armregs[15]&0xFC000003);
-                                                        refillpipeline();
-                                                }
-                                                else
-                                                {
-                                                        templ=shift2(opcode);
-                                                        armregs[RD]=GETADDR(RN)^templ;
-                                                }
+                                                templ = shift2(opcode);
+                                                armregs[RD] = GETADDR(RN) ^ templ;
                                         }
-                                        break;
-                                        case 0x03: /*EORS reg*/
-                                        if (((opcode&0xF0)==0x90)) /*MLAS*/
+                                }
+                                break;
+                                case 0x03: /*EORS reg*/
+                                if ((opcode & 0xF0) == 0x90) /*MLAS*/
+                                {
+                                        arm_mul_timing(armregs[MULRS]);
+                                        armregs[MULRD] = ((armregs[MULRM]) * (armregs[MULRS])) + armregs[MULRN];
+                                        if (MULRD == MULRM)
+                                                armregs[MULRD] = 0;
+                                        setzn(armregs[MULRD]);
+                                }
+                                else
+                                {
+                                        if (RD == 15)
                                         {
-                                                arm_mul_timing(armregs[MULRS]);
-                                                armregs[MULRD]=((armregs[MULRM])*(armregs[MULRS]))+armregs[MULRN];
-                                                if (MULRD==MULRM) armregs[MULRD]=0;
-                                                setzn(armregs[MULRD]);
+                                                templ = shift2(opcode);
+                                                armregs[15] = (GETADDR(RN) ^ templ) + 4;
+                                                refillpipeline();
                                         }
                                         else
                                         {
-                                                if (RD==15)
-                                                {
-                                                        templ=shift2(opcode);
-                                                        armregs[15]=(GETADDR(RN)^templ)+4;
-                                                        refillpipeline();
-                                                }
-                                                else
-                                                {
-                                                        templ=shift(opcode);
-                                                        armregs[RD]=GETADDR(RN)^templ;
-                                                        setzn(armregs[RD]);
-                                                }
+                                                templ = shift(opcode);
+                                                armregs[RD] = GETADDR(RN) ^ templ;
+                                                setzn(armregs[RD]);
                                         }
-                                        break;
+                                }
+                                break;
 
-                                        case 0x04: /*SUB reg*/
-                                        if (RD==15)
-                                        {
-                                                templ=shift2(opcode);
-                                                armregs[15]=(((GETADDR(RN)-templ)+4)&0x3FFFFFC)|(armregs[15]&0xFC000003);
-                                                refillpipeline();
-                                        }
-                                        else
-                                        {
-                                                templ=shift2(opcode);
-                                                armregs[RD]=GETADDR(RN)-templ;
-                                        }
-                                        break;
-                                        case 0x05: /*SUBS reg*/
-                                        if (RD==15)
-                                        {
-                                                templ=shift2(opcode);
-                                                armregs[15]=(GETADDR(RN)-templ)+4;
-                                                refillpipeline();
-                                        }
-                                        else
-                                        {
-                                                templ=shift2(opcode);
-                                                setsub(GETADDR(RN),templ,GETADDR(RN)-templ);
-                                                armregs[RD]=GETADDR(RN)-templ;
-                                        }
-                                        break;
+                                case 0x04: /*SUB reg*/
+                                if (RD == 15)
+                                {
+                                        templ = shift2(opcode);
+                                        armregs[15] = (((GETADDR(RN) - templ) + 4) & 0x3FFFFFC) | (armregs[15] & 0xFC000003);
+                                        refillpipeline();
+                                }
+                                else
+                                {
+                                        templ = shift2(opcode);
+                                        armregs[RD] = GETADDR(RN) - templ;
+                                }
+                                break;
+                                case 0x05: /*SUBS reg*/
+                                if (RD == 15)
+                                {
+                                        templ = shift2(opcode);
+                                        armregs[15] = (GETADDR(RN) - templ) + 4;
+                                        refillpipeline();
+                                }
+                                else
+                                {
+                                        templ = shift2(opcode);
+                                        setsub(GETADDR(RN), templ, GETADDR(RN) - templ);
+                                        armregs[RD] = GETADDR(RN) - templ;
+                                }
+                                break;
 
-                                        case 0x06: /*RSB reg*/
-                                        if (RD==15)
-                                        {
-                                                templ=shift2(opcode);
-                                                armregs[15]=(((templ-GETADDR(RN))+4)&0x3FFFFFC)|(armregs[15]&0xFC000003);
-                                                refillpipeline();
-                                        }
-                                        else
-                                        {
-                                                templ=shift2(opcode);
-                                                armregs[RD]=templ-GETADDR(RN);
-                                        }
-                                        break;
-                                        case 0x07: /*RSBS reg*/
-                                        if (RD==15)
-                                        {
-                                                templ=shift2(opcode);
-                                                armregs[15]=(templ-GETADDR(RN))+4;
-                                                refillpipeline();
-                                        }
-                                        else
-                                        {
-                                                templ=shift2(opcode);
-                                                setsub(templ,GETADDR(RN),templ-GETADDR(RN));
-                                                armregs[RD]=templ-GETADDR(RN);
-                                        }
-                                        break;
+                                case 0x06: /*RSB reg*/
+                                if (RD == 15)
+                                {
+                                        templ = shift2(opcode);
+                                        armregs[15] = (((templ - GETADDR(RN)) + 4) & 0x3FFFFFC) | (armregs[15] & 0xFC000003);
+                                        refillpipeline();
+                                }
+                                else
+                                {
+                                        templ = shift2(opcode);
+                                        armregs[RD] = templ - GETADDR(RN);
+                                }
+                                break;
+                                case 0x07: /*RSBS reg*/
+                                if (RD == 15)
+                                {
+                                        templ = shift2(opcode);
+                                        armregs[15] = (templ - GETADDR(RN)) + 4;
+                                        refillpipeline();
+                                }
+                                else
+                                {
+                                        templ = shift2(opcode);
+                                        setsub(templ, GETADDR(RN), templ - GETADDR(RN));
+                                        armregs[RD] = templ - GETADDR(RN);
+                                }
+                                break;
 
-                                        case 0x08: /*ADD reg*/
-                                        if (RD==15)
+                                case 0x08: /*ADD reg*/
+                                if (RD == 15)
+                                {
+                                        templ = shift2(opcode);
+                                        armregs[15] = ((GETADDR(RN) + templ + 4) & 0x3FFFFFC) | (armregs[15] & 0xFC000003);
+                                        refillpipeline();
+                                }
+                                else
+                                {
+                                        templ = shift2(opcode);
+                                        armregs[RD] = GETADDR(RN) + templ;
+                                }
+                                break;
+                                case 0x09: /*ADDS reg*/
+                                if (RD == 15)
+                                {
+                                        templ = shift2(opcode);
+                                        armregs[15] = GETADDR(RN) + templ + 4;
+                                        refillpipeline();
+                                }
+                                else
+                                {
+                                        templ = shift2(opcode);
+                                        setadd(GETADDR(RN), templ, GETADDR(RN) + templ);
+                                        armregs[RD] = GETADDR(RN) + templ;
+                                }
+                                break;
+                        
+                                case 0x0A: /*ADC reg*/
+                                if (RD == 15)
+                                {
+                                        templ2 = CFSET;
+                                        templ = shift2(opcode);
+                                        armregs[15] = ((GETADDR(RN) + templ + templ2 + 4)&0x3FFFFFC) | (armregs[15] & 0xFC000003);
+                                        refillpipeline();
+                                }
+                                else
+                                {
+                                        templ2 = CFSET;
+                                        templ = shift2(opcode);
+                                        armregs[RD] = GETADDR(RN) + templ + templ2;
+                                }
+                                break;
+                                case 0x0B: /*ADCS reg*/
+                                if (RD == 15)
+                                {
+                                        templ2 = CFSET;
+                                        templ = shift2(opcode);
+                                        armregs[15] = GETADDR(RN) + templ + templ2 + 4;
+                                        refillpipeline();
+                                }
+                                else
+                                {
+                                        templ2 = CFSET;
+                                        templ = shift2(opcode);
+                                        setadc(GETADDR(RN), templ, GETADDR(RN) + templ + templ2);
+                                        armregs[RD] = GETADDR(RN) + templ + templ2;
+                                }
+                                break;
+
+                                case 0x0C: /*SBC reg*/
+                                templ2 = (CFSET) ? 0 : 1;
+                                if (RD == 15)
+                                {
+                                        templ = shift2(opcode);
+                                        armregs[15] = (((GETADDR(RN) - (templ + templ2)) + 4) & 0x3FFFFFC) | (armregs[15] & 0xFC000003);
+                                        refillpipeline();
+                                }
+                                else
+                                {
+                                        templ = shift2(opcode);
+                                        armregs[RD] = GETADDR(RN) - (templ + templ2);
+                                }
+                                break;
+                                case 0x0D: /*SBCS reg*/
+                                templ2 = (CFSET) ? 0 : 1;
+                                if (RD == 15)
+                                {
+                                        templ = shift2(opcode);
+                                        armregs[15] = (GETADDR(RN) - (templ + templ2)) + 4;
+                                        refillpipeline();
+                                }
+                                else
+                                {
+                                        templ = shift2(opcode);
+                                        setsbc(GETADDR(RN), templ, GETADDR(RN) - (templ + templ2));
+                                        armregs[RD] = GETADDR(RN) - (templ + templ2);
+                                }
+                                break;
+                                case 0x0E: /*RSC reg*/
+                                templ2 = (CFSET) ? 0 : 1;
+                                if (RD == 15)
+                                {
+                                        templ = shift2(opcode);
+                                        armregs[15] = (((templ - (GETADDR(RN) + templ2)) + 4) & 0x3FFFFFC) | (armregs[15] & 0xFC000003);
+                                        refillpipeline();
+                                }
+                                else
+                                {
+                                        templ = shift2(opcode);
+                                        armregs[RD] = templ - (GETADDR(RN) + templ2);
+                                }
+                                break;
+                                case 0x0F: /*RSCS reg*/
+                                templ2 = (CFSET) ? 0 : 1;
+                                if (RD == 15)
+                                {
+                                        templ = shift2(opcode);
+                                        armregs[15] = (templ - (GETADDR(RN) + templ2)) + 4;
+                                        refillpipeline();
+                                }
+                                else
+                                {
+                                        templ = shift2(opcode);
+                                        setsbc(templ, GETADDR(RN), templ - (GETADDR(RN) + templ2));
+                                        armregs[RD] = templ - (GETADDR(RN) + templ2);
+                                }
+                                break;
+
+                                case 0x10: /*SWP word*/
+                                if ((opcode & 0xf0) != 0x90)
+                                	break;
+                                if (arm_has_swp)
+                                {
+                                        addr = GETADDR(RN);
+                                        templ = GETREG(RM);
+                                        LOADREG(RD, readmeml(addr));
+                                        cache_read_timing(PC, 1);
+                                        if (!databort)
                                         {
-                                                templ=shift2(opcode);
-        //                                        printf("R15=%08X+%08X+4=",GETADDR(RN),templ);
-                                                armregs[15]=((GETADDR(RN)+templ+4)&0x3FFFFFC)|(armregs[15]&0xFC000003);
-                                                refillpipeline();
-        //                                        printf("%08X\n",armregs[15]);
+                                                writememl(addr, templ);
                                         }
-                                        else
-                                        {
-                                                templ=shift2(opcode);
-                                                armregs[RD]=GETADDR(RN)+templ;
-                                        }
-                                        break;
-                                        case 0x09: /*ADDS reg*/
-                                        if (RD==15)
-                                        {
-                                                templ=shift2(opcode);
-        //                                        printf("R15=%08X+%08X+4=",GETADDR(RN),templ);
-                                                armregs[15]=GETADDR(RN)+templ+4;
-                                                refillpipeline();
-        //                                        printf("%08X\n",armregs[15]);
-                                        }
-                                        else
-                                        {
-                                                templ=shift2(opcode);
-                                                setadd(GETADDR(RN),templ,GETADDR(RN)+templ);
-        //                                        printf("ADDS %08X+%08X = ",GETADDR(RN),templ);
-                                                armregs[RD]=GETADDR(RN)+templ;
-        //                                        printf("%08X\n",armregs[RD]);
-        //                                        setzn(templ);
-                                        }
-                                        break;
+                                        cache_write_timing(addr, 1);
+                                        CLOCK_N(addr);
+                                        CLOCK_N(addr);
+                                        tsc += cyc_n * 2;
+                                }
+                                else
+                                {
+                                        templ=armregs[15]-4;
+                                        armregs[15]|=3;
+                                        updatemode(SUPERVISOR);
+                                        armregs[14]=templ;
+                                        armregs[15]&=0xFC000003;
+                                        armregs[15]|=0x08000008;
+                                        refillpipeline();
+                                }
+                                break;
                                 
-                                        case 0x0A: /*ADC reg*/
-                                        if (RD==15)
+                                case 0x11: /*TST reg*/
+                                if (RD == 15)
+                                {
+                                        if (armregs[15] & 3)
                                         {
-                                                templ2=CFSET;
-                                                templ=shift2(opcode);
-                                                armregs[15]=((GETADDR(RN)+templ+templ2+4)&0x3FFFFFC)|(armregs[15]&0xFC000003);
-                                                refillpipeline();
+                                                templ = armregs[15] & 0x3FFFFFC;
+                                                armregs[15] = ((GETADDR(RN) & shift2(opcode)) & 0xFC000003)|templ;
                                         }
                                         else
                                         {
-                                                templ2=CFSET;
-                                                templ=shift2(opcode);
-                                                armregs[RD]=GETADDR(RN)+templ+templ2;
+                                                templ = armregs[15] & 0x0FFFFFFF;
+                                                armregs[15] = ((GETADDR(RN) & shift2(opcode))&0xF0000000)|templ;
                                         }
-                                        break;
-                                        case 0x0B: /*ADCS reg*/
-                                        if (RD==15)
-                                        {
-                                                templ2=CFSET;
-                                                templ=shift2(opcode);
-                                                armregs[15]=GETADDR(RN)+templ+templ2+4;
-                                                refillpipeline();
-                                        }
-                                        else
-                                        {
-                                                templ2=CFSET;
-                                                templ=shift2(opcode);
-                                                setadc(GETADDR(RN),templ,GETADDR(RN)+templ+templ2);
-                                                armregs[RD]=GETADDR(RN)+templ+templ2;
-                                        }
-                                        break;
+                                }
+                                else
+                                {
+                                        setzn(GETADDR(RN) & shift(opcode));
+                                }
+                                break;
 
-                                        case 0x0C: /*SBC reg*/
-                                        templ2=(CFSET)?0:1;
-                                        if (RD==15)
+                                case 0x12:
+                                break;
+                                
+                                case 0x13: /*TEQ reg*/
+                                if (RD == 15)
+                                {
+                                        if (armregs[15] & 3)
                                         {
-                                                templ=shift2(opcode);
-                                                armregs[15]=(((GETADDR(RN)-(templ+templ2))+4)&0x3FFFFFC)|(armregs[15]&0xFC000003);
-                                                refillpipeline();
+                                                templ = armregs[15] & 0x3FFFFFC;
+                                                armregs[15] = ((GETADDR(RN) ^ shift2(opcode)) & 0xFC000003) | templ;
                                         }
                                         else
                                         {
-                                                templ=shift2(opcode);
-                                                armregs[RD]=GETADDR(RN)-(templ+templ2);
+                                                templ = armregs[15] & 0x0FFFFFFF;
+                                                armregs[15] = ((GETADDR(RN) ^ shift2(opcode)) & 0xF0000000) | templ;
                                         }
-                                        break;
-                                        case 0x0D: /*SBCS reg*/
-                                        templ2=(CFSET)?0:1;
-                                        if (RD==15)
-                                        {
-                                                templ=shift2(opcode);
-                                                armregs[15]=(GETADDR(RN)-(templ+templ2))+4;
-                                                refillpipeline();
-                                        }
-                                        else
-                                        {
-                                                templ=shift2(opcode);
-                                                setsbc(GETADDR(RN),templ,GETADDR(RN)-(templ+templ2));
-                                                armregs[RD]=GETADDR(RN)-(templ+templ2);
-                                        }
-                                        break;
-                                        case 0x0E: /*RSC reg*/
-                                        templ2=(CFSET)?0:1;
-                                        if (RD==15)
-                                        {
-                                                templ=shift2(opcode);
-                                                armregs[15]=(((templ-(GETADDR(RN)+templ2))+4)&0x3FFFFFC)|(armregs[15]&0xFC000003);
-                                                refillpipeline();
-                                        }
-                                        else
-                                        {
-                                                templ=shift2(opcode);
-                                                armregs[RD]=templ-(GETADDR(RN)+templ2);
-                                        }
-                                        break;
-                                        case 0x0F: /*RSCS reg*/
-                                        templ2=(CFSET)?0:1;
-                                        if (RD==15)
-                                        {
-                                                templ=shift2(opcode);
-                                                armregs[15]=(templ-(GETADDR(RN)+templ2))+4;
-                                                refillpipeline();
-                                        }
-                                        else
-                                        {
-                                                templ=shift2(opcode);
-                                                setsbc(templ,GETADDR(RN),templ-(GETADDR(RN)+templ2));
-                                                armregs[RD]=templ-(GETADDR(RN)+templ2);
-                                        }
-                                        break;
+                                }
+                                else
+                                {
+                                        setzn(GETADDR(RN) ^ shift(opcode));
+                                }
+                                break;
+                                
+                                case 0x14: /*SWPB*/
+                                if ((opcode & 0xf0) != 0x90)
+                                	break;
+                                if (arm_has_swp)
+                                {
+                                        addr = armregs[RN];
+                                        templ = GETREG(RM);
+                                        LOADREG(RD, readmemb(addr));
+                                        cache_read_timing(addr, 1);
+                                        writememb(addr, templ);
+                                        cache_write_timing(addr, 1);
+                                        CLOCK_N(addr);
+                                        CLOCK_N(addr);
+                                        tsc += cyc_n * 2;
+                                }
+                                else
+                                {
+                                        templ=armregs[15]-4;
+                                        armregs[15]|=3;
+                                        updatemode(SUPERVISOR);
+                                        armregs[14]=templ;
+                                        armregs[15]&=0xFC000003;
+                                        armregs[15]|=0x08000008;
+                                        refillpipeline();
+                                }
+                                break;
 
-                                        case 0x10: /*SWP word*/
-                                        if ((opcode & 0xf0) != 0x90)
-                                        	break;
-                                        if (arm_has_swp)
+                                case 0x15: /*CMP reg*/
+                                if (RD == 15)
+                                {
+                                        if (armregs[15] & 3)
                                         {
-                                                addr=GETADDR(RN);
-                                                templ=GETREG(RM);
-                                                LOADREG(RD,readmeml(addr));
-                                                cache_read_timing(PC, 1);
-                                                if (!databort)
-                                                {
-                                                        writememl(addr,templ);
-                                                }
-                                                cache_write_timing(addr, 1);
-                                                CLOCK_N(addr);
-                                                CLOCK_N(addr);
-                                                tsc += cyc_n * 2;
+                                                templ = armregs[15] & 0x3FFFFFC;
+                                                armregs[15] = ((GETADDR(RN) - shift2(opcode)) & 0xFC000003) | templ;
                                         }
                                         else
                                         {
-                                                templ=armregs[15]-4;
-                                                armregs[15]|=3;
-                                                updatemode(SUPERVISOR);
-                                                armregs[14]=templ;
-                                                armregs[15]&=0xFC000003;
-                                                armregs[15]|=0x08000008;
-                                                refillpipeline();
+                                                templ = armregs[15] & 0x0FFFFFFF;
+                                                armregs[15] = ((GETADDR(RN) - shift2(opcode)) & 0xF0000000) | templ;
                                         }
-                                        break;
-                                        
-                                        case 0x11: /*TST reg*/
-                                        if (RD==15)
-                                        {
-                                                if (armregs[15]&3)
-                                                {
-                                                        templ=armregs[15]&0x3FFFFFC;
-                                                        armregs[15]=((GETADDR(RN)&shift2(opcode))&0xFC000003)|templ;
-                                                }
-                                                else
-                                                {
-                                                        templ=armregs[15]&0x0FFFFFFF;
-                                                        armregs[15]=((GETADDR(RN)&shift2(opcode))&0xF0000000)|templ;
-                                                }
-                                        }
-                                        else
-                                        {
-                                                setzn(GETADDR(RN)&shift(opcode));
-                                        }
-                                        break;
+                                }
+                                else
+                                        setsub(GETADDR(RN), shift(opcode), GETADDR(RN) - shift2(opcode));
+                                break;
 
-                                        case 0x12:
-                                        break;
-                                        
-                                        case 0x13: /*TEQ reg*/
-                                        if (RD==15)
+                                case 0x17: /*CMN reg*/
+                                if (RD == 15)
+                                {
+                                        if (armregs[15] & 3)
                                         {
-                                                if (armregs[15]&3)
-                                                {
-                                                        templ=armregs[15]&0x3FFFFFC;
-//                                                        if (PC<0x1800000) rpclog("%07X : TEQP - %08X %08X %08X  ",PC,armregs[15],GETADDR(RN),shift2(opcode));
-                                                        armregs[15]=((GETADDR(RN)^shift2(opcode))&0xFC000003)|templ;
-//                                                        if (PC<0x1800000) printf(" - %08X\n",armregs[15]);
-                                                }
-                                                else
-                                                {
-                                                        templ=armregs[15]&0x0FFFFFFF;
-                                                        armregs[15]=((GETADDR(RN)^shift2(opcode))&0xF0000000)|templ;
-                                                }
+                                                templ = armregs[15] & 0x3FFFFFC;
+                                                armregs[15] = ((GETADDR(RN) + shift2(opcode)) & 0xFC000003) | templ;
                                         }
                                         else
                                         {
-                                                setzn(GETADDR(RN)^shift(opcode));
+                                                templ = armregs[15] & 0x0FFFFFFF;
+                                                armregs[15] = ((GETADDR(RN) + shift2(opcode)) & 0xF0000000) | templ;
                                         }
-                                        break;
-                                        
-                                        case 0x14: /*SWPB*/
-                                        if ((opcode & 0xf0) != 0x90)
-                                        	break;
-                                        if (arm_has_swp)
-                                        {
-                                                addr=armregs[RN];
-                                                templ=GETREG(RM);
-                                                LOADREG(RD,readmemb(addr));
-                                                cache_read_timing(addr, 1);
-                                                writememb(addr,templ);
-                                                cache_write_timing(addr, 1);
-                                                CLOCK_N(addr);
-                                                CLOCK_N(addr);
-                                                tsc += cyc_n * 2;
-                                        }
-                                        else
-                                        {
-                                                templ=armregs[15]-4;
-                                                armregs[15]|=3;
-                                                updatemode(SUPERVISOR);
-                                                armregs[14]=templ;
-                                                armregs[15]&=0xFC000003;
-                                                armregs[15]|=0x08000008;
-                                                refillpipeline();
-                                        }
-                                        break;
+                                }
+                                else
+                                        setadd(GETADDR(RN), shift2(opcode), GETADDR(RN) + shift2(opcode));
+                                break;
 
-                                        case 0x15: /*CMP reg*/
-                                        if (RD==15)
-                                        {
-                                                if (armregs[15]&3)
-                                                {
-                                                        templ=armregs[15]&0x3FFFFFC;
-                                                        armregs[15]=((GETADDR(RN)-shift2(opcode))&0xFC000003)|templ;
-                                                }
-                                                else
-                                                {
-                                                        templ=armregs[15]&0x0FFFFFFF;
-                                                        armregs[15]=((GETADDR(RN)-shift2(opcode))&0xF0000000)|templ;
-                                                }
-                                        }
-                                        else
-                                           setsub(GETADDR(RN),shift(opcode),GETADDR(RN)-shift2(opcode));
-                                        break;
+                                case 0x18: /*ORR reg*/
+                                if (RD == 15)
+                                {
+                                        templ = shift2(opcode);
+                                        armregs[15] = (((GETADDR(RN) | templ) + 4) & 0x3FFFFFC) | (armregs[15] & 0xFC000003);
+                                        refillpipeline();
+                                }
+                                else
+                                {
+                                        templ = shift2(opcode);
+                                        armregs[RD] = GETADDR(RN) | templ;
+                                }
+                                break;
+                                case 0x19: /*ORRS reg*/
+                                if (RD == 15)
+                                {
+                                        templ = shift2(opcode);
+                                        armregs[15] = (GETADDR(RN) | templ) + 4;
+                                        refillpipeline();
+                                }
+                                else
+                                {
+                                        templ = shift(opcode);
+                                        armregs[RD] = GETADDR(RN) | templ;
+                                        setzn(armregs[RD]);
+                                }
+                                break;
 
-                                        case 0x17: /*CMN reg*/
-                                        if (RD==15)
-                                        {
-                                                if (armregs[15]&3)
-                                                {
-                                                        templ=armregs[15]&0x3FFFFFC;
-                                                        armregs[15]=((GETADDR(RN)+shift2(opcode))&0xFC000003)|templ;
-                                                }
-                                                else
-                                                {
-                                                        templ=armregs[15]&0x0FFFFFFF;
-                                                        armregs[15]=((GETADDR(RN)+shift2(opcode))&0xF0000000)|templ;
-                                                }
-                                        }
+                                case 0x1A: /*MOV reg*/
+                                if (RD == 15)
+                                {
+                                        armregs[15] = (armregs[15] & 0xFC000003) | ((shift2(opcode) + 4) & 0x3FFFFFC);
+                                        refillpipeline();
+                                }
+                                else
+                                        armregs[RD]=shift2(opcode);
+                                break;
+                                case 0x1B: /*MOVS reg*/
+                                if (RD == 15)
+                                {
+                                        if (armregs[15] & 3)
+                                                armregs[15] = shift2(opcode) + 4;
                                         else
-                                           setadd(GETADDR(RN),shift2(opcode),GETADDR(RN)+shift2(opcode));
-                                        break;
+                                                armregs[15] = ((shift2(opcode) + 4) & 0xF3FFFFFC) | (armregs[15] & 0xC000003);
+                                        refillpipeline();
+                                }
+                                else
+                                {
+                                        armregs[RD] = shift(opcode);
+                                        setzn(armregs[RD]);
+                                }
+                                break;
 
-                                        case 0x18: /*ORR reg*/
-                                        if (RD==15)
-                                        {
-                                                templ=shift2(opcode);
-                                                armregs[15]=(((GETADDR(RN)|templ)+4)&0x3FFFFFC)|(armregs[15]&0xFC000003);
-                                                refillpipeline();
-                                        }
-                                        else
-                                        {
-                                                templ=shift2(opcode);
-                                                armregs[RD]=GETADDR(RN)|templ;
-                                        }
-                                        break;
-                                        case 0x19: /*ORRS reg*/
-                                        if (RD==15)
-                                        {
-                                                templ=shift2(opcode);
-                                                armregs[15]=(GETADDR(RN)|templ)+4;
-                                                refillpipeline();
-                                        }
-                                        else
-                                        {
-                                                templ=shift(opcode);
-                                                armregs[RD]=GETADDR(RN)|templ;
-                                                setzn(armregs[RD]);
-                                        }
-                                        break;
+                                case 0x1C: /*BIC reg*/
+                                if (RD == 15)
+                                {
+                                        templ = shift2(opcode);
+                                        armregs[15] = (((GETADDR(RN) & ~templ) + 4) & 0x3FFFFFC) | (armregs[15] & 0xFC000003);
+                                        refillpipeline();
+                                }
+                                else
+                                {
+                                        templ = shift2(opcode);
+                                        armregs[RD] = GETADDR(RN) & ~templ;
+                                }
+                                break;
+                                case 0x1D: /*BICS reg*/
+                                if (RD == 15)
+                                {
+                                        templ = shift2(opcode);
+                                        armregs[15] = (GETADDR(RN) & ~templ) + 4;
+                                        refillpipeline();
+                                }
+                                else
+                                {
+                                        templ = shift(opcode);
+                                        armregs[RD] = GETADDR(RN) & ~templ;
+                                        setzn(armregs[RD]);
+                                }
+                                break;
 
-                                        case 0x1A: /*MOV reg*/
-                                        if (RD==15)
-                                        {
-                                                armregs[15]=(armregs[15]&0xFC000003)|((shift2(opcode)+4)&0x3FFFFFC);
-                                                refillpipeline();
-                                        }
-                                        else
-                                           armregs[RD]=shift2(opcode);
-                                        break;
-                                        case 0x1B: /*MOVS reg*/
-                                        if (RD==15)
-                                        {
-                                                if (armregs[15]&3) armregs[15]=shift2(opcode)+4;
-                                                else               armregs[15]=((shift2(opcode)+4)&0xF3FFFFFC)|(armregs[15]&0xC000003);
-                                                refillpipeline();
-                                        }
-                                        else
-                                        {
-                                                armregs[RD]=shift(opcode);
-                                                setzn(armregs[RD]);
-                                        }
-                                        break;
+                                case 0x1E: /*MVN reg*/
+                                if (RD == 15)
+                                {
+                                        armregs[15] = (armregs[15] & 0xFC000003) | (((~shift2(opcode)) + 4) & 0x3FFFFFC);
+                                        refillpipeline();
+                                }
+                                else
+                                        armregs[RD] = ~shift2(opcode);
+                                break;
+                                case 0x1F: /*MVNS reg*/
+                                if (RD == 15)
+                                {
+                                        armregs[15] = (~shift2(opcode)) + 4;
+                                        refillpipeline();
+                                }
+                                else
+                                {
+                                        armregs[RD] = ~shift(opcode);
+                                        setzn(armregs[RD]);
+                                }
+                                break;
 
-                                        case 0x1C: /*BIC reg*/
-                                        if (RD==15)
-                                        {
-                                                templ=shift2(opcode);
-                                                armregs[15]=(((GETADDR(RN)&~templ)+4)&0x3FFFFFC)|(armregs[15]&0xFC000003);
-                                                refillpipeline();
-                                        }
-                                        else
-                                        {
-                                                templ=shift2(opcode);
-                                                armregs[RD]=GETADDR(RN)&~templ;
-                                        }
-                                        break;
-                                        case 0x1D: /*BICS reg*/
-                                        if (RD==15)
-                                        {
-                                                templ=shift2(opcode);
-                                                armregs[15]=(GETADDR(RN)&~templ)+4;
-                                                refillpipeline();
-                                        }
-                                        else
-                                        {
-                                                templ=shift(opcode);
-                                                armregs[RD]=GETADDR(RN)&~templ;
-                                                setzn(armregs[RD]);
-                                        }
-                                        break;
+                                case 0x20: /*AND imm*/
+                                if (RD == 15)
+                                {
+                                        templ = rotate2(opcode);
+                                        armregs[15] = (((GETADDR(RN) & templ) + 4) & 0x3FFFFFC) | (armregs[15] & 0xFC000003);
+                                        refillpipeline();
+                                }
+                                else
+                                {
+                                        templ = rotate2(opcode);
+                                        armregs[RD] = GETADDR(RN) & templ;
+                                }
+                                break;
+                                case 0x21: /*ANDS imm*/
+                                if (RD == 15)
+                                {
+                                        templ = rotate2(opcode);
+                                        armregs[15] = (GETADDR(RN) & templ) + 4;
+                                        refillpipeline();
+                                }
+                                else
+                                {
+                                        templ = rotate(opcode);
+                                        armregs[RD] = GETADDR(RN) & templ;
+                                        setzn(armregs[RD]);
+                                }
+                                break;
 
-                                        case 0x1E: /*MVN reg*/
-                                        if (RD==15)
-                                        {
-                                                armregs[15]=(armregs[15]&0xFC000003)|(((~shift2(opcode))+4)&0x3FFFFFC);
-                                                refillpipeline();
-                                        }
-                                        else
-                                           armregs[RD]=~shift2(opcode);
-                                        break;
-                                        case 0x1F: /*MVNS reg*/
-                                        if (RD==15)
-                                        {
-                                                armregs[15]=(~shift2(opcode))+4;
-                                                refillpipeline();
-                                        }
-                                        else
-                                        {
-                                                armregs[RD]=~shift(opcode);
-                                                setzn(armregs[RD]);
-                                        }
-                                        break;
+                                case 0x22: /*EOR imm*/
+                                if (RD == 15)
+                                {
+                                        templ = rotate2(opcode);
+                                        armregs[15] = (((GETADDR(RN) ^ templ) + 4) & 0x3FFFFFC) | (armregs[15] & 0xFC000003);
+                                        refillpipeline();
+                                }
+                                else
+                                {
+                                        templ = rotate2(opcode);
+                                        armregs[RD] = GETADDR(RN) ^ templ;
+                                }
+                                break;
+                                case 0x23: /*EORS imm*/
+                                if (RD == 15)
+                                {
+                                        templ = rotate2(opcode);
+                                        armregs[15] = (GETADDR(RN) ^ templ) + 4;
+                                        refillpipeline();
+                                }
+                                else
+                                {
+                                        templ = rotate(opcode);
+                                        armregs[RD] = GETADDR(RN) ^ templ;
+                                        setzn(armregs[RD]);
+                                }
+                                break;
 
-                                        case 0x20: /*AND imm*/
-                                        if (RD==15)
-                                        {
-                                                templ=rotate2(opcode);
-                                                armregs[15]=(((GETADDR(RN)&templ)+4)&0x3FFFFFC)|(armregs[15]&0xFC000003);
-                                                refillpipeline();
-                                        }
-                                        else
-                                        {
-                                                templ=rotate2(opcode);
-//                                                if (templ==0x3F0000 && RD==9 && RN==1) rpclog("Here! %07X %08X %08X\n",PC,armregs[6],armregs[5]);
-                                                armregs[RD]=GETADDR(RN)&templ;
-                                        }
-                                        break;
-                                        case 0x21: /*ANDS imm*/
-                                        if (RD==15)
-                                        {
-                                                templ=rotate2(opcode);
-                                                armregs[15]=(GETADDR(RN)&templ)+4;
-                                                refillpipeline();
-                                        }
-                                        else
-                                        {
-                                                templ=rotate(opcode);
-                                                armregs[RD]=GETADDR(RN)&templ;
-                                                setzn(armregs[RD]);
-                                        }
-                                        break;
+                                case 0x24: /*SUB imm*/
+                                if (RD == 15)
+                                {
+                                        templ = rotate2(opcode);
+                                        armregs[15] = (((GETADDR(RN) - templ) + 4) & 0x3FFFFFC) | (armregs[15] & 0xFC000003);
+                                        refillpipeline();
+                                }
+                                else
+                                {
+                                        templ = rotate2(opcode);
+                                        armregs[RD] = GETADDR(RN) - templ;
+                                }
+                                break;
+                                case 0x25: /*SUBS imm*/
+                                if (RD == 15)
+                                {
+                                        templ = rotate2(opcode);
+                                        armregs[15] = (GETADDR(RN) - templ) + 4;
+                                        refillpipeline();
+                                }
+                                else
+                                {
+                                        templ = rotate2(opcode);
+                                        setsub(GETADDR(RN), templ, GETADDR(RN) - templ);
+                                        armregs[RD] = GETADDR(RN) - templ;
+                                }
+                                break;
 
-                                        case 0x22: /*EOR imm*/
-                                        if (RD==15)
-                                        {
-                                                templ=rotate2(opcode);
-                                                armregs[15]=(((GETADDR(RN)^templ)+4)&0x3FFFFFC)|(armregs[15]&0xFC000003);
-                                                refillpipeline();
-                                        }
-                                        else
-                                        {
-                                                templ=rotate2(opcode);
-                                                armregs[RD]=GETADDR(RN)^templ;
-                                        }
-                                        break;
-                                        case 0x23: /*EORS imm*/
-                                        if (RD==15)
-                                        {
-                                                templ=rotate2(opcode);
-                                                armregs[15]=(GETADDR(RN)^templ)+4;
-                                                refillpipeline();
-                                        }
-                                        else
-                                        {
-                                                templ=rotate(opcode);
-                                                armregs[RD]=GETADDR(RN)^templ;
-                                                setzn(armregs[RD]);
-                                        }
-                                        break;
+                                case 0x26: /*RSB imm*/
+                                if (RD == 15)
+                                {
+                                        templ = rotate2(opcode);
+                                        armregs[15] = (((templ - GETADDR(RN)) + 4) & 0x3FFFFFC) | (armregs[15] & 0xFC000003);
+                                        refillpipeline();
+                                }
+                                else
+                                {
+                                        templ = rotate2(opcode);
+                                        armregs[RD] = templ - GETADDR(RN);
+                                }
+                                break;
+                                case 0x27: /*RSBS imm*/
+                                if (RD == 15)
+                                {
+                                        templ = rotate2(opcode);
+                                        armregs[15] = (templ - GETADDR(RN)) + 4;
+                                        refillpipeline();
+                                }
+                                else
+                                {
+                                        templ = rotate2(opcode);
+                                        setsub(templ, GETADDR(RN), templ - GETADDR(RN));
+                                        armregs[RD] = templ - GETADDR(RN);
+                                }
+                                break;
 
-                                        case 0x24: /*SUB imm*/
-                                        if (RD==15)
-                                        {
-                                                templ=rotate2(opcode);
-                                                armregs[15]=(((GETADDR(RN)-templ)+4)&0x3FFFFFC)|(armregs[15]&0xFC000003);
-                                                refillpipeline();
-                                        }
-                                        else
-                                        {
-                                                templ=rotate2(opcode);
-                                                armregs[RD]=GETADDR(RN)-templ;
-                                        }
-                                        break;
-                                        case 0x25: /*SUBS imm*/
-                                        if (RD==15)
-                                        {
-                                                templ=rotate2(opcode);
-                                                armregs[15]=(GETADDR(RN)-templ)+4;
-                                                refillpipeline();
-                                        }
-                                        else
-                                        {
-                                                templ=rotate2(opcode);
-                                                setsub(GETADDR(RN),templ,GETADDR(RN)-templ);
-                                                armregs[RD]=GETADDR(RN)-templ;
-                                        }
-                                        break;
+                                case 0x28: /*ADD imm*/
+                                if (RD == 15)
+                                {
+                                        templ = rotate2(opcode);
+                                        armregs[15] = (((GETADDR(RN) + templ) + 4) & 0x3FFFFFC) | (armregs[15] & 0xFC000003);
+                                        refillpipeline();
+                                }
+                                else
+                                {
+                                        templ = rotate2(opcode);
+                                        armregs[RD] = GETADDR(RN) + templ;
+                                }
+                                break;
+                                case 0x29: /*ADDS imm*/
+                                if (RD == 15)
+                                {
+                                        templ = rotate2(opcode);
+                                        armregs[15] = GETADDR(RN) + templ + 4;
+                                        refillpipeline();
+                                }
+                                else
+                                {
+                                        templ = rotate2(opcode);
+                                        setadd(GETADDR(RN), templ, GETADDR(RN) + templ);
+                                        armregs[RD] = GETADDR(RN) + templ;
+                                }
+                                break;
 
-                                        case 0x26: /*RSB imm*/
-                                        if (RD==15)
-                                        {
-                                                templ=rotate2(opcode);
-                                                armregs[15]=(((templ-GETADDR(RN))+4)&0x3FFFFFC)|(armregs[15]&0xFC000003);
-                                                refillpipeline();
-                                        }
-                                        else
-                                        {
-                                                templ=rotate2(opcode);
-                                                armregs[RD]=templ-GETADDR(RN);
-                                        }
-                                        break;
-                                        case 0x27: /*RSBS imm*/
-                                        if (RD==15)
-                                        {
-                                                templ=rotate2(opcode);
-                                                armregs[15]=(templ-GETADDR(RN))+4;
-                                                refillpipeline();
-                                        }
-                                        else
-                                        {
-                                                templ=rotate2(opcode);
-                                                setsub(templ,GETADDR(RN),templ-GETADDR(RN));
-                                                armregs[RD]=templ-GETADDR(RN);
-                                        }
-                                        break;
+                                case 0x2A: /*ADC imm*/
+                                if (RD == 15)
+                                {
+                                        templ2 = CFSET;
+                                        templ = rotate2(opcode);
+                                        armregs[15] = ((GETADDR(RN) + templ + templ2 + 4) & 0x3FFFFFC) | (armregs[15] & 0xFC000003);
+                                        refillpipeline();
+                                }
+                                else
+                                {
+                                        templ2 = CFSET;
+                                        templ = rotate2(opcode);
+                                        armregs[RD] = GETADDR(RN) + templ + templ2;
+                                }
+                                break;
+                                case 0x2B: /*ADCS imm*/
+                                if (RD == 15)
+                                {
+                                        templ2 = CFSET;
+                                        templ = rotate2(opcode);
+                                        armregs[15] = GETADDR(RN) + templ + templ2 + 4;
+                                        refillpipeline();
+                                }
+                                else
+                                {
+                                        templ2 = CFSET;
+                                        templ = rotate2(opcode);
+                                        setadc(GETADDR(RN), templ,GETADDR(RN) + templ + templ2);
+                                        armregs[RD] = GETADDR(RN) + templ + templ2;
+                                }
+                                break;
 
-                                        case 0x28: /*ADD imm*/
-                                        if (RD==15)
-                                        {
-                                                templ=rotate2(opcode);
-                                                armregs[15]=(((GETADDR(RN)+templ)+4)&0x3FFFFFC)|(armregs[15]&0xFC000003);
-                                                refillpipeline();
-                                        }
-                                        else
-                                        {
-                                                templ=rotate2(opcode);
-                                                armregs[RD]=GETADDR(RN)+templ;
-                                        }
-                                        break;
-                                        case 0x29: /*ADDS imm*/
-                                        if (RD==15)
-                                        {
-                                                templ=rotate2(opcode);
-                                                armregs[15]=GETADDR(RN)+templ+4;
-                                                refillpipeline();
-                                        }
-                                        else
-                                        {
-                                                templ=rotate2(opcode);
-                                                setadd(GETADDR(RN),templ,GETADDR(RN)+templ);
-                                                armregs[RD]=GETADDR(RN)+templ;
-                                        }
-                                        break;
+                                case 0x2C: /*SBC imm*/
+                                templ2 = (CFSET) ? 0 : 1;
+                                if (RD == 15)
+                                {
+                                        templ = rotate2(opcode);
+                                        armregs[15] = (((GETADDR(RN) - (templ + templ2)) + 4) & 0x3FFFFFC) | (armregs[15] & 0xFC000003);
+                                        refillpipeline();
+                                }
+                                else
+                                {
+                                        templ = rotate2(opcode);
+                                        armregs[RD] = GETADDR(RN) - (templ + templ2);
+                                }
+                                break;
+                                case 0x2D: /*SBCS imm*/
+                                templ2 = (CFSET) ? 0 : 1;
+                                if (RD == 15)
+                                {
+                                        templ = rotate2(opcode);
+                                        armregs[15] = (GETADDR(RN) - (templ + templ2)) + 4;
+                                        refillpipeline();
+                                }
+                                else
+                                {
+                                        templ = rotate2(opcode);
+                                        setsbc(GETADDR(RN), templ, GETADDR(RN) - (templ + templ2));
+                                        armregs[RD] = GETADDR(RN) - (templ + templ2);
+                                }
+                                break;
+                                case 0x2E: /*RSC imm*/
+                                templ2 = (CFSET) ? 0 : 1;
+                                if (RD == 15)
+                                {
+                                        templ = rotate2(opcode);
+                                        armregs[15] = (((templ - (GETADDR(RN) + templ2)) + 4) & 0x3FFFFFC) | (armregs[15] & 0xFC000003);
+                                        refillpipeline();
+                                }
+                                else
+                                {
+                                        templ = rotate2(opcode);
+                                        armregs[RD] = templ - (GETADDR(RN) + templ2);
+                                }
+                                break;
+                                case 0x2F: /*RSCS imm*/
+                                templ2 = (CFSET) ? 0 : 1;
+                                if (RD == 15)
+                                {
+                                        templ = rotate2(opcode);
+                                        armregs[15] = (templ - (GETADDR(RN) + templ2)) + 4;
+                                        refillpipeline();
+                                }
+                                else
+                                {
+                                        templ = rotate2(opcode);
+                                        setsbc(templ, GETADDR(RN), templ - (GETADDR(RN) + templ2));
+                                        armregs[RD] = templ - (GETADDR(RN) + templ2);
+                                }
+                                break;
 
-                                        case 0x2A: /*ADC imm*/
-                                        if (RD==15)
+                                case 0x31: /*TST imm*/
+                                if (RD == 15)
+                                {
+                                        if (armregs[15] & 3)
                                         {
-                                                templ2=CFSET;
-                                                templ=rotate2(opcode);
-                                                armregs[15]=((GETADDR(RN)+templ+templ2+4)&0x3FFFFFC)|(armregs[15]&0xFC000003);
-                                                refillpipeline();
+                                                templ = armregs[15] & 0x3FFFFFC;
+                                                armregs[15] = ((GETADDR(RN) & rotate2(opcode)) & 0xFC000003) | templ;
                                         }
                                         else
                                         {
-                                                templ2=CFSET;
-                                                templ=rotate2(opcode);
-                                                armregs[RD]=GETADDR(RN)+templ+templ2;
+                                                templ = armregs[15] & 0x0FFFFFFF;
+                                                armregs[15] = ((GETADDR(RN) & rotate2(opcode)) & 0xF0000000) | templ;
                                         }
-                                        break;
-                                        case 0x2B: /*ADCS imm*/
-                                        if (RD==15)
-                                        {
-                                                templ2=CFSET;
-                                                templ=rotate2(opcode);
-                                                armregs[15]=GETADDR(RN)+templ+templ2+4;
-                                                refillpipeline();
-                                        }
-                                        else
-                                        {
-                                                templ2=CFSET;
-                                                templ=rotate2(opcode);
-                                                setadc(GETADDR(RN),templ,GETADDR(RN)+templ+templ2);
-                                                armregs[RD]=GETADDR(RN)+templ+templ2;
-                                        }
-                                        break;
+                                }
+                                else
+                                {
+                                        setzn(GETADDR(RN) & rotate(opcode));
+                                }
+                                break;
 
-                                        case 0x2C: /*SBC imm*/
-                                        templ2=(CFSET)?0:1;
-                                        if (RD==15)
-                                        {
-                                                templ=rotate2(opcode);
-                                                armregs[15]=(((GETADDR(RN)-(templ+templ2))+4)&0x3FFFFFC)|(armregs[15]&0xFC000003);
-                                                refillpipeline();
-                                        }
-                                        else
-                                        {
-                                                templ=rotate2(opcode);
-                                                armregs[RD]=GETADDR(RN)-(templ+templ2);
-                                        }
-                                        break;
-                                        case 0x2D: /*SBCS imm*/
-                                        templ2=(CFSET)?0:1;
-                                        if (RD==15)
-                                        {
-                                                templ=rotate2(opcode);
-                                                armregs[15]=(GETADDR(RN)-(templ+templ2))+4;
-                                                refillpipeline();
-                                        }
-                                        else
-                                        {
-                                                templ=rotate2(opcode);
-                                                setsbc(GETADDR(RN),templ,GETADDR(RN)-(templ+templ2));
-                                                armregs[RD]=GETADDR(RN)-(templ+templ2);
-                                        }
-                                        break;
-                                        case 0x2E: /*RSC imm*/
-                                        templ2=(CFSET)?0:1;
-                                        if (RD==15)
-                                        {
-                                                templ=rotate2(opcode);
-                                                armregs[15]=(((templ-(GETADDR(RN)+templ2))+4)&0x3FFFFFC)|(armregs[15]&0xFC000003);
-                                                refillpipeline();
-                                        }
-                                        else
-                                        {
-                                                templ=rotate2(opcode);
-                                                armregs[RD]=templ-(GETADDR(RN)+templ2);
-                                        }
-                                        break;
-                                        case 0x2F: /*RSCS imm*/
-                                        templ2=(CFSET)?0:1;
-                                        if (RD==15)
-                                        {
-                                                templ=rotate2(opcode);
-                                                armregs[15]=(templ-(GETADDR(RN)+templ2))+4;
-                                                refillpipeline();
-                                        }
-                                        else
-                                        {
-                                                templ=rotate2(opcode);
-                                                setsbc(templ,GETADDR(RN),templ-(GETADDR(RN)+templ2));
-//                                                setsub(templ,GETADDR(RN),templ-(GETADDR(RN)+templ2));
-                                                armregs[RD]=templ-(GETADDR(RN)+templ2);
-                                        }
-                                        break;
-
-                                        case 0x31: /*TST imm*/
-                                        if (RD==15)
-                                        {
-                                                if (armregs[15]&3)
-                                                {
-                                                        templ=armregs[15]&0x3FFFFFC;
-                                                        armregs[15]=((GETADDR(RN)&rotate2(opcode))&0xFC000003)|templ;
-                                                }
-                                                else
-                                                {
-                                                        templ=armregs[15]&0x0FFFFFFF;
-                                                        armregs[15]=((GETADDR(RN)&rotate2(opcode))&0xF0000000)|templ;
-                                                }
-                                        }
-                                        else
-                                        {
-                                                setzn(GETADDR(RN)&rotate(opcode));
-                                        }
-                                        break;
-
-                                        case 0x32:
+                                case 0x32:
 /*                                                templ=armregs[15]-4;
-                                                armregs[15]|=3;
-                                                updatemode(SUPERVISOR);
-                                                armregs[14]=templ;
-                                                armregs[15]&=0xFC000003;
-                                                armregs[15]|=0x08000008;*/
+                                        armregs[15]|=3;
+                                        updatemode(SUPERVISOR);
+                                        armregs[14]=templ;
+                                        armregs[15]&=0xFC000003;
+                                        armregs[15]|=0x08000008;*/
 //                                                refillpipeline();
-                                        break;
+                                break;
 
-                                        case 0x33: /*TEQ imm*/
-                                        if (RD==15)
+                                case 0x33: /*TEQ imm*/
+                                if (RD == 15)
+                                {
+                                        opcode &= ~0x100000;
+                                        if (armregs[15] & 3)
                                         {
-                                                opcode&=~0x100000;
-                                                if (armregs[15]&3)
-                                                {
-                                                        templ=armregs[15]&0x3FFFFFC;
-//                                                        if (PC<0x1800000) rpclog("%07X : TEQP - %08X %08X %08X  ",PC,armregs[15],GETADDR(RN),rotate2(opcode));
-                                                        armregs[15]=((GETADDR(RN)^rotate2(opcode))&0xFC000003)|templ;
-//                                                        if (PC<0x1800000) rpclog(" - %08X\n",armregs[15]);
-                                                }
-                                                else
-                                                {
-                                                        templ=armregs[15]&0x0FFFFFFF;
-                                                        armregs[15]=((GETADDR(RN)^rotate2(opcode))&0xF0000000)|templ;
-                                                }
+                                                templ = armregs[15] & 0x3FFFFFC;
+                                                armregs[15] = ((GETADDR(RN) ^ rotate2(opcode)) & 0xFC000003) | templ;
                                         }
                                         else
                                         {
-                                                setzn(GETADDR(RN)^rotate(opcode));
+                                                templ = armregs[15] & 0x0FFFFFFF;
+                                                armregs[15] = ((GETADDR(RN) ^ rotate2(opcode)) & 0xF0000000) | templ;
                                         }
-                                        break;
+                                }
+                                else
+                                {
+                                        setzn(GETADDR(RN) ^ rotate(opcode));
+                                }
+                                break;
 
-                                        case 0x34:
-                                        break;
-                                        case 0x35: /*CMP imm*/
-                                        if (RD==15)
+                                case 0x34:
+                                break;
+                                case 0x35: /*CMP imm*/
+                                if (RD == 15)
+                                {
+                                        if (armregs[15] & 3)
                                         {
-                                                if (armregs[15]&3)
-                                                {
-                                                        templ=armregs[15]&0x3FFFFFC;
-                                                        armregs[15]=((GETADDR(RN)-rotate2(opcode))&0xFC000003)|templ;
-                                                }
-                                                else
-                                                {
-                                                        templ=armregs[15]&0x0FFFFFFF;
-                                                        armregs[15]=((GETADDR(RN)-rotate2(opcode))&0xF0000000)|templ;
-                                                }
+                                                templ = armregs[15] & 0x3FFFFFC;
+                                                armregs[15] = ((GETADDR(RN) - rotate2(opcode)) & 0xFC000003) | templ;
                                         }
                                         else
                                         {
-                                                setsub(GETADDR(RN),rotate2(opcode),GETADDR(RN)-rotate2(opcode));
+                                                templ = armregs[15] & 0x0FFFFFFF;
+                                                armregs[15] = ((GETADDR(RN) - rotate2(opcode)) & 0xF0000000) | templ;
                                         }
-                                        break;
+                                }
+                                else
+                                {
+                                        setsub(GETADDR(RN), rotate2(opcode), GETADDR(RN) - rotate2(opcode));
+                                }
+                                break;
 
-                                        case 0x37: /*CMN imm*/
-                                        if (RD==15)
+                                case 0x37: /*CMN imm*/
+                                if (RD == 15)
+                                {
+                                        if (armregs[15] & 3)
                                         {
-                                                if (armregs[15]&3)
-                                                {
-                                                        templ=armregs[15]&0x3FFFFFC;
-                                                        armregs[15]=((GETADDR(RN)+rotate2(opcode))&0xFC000003)|templ;
-                                                }
-                                                else
-                                                {
-                                                        templ=armregs[15]&0x0FFFFFFF;
-                                                        armregs[15]=((GETADDR(RN)+rotate2(opcode))&0xF0000000)|templ;
-                                                }
+                                                templ = armregs[15] & 0x3FFFFFC;
+                                                armregs[15] = ((GETADDR(RN) + rotate2(opcode)) & 0xFC000003) | templ;
                                         }
                                         else
                                         {
-                                                setadd(GETADDR(RN),rotate2(opcode),GETADDR(RN)+rotate2(opcode));
+                                                templ = armregs[15] & 0x0FFFFFFF;
+                                                armregs[15] = ((GETADDR(RN) + rotate2(opcode)) & 0xF0000000) | templ;
                                         }
-                                        break;
+                                }
+                                else
+                                {
+                                        setadd(GETADDR(RN), rotate2(opcode), GETADDR(RN) + rotate2(opcode));
+                                }
+                                break;
 
-                                        case 0x38: /*ORR imm*/
-                                        if (RD==15)
-                                        {
-                                                templ=rotate2(opcode);
-                                                armregs[15]=(((GETADDR(RN)|templ)+4)&0x3FFFFFC)|(armregs[15]&0xFC000003);
-                                                refillpipeline();
-                                        }
+                                case 0x38: /*ORR imm*/
+                                if (RD == 15)
+                                {
+                                        templ = rotate2(opcode);
+                                        armregs[15] = (((GETADDR(RN) | templ) + 4) & 0x3FFFFFC) | (armregs[15] & 0xFC000003);
+                                        refillpipeline();
+                                }
+                                else
+                                {
+                                        templ = rotate2(opcode);
+                                        armregs[RD] = GETADDR(RN) | templ;
+                                }
+                                break;
+                                case 0x39: /*ORRS imm*/
+                                if (RD == 15)
+                                {
+                                        templ = rotate2(opcode);
+                                        if (armregs[15] & 3)
+                                                armregs[15] = (GETADDR(RN) | templ) + 4;
                                         else
-                                        {
-                                                templ=rotate2(opcode);
-                                                armregs[RD]=GETADDR(RN)|templ;
-                                        }
-                                        break;
-                                        case 0x39: /*ORRS imm*/
-                                        if (RD==15)
-                                        {
-                                                templ=rotate2(opcode);
-                                                if (armregs[15]&3)
-                                                   armregs[15]=(GETADDR(RN)|templ)+4;
-                                                else
-                                                   armregs[15]=(((GETADDR(RN)|templ)+4)&0xF3FFFFFC)|(armregs[15]&0xC000003);
-                                                refillpipeline();
-                                        }
-                                        else
-                                        {
-                                                templ=rotate(opcode);
-                                                armregs[RD]=GETADDR(RN)|templ;
-                                                setzn(armregs[RD]);
-                                        }
-                                        break;
+                                                armregs[15] = (((GETADDR(RN) | templ) + 4) & 0xF3FFFFFC) | (armregs[15] & 0xC000003);
+                                        refillpipeline();
+                                }
+                                else
+                                {
+                                        templ = rotate(opcode);
+                                        armregs[RD] = GETADDR(RN) | templ;
+                                        setzn(armregs[RD]);
+                                }
+                                break;
 
-                                        case 0x3A: /*MOV imm*/
-                                        if (RD==15)
-                                        {
-                                                armregs[15]=(armregs[15]&0xFC000003)|((rotate2(opcode)+4)&0x3FFFFFC);
-                                                refillpipeline();
-                                        }
-                                        else
-                                           armregs[RD]=rotate2(opcode);
-                                        break;
-                                        case 0x3B: /*MOVS imm*/
-                                        if (RD==15)
-                                        {
-                                                armregs[15]=rotate2(opcode)+4;
-                                                refillpipeline();
-                                        }
-                                        else
-                                        {
-                                                armregs[RD]=rotate(opcode);
-                                                setzn(armregs[RD]);
-                                        }
-                                        break;
+                                case 0x3A: /*MOV imm*/
+                                if (RD == 15)
+                                {
+                                        armregs[15] = (armregs[15] & 0xFC000003) | ((rotate2(opcode) + 4) & 0x3FFFFFC);
+                                        refillpipeline();
+                                }
+                                else
+                                        armregs[RD] = rotate2(opcode);
+                                break;
+                                case 0x3B: /*MOVS imm*/
+                                if (RD == 15)
+                                {
+                                        armregs[15] = rotate2(opcode) + 4;
+                                        refillpipeline();
+                                }
+                                else
+                                {
+                                        armregs[RD] = rotate(opcode);
+                                        setzn(armregs[RD]);
+                                }
+                                break;
 
-                                        case 0x3C: /*BIC imm*/
-                                        if (RD==15)
-                                        {
-                                                templ=rotate2(opcode);
-                                                armregs[15]=(((GETADDR(RN)&~templ)+4)&0x3FFFFFC)|(armregs[15]&0xFC000003);
-                                                refillpipeline();
-                                        }
+                                case 0x3C: /*BIC imm*/
+                                if (RD == 15)
+                                {
+                                        templ = rotate2(opcode);
+                                        armregs[15] = (((GETADDR(RN) & ~templ) + 4) & 0x3FFFFFC) | (armregs[15] & 0xFC000003);
+                                        refillpipeline();
+                                }
+                                else
+                                {
+                                        templ = rotate2(opcode);
+                                        armregs[RD] = GETADDR(RN) & ~templ;
+                                }
+                                break;
+                                case 0x3D: /*BICS imm*/
+                                if (RD == 15)
+                                {
+                                        templ = rotate2(opcode);
+                                        if (armregs[15] & 3)
+                                                armregs[15] = (GETADDR(RN) & ~templ) + 4;
                                         else
-                                        {
-                                                templ=rotate2(opcode);
-                                                armregs[RD]=GETADDR(RN)&~templ;
-                                        }
-                                        break;
-                                        case 0x3D: /*BICS imm*/
-                                        if (RD==15)
-                                        {
-                                                templ=rotate2(opcode);
-                                                if (armregs[15]&3) armregs[15]=(GETADDR(RN)&~templ)+4;
-                                                else               armregs[15]=(((GETADDR(RN)&~templ)+4)&0xF3FFFFFC)|(armregs[15]&0xC000003);
-                                                refillpipeline();
-                                        }
-                                        else
-                                        {
-                                                templ=rotate(opcode);
-                                                armregs[RD]=GETADDR(RN)&~templ;
-                                                setzn(armregs[RD]);
-                                        }
-                                        break;
+                                                armregs[15] = (((GETADDR(RN) & ~templ) + 4) & 0xF3FFFFFC) | (armregs[15] & 0xC000003);
+                                        refillpipeline();
+                                }
+                                else
+                                {
+                                        templ = rotate(opcode);
+                                        armregs[RD] = GETADDR(RN) & ~templ;
+                                        setzn(armregs[RD]);
+                                }
+                                break;
 
-                                        case 0x3E: /*MVN imm*/
-                                        if (RD==15)
-                                        {
-                                                armregs[15]=(armregs[15]&0xFC000003)|(((~rotate2(opcode))+4)&0x3FFFFFC);
-                                                refillpipeline();
-                                        }
-                                        else
-                                           armregs[RD]=~rotate2(opcode);
-                                        break;
-                                        case 0x3F: /*MVNS imm*/
-                                        if (RD==15)
-                                        {
-                                                armregs[15]=(~rotate2(opcode))+4;
-                                                refillpipeline();
-                                        }
-                                        else
-                                        {
-                                                armregs[RD]=~rotate(opcode);
-                                                setzn(armregs[RD]);
-                                        }
-                                        break;
+                                case 0x3E: /*MVN imm*/
+                                if (RD == 15)
+                                {
+                                        armregs[15] = (armregs[15] & 0xFC000003) | (((~rotate2(opcode)) + 4) & 0x3FFFFFC);
+                                        refillpipeline();
+                                }
+                                else
+                                        armregs[RD] = ~rotate2(opcode);
+                                break;
+                                case 0x3F: /*MVNS imm*/
+                                if (RD == 15)
+                                {
+                                        armregs[15] = (~rotate2(opcode)) + 4;
+                                        refillpipeline();
+                                }
+                                else
+                                {
+                                        armregs[RD] = ~rotate(opcode);
+                                        setzn(armregs[RD]);
+                                }
+                                break;
 
-                                        case 0x47: case 0x4F: /*LDRBT*/
-                                        addr=GETADDR(RN);
-                                        if (opcode&0x2000000) addr2=shiftmem(opcode);
-                                        else                  addr2=opcode&0xFFF;
-                                        if (!(opcode&0x800000))  addr2=-addr2;
-                                        if (opcode&0x1000000)
-                                        {
-                                                 addr+=addr2;
-                                        }
-                                        templ=memmode;
-                                        memmode=0;
-                                        templ2=readmemb(addr);
-                                        memmode=templ;
-                                        if (databort) break;
-                                        cache_read_timing(addr, 1);
-                                        LOADREG(RD,templ2);
-                                        if (!(opcode&0x1000000))
-                                        {
-                                                addr+=addr2;
-                                                armregs[RN]=addr;
-                                        }
-                                        else
-                                        {
-                                                if (opcode&0x200000) armregs[RN]=addr;
-                                        }
-                                        if (memc_is_memc1)                   { CLOCK_N(PC); tsc += cyc_n; }            /* + 1N*/
-                                        else if (cp15_cacheon || (PC & 0xc)) { CLOCK_I();   tsc += cyc_i; }            /* + 1I*/
+                                case 0x47: case 0x4F: /*LDRBT*/
+                                addr = GETADDR(RN);
+                                if (opcode & 0x2000000)
+                                        addr2 = shiftmem(opcode);
+                                else
+                                        addr2 = opcode & 0xFFF;
+                                if (!(opcode & 0x800000))
+                                        addr2 = -addr2;
+                                if (opcode & 0x1000000)
+                                        addr += addr2;
+                                templ = memmode;
+                                memmode = 0;
+                                templ2 = readmemb(addr);
+                                memmode = templ;
+                                if (databort)
                                         break;
+                                cache_read_timing(addr, 1);
+                                LOADREG(RD, templ2);
+                                if (!(opcode & 0x1000000))
+                                {
+                                        addr += addr2;
+                                        armregs[RN] = addr;
+                                }
+                                else if (opcode&0x200000)
+                                        armregs[RN]=addr;
+                                if (memc_is_memc1)                   { CLOCK_N(PC); tsc += cyc_n; }            /* + 1N*/
+                                else if (cp15_cacheon || (PC & 0xc)) { CLOCK_I();   tsc += cyc_i; }            /* + 1I*/
+                                break;
 
-                                        case 0x41: case 0x49: case 0x61: case 0x69: /*LDR Rd,[Rn],offset*/
-                                        addr=GETADDR(RN);
-                                        if (opcode&0x2000000) addr2=shiftmem(opcode);
-                                        else                  addr2=opcode&0xFFF;
-                                        templ2=ldrresult(readmeml(addr),addr);
-                                        if (databort) break;
-                                        cache_read_timing(addr, 1);
-                                        LOADREG(RD,templ2);
-                                        if (opcode&0x800000) armregs[RN]+=addr2;
-                                        else                 armregs[RN]-=addr2;
-                                        if (memc_is_memc1)                   { CLOCK_N(PC); tsc += cyc_n; }            /* + 1N*/
-                                        else if (cp15_cacheon || (PC & 0xc)) { CLOCK_I();   tsc += cyc_i; }            /* + 1I*/
+                                case 0x41: case 0x49: case 0x61: case 0x69: /*LDR Rd,[Rn],offset*/
+                                addr = GETADDR(RN);
+                                if (opcode & 0x2000000)
+                                        addr2 = shiftmem(opcode);
+                                else
+                                        addr2 = opcode & 0xFFF;
+                                templ2 = ldrresult(readmeml(addr), addr);
+                                if (databort)
                                         break;
-                                        case 0x43: case 0x4B: case 0x63: case 0x6B: /*LDRT Rd,[Rn],offset*/
-                                        addr=GETADDR(RN);
-                                        if (opcode&0x2000000) addr2=shiftmem(opcode);
-                                        else                  addr2=opcode&0xFFF;
-                                        templ=memmode; memmode=0;
-                                        templ2=ldrresult(readmeml(addr),addr);
-                                        memmode=templ;
-                                        if (databort) break;
-                                        cache_read_timing(addr, 1);
-                                        LOADREG(RD,templ2);
-                                        if (opcode&0x800000) armregs[RN]+=addr2;
-                                        else                 armregs[RN]-=addr2;
-                                        if (memc_is_memc1)                   { CLOCK_N(PC); tsc += cyc_n; }            /* + 1N*/
-                                        else if (cp15_cacheon || (PC & 0xc)) { CLOCK_I();   tsc += cyc_i; }            /* + 1I*/
+                                cache_read_timing(addr, 1);
+                                LOADREG(RD, templ2);
+                                if (opcode & 0x800000)
+                                        armregs[RN] += addr2;
+                                else
+                                        armregs[RN] -= addr2;
+                                if (memc_is_memc1)                   { CLOCK_N(PC); tsc += cyc_n; }            /* + 1N*/
+                                else if (cp15_cacheon || (PC & 0xc)) { CLOCK_I();   tsc += cyc_i; }            /* + 1I*/
+                                break;
+                                case 0x43: case 0x4B: case 0x63: case 0x6B: /*LDRT Rd,[Rn],offset*/
+                                addr = GETADDR(RN);
+                                if (opcode & 0x2000000)
+                                        addr2 = shiftmem(opcode);
+                                else
+                                        addr2 = opcode & 0xFFF;
+                                templ = memmode;
+                                memmode = 0;
+                                templ2 = ldrresult(readmeml(addr), addr);
+                                memmode = templ;
+                                if (databort)
                                         break;
+                                cache_read_timing(addr, 1);
+                                LOADREG(RD, templ2);
+                                if (opcode & 0x800000)
+                                        armregs[RN] += addr2;
+                                else
+                                        armregs[RN] -= addr2;
+                                if (memc_is_memc1)                   { CLOCK_N(PC); tsc += cyc_n; }            /* + 1N*/
+                                else if (cp15_cacheon || (PC & 0xc)) { CLOCK_I();   tsc += cyc_i; }            /* + 1I*/
+                                break;
 
-                                        case 0x40: case 0x48: case 0x60: case 0x68: /*STR Rd,[Rn],offset*/
-                                        addr=GETADDR(RN);
-                                        if (opcode&0x2000000) addr2=shiftmem(opcode);
-                                        else                  addr2=opcode&0xFFF;
-                                        if (RD==15) { writememl(addr,armregs[RD]+4); }
-                                        else        { writememl(addr,armregs[RD]); }
-                                        if (databort) break;
-                                        cache_write_timing(addr, 1);
-                                        if (opcode&0x800000) armregs[RN]+=addr2;
-                                        else                 armregs[RN]-=addr2;
-                                        if (!cp15_cacheon && (PC & 0xc)) { CLOCK_I(); tsc += cyc_i; }
+                                case 0x40: case 0x48: case 0x60: case 0x68: /*STR Rd,[Rn],offset*/
+                                addr = GETADDR(RN);
+                                if (opcode & 0x2000000)
+                                        addr2 = shiftmem(opcode);
+                                else
+                                        addr2 = opcode & 0xFFF;
+                                if (RD == 15) { writememl(addr, armregs[RD] + 4); }
+                                else          { writememl(addr, armregs[RD]); }
+                                if (databort)
                                         break;
-                                        case 0x42: case 0x4A: case 0x62: case 0x6A: /*STRT Rd,[Rn],offset*/
-                                        addr=GETADDR(RN);
-                                        if (opcode&0x2000000) addr2=shiftmem(opcode);
-                                        else                  addr2=opcode&0xFFF;
-                                        templ=memmode; memmode=0;
-                                        if (RD==15) { writememl(addr,armregs[RD]+4); }
-                                        else        { writememl(addr,armregs[RD]); }
-                                        memmode=templ;
-                                        if (databort) break;
-                                        cache_write_timing(addr, 1);
-                                        if (opcode&0x800000) armregs[RN]+=addr2;
-                                        else                 armregs[RN]-=addr2;
-                                        if (!cp15_cacheon && (PC & 0xc)) { CLOCK_I(); tsc += cyc_i; }
+                                cache_write_timing(addr, 1);
+                                if (opcode & 0x800000)
+                                        armregs[RN] += addr2;
+                                else
+                                        armregs[RN] -= addr2;
+                                if (!cp15_cacheon && (PC & 0xc)) { CLOCK_I(); tsc += cyc_i; }
+                                break;
+                                case 0x42: case 0x4A: case 0x62: case 0x6A: /*STRT Rd,[Rn],offset*/
+                                addr = GETADDR(RN);
+                                if (opcode & 0x2000000)
+                                        addr2 = shiftmem(opcode);
+                                else
+                                        addr2 = opcode & 0xFFF;
+                                templ = memmode;
+                                memmode = 0;
+                                if (RD == 15) { writememl(addr,armregs[RD]+4); }
+                                else          { writememl(addr,armregs[RD]); }
+                                memmode = templ;
+                                if (databort)
                                         break;
-                                        case 0x50: case 0x58: case 0x70: case 0x78: /*STR Rd,[Rn,offset]*/
-                                        case 0x52: case 0x5A: case 0x72: case 0x7A: /*STR Rd,[Rn,offset]!*/
-                                        if (opcode&0x2000000) addr2=shiftmem(opcode);
-                                        else                  addr2=opcode&0xFFF;
-                                        if (opcode&0x800000) addr=GETADDR(RN)+addr2;
-                                        else                 addr=GETADDR(RN)-addr2;
-                                        if (RD==15) { writememl(addr,armregs[RD]+4); }
-                                        else        { writememl(addr,armregs[RD]); }
-                                        if (databort) break;
-                                        cache_write_timing(addr, 1);
-                                        if (opcode&0x200000) armregs[RN]=addr;
-                                        if (!cp15_cacheon && (PC & 0xc)) { CLOCK_I(); tsc += cyc_i; }
+                                cache_write_timing(addr, 1);
+                                if (opcode & 0x800000)
+                                        armregs[RN] += addr2;
+                                else
+                                        armregs[RN] -= addr2;
+                                if (!cp15_cacheon && (PC & 0xc)) { CLOCK_I(); tsc += cyc_i; }
+                                break;
+                                case 0x50: case 0x58: case 0x70: case 0x78: /*STR Rd,[Rn,offset]*/
+                                case 0x52: case 0x5A: case 0x72: case 0x7A: /*STR Rd,[Rn,offset]!*/
+                                if (opcode & 0x2000000)
+                                        addr2 = shiftmem(opcode);
+                                else
+                                        addr2 = opcode & 0xFFF;
+                                if (opcode & 0x800000)
+                                        addr = GETADDR(RN) + addr2;
+                                else
+                                        addr = GETADDR(RN) - addr2;
+                                if (RD==15) { writememl(addr,armregs[RD]+4); }
+                                else        { writememl(addr,armregs[RD]); }
+                                if (databort)
                                         break;
+                                cache_write_timing(addr, 1);
+                                if (opcode & 0x200000)
+                                        armregs[RN] = addr;
+                                if (!cp15_cacheon && (PC & 0xc)) { CLOCK_I(); tsc += cyc_i; }
+                                break;
 
-                                        case 0x44: case 0x4C: case 0x64: case 0x6C: /*STRB Rd,[Rn],offset*/
-                                        addr=GETADDR(RN);
-                                        if (opcode&0x2000000) addr2=shiftmem(opcode);
-                                        else                  addr2=opcode&0xFFF;
-                                        writememb(addr,armregs[RD]);
-                                        if (databort) break;
-                                        cache_write_timing(addr, 1);
-                                        if (opcode&0x800000) armregs[RN]+=addr2;
-                                        else                 armregs[RN]-=addr2;
-                                        if (!cp15_cacheon && (PC & 0xc)) { CLOCK_I(); tsc += cyc_i; }
+                                case 0x44: case 0x4C: case 0x64: case 0x6C: /*STRB Rd,[Rn],offset*/
+                                addr = GETADDR(RN);
+                                if (opcode & 0x2000000)
+                                        addr2 = shiftmem(opcode);
+                                else
+                                        addr2 = opcode & 0xFFF;
+                                writememb(addr, armregs[RD]);
+                                if (databort)
                                         break;
-                                        case 0x46: case 0x4E: case 0x66: case 0x6E: /*STRBT Rd,[Rn],offset*/
-                                        addr=GETADDR(RN);
-                                        if (opcode&0x2000000) addr2=shiftmem(opcode);
-                                        else                  addr2=opcode&0xFFF;
-                                        writememb(addr,armregs[RD]);
-                                        templ=memmode;
-                                        memmode=0;
-                                        if (databort) break;
-                                        cache_write_timing(addr, 1);
-                                        memmode=templ;
-                                        if (opcode&0x800000) armregs[RN]+=addr2;
-                                        else                 armregs[RN]-=addr2;
-                                        if (!cp15_cacheon && (PC & 0xc)) { CLOCK_I(); tsc += cyc_i; }
+                                cache_write_timing(addr, 1);
+                                if (opcode & 0x800000)
+                                        armregs[RN] += addr2;
+                                else
+                                        armregs[RN] -= addr2;
+                                if (!cp15_cacheon && (PC & 0xc)) { CLOCK_I(); tsc += cyc_i; }
+                                break;
+                                case 0x46: case 0x4E: case 0x66: case 0x6E: /*STRBT Rd,[Rn],offset*/
+                                addr = GETADDR(RN);
+                                if (opcode & 0x2000000)
+                                        addr2 = shiftmem(opcode);
+                                else
+                                        addr2 = opcode & 0xFFF;
+                                writememb(addr, armregs[RD]);
+                                templ = memmode;
+                                memmode = 0;
+                                if (databort)
                                         break;
-                                        case 0x54: case 0x5C: case 0x74: case 0x7C: /*STRB Rd,[Rn,offset]*/
-                                        case 0x56: case 0x5E: case 0x76: case 0x7E: /*STRB Rd,[Rn,offset]!*/
-                                        if (opcode&0x2000000) addr2=shiftmem(opcode);
-                                        else                  addr2=opcode&0xFFF;
-                                        if (opcode&0x800000) addr=GETADDR(RN)+addr2;
-                                        else                 addr=GETADDR(RN)-addr2;
-                                        writememb(addr,armregs[RD]);
-                                        if (databort) break;
-                                        cache_write_timing(addr, 1);
-                                        if (opcode&0x200000) armregs[RN]=addr;
-                                        if (!cp15_cacheon && (PC & 0xc)) { CLOCK_I(); tsc += cyc_i; }
+                                cache_write_timing(addr, 1);
+                                memmode = templ;
+                                if (opcode & 0x800000)
+                                        armregs[RN] += addr2;
+                                else
+                                        armregs[RN] -= addr2;
+                                if (!cp15_cacheon && (PC & 0xc)) { CLOCK_I(); tsc += cyc_i; }
+                                break;
+                                case 0x54: case 0x5C: case 0x74: case 0x7C: /*STRB Rd,[Rn,offset]*/
+                                case 0x56: case 0x5E: case 0x76: case 0x7E: /*STRB Rd,[Rn,offset]!*/
+                                if (opcode & 0x2000000)
+                                        addr2 = shiftmem(opcode);
+                                else
+                                        addr2 = opcode & 0xFFF;
+                                if (opcode & 0x800000)
+                                        addr = GETADDR(RN) + addr2;
+                                else
+                                        addr = GETADDR(RN) - addr2;
+                                writememb(addr, armregs[RD]);
+                                if (databort)
                                         break;
+                                cache_write_timing(addr, 1);
+                                if (opcode & 0x200000)
+                                        armregs[RN] = addr;
+                                if (!cp15_cacheon && (PC & 0xc)) { CLOCK_I(); tsc += cyc_i; }
+                                break;
 
 
 //                                        case 0x41: case 0x49: /*LDR*/
-                                        case 0x51: case 0x53: case 0x59: case 0x5B:
+                                case 0x51: case 0x53: case 0x59: case 0x5B:
 //                                        case 0x61: case 0x69:
-                                        case 0x71: case 0x73: case 0x79: case 0x7B:
-                                        if ((opcode&0x2000010)==0x2000010)
-                                        {
-                                                undefined();
-                                                break;
-                                        }
-                                        addr=GETADDR(RN);
-                                        if (opcode&0x2000000) addr2=shiftmem(opcode);
-                                        else                  addr2=opcode&0xFFF;
-                                        if (!(opcode&0x800000))  addr2=-addr2;
-                                        if (opcode&0x1000000)
-                                        {
-                                                addr+=addr2;
-                                        }
-                                        templ=readmeml(addr);
-                                        templ=ldrresult(templ,addr);
-                                        if (databort) break;
-                                        cache_read_timing(addr, 1);
-                                        if (!(opcode&0x1000000))
-                                        {
-                                                addr+=addr2;
-                                                armregs[RN]=addr;
-                                        }
-                                        else
-                                        {
-                                                if (opcode&0x200000) armregs[RN]=addr;
-                                        }
-                                        LOADREG(RD,templ);
-                                        if (memc_is_memc1)                   { CLOCK_N(PC); tsc += cyc_n; }            /* + 1N*/
-                                        else if (cp15_cacheon || (PC & 0xc)) { CLOCK_I();   tsc += cyc_i; }            /* + 1I*/
+                                case 0x71: case 0x73: case 0x79: case 0x7B:
+                                if ((opcode & 0x2000010) == 0x2000010)
+                                {
+                                        undefined();
                                         break;
+                                }
+                                addr = GETADDR(RN);
+                                if (opcode & 0x2000000)
+                                        addr2 = shiftmem(opcode);
+                                else
+                                        addr2 = opcode & 0xFFF;
+                                if (!(opcode & 0x800000))
+                                        addr2 = -addr2;
+                                if (opcode & 0x1000000)
+                                        addr += addr2;
+                                templ = readmeml(addr);
+                                templ = ldrresult(templ, addr);
+                                if (databort)
+                                        break;
+                                cache_read_timing(addr, 1);
+                                if (!(opcode & 0x1000000))
+                                {
+                                        addr += addr2;
+                                        armregs[RN] = addr;
+                                }
+                                else if (opcode & 0x200000)
+                                        armregs[RN] = addr;
+                                LOADREG(RD, templ);
+                                if (memc_is_memc1)                   { CLOCK_N(PC); tsc += cyc_n; }            /* + 1N*/
+                                else if (cp15_cacheon || (PC & 0xc)) { CLOCK_I();   tsc += cyc_i; }            /* + 1I*/
+                                break;
 
-                                        case 0x65: case 0x6D:
-                                        case 0x75: case 0x77: case 0x7D: case 0x7F:
-                                        if (opcode&0x10)
-                                        {
-                                                undefined();
-                                                break;
-                                        }
-                                        case 0x45: case 0x4D: /*LDRB*/
-                                        case 0x55: case 0x57: case 0x5D: case 0x5F:
-                                        addr=GETADDR(RN);
-                                        if (opcode&0x2000000) addr2=shiftmem(opcode);
-                                        else                  addr2=opcode&0xFFF;
-                                        if (!(opcode&0x800000))  addr2=-addr2;
-                                        if (opcode&0x1000000)
-                                        {
-                                                addr+=addr2;
-                                        }
-                                        templ=readmemb(addr);
-                                        if (databort) break;
-                                        cache_read_timing(addr, 1);
-                                        if (!(opcode&0x1000000))
-                                        {
-                                                addr+=addr2;
-                                                armregs[RN]=addr;
-                                        }
-                                        else
-                                        {
-                                                if (opcode&0x200000) armregs[RN]=addr;
-                                        }
-                                        armregs[RD]=templ;
-                                        if (memc_is_memc1)                   { CLOCK_N(PC); tsc += cyc_n; }            /* + 1N*/
-                                        else if (cp15_cacheon || (PC & 0xc)) { CLOCK_I();   tsc += cyc_i; }            /* + 1I*/
+                                case 0x65: case 0x6D:
+                                case 0x75: case 0x77: case 0x7D: case 0x7F:
+                                if (opcode & 0x10)
+                                {
+                                        undefined();
                                         break;
+                                }
+                                case 0x45: case 0x4D: /*LDRB*/
+                                case 0x55: case 0x57: case 0x5D: case 0x5F:
+                                addr = GETADDR(RN);
+                                if (opcode & 0x2000000)
+                                        addr2 = shiftmem(opcode);
+                                else
+                                        addr2 = opcode & 0xFFF;
+                                if (!(opcode&0x800000))
+                                        addr2=-addr2;
+                                if (opcode&0x1000000)
+                                        addr+=addr2;
+                                templ = readmemb(addr);
+                                if (databort)
+                                        break;
+                                cache_read_timing(addr, 1);
+                                if (!(opcode & 0x1000000))
+                                {
+                                        addr += addr2;
+                                        armregs[RN] = addr;
+                                }
+                                else if (opcode & 0x200000)
+                                        armregs[RN] = addr;
+                                armregs[RD] = templ;
+                                if (memc_is_memc1)                   { CLOCK_N(PC); tsc += cyc_n; }            /* + 1N*/
+                                else if (cp15_cacheon || (PC & 0xc)) { CLOCK_I();   tsc += cyc_i; }            /* + 1I*/
+                                break;
 
 #define STMfirst()      mask=1; \
                         for (c = 0; c < 15; c++) \
@@ -2070,305 +2110,305 @@ void execarm(int cycles_to_execute)
                         } \
                         mask <<= 1; c++;
                         
-#define STMall()        for (;c<15;c++) \
+#define STMall()        for (; c < 15; c++) \
                         { \
-                                if (opcode&mask) \
+                                if (opcode & mask) \
                                 { \
-                                        writememl(addr,armregs[c]); \
+                                        writememl(addr, armregs[c]); \
                                         cache_write_timing(addr, !(addr & 0xc)); \
-                                        addr+=4; \
+                                        addr += 4; \
                                 } \
-                                mask<<=1; \
+                                mask <<= 1; \
                         } \
-                        if (opcode&0x8000) \
+                        if (opcode & 0x8000) \
                         { \
-                                writememl(addr,armregs[15]+4); \
+                                writememl(addr, armregs[15] + 4); \
                                 cache_write_timing(addr, !(addr & 0xc)); \
                         }
 
-#define STMfirstS()     mask=1; \
-                        for (c=0;c<15;c++) \
+#define STMfirstS()     mask = 1; \
+                        for (c = 0; c < 15; c++) \
                         { \
-                                if (opcode&mask) \
+                                if (opcode & mask) \
                                 { \
-                                        if (c==15) { writememl(addr,armregs[c]+4); } \
-                                        else       { writememl(addr,*usrregs[c]); } \
+                                        if (c == 15) { writememl(addr, armregs[c] + 4); } \
+                                        else         { writememl(addr, *usrregs[c]); } \
                                         cache_write_timing(addr, 1); \
-                                        addr+=4; \
+                                        addr += 4; \
                                         break; \
                                 } \
-                                mask<<=1; \
+                                mask <<= 1; \
                         } \
-                        mask<<=1; c++;
+                        mask <<= 1; c++;
 
-#define STMallS()       for (;c<15;c++) \
+#define STMallS()       for (; c < 15; c++) \
                         { \
-                                if (opcode&mask) \
+                                if (opcode & mask) \
                                 { \
-                                        writememl(addr,*usrregs[c]); \
+                                        writememl(addr, *usrregs[c]); \
                                         cache_write_timing(addr, !(addr & 0xc)); \
-                                        addr+=4; \
+                                        addr += 4; \
                                 } \
-                                mask<<=1; \
+                                mask <<= 1; \
                         } \
-                        if (opcode&0x8000) \
+                        if (opcode & 0x8000) \
                         { \
-                                writememl(addr,armregs[15]+4); \
+                                writememl(addr, armregs[15] + 4); \
                                 cache_write_timing(addr, !(addr & 0xc)); \
                         }
 
-#define LDMall()        mask=1; \
-                        for (c=0;c<15;c++) \
+#define LDMall()        mask = 1; \
+                        for (c = 0; c < 15; c++) \
                         { \
-                                if (opcode&mask) \
+                                if (opcode & mask) \
                                 { \
-                                        templ=readmeml(addr); if (!databort) armregs[c]=templ; \
+                                        templ = readmeml(addr); if (!databort) armregs[c] = templ; \
                                         cache_read_timing(addr, !(opcode & (mask - 1)) || !(addr & 0xc)); \
                                         addr+=4; \
                                 } \
                                 mask<<=1; \
                         } \
-                        if (opcode&0x8000) \
+                        if (opcode & 0x8000) \
                         { \
-                                templ=readmeml(addr); \
+                                templ = readmeml(addr); \
                         	cache_read_timing(addr, !(addr & 0xc)); \
                                 addr += 4; \
-                                if (!databort) armregs[15]=(armregs[15]&0xFC000003)|((templ+4)&0x3FFFFFC); \
+                                if (!databort) armregs[15] = (armregs[15] & 0xFC000003) | ((templ+4) & 0x3FFFFFC); \
                                 refillpipeline(); \
                         }
 
-#define LDMallS()       mask=1; \
-                        if (opcode&0x8000) \
+#define LDMallS()       mask = 1; \
+                        if (opcode & 0x8000) \
                         { \
-                                for (c=0;c<15;c++) \
+                                for (c = 0; c < 15; c++) \
                                 { \
-                                        if (opcode&mask) \
+                                        if (opcode & mask) \
                                         { \
-                                                templ=readmeml(addr); if (!databort) armregs[c]=templ; \
+                                                templ = readmeml(addr); if (!databort) armregs[c] = templ; \
 		                        	cache_read_timing(addr, !(opcode & (mask - 1)) || !(addr & 0xc)); \
-                                                addr+=4; \
+                                                addr += 4; \
                                         } \
-                                        mask<<=1; \
+                                        mask <<= 1; \
                                 } \
-                                templ=readmeml(addr); \
+                                templ = readmeml(addr); \
                         	cache_read_timing(addr, !(opcode & (mask - 1)) || !(addr & 0xc)); \
                                 addr += 4; \
                                 if (!databort) \
                                 { \
-                                        if (armregs[15]&3) armregs[15]=(templ+4); \
-                                        else               armregs[15]=(armregs[15]&0x0C000003)|((templ+4)&0xF3FFFFFC); \
+                                        if (armregs[15] & 3) armregs[15] = (templ + 4); \
+                                        else                 armregs[15] = (armregs[15] & 0x0C000003) | ((templ + 4) & 0xF3FFFFFC); \
                                 } \
                                 refillpipeline(); \
                         } \
                         else \
                         { \
-                                for (c=0;c<15;c++) \
+                                for (c = 0; c < 15; c++) \
                                 { \
-                                        if (opcode&mask) \
+                                        if (opcode & mask) \
                                         { \
-                                                templ=readmeml(addr); if (!databort) *usrregs[c]=templ; \
-                                                addr+=4; \
+                                                templ = readmeml(addr); if (!databort) *usrregs[c] = templ; \
+                                                addr += 4; \
                                         } \
-                                        mask<<=1; \
+                                        mask <<= 1; \
                                 } \
                         }
 
-                                        case 0x80: /*STMDA*/
-                                        case 0x82: /*STMDA !*/
-                                        case 0x90: /*STMDB*/
-                                        case 0x92: /*STMDB !*/
-                                        addr=armregs[RN]-countbits(opcode&0xFFFF);
-                                        if (!(opcode&0x1000000)) addr+=4;
-                                        STMfirst();
-                                        if (opcode&0x200000 && RN != 15) armregs[RN]-=countbits(opcode&0xFFFF);
-                                        STMall()
-                                        if (PC & 0xc) { CLOCK_I(); tsc += cyc_i; }
-                                        break;
-                                        case 0x88: /*STMIA*/
-                                        case 0x8A: /*STMIA !*/
-                                        case 0x98: /*STMIB*/
-                                        case 0x9A: /*STMIB !*/
-                                        addr=armregs[RN];
-                                        if (opcode&0x1000000) addr+=4;
-                                        STMfirst();
-                                        if (opcode&0x200000 && RN != 15) armregs[RN]+=countbits(opcode&0xFFFF);
-                                        STMall();
-                                        if (PC & 0xc) { CLOCK_I(); tsc += cyc_i; }
-                                        break;
-                                        case 0x84: /*STMDA ^*/
-                                        case 0x86: /*STMDA ^!*/
-                                        case 0x94: /*STMDB ^*/
-                                        case 0x96: /*STMDB ^!*/
-                                        addr=armregs[RN]-countbits(opcode&0xFFFF);
-                                        if (!(opcode&0x1000000)) addr+=4;
-                                        STMfirstS();
-                                        if (opcode&0x200000 && RN != 15) armregs[RN]-=countbits(opcode&0xFFFF);
-                                        STMallS()
-                                        if (PC & 0xc) { CLOCK_I(); tsc += cyc_i; }
-                                        break;
-                                        case 0x8C: /*STMIA ^*/
-                                        case 0x8E: /*STMIA ^!*/
-                                        case 0x9C: /*STMIB ^*/
-                                        case 0x9E: /*STMIB ^!*/
-                                        addr=armregs[RN];
-                                        if (opcode&0x1000000) addr+=4;
-                                        STMfirstS();
-                                        if (opcode&0x200000 && RN != 15) armregs[RN]+=countbits(opcode&0xFFFF);
-                                        STMallS();
-                                        if (PC & 0xc) { CLOCK_I(); tsc += cyc_i; }
-                                        break;
-                                        
-                                        case 0x81: /*LDMDA*/
-                                        case 0x83: /*LDMDA !*/
-                                        case 0x91: /*LDMDB*/
-                                        case 0x93: /*LDMDB !*/
-                                        addr=armregs[RN]-countbits(opcode&0xFFFF);
+                                case 0x80: /*STMDA*/
+                                case 0x82: /*STMDA !*/
+                                case 0x90: /*STMDB*/
+                                case 0x92: /*STMDB !*/
+                                addr = armregs[RN] - countbits(opcode & 0xFFFF);
+                                if (!(opcode & 0x1000000))
+                                        addr += 4;
+                                STMfirst();
+                                if ((opcode & 0x200000) && (RN != 15))
+                                        armregs[RN] -= countbits(opcode & 0xFFFF);
+                                STMall()
+                                if (PC & 0xc) { CLOCK_I(); tsc += cyc_i; }
+                                break;
+                                case 0x88: /*STMIA*/
+                                case 0x8A: /*STMIA !*/
+                                case 0x98: /*STMIB*/
+                                case 0x9A: /*STMIB !*/
+                                addr = armregs[RN];
+                                if (opcode & 0x1000000)
+                                        addr += 4;
+                                STMfirst();
+                                if ((opcode & 0x200000) && (RN != 15))
+                                        armregs[RN] += countbits(opcode & 0xFFFF);
+                                STMall();
+                                if (PC & 0xc) { CLOCK_I(); tsc += cyc_i; }
+                                break;
+                                case 0x84: /*STMDA ^*/
+                                case 0x86: /*STMDA ^!*/
+                                case 0x94: /*STMDB ^*/
+                                case 0x96: /*STMDB ^!*/
+                                addr = armregs[RN] - countbits(opcode & 0xFFFF);
+                                if (!(opcode & 0x1000000))
+                                        addr += 4;
+                                STMfirstS();
+                                if ((opcode & 0x200000) && (RN != 15))
+                                        armregs[RN] -= countbits(opcode & 0xFFFF);
+                                STMallS()
+                                if (PC & 0xc) { CLOCK_I(); tsc += cyc_i; }
+                                break;
+                                case 0x8C: /*STMIA ^*/
+                                case 0x8E: /*STMIA ^!*/
+                                case 0x9C: /*STMIB ^*/
+                                case 0x9E: /*STMIB ^!*/
+                                addr = armregs[RN];
+                                if (opcode & 0x1000000)
+                                        addr += 4;
+                                STMfirstS();
+                                if ((opcode & 0x200000) && (RN != 15))
+                                        armregs[RN]+=countbits(opcode&0xFFFF);
+                                STMallS();
+                                if (PC & 0xc) { CLOCK_I(); tsc += cyc_i; }
+                                break;
+                                
+                                case 0x81: /*LDMDA*/
+                                case 0x83: /*LDMDA !*/
+                                case 0x91: /*LDMDB*/
+                                case 0x93: /*LDMDB !*/
+                                addr = armregs[RN] - countbits(opcode & 0xFFFF);
 //                                        rpclog("LDMDB %08X\n",addr);
-                                        if (!(opcode&0x1000000)) addr+=4;
-                                        if (opcode&0x200000 && RN != 15) armregs[RN]-=countbits(opcode&0xFFFF);
-                                        LDMall();
-					if (memc_is_memc1)
+                                if (!(opcode & 0x1000000))
+                                        addr += 4;
+                                if ((opcode & 0x200000) && (RN != 15))
+                                        armregs[RN] -= countbits(opcode & 0xFFFF);
+                                LDMall();
+				if (memc_is_memc1)
+				{
+					/*MEMC1 - repeat last cycle. */
+					if (!((addr - 4) & 0xc))
 					{
-						/*MEMC1 - repeat last cycle. */
-						if (!((addr - 4) & 0xc))
-						{
-							CLOCK_N(PC);
-							tsc += cyc_n;
-						}
-						else
-						{
-							CLOCK_S(PC);
-							tsc += cyc_s;
-						}
+						CLOCK_N(PC);
+						tsc += cyc_n;
 					}
 					else
 					{
-                                        	if (PC & 0xc) { CLOCK_I(); tsc += cyc_i; }                        /* + 1I*/
+						CLOCK_S(PC);
+						tsc += cyc_s;
 					}
-                                        break;
-                                        case 0x89: /*LDMIA*/
-                                        case 0x8B: /*LDMIA !*/
-                                        case 0x99: /*LDMIB*/
-                                        case 0x9B: /*LDMIB !*/
-                                        addr=armregs[RN];
-                                        if (opcode&0x1000000) addr+=4;
-                                        if (opcode&0x200000 && RN != 15) armregs[RN]+=countbits(opcode&0xFFFF);
-                                        LDMall();
-					if (memc_is_memc1)
+				}
+				else
+				{
+                                	if (PC & 0xc) { CLOCK_I(); tsc += cyc_i; }                        /* + 1I*/
+				}
+                                break;
+                                case 0x89: /*LDMIA*/
+                                case 0x8B: /*LDMIA !*/
+                                case 0x99: /*LDMIB*/
+                                case 0x9B: /*LDMIB !*/
+                                addr = armregs[RN];
+                                if (opcode & 0x1000000)
+                                        addr+=4;
+                                if ((opcode & 0x200000) && (RN != 15))
+                                        armregs[RN]+=countbits(opcode & 0xFFFF);
+                                LDMall();
+				if (memc_is_memc1)
+				{
+					/*MEMC1 - repeat last cycle. */
+					if (!((addr - 4) & 0xc))
 					{
-						/*MEMC1 - repeat last cycle. */
-						if (!((addr - 4) & 0xc))
-						{
-							CLOCK_N(PC);
-							tsc += cyc_n;
-						}
-						else
-						{
-							CLOCK_S(PC);
-							tsc += cyc_s;
-						}
+						CLOCK_N(PC);
+						tsc += cyc_n;
 					}
 					else
 					{
-                                        	if (PC & 0xc) { CLOCK_I(); tsc += cyc_i; }                        /* + 1I*/
+						CLOCK_S(PC);
+						tsc += cyc_s;
 					}
-                                        break;
-                                        case 0x85: /*LDMDA ^*/
-                                        case 0x87: /*LDMDA ^!*/
-                                        case 0x95: /*LDMDB ^*/
-                                        case 0x97: /*LDMDB ^!*/
-                                        addr=armregs[RN]-countbits(opcode&0xFFFF);
-                                        if (!(opcode&0x1000000)) addr+=4;
-                                        if (opcode&0x200000 && RN != 15) armregs[RN]-=countbits(opcode&0xFFFF);
-                                        LDMallS();
-					if (memc_is_memc1)
+				}
+				else
+				{
+                                	if (PC & 0xc) { CLOCK_I(); tsc += cyc_i; }                        /* + 1I*/
+				}
+                                break;
+                                case 0x85: /*LDMDA ^*/
+                                case 0x87: /*LDMDA ^!*/
+                                case 0x95: /*LDMDB ^*/
+                                case 0x97: /*LDMDB ^!*/
+                                addr = armregs[RN] - countbits(opcode & 0xFFFF);
+                                if (!(opcode & 0x1000000))
+                                        addr += 4;
+                                if ((opcode & 0x200000) && (RN != 15))
+                                        armregs[RN] -= countbits(opcode & 0xFFFF);
+                                LDMallS();
+				if (memc_is_memc1)
+				{
+					/*MEMC1 - repeat last cycle. */
+					if (!((addr - 4) & 0xc))
 					{
-						/*MEMC1 - repeat last cycle. */
-						if (!((addr - 4) & 0xc))
-						{
-							CLOCK_N(PC);
-							tsc += cyc_n;
-						}
-						else
-						{
-							CLOCK_S(PC);
-							tsc += cyc_s;
-						}
+						CLOCK_N(PC);
+						tsc += cyc_n;
 					}
 					else
 					{
-                                        	if (PC & 0xc) { CLOCK_I(); tsc += cyc_i; }                        /* + 1I*/
+						CLOCK_S(PC);
+						tsc += cyc_s;
 					}
-                                        break;
-                                        case 0x8D: /*LDMIA ^*/
-                                        case 0x8F: /*LDMIA ^!*/
-                                        case 0x9D: /*LDMIB ^*/
-                                        case 0x9F: /*LDMIB ^!*/
-                                        addr=armregs[RN];
-                                        if (opcode&0x1000000) addr+=4;
-                                        if (opcode&0x200000 && RN != 15) armregs[RN]+=countbits(opcode&0xFFFF);
-                                        LDMallS();
-					if (memc_is_memc1)
+				}
+				else
+				{
+                                	if (PC & 0xc) { CLOCK_I(); tsc += cyc_i; }                        /* + 1I*/
+				}
+                                break;
+                                case 0x8D: /*LDMIA ^*/
+                                case 0x8F: /*LDMIA ^!*/
+                                case 0x9D: /*LDMIB ^*/
+                                case 0x9F: /*LDMIB ^!*/
+                                addr = armregs[RN];
+                                if (opcode & 0x1000000)
+                                        addr += 4;
+                                if ((opcode & 0x200000) && (RN != 15))
+                                        armregs[RN]+=countbits(opcode&0xFFFF);
+                                LDMallS();
+				if (memc_is_memc1)
+				{
+					/*MEMC1 - repeat last cycle. */
+					if (!((addr - 4) & 0xc))
 					{
-						/*MEMC1 - repeat last cycle. */
-						if (!((addr - 4) & 0xc))
-						{
-							CLOCK_N(PC);
-							tsc += cyc_n;
-						}
-						else
-						{
-							CLOCK_S(PC);
-							tsc += cyc_s;
-						}
+						CLOCK_N(PC);
+						tsc += cyc_n;
 					}
 					else
 					{
-                                        	if (PC & 0xc) { CLOCK_I(); tsc += cyc_i; }                        /* + 1I*/
+						CLOCK_S(PC);
+						tsc += cyc_s;
 					}
-                                        break;
+				}
+				else
+				{
+                                	if (PC & 0xc) { CLOCK_I(); tsc += cyc_i; }                        /* + 1I*/
+				}
+                                break;
 
-                                        case 0xB0: case 0xB1: case 0xB2: case 0xB3: /*BL*/
-                                        case 0xB4: case 0xB5: case 0xB6: case 0xB7:
-                                        case 0xB8: case 0xB9: case 0xBA: case 0xBB:
-                                        case 0xBC: case 0xBD: case 0xBE: case 0xBF:
-                                        templ=(opcode&0xFFFFFF)<<2;
-                                        armregs[14]=armregs[15]-4;
-                                        armregs[15]=((armregs[15]+templ+4)&0x3FFFFFC)|(armregs[15]&0xFC000003);
-                                        refillpipeline();
-                                        break;
+                                case 0xB0: case 0xB1: case 0xB2: case 0xB3: /*BL*/
+                                case 0xB4: case 0xB5: case 0xB6: case 0xB7:
+                                case 0xB8: case 0xB9: case 0xBA: case 0xBB:
+                                case 0xBC: case 0xBD: case 0xBE: case 0xBF:
+                                templ = (opcode & 0xFFFFFF) << 2;
+                                armregs[14] = armregs[15] - 4;
+                                armregs[15] = ((armregs[15] + templ + 4) & 0x3FFFFFC) | (armregs[15] & 0xFC000003);
+                                refillpipeline();
+                                break;
 
-                                        case 0xA0: case 0xA1: case 0xA2: case 0xA3: /*B*/
-                                        case 0xA4: case 0xA5: case 0xA6: case 0xA7:
-                                        case 0xA8: case 0xA9: case 0xAA: case 0xAB:
-                                        case 0xAC: case 0xAD: case 0xAE: case 0xAF:
-                                        templ=(opcode&0xFFFFFF)<<2;
-                                        armregs[15]=((armregs[15]+templ+4)&0x3FFFFFC)|(armregs[15]&0xFC000003);
-                                        refillpipeline();
-                                        break;
+                                case 0xA0: case 0xA1: case 0xA2: case 0xA3: /*B*/
+                                case 0xA4: case 0xA5: case 0xA6: case 0xA7:
+                                case 0xA8: case 0xA9: case 0xAA: case 0xAB:
+                                case 0xAC: case 0xAD: case 0xAE: case 0xAF:
+                                templ = (opcode & 0xFFFFFF) << 2;
+                                armregs[15] = ((armregs[15] + templ + 4) & 0x3FFFFFC) | (armregs[15] & 0xFC000003);
+                                refillpipeline();
+                                break;
 
-                                        case 0xE0: case 0xE2: case 0xE4: case 0xE6: /*MCR*/
-                                        case 0xE8: case 0xEA: case 0xEC: case 0xEE:
-                                        if (fpaena && MULRS==1)
+                                case 0xE0: case 0xE2: case 0xE4: case 0xE6: /*MCR*/
+                                case 0xE8: case 0xEA: case 0xEC: case 0xEE:
+                                if (fpaena && MULRS == 1)
+                                {
+                                        if (fpaopcode(opcode))
                                         {
-                                                if (fpaopcode(opcode))
-                                                {
-                                                        templ=armregs[15]-4;
-                                                        armregs[15]|=3;
-                                                        updatemode(SUPERVISOR);
-                                                        armregs[14]=templ;
-                                                        armregs[15]&=0xFC000003;
-                                                        armregs[15]|=0x08000008;
-                                                        refillpipeline();
-                                                }
-                                        }
-                                        else if (MULRS==15 && (opcode&0x10) && arm_has_cp15)
-                                        {
-                                                writecp15(RN,armregs[RD]);
-                                        }
-                                        else
-                                        {
-//                                                rpclog("Illegal instruction %08X\n",opcode);
                                                 templ=armregs[15]-4;
                                                 armregs[15]|=3;
                                                 updatemode(SUPERVISOR);
@@ -2377,31 +2417,30 @@ void execarm(int cycles_to_execute)
                                                 armregs[15]|=0x08000008;
                                                 refillpipeline();
                                         }
-                                        break;
-
-                                        case 0xE1: case 0xE3: case 0xE5: case 0xE7: /*MRC*/
-                                        case 0xE9: case 0xEB: case 0xED: case 0xEF:
-                                        if (fpaena && MULRS==1)
-                                        {
-                                                if (fpaopcode(opcode))
-                                                {
-                                                        templ=armregs[15]-4;
-                                                        armregs[15]|=3;
-                                                        updatemode(SUPERVISOR);
-                                                        armregs[14]=templ;
-                                                        armregs[15]&=0xFC000003;
-                                                        armregs[15]|=0x08000008;
-                                                        refillpipeline();
-                                                }
-                                        }
-                                        else if (MULRS==15 && (opcode&0x10) && arm_has_cp15)
-                                        {
-                                                if (RD==15) armregs[RD]=(armregs[RD]&0x3FFFFFC)|(readcp15(RN)&0xFC000003);
-                                                else        armregs[RD]=readcp15(RN);
-                                        }
-                                        else
-                                        {
+                                }
+                                else if (MULRS == 15 && (opcode & 0x10) && arm_has_cp15)
+                                {
+                                        writecp15(RN,armregs[RD]);
+                                }
+                                else
+                                {
 //                                                rpclog("Illegal instruction %08X\n",opcode);
+                                        templ=armregs[15]-4;
+                                        armregs[15]|=3;
+                                        updatemode(SUPERVISOR);
+                                        armregs[14]=templ;
+                                        armregs[15]&=0xFC000003;
+                                        armregs[15]|=0x08000008;
+                                        refillpipeline();
+                                }
+                                break;
+
+                                case 0xE1: case 0xE3: case 0xE5: case 0xE7: /*MRC*/
+                                case 0xE9: case 0xEB: case 0xED: case 0xEF:
+                                if (fpaena && MULRS == 1)
+                                {
+                                        if (fpaopcode(opcode))
+                                        {
                                                 templ=armregs[15]-4;
                                                 armregs[15]|=3;
                                                 updatemode(SUPERVISOR);
@@ -2410,228 +2449,233 @@ void execarm(int cycles_to_execute)
                                                 armregs[15]|=0x08000008;
                                                 refillpipeline();
                                         }
-                                        break;
-                                        
-                                        case 0xC0: case 0xC1: case 0xC2: case 0xC3: /*Co-pro*/
-                                        case 0xC4: case 0xC5: case 0xC6: case 0xC7:
-                                        case 0xC8: case 0xC9: case 0xCA: case 0xCB:
-                                        case 0xCC: case 0xCD: case 0xCE: case 0xCF:
-                                        case 0xD0: case 0xD1: case 0xD2: case 0xD3:
-                                        case 0xD4: case 0xD5: case 0xD6: case 0xD7:
-                                        case 0xD8: case 0xD9: case 0xDA: case 0xDB:
-                                        case 0xDC: case 0xDD: case 0xDE: case 0xDF:
+                                }
+                                else if (MULRS == 15 && (opcode & 0x10) && arm_has_cp15)
+                                {
+                                        if (RD == 15) armregs[RD] = (armregs[RD] & 0x3FFFFFC) | (readcp15(RN) & 0xFC000003);
+                                        else          armregs[RD] = readcp15(RN);
+                                }
+                                else
+                                {
+//                                                rpclog("Illegal instruction %08X\n",opcode);
+                                        templ=armregs[15]-4;
+                                        armregs[15]|=3;
+                                        updatemode(SUPERVISOR);
+                                        armregs[14]=templ;
+                                        armregs[15]&=0xFC000003;
+                                        armregs[15]|=0x08000008;
+                                        refillpipeline();
+                                }
+                                break;
+                                
+                                case 0xC0: case 0xC1: case 0xC2: case 0xC3: /*Co-pro*/
+                                case 0xC4: case 0xC5: case 0xC6: case 0xC7:
+                                case 0xC8: case 0xC9: case 0xCA: case 0xCB:
+                                case 0xCC: case 0xCD: case 0xCE: case 0xCF:
+                                case 0xD0: case 0xD1: case 0xD2: case 0xD3:
+                                case 0xD4: case 0xD5: case 0xD6: case 0xD7:
+                                case 0xD8: case 0xD9: case 0xDA: case 0xDB:
+                                case 0xDC: case 0xDD: case 0xDE: case 0xDF:
 #if 0
-                                        if ((opcode>=0xEC500000) && (opcode<=0xEC500008))
-                                           arculfs(opcode&15);
-                                        else 
+                                if ((opcode>=0xEC500000) && (opcode<=0xEC500008))
+                                   arculfs(opcode&15);
+                                else 
 #endif                                        
-                                        if (((opcode&0xF00)==0x100 || (opcode&0xF00)==0x200) && fpaena)
+                                if (((opcode & 0xF00) == 0x100 || (opcode & 0xF00) == 0x200) && fpaena)
+                                {
+                                        if (fpaopcode(opcode))
                                         {
-                                                if (fpaopcode(opcode))
-                                                {
-                                                        templ=armregs[15]-4;
-                                                        armregs[15]|=3;
-                                                        updatemode(SUPERVISOR);
-                                                        armregs[14]=templ;
-                                                        armregs[15]&=0xFC000003;
-                                                        armregs[15]|=0x08000008;
-                                                        refillpipeline();
-                                                }
+                                                templ=armregs[15]-4;
+                                                armregs[15]|=3;
+                                                updatemode(SUPERVISOR);
+                                                armregs[14]=templ;
+                                                armregs[15]&=0xFC000003;
+                                                armregs[15]|=0x08000008;
+                                                refillpipeline();
                                         }
-                                        else
-                                        {
+                                }
+                                else
+                                {
 //                                                rpclog("Illegal instruction %08X\n",opcode);
-                                                templ=armregs[15]-4;
-                                                armregs[15]|=3;
-                                                updatemode(SUPERVISOR);
-                                                armregs[14]=templ;
-                                                armregs[15]&=0xFC000003;
-                                                armregs[15]|=0x08000008;
-                                                refillpipeline();
-                                        }
-                                        break;
+                                        templ=armregs[15]-4;
+                                        armregs[15]|=3;
+                                        updatemode(SUPERVISOR);
+                                        armregs[14]=templ;
+                                        armregs[15]&=0xFC000003;
+                                        armregs[15]|=0x08000008;
+                                        refillpipeline();
+                                }
+                                break;
 
-                                        case 0xF0: case 0xF1: case 0xF2: case 0xF3: /*SWI*/
-                                        case 0xF4: case 0xF5: case 0xF6: case 0xF7:
-                                        case 0xF8: case 0xF9: case 0xFA: case 0xFB:
-                                        case 0xFC: case 0xFD: case 0xFE: case 0xFF:
-                                        if (mousehack)
+                                case 0xF0: case 0xF1: case 0xF2: case 0xF3: /*SWI*/
+                                case 0xF4: case 0xF5: case 0xF6: case 0xF7:
+                                case 0xF8: case 0xF9: case 0xFA: case 0xFB:
+                                case 0xFC: case 0xFD: case 0xFE: case 0xFF:
+                                if (mousehack)
+                                {
+                                        if ((opcode&0x1FFFF)==7 && armregs[0]==0x15 && (readmemb(armregs[1])==1))
                                         {
-                                                if ((opcode&0x1FFFF)==7 && armregs[0]==0x15 && (readmemb(armregs[1])==1))
-                                                {
-                                                        setmouseparams(armregs[1]);
-                                                }
-                                                else if ((opcode&0x1FFFF)==7 && armregs[0]==0x15 && (readmemb(armregs[1])==4))
-                                                {
-                                                        getunbufmouse(armregs[1]);
-                                                }
-                                                else if ((opcode&0x1FFFF)==7 && armregs[0]==0x15 && (readmemb(armregs[1])==3))
-                                                {
-                                                        setmousepos(armregs[1]);
-                                                }
-                                                else if ((opcode&0x1FFFF)==7 && armregs[0]==0x15 && (readmemb(armregs[1])==5))
-                                                {
-                                                        setmousepos(armregs[1]);
-                                                }
+                                                setmouseparams(armregs[1]);
                                         }
+                                        else if ((opcode&0x1FFFF)==7 && armregs[0]==0x15 && (readmemb(armregs[1])==4))
+                                        {
+                                                getunbufmouse(armregs[1]);
+                                        }
+                                        else if ((opcode&0x1FFFF)==7 && armregs[0]==0x15 && (readmemb(armregs[1])==3))
+                                        {
+                                                setmousepos(armregs[1]);
+                                        }
+                                        else if ((opcode&0x1FFFF)==7 && armregs[0]==0x15 && (readmemb(armregs[1])==5))
+                                        {
+                                                setmousepos(armregs[1]);
+                                        }
+                                }
 /*                                        if ((opcode&0x4FFFF) == 0x40240)
-                                           rpclog("ADFS_DiscOp %08X %08X %08X %08X  %07X\n",armregs[1],armregs[2],armregs[3],armregs[4],PC);
-                                        if ((opcode&0x4FFFF) == 0x40540)
-                                           rpclog("FileCore_DiscOp %08X %08X %08X %08X  %07X\n",armregs[1],armregs[2],armregs[3],armregs[4],PC);*/
-                                        if ((opcode & 0xdffff) == ARCEM_SWI_HOSTFS) 
-                                        {
-                                		ARMul_State state;
+                                   rpclog("ADFS_DiscOp %08X %08X %08X %08X  %07X\n",armregs[1],armregs[2],armregs[3],armregs[4],PC);
+                                if ((opcode&0x4FFFF) == 0x40540)
+                                   rpclog("FileCore_DiscOp %08X %08X %08X %08X  %07X\n",armregs[1],armregs[2],armregs[3],armregs[4],PC);*/
+                                if ((opcode & 0xdffff) == ARCEM_SWI_HOSTFS) 
+                                {
+                        		ARMul_State state;
 
-                                		state.Reg = armregs;
-                                		templ = memmode;
-                                		memmode = 2;
-                                		hostfs(&state);
-                                		memmode = templ;
-                                	}
-                                        else if ((opcode&0xFFFF)==0x1C && mousehack)
-                                        {
-                                                getosmouse();
-                                                armregs[15]&=~VFLAG;
-                                        }
-                                        else
-                                        {
+                        		state.Reg = armregs;
+                        		templ = memmode;
+                        		memmode = 2;
+                        		hostfs(&state);
+                        		memmode = templ;
+                        	}
+                                else if ((opcode&0xFFFF)==0x1C && mousehack)
+                                {
+                                        getosmouse();
+                                        armregs[15]&=~VFLAG;
+                                }
+                                else
+                                {
 /*                                                rpclog("SWI %05X at %07X  %08X %08X %08X %08X  %08X %08X %08X %08X %c\n",opcode&0x5FFFF,PC-8,armregs[0],armregs[1],armregs[2],armregs[3],armregs[4],armregs[5],armregs[6],armregs[7],(armregs[0]>31)?armregs[0]:'.');*/
-                                                templ=armregs[15]-4;
-                                                armregs[15]|=3;
-                                                updatemode(SUPERVISOR);
-                                                armregs[14]=templ;
-                                                armregs[15]&=0xFC000003;
-                                                armregs[15]|=0x0800000C;
-                                                refillpipeline();
-                                        }
-                                        break;
+                                        templ=armregs[15]-4;
+                                        armregs[15]|=3;
+                                        updatemode(SUPERVISOR);
+                                        armregs[14]=templ;
+                                        armregs[15]&=0xFC000003;
+                                        armregs[15]|=0x0800000C;
+                                        refillpipeline();
+                                }
+                                break;
 
-                                        default:
-                                                rpclog("Illegal instruction %08X %07X\n",opcode, PC);
-                                        dumpregs();
-                                        exit(-1);
-                                                templ=armregs[15]-4;
-                                                armregs[15]|=3;
-                                                updatemode(SUPERVISOR);
-                                                armregs[14]=templ;
-                                                armregs[15]&=0xFC000003;
-                                                armregs[15]|=0x08000008;
-                                                refillpipeline();
+                                default:
+                                        rpclog("Illegal instruction %08X %07X\n",opcode, PC);
+                                dumpregs();
+                                exit(-1);
+                                        templ=armregs[15]-4;
+                                        armregs[15]|=3;
+                                        updatemode(SUPERVISOR);
+                                        armregs[14]=templ;
+                                        armregs[15]&=0xFC000003;
+                                        armregs[15]|=0x08000008;
+                                        refillpipeline();
 //                                        error("Bad opcode %02X %08X at %07X\n",(opcode>>20)&0xFF,opcode,PC);
+//                                        dumpregs();
+//                                        exit(-1);
+                        }
+                }
+                else if (!prefabort)
+                {
+			CLOCK_I();
+                	tsc += cyc_i;
+		}
+                if (databort|armirq|prefabort)
+                {
+                        if (prefabort)       /*Prefetch abort*/
+                        {
+//                                        rpclog("Pref abort at %07X %i\n",PC,ins);
+                                templ=armregs[15];
+                                armregs[15]|=3;
+                                updatemode(SUPERVISOR);
+                                armregs[14]=templ;
+                                armregs[15]&=0xFC000003;
+                                armregs[15]|=0x08000010;
+                                refillpipeline();
+                                prefabort=0;
+                        }
+                        else if (databort==1)     /*Data abort*/
+                        {
+//                                        rpclog("Dat abort at %07X %i - opcode %08X R1 %08X R11 %08X\n",PC,ins,opcode,armregs[1],armregs[11]);
+//                                        if (PC > 0x18a2a00 && PC < 0x18a2b00)
+//                                                fatal("Dead\n");
+                                templ=armregs[15];
+                                armregs[15]|=3;
+                                updatemode(SUPERVISOR);
+                                armregs[14]=templ;
+                                armregs[15]&=0xFC000003;
+                                armregs[15]|=0x08000014;
+                                refillpipeline();
+                                databort=0;
+                        }
+                        else if (databort==2) /*Address Exception*/
+                        {
+//                                        rpclog("Address Exception at %07X %08X %08X %08X\n",PC,opcode,armregs[1],armregs[11]);
+                                templ=armregs[15];
+                                armregs[15]|=3;
+                                updatemode(SUPERVISOR);
+                                armregs[14]=templ;
+                                armregs[15]&=0xFC000003;
+                                armregs[15]|=0x08000018;
+                                refillpipeline();
+                                databort=0;
+                        }
+                        else if ((armirq&2) && !(armregs[15]&0x4000000)) /*FIQ*/
+                        {
+//                                        rpclog("FIQ %02X %i\n",ioc.fiq&ioc.mskf, 0);
+//                                        if (output) rpclog("FIQ\n");
+                                templ=armregs[15];
+                                armregs[15]|=3;
+                                updatemode(FIQ);
+                                armregs[14]=templ;
+                                armregs[15]&=0xFC000001;
+                                armregs[15]|=0x0C000020;
+                                refillpipeline();
+                        }
+                        else if ((armirq&1) && !(armregs[15]&0x8000000)) /*IRQ*/
+                        {
+//                                        rpclog("IRQ %02X %02X\n",ioc.irqa&ioc.mska,ioc.irqb&ioc.mskb);
+//                                        if (output) rpclog("IRQ\n");
+                                templ=armregs[15];
+                                armregs[15]|=3;
+                                updatemode(IRQ);
+                                armregs[14]=templ;
+                                armregs[15]&=0xFC000002;
+                                armregs[15]|=0x0800001C;
+                                refillpipeline();
+                        }
+                }
+                armirq = irq;
+                armregs[15] += 4;
+                if ((armregs[15] & 3) != mode)
+                        updatemode(armregs[15] & 3);
+
+                if (output)
+                {
+                        rpclog("%05i : %07X %08X %08X %08X %08X %08X %08X %08X %08X",ins,PC-8,armregs[0],armregs[1],armregs[2],armregs[3],armregs[4],armregs[5],armregs[6],armregs[7]);
+                        rpclog("  %08X %08X %08X %08X %08X %08X %08X %08X  %08X  %02X %02X %02X  %02X %02X %02X  %i %i %i %X %i\n",armregs[8],armregs[9],armregs[10],armregs[11],armregs[12],armregs[13],armregs[14],armregs[15],opcode,ioc.mska,ioc.mskb,ioc.mskf,ioc.irqa,ioc.irqb,ioc.fiq,  fdc_indexcount, 0, motoron, fdc_indexpulse, motorspin);
+                        ins++;
+
+                        if (timetolive)
+                        {
+                                timetolive--;
+                                if (!timetolive)
+                                {
+                                        output=0;
 //                                        dumpregs();
 //                                        exit(-1);
                                 }
                         }
-                        else if (!prefabort)
-                        {
-				CLOCK_I();
-                        	tsc += cyc_i;
-			}
-                        if (databort|armirq|prefabort)
-                        {
-                                if (prefabort)       /*Prefetch abort*/
-                                {
-//                                        rpclog("Pref abort at %07X %i\n",PC,ins);
-                                        templ=armregs[15];
-                                        armregs[15]|=3;
-                                        updatemode(SUPERVISOR);
-                                        armregs[14]=templ;
-                                        armregs[15]&=0xFC000003;
-                                        armregs[15]|=0x08000010;
-                                        refillpipeline();
-                                        prefabort=0;
-                                }
-                                else if (databort==1)     /*Data abort*/
-                                {
-//                                        rpclog("Dat abort at %07X %i - opcode %08X R1 %08X R11 %08X\n",PC,ins,opcode,armregs[1],armregs[11]);
-//                                        if (PC > 0x18a2a00 && PC < 0x18a2b00)
-//                                                fatal("Dead\n");
-                                        templ=armregs[15];
-                                        armregs[15]|=3;
-                                        updatemode(SUPERVISOR);
-                                        armregs[14]=templ;
-                                        armregs[15]&=0xFC000003;
-                                        armregs[15]|=0x08000014;
-                                        refillpipeline();
-                                        databort=0;
-                                }
-                                else if (databort==2) /*Address Exception*/
-                                {
-//                                        rpclog("Address Exception at %07X %08X %08X %08X\n",PC,opcode,armregs[1],armregs[11]);
-                                        templ=armregs[15];
-                                        armregs[15]|=3;
-                                        updatemode(SUPERVISOR);
-                                        armregs[14]=templ;
-                                        armregs[15]&=0xFC000003;
-                                        armregs[15]|=0x08000018;
-                                        refillpipeline();
-                                        databort=0;
-                                }
-                                else if ((armirq&2) && !(armregs[15]&0x4000000)) /*FIQ*/
-                                {
-//                                        rpclog("FIQ %02X %i\n",ioc.fiq&ioc.mskf, 0);
-//                                        if (output) rpclog("FIQ\n");
-                                        templ=armregs[15];
-                                        armregs[15]|=3;
-                                        updatemode(FIQ);
-                                        armregs[14]=templ;
-                                        armregs[15]&=0xFC000001;
-                                        armregs[15]|=0x0C000020;
-                                        refillpipeline();
-                                }
-                                else if ((armirq&1) && !(armregs[15]&0x8000000)) /*IRQ*/
-                                {
-//                                        rpclog("IRQ %02X %02X\n",ioc.irqa&ioc.mska,ioc.irqb&ioc.mskb);
-//                                        if (output) rpclog("IRQ\n");
-                                        templ=armregs[15];
-                                        armregs[15]|=3;
-                                        updatemode(IRQ);
-                                        armregs[14]=templ;
-                                        armregs[15]&=0xFC000002;
-                                        armregs[15]|=0x0800001C;
-                                        refillpipeline();
-                                }
-                        }
-                        armirq=irq;
-                        armregs[15]+=4;
-                        if ((armregs[15]&3)!=mode) updatemode(armregs[15]&3);
-/*                        if (PC == 0x8304)
-                                rpclog("8304: R0 = %08X R8 = %08X\n", armregs[0], armregs[8]);
-                        if (opcode == 0xE8BD000C)
-                                rpclog("R0 = %08X R1 = %08X R2 = %08X R3 = %08X\n", armregs[0], armregs[1], armregs[2], armregs[3]);*/
-/*output = 1;
-                      if (PC == 0x381178C)
-                              fatal("it\n");*/
-//                        if (PC == 0x38E35CC)
-//                           output = 1;
+                }
 
-/*                        if (PC == 0x184A35C)
-                                output = 1;
-                        if (PC == 0x184A544)
-                                output = 0;*/
-                        if (output)
-                        {
-                                rpclog("%05i : %07X %08X %08X %08X %08X %08X %08X %08X %08X",ins,PC-8,armregs[0],armregs[1],armregs[2],armregs[3],armregs[4],armregs[5],armregs[6],armregs[7]);
-                                rpclog("  %08X %08X %08X %08X %08X %08X %08X %08X  %08X  %02X %02X %02X  %02X %02X %02X  %i %i %i %X %i\n",armregs[8],armregs[9],armregs[10],armregs[11],armregs[12],armregs[13],armregs[14],armregs[15],opcode,ioc.mska,ioc.mskb,ioc.mskf,ioc.irqa,ioc.irqb,ioc.fiq,  fdc_indexcount, 0, motoron, fdc_indexpulse, motorspin);
-                                ins++;
+                inscount++;
+                ins++;
 
-                                if (timetolive)
-                                {
-                                        timetolive--;
-                                        if (!timetolive)
-                                        {
-                                                output=0;
-//                                                dumpregs();
-//                                                exit(-1);
-                                        }
-                                }
-                        }
-
-                        inscount++;
-                        ins++;
-
-        		if (TIMER_VAL_LESS_THAN_VAL(timer_target, tsc >> 10))
-        			timer_process();
+		if (TIMER_VAL_LESS_THAN_VAL(timer_target, tsc >> 10))
+			timer_process();
 
                 cyc=((int)tsc-oldcyc) >> 10; /*Number of clock ticks executed*/
                 clock_ticks_executed += cyc;

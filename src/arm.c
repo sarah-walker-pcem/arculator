@@ -2749,6 +2749,9 @@ void execarm(int cycles_to_execute)
                         
                         inscount++;
                         ins++;
+
+        		if (TIMER_VAL_LESS_THAN_VAL(timer_target, tsc >> 10))
+        			timer_process();
                 }
        
                 /*Finished executing one VIDC display line worth of cycles*/
@@ -2759,8 +2762,6 @@ void execarm(int cycles_to_execute)
                 pollline_call_count++;
                 total_cycles -= (oldcyc-cycles);
 
-		if (TIMER_VAL_LESS_THAN_VAL(timer_target, tsc >> 10))
-			timer_process();
         }
         LOG_EVENT_LOOP("execarm() finished; cycles=%d, clock ticks=%d, and called pollline() %d times (should be ~160)\n",
                 cycles, clock_ticks_executed, pollline_call_count);

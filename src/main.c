@@ -28,6 +28,7 @@
 #include "podules.h"
 #include "sound.h"
 #include "soundopenal.h"
+#include "st506.h"
 #include "timer.h"
 #include "vidc.h"
 #include "video.h"
@@ -238,7 +239,8 @@ void arc_init()
         if (romset==3) fdctype=1;
         else	       fdctype=0;
 
-        resetst506();
+        if (!fdctype)
+                st506_internal_init();
 
         podules_init();
 }
@@ -248,6 +250,7 @@ int speed_mhz;
 void arc_reset()
 {
         timer_reset();
+        st506_internal_close();
         if (cmos_changed)
         {
                 cmos_changed = 0;
@@ -266,7 +269,8 @@ void arc_reset()
         disc_init();
         wd1770_reset();
         c82c711_fdc_reset();
-        resetst506();
+        if (!fdctype)
+                st506_internal_init();
         podules_close();
         podules_init();
 }

@@ -13,6 +13,7 @@
 #include "ioc.h"
 #include "memc.h"
 #include "podules.h"
+#include "st506.h"
 #include "vidc.h"
 #include "wd1770.h"
 
@@ -267,7 +268,7 @@ uint8_t readmemfb(uint32_t a)
                                 case 0x0008: case 0x000C:
                                 case 0x0020: case 0x0024: case 0x0028: case 0x002C:
                                 if (romset>2) return 0xFF;
-                                return readst506(a);
+                                return st506_internal_readb(a);
                                 case 0x0040: /*FDC Latch A*/
                                 return 0xFF;
                                 case 0x0048: return 0xFF; /*????*/
@@ -372,7 +373,7 @@ uint32_t readmemfl(uint32_t a)
                                 case 0x0008: case 0x000C:
                                 case 0x0020: case 0x0024: case 0x0028: case 0x002C:
                                 if (romset>2) return 0xFFFFFFFF;
-                                return readst506l(a);
+                                return st506_internal_readl(a);
                                 case 0x0040: /*FDC Latch A*/
                                 return 0xFFFF;
                                 case 0x0048: return 0xFFFF; /*????*/
@@ -474,7 +475,7 @@ void writememfb(uint32_t a,uint8_t v)
                                 case 0x0000: case 0x0004: case 0x0008: case 0x000C:
                                 case 0x0028: case 0x002C:
                                 if (romset>2) return;
-                                writest506(a,v);
+                                st506_internal_writeb(a, v);
                                 return;
                                 case 0x0010: return; /*Printer*/
                                 case 0x0018:
@@ -602,7 +603,7 @@ void writememfl(uint32_t a,uint32_t v)
                                 case 0x0000: case 0x0004: case 0x0008: case 0x000C:
                                 case 0x0028: case 0x002C:
                                 if (romset>2) return;
-                                writest506l(a,v);
+                                st506_internal_writel(a, v);
                                 return;
                                 case 0x0010: return; /*Printer*/
                                 case 0x0018:

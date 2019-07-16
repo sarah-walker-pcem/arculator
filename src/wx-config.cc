@@ -15,6 +15,7 @@ extern "C"
         #include "fpa.h"
         #include "memc.h"
         #include "podules.h"
+        #include "st506.h"
 };
 
 enum
@@ -165,7 +166,7 @@ ConfigDialog::ConfigDialog(wxWindow *parent, bool is_running)
         config_cpu = arm_cpu_type;
         config_fpu = fpaena ? (fpu_type ? FPU_FPPC : FPU_FPA10) : FPU_NONE;
         config_memc = memc_type;
-        config_io = fdctype ? IO_NEW : IO_OLD_ST506;
+        config_io = fdctype ? IO_NEW : (st506_present ? IO_OLD_ST506 : IO_OLD);
 
         switch (memsize)
         {
@@ -398,6 +399,7 @@ void ConfigDialog::OnOK(wxCommandEvent &event)
         fpaena = (config_fpu == FPU_NONE) ? 0 : 1;
         fpu_type = (config_cpu >= CPU_ARM3_20) ? 0 : 1;
         fdctype = (config_io >= IO_NEW) ? 1 : 0;
+        st506_present = (config_io == IO_OLD_ST506) ? 1 : 0;
 
         switch (config_mem)
         {

@@ -8,6 +8,7 @@
 #include "memc.h"
 #include "plat_video.h"
 #include "podules.h"
+#include "st506.h"
 #include "video.h"
 
 char hd_fn[2][512];
@@ -535,6 +536,7 @@ void loadconfig()
         video_window_resizeable = config_get_int(CFG_MACHINE, NULL, "video_window_resizeable", 0);
         fastdisc = config_get_int(CFG_MACHINE, NULL, "fast_disc", 1);
         fdctype = config_get_int(CFG_MACHINE, NULL, "fdc_type", 1);
+        st506_present = config_get_int(CFG_MACHINE, NULL, "st506_present", 0);
         stereo = config_get_int(CFG_GLOBAL, NULL, "stereo", 1);
         memsize = config_get_int(CFG_MACHINE, NULL, "mem_size", 4096);
         romset = config_get_int(CFG_MACHINE, NULL, "rom_set", 3);
@@ -597,6 +599,7 @@ void saveconfig()
         config_set_int(CFG_MACHINE, NULL, "video_window_resizeable", video_window_resizeable);
         config_set_int(CFG_MACHINE, NULL, "fast_disc", fastdisc);
         config_set_int(CFG_MACHINE, NULL, "fdc_type", fdctype);
+        config_set_int(CFG_MACHINE, NULL, "st506_present", st506_present);
         config_set_int(CFG_MACHINE, NULL, "rom_set", romset);
         config_set_int(CFG_GLOBAL, NULL, "stereo", stereo);
         config_set_string(CFG_MACHINE, NULL, "hd4_fn", hd_fn[0]);

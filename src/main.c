@@ -239,7 +239,7 @@ void arc_init()
         if (romset==3) fdctype=1;
         else	       fdctype=0;
 
-        if (!fdctype)
+        if (!fdctype && st506_present)
                 st506_internal_init();
 
         podules_init();
@@ -269,7 +269,7 @@ void arc_reset()
         disc_init();
         wd1770_reset();
         c82c711_fdc_reset();
-        if (!fdctype)
+        if (!fdctype && st506_present)
                 st506_internal_init();
         podules_close();
         podules_init();

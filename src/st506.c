@@ -15,6 +15,7 @@ static void st506_callback(void *p);
 #define DRIVEERROR      0x08
 #define ABNEND          0x04
 
+int st506_present;
 static st506_t internal_st506;
 
 void st506_init(st506_t *st506, char *fn_pri, char *fn_sec, void (*irq_raise)(st506_t *st506), void (*irq_clear)(st506_t *st506))

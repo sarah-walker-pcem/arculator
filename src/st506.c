@@ -18,10 +18,10 @@ static void st506_callback(void *p);
 int st506_present;
 static st506_t internal_st506;
 
-void st506_init(st506_t *st506, char *fn_pri, char *fn_sec, void (*irq_raise)(st506_t *st506), void (*irq_clear)(st506_t *st506))
+void st506_init(st506_t *st506, char *fn_pri, char *fn_sec, void (*irq_raise)(st506_t *st506), void (*irq_clear)(st506_t *st506), void *p)
 {
         st506->status = 0;
-        st506->p = st506->wp = 0;
+        st506->rp = st506->wp = 0;
         st506->drq = 0;
         st506->first = 0;
         st506->hdfile[0] = fopen(fn_pri, "rb+");
@@ -29,6 +29,7 @@ void st506_init(st506_t *st506, char *fn_pri, char *fn_sec, void (*irq_raise)(st
         timer_add(&st506->timer, st506_callback, st506, 0);
         st506->irq_raise = irq_raise;
         st506->irq_clear = irq_clear;
+        st506->p = p;
 }
 void st506_close(st506_t *st506)
 {
@@ -49,7 +50,7 @@ static void st506_updateinterrupts(st506_t *st506)
                 st506->irq_raise(st506);
         else
                 st506->irq_clear(st506);
-        rpclog("ST506 status %i  %02X %02X %i\n", ioc.irqb&8, st506->status, st506->OM1, st506->drq);
+//        rpclog("ST506 status %i  %02X %02X %i\n", (st506->status & ~st506->OM1 & 0x38) || st506->drq, st506->status, st506->OM1, st506->drq);
 //        if (ioc.irqb&8 && !oldirq) rpclog("HDC IRQ\n");
 }
 
@@ -69,7 +70,7 @@ static void readdataerror(st506_t *st506)
         for (c = 9; c >= 0; c--)
                 st506->param[c + 2] = st506->param[c];
         st506->param[0] = st506->param[1] = 0;
-        st506->p = st506->wp = 0;
+        st506->rp = st506->wp = 0;
         st506->param[1] = st506->ssb;
 }
 
@@ -115,20 +116,20 @@ uint8_t st506_readb(st506_t *st506, uint32_t a)
         switch (a & 0x3C)
         {
                 case 0x24: /*Data read*/
-                if (st506->p < 16)
+                if (st506->rp < 16)
                 {
-                        temp = st506->param[st506->p++] << 8;
-                        temp |= st506->param[st506->p++];
+                        temp = st506->param[st506->rp++] << 8;
+                        temp |= st506->param[st506->rp++];
 //                        st506->p+=2;
 //                        rpclog("Reading params - returning %04X\n",temp);
 //                        rpclog("Read HDC %08X %08X %02X\n",a,temp,ioc.irqb);
                         return temp;//st506->param[st506->p-1];
                 }
-                else if (st506->p < 272)
+                else if (st506->rp < 272)
                 {
-                        temp = st506->buffer[st506->p++] << 8;
-                        temp |= st506->buffer[st506->p++];
-                        if (st506->p == 272)
+                        temp = st506->buffer[st506->rp++] << 8;
+                        temp |= st506->buffer[st506->rp++];
+                        if (st506->rp == 272)
                         {
                                 st506->drq = 0;
                                 st506_updateinterrupts(st506);
@@ -171,7 +172,7 @@ void st506_writel(st506_t *st506, uint32_t a, uint32_t v)
                 st506->drq = 0;
                 if (v != 0xF0)
                         st506->status = PARAMREJECT;
-                st506->wp = st506->p = 0;
+                st506->wp = st506->rp = 0;
                 st506->command = v;
                 if (v != 8 && v != 0xF0)
                         st506->ssb = 0;
@@ -371,12 +372,12 @@ void st506_writel(st506_t *st506, uint32_t a, uint32_t v)
                 return;
                 
                 case 0x28: case 0x2C: /*DMA write*/
-//                rpclog("Write DMA %i\n",st506->p);
-                if (st506->p >= 16 && st506->p < 272)
+//                rpclog("Write DMA %i\n",st506->rp);
+                if (st506->rp >= 16 && st506->rp < 272)
                 {
-                        st506->buffer[st506->p++] = v >> 8;
-                        st506->buffer[st506->p++] = v;
-                        if (st506->p == 272)
+                        st506->buffer[st506->rp++] = v >> 8;
+                        st506->buffer[st506->rp++] = v;
+                        if (st506->rp == 272)
                         {
                                 st506->drq = 0;
                                 st506_updateinterrupts(st506);
@@ -385,7 +386,7 @@ void st506_writel(st506_t *st506, uint32_t a, uint32_t v)
 //                        rpclog("Write HDC %08X %08X %i %07X %i %02X  %02X %02X\n",a,temp,st506->p,PC,st506->drq,ioc.irqb,st506->status,st506->OM1);
                         return;
                 }
-                else if (st506->p > 16)
+                else if (st506->rp > 16)
                 {
                         st506->drq = 0;
                         st506_updateinterrupts(st506);
@@ -405,20 +406,20 @@ uint32_t st506_readl(st506_t *st506, uint32_t a)
         {
                 case 0x08: case 0x0C: /*DMA read*/
 //                rpclog("Read DMA %i\n",st506->p);
-                if (st506->p >= 16 && st506->p < 272)
+                if (st506->rp >= 16 && st506->rp < 272)
                 {
-                        temp = st506->buffer[st506->p++] << 8;
-                        temp |= st506->buffer[st506->p++];
-                        if (st506->p == 272)
+                        temp = st506->buffer[st506->rp++] << 8;
+                        temp |= st506->buffer[st506->rp++];
+                        if (st506->rp == 272)
                         {
                                 st506->drq = 0;
                                 st506_updateinterrupts(st506);
                                 timer_set_delay_u64(&st506->timer, 5000 * TIMER_USEC);
                         }
-//                        rpclog("Read HDC %08X %08X %i %07X\n",a,temp,st506->p,PC);
+//                        rpclog("Read HDC %08X %08X %i %07X\n",a,temp,st506->rp,PC);
                         return temp;
                 }
-                else if (st506->p > 16)
+                else if (st506->rp > 16)
                 {
                         st506->drq = 0;
                         st506_updateinterrupts(st506);
@@ -435,10 +436,10 @@ uint32_t st506_readl(st506_t *st506, uint32_t a)
                 return st506->status << 8;
                 
                 case 0x24: /*Params*/
-                if (st506->p < 16)
+                if (st506->rp < 16)
                 {
-                        temp = st506->param[st506->p++] << 8;
-                        temp |= st506->param[st506->p++];
+                        temp = st506->param[st506->rp++] << 8;
+                        temp |= st506->param[st506->rp++];
 //                        st506->p+=2;
 //                        rpclog("Reading params - returning %04X\n",temp);
 //                        rpclog("Read HDC %08X %08X %02X\n",a,temp,ioc.irqb);
@@ -479,7 +480,7 @@ static void st506_callback(void *p)
                                         }
                                 }
                         }
-//                        rpclog("Reading from pos %08X - %i sectors left\n",ftell(hdfile),st506->oplen);
+//                        rpclog("Reading from pos %08X - %i sectors left\n",ftell(st506->hdfile[st506->drive]),st506->oplen);
                         st506->oplen--;
 //                        rpclog("Read ST506buffer from %08X\n",ftell(hdfile));
                         fread(st506->buffer+16, 256, 1, st506->hdfile[st506->drive]);
@@ -490,7 +491,7 @@ static void st506_callback(void *p)
                                 st506->buffer[c] = st506->buffer[c+1];
                                 st506->buffer[c+1] = temp;
                         }
-                        st506->p = 16;
+                        st506->rp = 16;
                         st506->drq = 1;
                         st506_updateinterrupts(st506);
 //                        rpclog("HDC interrupt part\n");
@@ -501,7 +502,7 @@ static void st506_callback(void *p)
                                 st506->param[c+2] = st506->param[c];
                                 
                         st506->param[0] = st506->param[1] = 0;
-                        st506->p = st506->wp = 0;
+                        st506->rp = st506->wp = 0;
 //                        rpclog("Finished read sector! %02X\n",st506->OM1);
                         st506->status |= COMEND | PARAMREJECT;
                         st506->status &= ~0x80;
@@ -541,7 +542,7 @@ static void st506_callback(void *p)
                                 st506->param[c+2] = st506->param[c];
                                 
                         st506->param[0] = st506->param[1] = 0;
-                        st506->p = st506->wp = 0;
+                        st506->rp = st506->wp = 0;
                         st506->status |= COMEND | PARAMREJECT;
                         st506->status &= ~0x80;
                         st506->drq = 0;
@@ -553,7 +554,7 @@ static void st506_callback(void *p)
                 case 0x87: /*Write sector*/
                 if (st506->first)
                 {
-                        st506->p = 16;
+                        st506->rp = 16;
                         st506->drq = 1;
                         st506_updateinterrupts(st506);
 //                        rpclog("Write HDC interrupt first\n");
@@ -591,7 +592,7 @@ static void st506_callback(void *p)
 //                        rpclog("ST506 OPLEN %i\n",st506->oplen);
                         if (st506->oplen)
                         {
-                                st506->p = 16;
+                                st506->rp = 16;
                                 st506->drq = 1;
                                 st506_updateinterrupts(st506);
 //                                rpclog("Write HDC interrupt part\n");
@@ -602,7 +603,7 @@ static void st506_callback(void *p)
                                     st506->param[c+2] = st506->param[c];
                                     
                                 st506->param[0] = st506->param[1] = 0;
-                                st506->p = st506->wp = 0;
+                                st506->rp = st506->wp = 0;
 //                                rpclog("Finished write sector! %02X\n",st506->OM1);
                                 st506->status |= COMEND | PARAMREJECT;
                                 st506->status &= ~0x80;
@@ -616,7 +617,7 @@ static void st506_callback(void *p)
                 case 0xA3: /*Write format*/
                 if (st506->first)
                 {
-                        st506->p = 16;
+                        st506->rp = 16;
                         st506->drq = 1;
                         st506_updateinterrupts(st506);
 //                        rpclog("Write HDC interrupt first\n");
@@ -649,7 +650,7 @@ static void st506_callback(void *p)
                         }
                         if (st506->oplen)
                         {
-                                st506->p = 16;
+                                st506->rp = 16;
                                 st506->drq = 1;
                                 st506_updateinterrupts(st506);
                         }
@@ -659,7 +660,7 @@ static void st506_callback(void *p)
                                     st506->param[c+2] = st506->param[c];
                                     
                                 st506->param[0] = st506->param[1] = 0;
-                                st506->p = st506->wp = 0;
+                                st506->rp = st506->wp = 0;
                                 st506->status |= COMEND | PARAMREJECT;
                                 st506->status &= ~0x80;
                                 st506->drq = 0;
@@ -681,7 +682,7 @@ static void st506_internal_irq_clear(st506_t *st506)
 
 void st506_internal_init(void)
 {
-        st506_init(&internal_st506, hd_fn[0], hd_fn[1], st506_internal_irq_raise, st506_internal_irq_clear);
+        st506_init(&internal_st506, hd_fn[0], hd_fn[1], st506_internal_irq_raise, st506_internal_irq_clear, NULL);
 }
 void st506_internal_close(void)
 {

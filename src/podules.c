@@ -11,8 +11,7 @@
 #include "st506_akd52.h"
 #include "timer.h"
 
-static timer_t podule_timer;
-void runpoduletimers(void *p);
+static void podule_run_timer(void *p);
 
 typedef struct podule_list
 {
@@ -158,11 +157,14 @@ void podules_init(void)
                                         podules[c].podule.header = NULL;
                                         podule_functions[c] = NULL;
                                 }
+                                else
+                                {
+                                        timer_add(&podules[c].timer, podule_run_timer, (void *)c, 1);
+                                        podules[c].last_callback_tsc = tsc;
+                                }
                         }
                 }
         }
-        
-        timer_add(&podule_timer, runpoduletimers, NULL, 1);
 }
 
 void podules_reset(void)
@@ -301,19 +303,19 @@ uint32_t podule_memc_read_w(int num, uint32_t addr)
         return temp;
 }
 
-/*Run podule timers for t ms*/
-void runpoduletimers(void *p)
+static void podule_run_timer(void *p)
 {
-        int c;
+        int num = (int)p;
+        podule_t *podule = &podules[num].podule;
+        uint64_t timeslice = tsc - podules[num].last_callback_tsc;
+        int ret = 0;
 
-        timer_advance_u64(&podule_timer, TIMER_USEC * 1000);
+        podules[num].last_callback_tsc = tsc;
+        if (podule_functions[num]->run)
+                ret = podule_functions[num]->run(podule, timeslice / (TIMER_USEC >> 32));
 
-//        return;
-        for (c = 0; c < 4; c++)
-        {
-                if (podule_functions[c] && podule_functions[c]->run)
-                        podule_functions[c]->run(&podules[c].podule, 0);
-        }
+        if (ret)
+                timer_advance_u64(&podules[num].timer, ret * TIMER_USEC);
 }
 
 uint8_t podule_irq_state()
@@ -379,11 +381,34 @@ static void podule_config_set_string(podule_t *podule, const char *name, char *v
         config_set_string(CFG_MACHINE, section_name, name, val);
 }
 
+static void podule_set_timer_delay_us(podule_t *podule, int delay_us)
+{
+        podule_internal_state_t *internal = container_of(podule, podule_internal_state_t, podule);
+
+        timer_set_delay_u64(&internal->timer, delay_us * TIMER_USEC);
+}
+
+static int podule_get_timer_remaining_us(podule_t *podule)
+{
+        podule_internal_state_t *internal = container_of(podule, podule_internal_state_t, podule);
+
+        return timer_get_remaining_us(&internal->timer);
+}
+
+static void podule_stop_timer(podule_t *podule)
+{
+        podule_internal_state_t *internal = container_of(podule, podule_internal_state_t, podule);
+        
+        timer_disable(&internal->timer);
+}
 
 const podule_callbacks_t podule_callbacks_def =
 {
         .set_irq = podule_set_irq,
         .set_fiq = podule_set_fiq,
+        .set_timer_delay_us = podule_set_timer_delay_us,
+        .get_timer_remaining_us = podule_get_timer_remaining_us,
+        .stop_timer = podule_stop_timer,
         .config_get_int = podule_config_get_int,
         .config_get_string = podule_config_get_string,
         .config_set_int = podule_config_set_int,

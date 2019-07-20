@@ -65,8 +65,11 @@ typedef struct podule_callbacks_t
         void (*set_irq)(podule_t *podule, int state);
         /*Update FIQ state*/
         void (*set_fiq)(podule_t *podule, int state);
-        void (*request_timing_granularity)(podule_t *podule, int timeslice_us); /*Allow dynamic?*/
 
+        void (*set_timer_delay_us)(podule_t *podule, int delay_us);
+        int (*get_timer_remaining_us)(podule_t *podule);
+        void (*stop_timer)(podule_t *podule);
+        
         int (*config_get_int)(podule_t *podule, const char *name, int def);
         const char *(*config_get_string)(podule_t *podule, const char *name, const char *def);
         void (*config_set_int)(podule_t *podule, const char *name, int val);

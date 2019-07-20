@@ -2,6 +2,7 @@
 #define PODULES_H
 
 #include "podule_api.h"
+#include "timer.h"
 
 void podules_init(void);
 void podules_reset(void);
@@ -29,6 +30,8 @@ typedef struct podule_internal_state_t
 {
         podule_t podule;
         int irq, fiq;
+        timer_t timer;
+        uint64_t last_callback_tsc;
 } podule_internal_state_t;
 
 void rethinkpoduleints(void);

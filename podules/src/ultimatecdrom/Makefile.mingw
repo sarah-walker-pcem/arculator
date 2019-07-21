@@ -1,0 +1,21 @@
+CPP  = g++.exe
+CC   = gcc.exe
+OBJ  = mitsumi.o ultimatecdrom.o cdrom-ioctl.o soundopenal.o
+LIBS = --no-export-all-symbols --add-stdcall-alias -lwinmm -lopenal32
+CFLAGS = $(INCS) -DBUILDING_DLL=1 -I..\..\..\src  
+
+all: ultimatecdrom.dll
+
+clean:
+	del *.o
+	del *.dll
+
+DLLWRAP=dllwrap.exe
+DEFFILE=libultimatecdrom.def
+STATICLIB=libultimatecdrom.a
+
+ultimatecdrom.dll: $(OBJ)
+	$(DLLWRAP) $(OBJ) $(LIBS) -o ultimatecdrom.dll
+
+%.o: %.c
+	$(CC) $(CFLAGS) -c $<

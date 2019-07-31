@@ -138,7 +138,7 @@ extern uint32_t vstart; /*Start of video RAM*/
 extern uint32_t vend; /*End of video RAM*/
 extern uint32_t cinit;
 extern int osmode;
-extern int prefabort;
+extern int prefabort, prefabort_next;
 
 extern void initmemc();
 extern void writememc(uint32_t a);

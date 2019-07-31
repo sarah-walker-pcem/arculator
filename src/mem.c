@@ -27,7 +27,6 @@ static int mem_romspeed_n, mem_romspeed_s;
 uint8_t backplane_mask;
 int bank;
 int ddensity;
-int prefabort;
 // static char err2[256];
 FILE *olog;
 int fdcside;
@@ -182,13 +181,13 @@ uint32_t readmemf(uint32_t a)
                 case 0x14: case 0x15: case 0x16: case 0x17:
                 case 0x18: case 0x19: case 0x1A: case 0x1B:
                 case 0x1C: case 0x1D: case 0x1E: case 0x1F:
-                prefabort=1;
+                prefabort_next=1;
                 return 0;
                 case 0x3F:
                         return 0xFFFFFFFF;
 //#endif
         }
-        prefabort=1;
+        prefabort_next=1;
         rpclog("Prefabort %08X\n",a);
         return 0xdeadbeef;
 /*        sprintf(err2,"Bad fetch %06X %03X %04X\n",a,a>>15,a&0x7FFF);

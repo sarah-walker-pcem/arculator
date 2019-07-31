@@ -55,6 +55,7 @@ static int vidc_dma_pending = 0;
 int vidc_fetches = 0;
 
 int databort;
+int prefabort, prefabort_next;
 
 static void CLOCK_N(uint32_t addr)
 {
@@ -772,9 +773,12 @@ int ldrlookup[4]={0,8,16,24};
 void refillpipeline()
 {
         uint32_t templ,templ2,addr=PC-4;
+        
+        prefabort_next = 0;
 //        if ((armregs[15]&0x3FFFFFC)==8) rpclog("illegal instruction %08X at %07X\n",opcode,opc);
         readmemfff(addr,opcode2);
         addr+=4;
+        prefabort = prefabort_next;
         readmemfff(addr,opcode3);
 
         cache_read_timing(PC-4, 1);
@@ -784,8 +788,11 @@ void refillpipeline()
 void refillpipeline2()
 {
         uint32_t templ,templ2,addr=PC-8;
+
+        prefabort_next = 0;
         readmemfff(addr,opcode2);
         addr+=4;
+        prefabort = prefabort_next;
         readmemfff(addr,opcode3);
 
         cache_read_timing(PC-8, 1);
@@ -2521,6 +2528,7 @@ void execarm(int cycles_to_execute)
                                 EXCEPTION_IRQ();
                         }
                 }
+                prefabort = prefabort_next;
                 armirq = irq;
                 armregs[15] += 4;
                 if ((armregs[15] & 3) != mode)

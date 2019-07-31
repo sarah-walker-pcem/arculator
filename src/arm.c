@@ -870,7 +870,11 @@ static void exception(uint32_t vector, int new_mode, int pc_offset)
 #define LOAD_R15_S(v) do \
                 { \
                         if (armregs[15] & 3) \
+                        { \
                                 armregs[15] = (v) + 4; \
+                                if ((armregs[15] & 3) != mode) \
+                                        updatemode(armregs[15] & 3); \
+                        } \
                         else \
                                 armregs[15] = (((v) + 4) & 0xf3fffffc) | (armregs[15] & 0x0c000003); \
                         refillpipeline(); \

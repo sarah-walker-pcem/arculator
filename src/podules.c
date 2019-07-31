@@ -11,6 +11,7 @@
 #include "st506_akd52.h"
 #include "timer.h"
 
+static uint8_t backplane_mask;
 static void podule_run_timer(void *p);
 
 typedef struct podule_list
@@ -176,6 +177,7 @@ void podules_reset(void)
                 if (podule_functions[c] && podule_functions[c]->reset)
                         podule_functions[c]->reset(&podules[c].podule);
         }
+        backplane_mask = 0xf; /*All IRQs enabled*/
 }
 
 /**
@@ -207,7 +209,7 @@ void rethinkpoduleints(void)
         ioc.fiq  &= ~0x40;
         for (c=0;c<4;c++)
         {
-                if (podules[c].irq)
+                if (podules[c].irq && (backplane_mask & (1 << c)))
                 {
 //                        rpclog("Podule IRQ! %02X %i\n", ioc.mskb, c);
                         ioc.irqb |= 0x20;
@@ -330,8 +332,20 @@ uint8_t podule_irq_state()
                 state |= 0x04;
         if (podules[3].irq)
                 state |= 0x08;
+        state &= backplane_mask;
 
         return state;
+}
+
+void podule_write_backplane_mask(uint8_t val)
+{
+        backplane_mask = val;
+        rethinkpoduleints();
+}
+
+uint8_t podule_read_backplane_mask(void)
+{
+        return backplane_mask;
 }
 
 static int podule_get_nr(podule_t *podule)

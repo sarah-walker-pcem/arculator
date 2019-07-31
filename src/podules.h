@@ -19,6 +19,9 @@ void podule_memc_write_b(int num, uint32_t addr, uint8_t  val);
 uint32_t podule_memc_read_w(int num, uint32_t addr);
 uint8_t  podule_memc_read_b(int num, uint32_t addr);
 
+void podule_write_backplane_mask(uint8_t val);
+uint8_t podule_read_backplane_mask(void);
+
 void podule_build_list(void);
 const char *podule_get_name(int c);
 const char *podule_get_short_name(int c);

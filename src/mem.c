@@ -280,9 +280,11 @@ uint8_t readmemfb(uint32_t a)
                         case 6: /*Backplane*/
                         switch (a&0xFFFC)
                         {
-                                case 0x0000: /*rpclog("Backplane readb %07X %08X\n",a,PC); */return podule_irq_state() & backplane_mask;
-                                case 0x0004: /*rpclog("Backplane readb %07X %08X\n",a,PC); */return backplane_mask;
-//                                default: rpclog("Bank 6 readl %07X\n",a);
+                                case 0x0000:
+                                return podule_irq_state();
+
+                                case 0x0004:
+                                return podule_read_backplane_mask();
                         }
                         break;
                 }
@@ -386,8 +388,11 @@ uint32_t readmemfl(uint32_t a)
                         case 6: /*Backplane*/
                         switch (a&0xFFFC)
                         {
-                                case 0x0000: case 0x0004: /*rpclog("Backplane readl %07X %07X\n",a,PC); */return 0;
-//                                default: rpclog("Bank 6 readl %07X\n",a);
+                                case 0x0000:
+                                return podule_irq_state();
+
+                                case 0x0004:
+                                return podule_read_backplane_mask();
                         }
                         break;
                 }
@@ -499,9 +504,11 @@ void writememfb(uint32_t a,uint8_t v)
                         case 6: /*Backplane*/
                         switch (a&0xFFFC)
                         {
-                                case 0x0000: /*rpclog("Backplane writeb %07X %02X %07X\n",a,v,PC);*/ return;
-                                case 0x0004: /*rpclog("Backplane writeb %07X %02X %07X\n",a,v,PC);*/ backplane_mask=v; return;
-//                                default: rpclog("Bank 6 writeb %07X %02X\n",a,v);
+                                case 0x0000:
+                                return;
+                                case 0x0004:
+                                podule_write_backplane_mask(v);
+                                return;
                         }
                         break;
                 }
@@ -626,8 +633,11 @@ void writememfl(uint32_t a,uint32_t v)
                         case 6: /*Backplane*/
                         switch (a&0xFFFC)
                         {
-                                case 0x0000: case 0x0004: /*rpclog("Backplane writel %07X %08X %07X\n",a,v,PC); */return;
-//                                default: rpclog("Bank 6 writel %07X %08X\n",a,v);
+                                case 0x0000:
+                                return;
+                                case 0x0004:
+                                podule_write_backplane_mask(v >> 16);
+                                return;
                         }
                         break;
                 }

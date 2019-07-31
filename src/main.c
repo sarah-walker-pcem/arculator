@@ -243,6 +243,7 @@ void arc_init()
                 st506_internal_init();
 
         podules_init();
+        podules_reset();
 }
 
 int speed_mhz;
@@ -273,6 +274,7 @@ void arc_reset()
                 st506_internal_init();
         podules_close();
         podules_init();
+        podules_reset();
 }
 
 void arc_setspeed(int mhz)

@@ -317,7 +317,7 @@ static int aka31_run(struct podule_t *podule, int timeslice_us)
 
 //        aka31_log("callback\n");
         wd33c93a_poll(&aka31->wd);
-        return 5;
+        return 2500;
 }
 
 void aka31_update_ints(podule_t *podule)

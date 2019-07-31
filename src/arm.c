@@ -2493,7 +2493,7 @@ void execarm(int cycles_to_execute)
                 {
                         if (prefabort)       /*Prefetch abort*/
                         {
-                                prefabort = 1;
+                                prefabort = 0;
                                 EXCEPTION_PREF_ABORT();
                         }
                         else if (databort == 1)     /*Data abort*/

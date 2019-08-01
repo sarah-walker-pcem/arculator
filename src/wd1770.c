@@ -94,12 +94,12 @@ void wd1770_setspindown()
 
 void wd1770_write(uint16_t addr, uint8_t val)
 {
-        rpclog("Write 1770 %04X %02X\n",addr,val);
+//        rpclog("Write 1770 %04X %02X\n",addr,val);
         switch (addr & 0xc)
         {
                 case 0x0:
                 if (wd1770.status & 1 && (val >> 4) != 0xD) { rpclog("Command rejected\n"); return; }
-                rpclog("FDC command %02X %i %i %i\n",val,wd1770.curside,wd1770.track,wd1770.sector);
+//                rpclog("FDC command %02X %i %i %i\n",val,wd1770.curside,wd1770.track,wd1770.sector);
                 
 //                if (val == 0x8C && wd1770.curside == 1 && wd1770.track == 0 && wd1770.sector == 3)
 //                   output = 1;
@@ -228,7 +228,7 @@ uint8_t wd1770_read(uint16_t addr)
                 case 0xc:
                 ioc_fiqc(IOC_FIQ_DISC_DATA);
                 wd1770.status &= ~2;
-                rpclog("Read data %02X\n",wd1770.data);
+//                rpclog("Read data %02X\n",wd1770.data);
                 return wd1770.data;
         }
         return 0xFE;
@@ -236,7 +236,7 @@ uint8_t wd1770_read(uint16_t addr)
 
 void wd1770_writelatch_a(uint8_t val)
 {
-        rpclog("Write latch A %02X\n", val);
+//        rpclog("Write latch A %02X\n", val);
         if (!(val & 1)) disc_drivesel = curdrive = 0;
         if (!(val & 2)) disc_drivesel = curdrive = 1;
         if (!(val & 4)) disc_drivesel = curdrive = 2;
@@ -258,7 +258,7 @@ void wd1770_writelatch_b(uint8_t val)
 
 void wd1770_callback(void *p)
 {
-        rpclog("FDC callback %02X\n", wd1770.command);
+//        rpclog("FDC callback %02X\n", wd1770.command);
 
         switch (wd1770.command >> 4)
         {

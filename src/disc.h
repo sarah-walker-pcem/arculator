@@ -28,6 +28,7 @@ void disc_format(int drive, int track, int side, int density);
 void disc_stop(int drive);
 int disc_empty(int drive);
 void disc_set_motor(int enable);
+void disc_set_density(int density);
 extern int disc_drivesel;
 
 extern void (*fdc_data)(uint8_t dat);

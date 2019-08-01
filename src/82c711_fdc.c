@@ -52,8 +52,10 @@ static FDC fdc;
 
 int lastbyte=0;
 
-void c82c711_fdc_reset()
+void c82c711_fdc_reset(void)
 {
+        disc_set_density(0);
+                
         fdc.stat=0x80;
         fdc.pnum=fdc.ptot=0;
         fdc.st0=0xC0;
@@ -62,9 +64,14 @@ void c82c711_fdc_reset()
 
         fdc.inread = 0;
         rpclog("Reset 82c711\n");
+}
 
+void c82c711_fdc_init(void)
+{
         if (fdctype == FDC_82C711)
         {
+                c82c711_fdc_reset();
+                
                 rpclog("82c711 present\n");
                 timer_add(&fdc_timer, c82c711_fdc_callback, NULL, 0);
                 fdc_data           = c82c711_fdc_data;
@@ -312,6 +319,7 @@ void c82c711_fdc_write(uint16_t addr, uint8_t val)
                         case 2: fdc.density = 1; break;
                         case 3: fdc.density = 0; break;
                 }
+                disc_set_density(fdc.density);
 //                rpclog("FDC rate = %i\n", val & 3);
                 return;
         }

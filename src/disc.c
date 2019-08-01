@@ -37,6 +37,14 @@ char discfns[4][260] = {"", ""};
 int defaultwriteprot = 0;
 
 
+static uint64_t disc_poll_time;
+static const int disc_poll_times[3] =
+{
+        32, /*Double density*/
+        16, /*High density*/
+        8   /*Extended density - supported by SuperIO but never used on the Arc*/
+};
+
 int fdc_ready;
 
 static int drive_empty[4] = {1, 1, 1, 1};
@@ -234,13 +242,16 @@ void disc_init()
 
 void disc_poll(void *p)
 {
-        timer_advance_u64(&disc_timer, 4 * TIMER_USEC);
-        if (drives[disc_drivesel].poll) drives[disc_drivesel].poll();
-        if (disc_notfound)
+        timer_advance_u64(&disc_timer, disc_poll_time);
+        if (!drive_empty[disc_drivesel])
         {
-                disc_notfound--;
-                if (!disc_notfound)
-                   fdc_notfound();
+                if (drives[disc_drivesel].poll) drives[disc_drivesel].poll();
+                if (disc_notfound)
+                {
+                        disc_notfound--;
+                        if (!disc_notfound)
+                           fdc_notfound();
+                }
         }
 }
 
@@ -298,5 +309,10 @@ void disc_set_motor(int enable)
         if (!enable)
                 timer_disable(&disc_timer);
         else if (!timer_is_enabled(&disc_timer))
-                timer_set_delay_u64(&disc_timer, 4 * TIMER_USEC);
+                timer_set_delay_u64(&disc_timer, disc_poll_time);
+}
+
+void disc_set_density(int density)
+{
+        disc_poll_time = disc_poll_times[density] * TIMER_USEC;
 }

@@ -186,7 +186,7 @@ void ssd_poll()
         int c;
 //        printf("POLL %i\n",ssdtime);
         ssd_time++;
-        if (ssd_time < 16) return;
+        if (ssd_time < 2) return;
         ssd_time = 0;
         
         if (ssd_pause)

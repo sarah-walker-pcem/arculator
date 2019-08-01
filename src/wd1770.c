@@ -56,6 +56,8 @@ void wd1770_reset()
                 fdc_getdata        = wd1770_getdata;
                 fdc_sectorid       = NULL;
                 fdc_indexpulse     = wd1770_fdc_indexpulse;
+                
+                disc_set_density(0);
         }
 //        motorspin = 45000;
 }

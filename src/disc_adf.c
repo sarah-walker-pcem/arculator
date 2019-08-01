@@ -15,7 +15,6 @@ static int adf_density[4];
 
 static int adf_sector,   adf_track,   adf_side,    adf_drive;
 static int adf_inread,   adf_readpos, adf_inwrite, adf_inreadaddr;
-static int adf_time;
 static int adf_notfound;
 static int adf_rsector=0;
 static int adf_informat=0;
@@ -200,9 +199,6 @@ void adf_stop()
 void adf_poll()
 {
         int c;
-        adf_time++;
-        if (adf_time < 8) return;
-        adf_time=0;
 
         adf_index--;
         if (!adf_index)

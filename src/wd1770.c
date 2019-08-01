@@ -31,6 +31,8 @@ struct
         int density;
         int written;
         int stepdir;
+        int index_count;
+        int rnf_detection;
 } wd1770;
 
 int byte;
@@ -147,6 +149,8 @@ void wd1770_write(uint16_t addr, uint8_t val)
                         byte = 0;
                         readflash[curdrive] = 1;
                         wd1770_pos = 0;
+                        wd1770.index_count = 0;
+                        wd1770.rnf_detection = 1;
                         break;
                         case 0xA: /*Write sector*/
                         wd1770.status = 0x80 | 0x1;
@@ -157,11 +161,15 @@ void wd1770_write(uint16_t addr, uint8_t val)
 
 //Carlo Concari: wait for first data byte before starting sector write
                         wd1770.written = 0;
+                        wd1770.index_count = 0;
+                        wd1770.rnf_detection = 1;
                         break;
                         case 0xC: /*Read address*/
                         wd1770.status = 0x80 | 0x1;
                         disc_readaddress(curdrive, wd1770.track, wd1770.curside, wd1770.density);
                         byte = 0;
+                        wd1770.index_count = 0;
+                        wd1770.rnf_detection = 1;
                         break;
                         case 0xD: /*Force interrupt*/
 //                        rpclog("Force interrupt\n");
@@ -303,6 +311,7 @@ void wd1770_callback(void *p)
                 ioc_fiq(IOC_FIQ_DISC_IRQ);
                 break;
         }
+        wd1770.rnf_detection = 0;
 }
 
 void wd1770_data(uint8_t dat)
@@ -378,4 +387,7 @@ void wd1770_writeprotect()
 
 void wd1770_fdc_indexpulse()
 {
+        wd1770.index_count++;
+        if ((wd1770.index_count == 5) && wd1770.rnf_detection)
+                wd1770_notfound();
 }

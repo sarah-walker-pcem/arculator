@@ -222,6 +222,7 @@ void disc_close(int drive)
                         loaders[driveloaders[drive]].close(drive);
                 drive_empty[drive] = 1;
         }
+        disc_stop(drive);
 }
 
 int disc_empty(int drive)

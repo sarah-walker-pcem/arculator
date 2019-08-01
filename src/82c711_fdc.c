@@ -54,6 +54,8 @@ int lastbyte=0;
 
 void c82c711_fdc_reset(void)
 {
+        disc_stop(0);
+        disc_stop(1);
         disc_set_density(0);
                 
         fdc.stat=0x80;

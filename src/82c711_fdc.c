@@ -664,6 +664,23 @@ void c82c711_fdc_callback(void *p)
 //        exit(-1);
 }
 
+static void fdc_overrun()
+{
+        disc_stop(curdrive);
+        timer_disable(&fdc_timer);
+
+        ioc_irqb(IOC_IRQB_DISC_IRQ);
+        fdc.stat=0xD0;
+        fdc.res[4]=0x40|(fdc.head?4:0)|curdrive;
+        fdc.res[5]=0x10; /*Overrun*/
+        fdc.res[6]=0;
+        fdc.res[7]=0;
+        fdc.res[8]=0;
+        fdc.res[9]=0;
+        fdc.res[10]=0;
+        paramstogo=7;
+}
+
 void c82c711_fdc_data(uint8_t dat)
 {
         if (fdc.tc)
@@ -672,14 +689,16 @@ void c82c711_fdc_data(uint8_t dat)
 //        lastcycles = cycles;
         if (fdc.data_ready)
         {
-                error("Overrun\n");
-                dumpregs();
-                exit(-1);
-        }                
+//                rpclog("Overrun\n");
+                fdc_overrun();
+        }
+        else
+        {
 //        rpclog("fdc_data %02X %i\n", dat, fdc_time);
-        fdc.dma_dat = dat;
-        fdc.data_ready = 1;
-        ioc_fiq(IOC_FIQ_DISC_DATA);
+                fdc.dma_dat = dat;
+                fdc.data_ready = 1;
+                ioc_fiq(IOC_FIQ_DISC_DATA);
+        }
 }
 
 

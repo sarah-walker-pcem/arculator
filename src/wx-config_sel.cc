@@ -71,10 +71,14 @@ wxString ConfigSelDialog::GetConfigPath(wxString config_name)
 void ConfigSelDialog::OnOK(wxCommandEvent &event)
 {
         wxListBox *list = (wxListBox*)FindWindow(XRCID("IDC_LIST"));
-        wxString config_path = GetConfigPath(list->GetStringSelection());
-        strcpy(machine_config_file, config_path.mb_str());
-        strcpy(machine_config_name, list->GetStringSelection().mb_str());
-        EndModal(0);
+        wxString selection = list->GetStringSelection();
+        if (!selection.IsEmpty())
+        {
+                wxString config_path = GetConfigPath(list->GetStringSelection());
+                strcpy(machine_config_file, config_path.mb_str());
+                strcpy(machine_config_name, list->GetStringSelection().mb_str());
+                EndModal(0);
+        }
 }
 void ConfigSelDialog::OnCancel(wxCommandEvent &event)
 {

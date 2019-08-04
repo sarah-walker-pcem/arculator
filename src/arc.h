@@ -148,7 +148,6 @@ extern void writecam(uint32_t a);
 extern void initsound();
 extern void deinitsound();
 extern void mixsound();
-extern void pollsound();
 
 /*VIDC*/
 extern int soundper;

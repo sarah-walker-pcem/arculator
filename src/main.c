@@ -205,6 +205,7 @@ void arc_init()
         vidc_reset();
         keyboard_init();
         resetmouse();
+        sound_init();
 
         fullscreen=0;
         //mousehack=0;
@@ -272,6 +273,7 @@ void arc_reset()
         c82c711_fdc_init();
         if (!fdctype && st506_present)
                 st506_internal_init();
+        sound_init();
         podules_close();
         podules_init();
         podules_reset();

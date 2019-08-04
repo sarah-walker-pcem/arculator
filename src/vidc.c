@@ -364,6 +364,9 @@ void writevidc(uint32_t v)
                 soundhz = 250000 / ((v & 0xff) + 2);
                 soundper = ((v & 0xff) + 2) << 10;
                 soundper = (soundper * 24000) / vidc.clock;
+
+                sound_set_period((v & 0xff) + 2);
+
                 LOG_VIDC_REGISTERS("Sound frequency write %08X period %i\n",v,soundper);
         }
         if ((v>>24)==0xE0)
@@ -1221,6 +1224,7 @@ void vidc_setclock(int clock)
                 vidc.clock = 36000;
                 break;
         }
+        sound_set_clock((vidc.clock * 1000) / 24);
 }
 
 int vidc_getclock()
@@ -1231,4 +1235,6 @@ int vidc_getclock()
 void vidc_reset()
 {
         timer_add(&vidc.timer, vidc_poll, NULL, 1);
+        vidc_setclock(0);
+        sound_set_period(255);
 }

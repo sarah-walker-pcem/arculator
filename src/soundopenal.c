@@ -108,7 +108,7 @@ void al_init()
         memset(tempbuf, 0, BUFLEN);
         
         for (c = 0; c < 4; c++)
-            alBufferData(buffers[c], AL_FORMAT_STEREO16, tempbuf, BUFLEN, 62500);
+            alBufferData(buffers[c], AL_FORMAT_STEREO16, tempbuf, 4800*4, 48000);
         alSourceQueueBuffers(source[0], 4, buffers);
         check();
         alSourcePlay(source[0]);
@@ -167,7 +167,7 @@ void al_givebuffer(int16_t *buf)
 
 //                for (c = 0; c < (BUFLEN >> 1); c++) zbuf[c] = buf[c >> 1];
                 
-                alBufferData(buffer, AL_FORMAT_STEREO16, buf, BUFLEN, 62500);
+                alBufferData(buffer, AL_FORMAT_STEREO16, buf, 4800*4, 48000);
 //                printf("B ");
                 check();
 

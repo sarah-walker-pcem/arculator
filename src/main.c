@@ -223,7 +223,7 @@ void arc_init()
         ddnoise_init();
 
         wd1770_reset();
-        c82c711_fdc_reset();
+        c82c711_fdc_init();
 
         for (c=0;c<4;c++)
         {
@@ -269,7 +269,7 @@ void arc_reset()
         keyboard_init();
         disc_init();
         wd1770_reset();
-        c82c711_fdc_reset();
+        c82c711_fdc_init();
         if (!fdctype && st506_present)
                 st506_internal_init();
         podules_close();

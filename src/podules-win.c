@@ -31,8 +31,8 @@ void opendlls(void)
         memset(hinstLib, 0, sizeof(hinstLib));
 
         append_filename(podule_path, exname, "podules\\", sizeof(podule_path));
-        append_filename(fn, podule_path, "*.dll", sizeof(fn));
-        rpclog("Looking for DLLs in %s\n", fn);
+        append_filename(fn, podule_path, "*.", sizeof(fn));
+        rpclog("Looking for podules in %s\n", fn);
         file = _findfirst(fn, &finddata);
         if (file == -1)
         {
@@ -43,8 +43,11 @@ void opendlls(void)
         {
                 const podule_header_t *(*podule_probe)(const podule_callbacks_t *callbacks, char *path);
                 const podule_header_t *header;
+                char dll_name[256];
 
+                sprintf(dll_name, "/%s.dll", finddata.name);
                 append_filename(fn, podule_path, finddata.name, sizeof(fn));
+                append_filename(fn, fn, dll_name, sizeof(fn));
                 rpclog("Loading %s %s\n", finddata.name, fn);
                 SetErrorMode(0);
                 hinstLib[dllnum] = LoadLibrary(fn);
@@ -62,7 +65,9 @@ void opendlls(void)
                         FreeLibrary(hinstLib[dllnum]);
                         goto nextdll;
                 }
-                header = podule_probe(&podule_callbacks_def, podule_path);
+                append_filename(fn, podule_path, finddata.name, sizeof(fn));
+                append_filename(fn, fn, "/", sizeof(fn));
+                header = podule_probe(&podule_callbacks_def, fn);
                 if (!header)
                 {
                         rpclog("podule_probe failed\n", finddata.name);

@@ -309,7 +309,7 @@ static void podule_run_timer(void *p)
 {
         int num = (int)p;
         podule_t *podule = &podules[num].podule;
-        uint64_t timeslice = tsc - podules[num].last_callback_tsc;
+        uint64_t timeslice = (tsc - podules[num].last_callback_tsc) >> 10;
         int ret = 0;
 
         podules[num].last_callback_tsc = tsc;

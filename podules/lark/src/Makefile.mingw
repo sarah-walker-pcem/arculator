@@ -1,0 +1,22 @@
+VPATH = . ..\..\common\midi ..\..\common\sound ..\..\common\uart
+CPP  = g++.exe
+CC   = gcc.exe
+OBJ  = 16550.o ad1848.o am7202a.o lark.o midi_win.o sound_openal.o sound_wavein.o
+LIBS = --no-export-all-symbols --add-stdcall-alias -lopenal32 -lwinmm
+CFLAGS = $(INCS) -DBUILDING_DLL=1 -I..\..\..\src -I..\..\common\midi -I..\..\common\sound -I..\..\common\uart -O3
+
+all: lark.dll
+
+clean:
+	del *.o
+	del *.dll
+
+DLLWRAP=dllwrap.exe
+DEFFILE=liblark.def
+STATICLIB=liblark.a
+
+lark.dll: $(OBJ)
+	$(DLLWRAP) $(OBJ) $(LIBS) -o lark.dll
+
+%.o: %.c
+	$(CC) $(CFLAGS) -c $<

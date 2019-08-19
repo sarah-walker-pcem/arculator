@@ -1,0 +1,1 @@
+This directory holds source for common components used in multiple podules.

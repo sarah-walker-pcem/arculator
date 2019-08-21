@@ -899,7 +899,6 @@ void execarm(int cycles_to_execute)
         int cyc; /*Number of clock ticks executed in the last loop*/
         int oldcyc;
 
-        int pollline_call_count = 0;
         int clock_ticks_executed = 0;
         
         LOG_EVENT_LOOP("execarm(%d) total_cycles=%i\n", cycles_to_execute, total_cycles);

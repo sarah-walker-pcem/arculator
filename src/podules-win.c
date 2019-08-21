@@ -1,5 +1,5 @@
 #if defined WIN32 || defined _WIN32 || defined _WIN32
-#include <dir.h>
+#include <io.h>
 #include <windows.h>
 #include <stdio.h>
 #include "arc.h"

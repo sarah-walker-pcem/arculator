@@ -128,8 +128,6 @@ static void update_sound(int end_sample)
 
 static void pollsound_100ms(void *p)
 {
-        int c;
-
         timer_advance_u64(&sound_timer_100ms, 100 * 1000 * TIMER_USEC);
 
         if (!soundena)

@@ -140,7 +140,7 @@ void podules_init(void)
         {
                 const podule_header_t *header = podule_find(podule_names[c]);
                 
-                memset(&podules[c], sizeof(podule_internal_state_t), 0);
+                memset(&podules[c], 0, sizeof(podule_internal_state_t));
                 
                 if (header)
                 {

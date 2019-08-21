@@ -77,8 +77,6 @@ static SAMPLE *load_wav(char *path, const char *fn)
         /*Search for WAVE chunk*/
         while (!feof(f))
         {
-                int pos;
-                
                 fread(&chunk, sizeof(chunk_t), 1, f);
                 if (chunk.id[0] == 'f' && chunk.id[1] == 'm' && chunk.id[2] == 't' && chunk.id[3] == ' ')
                 {
@@ -204,7 +202,7 @@ static int ddnoise_sdir = 0;
 
 void ddnoise_init()
 {
-        char path[512], p2[512];
+        char path[512];
 
         append_filename(path, exname, "ddnoise/35/", sizeof(path));
         rpclog("ddnoise path %s\n", path);

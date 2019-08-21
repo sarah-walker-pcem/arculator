@@ -26,6 +26,7 @@ void podule_build_list(void);
 const char *podule_get_name(int c);
 const char *podule_get_short_name(int c);
 uint32_t podule_get_flags(int c);
+const podule_header_t *podule_find(const char *short_name);
 
 extern char podule_names[4][16];
 

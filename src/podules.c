@@ -116,7 +116,7 @@ uint32_t podule_get_flags(int c)
         return current->header->flags;
 }
 
-static const podule_header_t *podule_find(const char *short_name)
+const podule_header_t *podule_find(const char *short_name)
 {
         podule_list *current = podule_list_head;
 

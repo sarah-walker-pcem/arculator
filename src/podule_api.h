@@ -36,6 +36,29 @@ typedef struct podule_functions_t
         int (*run)(struct podule_t *podule, int timeslice_us);
 } podule_functions_t;
 
+#define CONFIG_STRING 0
+#define CONFIG_INT 1
+#define CONFIG_BINARY 2
+#define CONFIG_SELECTION 3
+#define CONFIG_SELECTION_STRING 4
+
+typedef struct podule_config_selection_t
+{
+        const char *description;
+        int value;
+        char *value_string;
+} podule_config_selection_t;
+
+typedef struct podule_config_t
+{
+        const char *name;
+        const char *description;
+        int type;
+        const char *default_string;
+        int default_int;
+        podule_config_selection_t *selection;
+} podule_config_t;
+
 /*Only one instance of this podule allowed per system*/
 #define PODULE_FLAGS_UNIQUE (1 << 0)
 
@@ -51,6 +74,8 @@ typedef struct podule_header_t
         const char *name;
 
         const podule_functions_t functions;
+        
+        podule_config_t *config;
 } podule_header_t;
 
 typedef struct podule_t

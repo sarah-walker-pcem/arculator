@@ -6,6 +6,7 @@
 
 #include <wx/xrc/xmlres.h>
 #include "wx-config.h"
+#include "wx-podule-config.h"
 
 extern "C"
 {
@@ -107,6 +108,7 @@ private:
 	void OnComboMemory(wxCommandEvent &event);
 	void OnComboOS(wxCommandEvent &event);
         void OnComboPodule(wxCommandEvent &event);
+        void OnConfigPodule(wxCommandEvent &event);
 	void OnHDSel(wxCommandEvent &event);
 	void OnHDNew(wxCommandEvent &event);
 	void OnHDEject(wxCommandEvent &event);
@@ -115,6 +117,7 @@ private:
 	void UpdateList(int cpu, int mem, int memc, int fpu, int io);
 	void PopulatePoduleList(int nr, wxComboBox *cbox);
 	void PopulatePoduleLists(void);
+	bool PoduleGetConfigEnable(int slot_nr);
 	
 	int config_cpu, config_mem, config_memc, config_fpu, config_io, config_rom;
         wxString hd_fns[2];
@@ -141,6 +144,10 @@ void ConfigDialog::CommonInit(wxWindow *parent, bool is_running)
         Bind(wxEVT_COMBOBOX, &ConfigDialog::OnComboPodule, this, XRCID("IDC_COMBO_PODULE1"));
         Bind(wxEVT_COMBOBOX, &ConfigDialog::OnComboPodule, this, XRCID("IDC_COMBO_PODULE2"));
         Bind(wxEVT_COMBOBOX, &ConfigDialog::OnComboPodule, this, XRCID("IDC_COMBO_PODULE3"));
+        Bind(wxEVT_BUTTON, &ConfigDialog::OnConfigPodule, this, XRCID("IDC_CONFIG_PODULE0"));
+        Bind(wxEVT_BUTTON, &ConfigDialog::OnConfigPodule, this, XRCID("IDC_CONFIG_PODULE1"));
+        Bind(wxEVT_BUTTON, &ConfigDialog::OnConfigPodule, this, XRCID("IDC_CONFIG_PODULE2"));
+        Bind(wxEVT_BUTTON, &ConfigDialog::OnConfigPodule, this, XRCID("IDC_CONFIG_PODULE3"));
         Bind(wxEVT_BUTTON, &ConfigDialog::OnHDSel, this, XRCID("IDC_SEL_HD4"));
         Bind(wxEVT_BUTTON, &ConfigDialog::OnHDSel, this, XRCID("IDC_SEL_HD5"));
         Bind(wxEVT_BUTTON, &ConfigDialog::OnHDNew, this, XRCID("IDC_NEW_HD4"));
@@ -314,6 +321,16 @@ void ConfigDialog::PopulatePoduleList(int slot_nr, wxComboBox *cbox)
         }
 }
 
+bool ConfigDialog::PoduleGetConfigEnable(int slot_nr)
+{
+        const podule_header_t *podule = podule_find(config_podules[slot_nr]);
+        
+        if (podule && podule->config)
+                return true;
+                
+        return false;
+}
+
 void ConfigDialog::PopulatePoduleLists(void)
 {
         PopulatePoduleList(0, (wxComboBox *)this->FindWindow(XRCID("IDC_COMBO_PODULE0")));
@@ -321,10 +338,10 @@ void ConfigDialog::PopulatePoduleLists(void)
         PopulatePoduleList(2, (wxComboBox *)this->FindWindow(XRCID("IDC_COMBO_PODULE2")));
         PopulatePoduleList(3, (wxComboBox *)this->FindWindow(XRCID("IDC_COMBO_PODULE3")));
 
-        ((wxComboBox *)this->FindWindow(XRCID("IDC_CONFIG_PODULE0")))->Enable(false);
-        ((wxComboBox *)this->FindWindow(XRCID("IDC_CONFIG_PODULE1")))->Enable(false);
-        ((wxComboBox *)this->FindWindow(XRCID("IDC_CONFIG_PODULE2")))->Enable(false);
-        ((wxComboBox *)this->FindWindow(XRCID("IDC_CONFIG_PODULE3")))->Enable(false);
+        ((wxButton *)this->FindWindow(XRCID("IDC_CONFIG_PODULE0")))->Enable(PoduleGetConfigEnable(0));
+        ((wxButton *)this->FindWindow(XRCID("IDC_CONFIG_PODULE1")))->Enable(PoduleGetConfigEnable(1));
+        ((wxButton *)this->FindWindow(XRCID("IDC_CONFIG_PODULE2")))->Enable(PoduleGetConfigEnable(2));
+        ((wxButton *)this->FindWindow(XRCID("IDC_CONFIG_PODULE3")))->Enable(PoduleGetConfigEnable(3));
 }
 
 void ConfigDialog::OnOK(wxCommandEvent &event)
@@ -616,23 +633,40 @@ void ConfigDialog::OnComboPodule(wxCommandEvent &event)
 {
         wxComboBox *cbox = (wxComboBox *)this->FindWindow(event.GetId());
         int sel_nr = cbox->GetCurrentSelection();
+        wxButton *config_button;
         int slot_nr;
         
         if (event.GetId() == XRCID("IDC_COMBO_PODULE0"))
+        {
                 slot_nr = 0;
+                config_button = (wxButton *)this->FindWindow(XRCID("IDC_CONFIG_PODULE0"));
+        }
         else if (event.GetId() == XRCID("IDC_COMBO_PODULE1"))
+        {
                 slot_nr = 1;
+                config_button = (wxButton *)this->FindWindow(XRCID("IDC_CONFIG_PODULE1"));
+        }
         else if (event.GetId() == XRCID("IDC_COMBO_PODULE2"))
+        {
                 slot_nr = 2;
+                config_button = (wxButton *)this->FindWindow(XRCID("IDC_CONFIG_PODULE2"));
+        }
         else
+        {
                 slot_nr = 3;
+                config_button = (wxButton *)this->FindWindow(XRCID("IDC_CONFIG_PODULE3"));
+        }
 
         if (!sel_nr)
+        {
                 strcpy(config_podules[slot_nr], "");
+                config_button->Enable(false);
+        }
         else
         {
                 strncpy(config_podules[slot_nr], podule_get_short_name(sel_nr-1), 15);
-
+                config_button->Enable(PoduleGetConfigEnable(slot_nr));
+                
                 if (podule_get_flags(sel_nr-1) & PODULE_FLAGS_UNIQUE)
                 {
                         /*Clear out any duplicates*/
@@ -665,6 +699,22 @@ void ConfigDialog::OnComboPodule(wxCommandEvent &event)
         }
 }
 
+void ConfigDialog::OnConfigPodule(wxCommandEvent &event)
+{
+        int slot_nr;
+
+        if (event.GetId() == XRCID("IDC_CONFIG_PODULE0"))
+                slot_nr = 0;
+        else if (event.GetId() == XRCID("IDC_CONFIG_PODULE1"))
+                slot_nr = 1;
+        else if (event.GetId() == XRCID("IDC_CONFIG_PODULE2"))
+                slot_nr = 2;
+        else
+                slot_nr = 3;
+
+        const podule_header_t *podule = podule_find(config_podules[slot_nr]);
+        ShowPoduleConfig(this, podule, running, slot_nr);
+}
 
 
 int ShowConfig(bool running)

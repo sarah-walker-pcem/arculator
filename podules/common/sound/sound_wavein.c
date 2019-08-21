@@ -157,3 +157,37 @@ void sound_in_stop(void *p)
         wave_in->buffers_pending = 2;
         waveInReset(wave_in->device);
 }
+
+podule_config_selection_t *sound_in_devices_config(void)
+{
+        int nr_devs = waveInGetNumDevs();
+        podule_config_selection_t *sel = malloc(sizeof(podule_config_selection_t) * (nr_devs+2));
+        podule_config_selection_t *sel_p = sel;
+        char *wave_dev_text = malloc(65536);
+        int c;
+
+        strcpy(wave_dev_text, "None");
+        sel_p->description = wave_dev_text;
+        sel_p->value = -1;
+        sel_p++;
+        wave_dev_text += strlen(wave_dev_text)+1;
+
+        for (c = 0; c < nr_devs; c++)
+        {
+                WAVEINCAPS caps;
+
+                waveInGetDevCaps(c, &caps, sizeof(caps));
+                strcpy(wave_dev_text, caps.szPname);
+
+                sel_p->description = wave_dev_text;
+                sel_p->value = c;
+                sel_p++;
+
+                wave_dev_text += strlen(wave_dev_text)+1;
+        }
+
+        strcpy(wave_dev_text, "");
+        sel_p->description = wave_dev_text;
+
+        return sel;
+}

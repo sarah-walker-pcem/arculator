@@ -44,4 +44,7 @@ void ioctl_set_drive(const char *path);
 void ioctl_audio_callback(int16_t *output, int len);
 void ioctl_audio_stop();
 
+struct podule_config_selection_t;
+struct podule_config_selection_t *cdrom_devices_config(void);
+
 #endif /* ! CDROM_IOCTL_H */

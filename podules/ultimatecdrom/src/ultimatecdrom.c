@@ -171,6 +171,21 @@ static void cdrom_close(struct podule_t *podule)
         sound_close();
 }
 
+static podule_config_t cdrom_config[] =
+{
+        {
+                .name = "drive_path",
+                .description = "Host CD-ROM drive",
+                .type = CONFIG_SELECTION_STRING,
+                .selection = NULL,
+                .default_string = ""
+        },
+        {
+                .type = -1
+        }
+};
+
+
 static const podule_header_t cdrom_podule_header =
 {
         .version = PODULE_API_VERSION,
@@ -184,7 +199,8 @@ static const podule_header_t cdrom_podule_header =
                 .read_b = cdrom_read_b,
                 .write_b = cdrom_write_b,
                 .run = cdrom_run
-        }
+        },
+        .config = cdrom_config
 };
 
 const podule_header_t *podule_probe(const podule_callbacks_t *callbacks, char *path)
@@ -194,6 +210,8 @@ const podule_header_t *podule_probe(const podule_callbacks_t *callbacks, char *p
         podule_callbacks = callbacks;
         strcpy(podule_path, path);
 
+        cdrom_config[0].selection = cdrom_devices_config();
+        
         return &cdrom_podule_header;
 }
 

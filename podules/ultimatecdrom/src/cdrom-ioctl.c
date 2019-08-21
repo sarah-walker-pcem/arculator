@@ -13,6 +13,7 @@
 #include <stdint.h>
 #include "cdrom-ioctl.h"
 #include "ultimatecdrom.h"
+#include "podule_api.h"
 
 #define pclog cdlog
 
@@ -663,10 +664,14 @@ static int ioctl_readtoc_raw(unsigned char *b, int maxlen)
         toc_ex.Msf=1;
         toc_ex.SessionTrack=0;
         ioctl_open(0);
-        DeviceIoControl(hIOCTL, IOCTL_CDROM_READ_TOC_EX,
+        if (!DeviceIoControl(hIOCTL, IOCTL_CDROM_READ_TOC_EX,
                         &toc_ex, sizeof(toc_ex),
                         toc, toc_len,
-                        (PDWORD)&size, NULL);
+                        (PDWORD)&size, NULL))
+        {
+                ioctl_close();
+                return 0;
+        }
         ioctl_close();
 //        pclog("Read TOC session - %i %02X %02X %i %i %02X\n",size,toc->Length[0],toc->Length[1],toc->FirstCompleteSession,toc->LastCompleteSession,toc->Descriptors[0].Point);
         b[2]=toc->FirstCompleteSession;
@@ -812,3 +817,55 @@ static ATAPI ioctl_atapi=
         ioctl_stop,
         ioctl_exit
 };
+
+
+podule_config_selection_t *cdrom_devices_config(void)
+{
+        podule_config_selection_t *sel;
+        podule_config_selection_t *sel_p;
+        char *cdrom_dev_text = malloc(65536);
+        int nr_drives = 0;
+        char s[32];
+        int c;
+        
+        /*Loop through each Windows drive letter and test to see if
+          it's a CDROM. First loop counts the number of drives present.*/
+        for (c = 'A'; c <= 'Z'; c++)
+        {
+                sprintf(s, "%c:\\", c);
+                if (GetDriveTypeA(s) == DRIVE_CDROM)
+                        nr_drives++;
+        }
+
+        sel = malloc(sizeof(podule_config_selection_t) * (nr_drives+2));
+        sel_p = sel;
+
+        strcpy(cdrom_dev_text, "None");
+        sel_p->description = cdrom_dev_text;
+        cdrom_dev_text += strlen(cdrom_dev_text)+1;
+        strcpy(cdrom_dev_text, "");
+        sel_p->value_string = cdrom_dev_text;
+        cdrom_dev_text += strlen(cdrom_dev_text)+1;
+        sel_p++;
+
+        /*Loop through again, adding each drive to the list*/
+        for (c = 'A'; c <= 'Z'; c++)
+        {
+                sprintf(s, "%c:\\", c);
+                if (GetDriveTypeA(s) == DRIVE_CDROM)
+                {
+                        strcpy(cdrom_dev_text, s);
+                        sel_p->description = cdrom_dev_text;
+                        cdrom_dev_text += strlen(cdrom_dev_text)+1;
+                        strcpy(cdrom_dev_text, s);
+                        sel_p->value_string = cdrom_dev_text;
+                        cdrom_dev_text += strlen(cdrom_dev_text)+1;
+                        sel_p++;
+                }
+        }
+
+        strcpy(cdrom_dev_text, "");
+        sel_p->description = cdrom_dev_text;
+
+        return sel;
+}

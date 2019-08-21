@@ -228,3 +228,62 @@ void midi_write(void *p, uint8_t val)
                         midiOutShortMsg(midi->out_device, midi->command);
         }
 }
+
+podule_config_selection_t *midi_out_devices_config(void)
+{
+        int nr_devs = midiOutGetNumDevs();
+        podule_config_selection_t *sel = malloc(sizeof(podule_config_selection_t) * (nr_devs+2));
+        podule_config_selection_t *sel_p = sel;
+        char *midi_dev_text = malloc(65536);
+        int c;
+
+        strcpy(midi_dev_text, "None");
+        sel_p->description = midi_dev_text;
+        sel_p->value = -1;
+        sel_p++;
+        midi_dev_text += strlen(midi_dev_text)+1;
+
+        for (c = 0; c < nr_devs; c++)
+        {
+                midi_get_dev_name(c, midi_dev_text);
+                sel_p->description = midi_dev_text;
+                sel_p->value = c;
+                sel_p++;
+
+                midi_dev_text += strlen(midi_dev_text)+1;
+        }
+
+        strcpy(midi_dev_text, "");
+        sel_p->description = midi_dev_text;
+
+        return sel;
+}
+podule_config_selection_t *midi_in_devices_config(void)
+{
+        int nr_devs = midiInGetNumDevs();
+        podule_config_selection_t *sel = malloc(sizeof(podule_config_selection_t) * (nr_devs+2));
+        podule_config_selection_t *sel_p = sel;
+        char *midi_dev_text = malloc(65536);
+        int c;
+        
+        strcpy(midi_dev_text, "None");
+        sel_p->description = midi_dev_text;
+        sel_p->value = -1;
+        sel_p++;
+        midi_dev_text += strlen(midi_dev_text)+1;
+                
+        for (c = 0; c < nr_devs; c++)
+        {
+                midi_in_get_dev_name(c, midi_dev_text);
+                sel_p->description = midi_dev_text;
+                sel_p->value = c;
+                sel_p++;
+
+                midi_dev_text += strlen(midi_dev_text)+1;
+        }
+
+        strcpy(midi_dev_text, "");
+        sel_p->description = midi_dev_text;
+
+        return sel;
+}

@@ -156,6 +156,27 @@ static void midimax_close(struct podule_t *podule)
         free(midimax);
 }
 
+static podule_config_t midimax_config[] =
+{
+        {
+                .name = "midi_out_device",
+                .description = "MIDI output device",
+                .type = CONFIG_SELECTION,
+                .selection = NULL,
+                .default_int = -1
+        },
+        {
+                .name = "midi_in_device",
+                .description = "MIDI input device",
+                .type = CONFIG_SELECTION,
+                .selection = NULL,
+                .default_int = -1
+        },
+        {
+                .type = -1
+        }
+};
+
 static const podule_header_t midimax_podule_header =
 {
         .version = PODULE_API_VERSION,
@@ -169,13 +190,17 @@ static const podule_header_t midimax_podule_header =
                 .read_b = midimax_read_b,
                 .write_b = midimax_write_b,
                 .run = midimax_run
-        }
+        },
+        .config = midimax_config
 };
 
 const podule_header_t *podule_probe(const podule_callbacks_t *callbacks, char *path)
 {
         podule_callbacks = callbacks;
         strcpy(podule_path, path);
+        
+        midimax_config[0].selection = midi_out_devices_config();
+        midimax_config[1].selection = midi_in_devices_config();
 
         return &midimax_podule_header;
 }

@@ -156,24 +156,27 @@ static void midimax_close(struct podule_t *podule)
         free(midimax);
 }
 
-static podule_config_t midimax_config[] =
+static podule_config_t midimax_config =
 {
+        .items =
         {
-                .name = "midi_out_device",
-                .description = "MIDI output device",
-                .type = CONFIG_SELECTION,
-                .selection = NULL,
-                .default_int = -1
-        },
-        {
-                .name = "midi_in_device",
-                .description = "MIDI input device",
-                .type = CONFIG_SELECTION,
-                .selection = NULL,
-                .default_int = -1
-        },
-        {
-                .type = -1
+                {
+                        .name = "midi_out_device",
+                        .description = "MIDI output device",
+                        .type = CONFIG_SELECTION,
+                        .selection = NULL,
+                        .default_int = -1
+                },
+                {
+                        .name = "midi_in_device",
+                        .description = "MIDI input device",
+                        .type = CONFIG_SELECTION,
+                        .selection = NULL,
+                        .default_int = -1
+                },
+                {
+                        .type = -1
+                }
         }
 };
 
@@ -191,7 +194,7 @@ static const podule_header_t midimax_podule_header =
                 .write_b = midimax_write_b,
                 .run = midimax_run
         },
-        .config = midimax_config
+        .config = &midimax_config
 };
 
 const podule_header_t *podule_probe(const podule_callbacks_t *callbacks, char *path)
@@ -199,8 +202,8 @@ const podule_header_t *podule_probe(const podule_callbacks_t *callbacks, char *p
         podule_callbacks = callbacks;
         strcpy(podule_path, path);
         
-        midimax_config[0].selection = midi_out_devices_config();
-        midimax_config[1].selection = midi_in_devices_config();
+        midimax_config.items[0].selection = midi_out_devices_config();
+        midimax_config.items[1].selection = midi_in_devices_config();
 
         return &midimax_podule_header;
 }

@@ -713,7 +713,7 @@ void ConfigDialog::OnConfigPodule(wxCommandEvent &event)
                 slot_nr = 3;
 
         const podule_header_t *podule = podule_find(config_podules[slot_nr]);
-        ShowPoduleConfig(this, podule, running, slot_nr);
+        ShowPoduleConfig(this, podule, podule->config, running, slot_nr);
 }
 
 

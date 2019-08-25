@@ -382,31 +382,34 @@ static void lark_close(struct podule_t *podule)
         free(lark);
 }
 
-static podule_config_t lark_config[] =
+static podule_config_t lark_config =
 {
+        .items =
         {
-                .name = "sound_in_device",
-                .description = "Sound input device",
-                .type = CONFIG_SELECTION,
-                .selection = NULL,
-                .default_int = -1
-        },
-        {
-                .name = "midi_out_device",
-                .description = "MIDI output device",
-                .type = CONFIG_SELECTION,
-                .selection = NULL,
-                .default_int = -1
-        },
-        {
-                .name = "midi_in_device",
-                .description = "MIDI input device",
-                .type = CONFIG_SELECTION,
-                .selection = NULL,
-                .default_int = -1
-        },
-        {
-                .type = -1
+                {
+                        .name = "sound_in_device",
+                        .description = "Sound input device",
+                        .type = CONFIG_SELECTION,
+                        .selection = NULL,
+                        .default_int = -1
+                },
+                {
+                        .name = "midi_out_device",
+                        .description = "MIDI output device",
+                        .type = CONFIG_SELECTION,
+                        .selection = NULL,
+                        .default_int = -1
+                },
+                {
+                        .name = "midi_in_device",
+                        .description = "MIDI input device",
+                        .type = CONFIG_SELECTION,
+                        .selection = NULL,
+                        .default_int = -1
+                },
+                {
+                        .type = -1
+                }
         }
 };
 
@@ -426,7 +429,7 @@ static const podule_header_t lark_podule_header =
                 .write_w = lark_write_w,
                 .run = lark_run
         },
-        .config = lark_config
+        .config = &lark_config
 };
 
 const podule_header_t *podule_probe(const podule_callbacks_t *callbacks, char *path)
@@ -436,9 +439,9 @@ const podule_header_t *podule_probe(const podule_callbacks_t *callbacks, char *p
         podule_callbacks = callbacks;
         strcpy(podule_path, path);
 
-        lark_config[0].selection = sound_in_devices_config();
-        lark_config[1].selection = midi_out_devices_config();
-        lark_config[2].selection = midi_in_devices_config();
+        lark_config.items[0].selection = sound_in_devices_config();
+        lark_config.items[1].selection = midi_out_devices_config();
+        lark_config.items[2].selection = midi_in_devices_config();
 
         return &lark_podule_header;
 }

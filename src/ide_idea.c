@@ -18,6 +18,7 @@
 #include "ide.h"
 #include "podules.h"
 #include "podule_api.h"
+#include "ide_config.h"
 
 static const podule_callbacks_t *podule_callbacks;
 
@@ -222,12 +223,14 @@ static const podule_header_t idea_ide_podule_header =
                 .read_w = idea_ide_read_w,
                 .write_b = idea_ide_write_b,
                 .write_w = idea_ide_write_w
-        }
+        },
+        .config = &ide_podule_config
 };
 
 const podule_header_t *idea_ide_probe(const podule_callbacks_t *callbacks, char *path)
 {
         podule_callbacks = callbacks;
-
+        ide_config_init(callbacks);
+        
         return &idea_ide_podule_header;
 }

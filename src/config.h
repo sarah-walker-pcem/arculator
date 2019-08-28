@@ -36,3 +36,4 @@ extern void saveconfig();
 extern char machine_config_name[256];
 extern char machine_config_file[256];
 extern char hd_fn[2][512];
+extern int hd_spt[2], hd_hpc[2], hd_cyl[2];

@@ -6,6 +6,8 @@
 
 #include <wx/xrc/xmlres.h>
 #include "wx-config.h"
+#include "wx-hd_conf.h"
+#include "wx-hd_new.h"
 #include "wx-podule-config.h"
 
 extern "C"
@@ -158,22 +160,54 @@ void ConfigDialog::CommonInit(wxWindow *parent, bool is_running)
         hd_fns[0] = wxString(hd_fn[0]);
         hd_fns[1] = wxString(hd_fn[1]);
 
+        char temp_s[80];
         wxTextCtrl *tctrl = (wxTextCtrl *)this->FindWindow(XRCID("IDC_EDIT_HD4"));
         tctrl->SetValue(hd_fns[0]);
+        sprintf(temp_s, "%i", hd_spt[0]);
+        tctrl = (wxTextCtrl *)this->FindWindow(XRCID("IDC_EDIT_SECTORS_4"));
+        tctrl->SetValue(temp_s);
+        sprintf(temp_s, "%i", hd_hpc[0]);
+        tctrl = (wxTextCtrl *)this->FindWindow(XRCID("IDC_EDIT_HEADS_4"));
+        tctrl->SetValue(temp_s);
+        sprintf(temp_s, "%i", hd_cyl[0]);
+        tctrl = (wxTextCtrl *)this->FindWindow(XRCID("IDC_EDIT_CYLINDERS_4"));
+        tctrl->SetValue(temp_s);
+        if (config_io == IO_NEW)
+                sprintf(temp_s, "%i", (hd_cyl[0]*hd_hpc[0]*hd_spt[0]*512) / (1024*1024));
+        else
+                sprintf(temp_s, "%i", (hd_cyl[0]*hd_hpc[0]*hd_spt[0]*256) / (1024*1024));
+        tctrl = (wxTextCtrl *)this->FindWindow(XRCID("IDC_EDIT_SIZE_4"));
+        tctrl->SetValue(temp_s);
+
         tctrl = (wxTextCtrl *)this->FindWindow(XRCID("IDC_EDIT_HD5"));
         tctrl->SetValue(hd_fns[1]);
+        sprintf(temp_s, "%i", hd_spt[1]);
+        tctrl = (wxTextCtrl *)this->FindWindow(XRCID("IDC_EDIT_SECTORS_5"));
+        tctrl->SetValue(temp_s);
+        sprintf(temp_s, "%i", hd_hpc[1]);
+        tctrl = (wxTextCtrl *)this->FindWindow(XRCID("IDC_EDIT_HEADS_5"));
+        tctrl->SetValue(temp_s);
+        sprintf(temp_s, "%i", hd_cyl[1]);
+        tctrl = (wxTextCtrl *)this->FindWindow(XRCID("IDC_EDIT_CYLINDERS_5"));
+        tctrl->SetValue(temp_s);
+        if (config_io == IO_NEW)
+                sprintf(temp_s, "%i", (hd_cyl[1]*hd_hpc[1]*hd_spt[1]*512) / (1024*1024));
+        else
+                sprintf(temp_s, "%i", (hd_cyl[1]*hd_hpc[1]*hd_spt[1]*256) / (1024*1024));
+        tctrl = (wxTextCtrl *)this->FindWindow(XRCID("IDC_EDIT_SIZE_5"));
+        tctrl->SetValue(temp_s);
 }
 
 ConfigDialog::ConfigDialog(wxWindow *parent, bool is_running)
 {
         int c;
         
-        CommonInit(parent, is_running);
-
         config_cpu = arm_cpu_type;
         config_fpu = fpaena ? (fpu_type ? FPU_FPPC : FPU_FPA10) : FPU_NONE;
         config_memc = memc_type;
         config_io = fdctype ? IO_NEW : (st506_present ? IO_OLD_ST506 : IO_OLD);
+
+        CommonInit(parent, is_running);
 
         switch (memsize)
         {
@@ -212,13 +246,13 @@ ConfigDialog::ConfigDialog(wxWindow *parent, bool is_running)
 
 ConfigDialog::ConfigDialog(wxWindow *parent, bool is_running, int preset)
 {
-        CommonInit(parent, is_running);
-
         config_cpu  = presets[preset].cpu;
         config_mem  = presets[preset].mem;
         config_memc = presets[preset].memc;
         config_fpu  = presets[preset].fpu;
         config_io   = presets[preset].io;
+
+        CommonInit(parent, is_running);
         
         UpdateList(config_cpu, config_mem, config_memc, config_fpu, config_io);
         
@@ -447,9 +481,22 @@ void ConfigDialog::OnOK(wxCommandEvent &event)
 
         wxTextCtrl *tctrl = (wxTextCtrl *)this->FindWindow(XRCID("IDC_EDIT_HD4"));
         strcpy(hd_fn[0], tctrl->GetValue().mb_str());
+        wxString temp_s = ((wxTextCtrl *)this->FindWindow(XRCID("IDC_EDIT_CYLINDERS_4")))->GetValue();
+        hd_cyl[0] = atoi(temp_s);
+        temp_s = ((wxTextCtrl *)this->FindWindow(XRCID("IDC_EDIT_HEADS_4")))->GetValue();
+        hd_hpc[0] = atoi(temp_s);
+        temp_s = ((wxTextCtrl *)this->FindWindow(XRCID("IDC_EDIT_SECTORS_4")))->GetValue();
+        hd_spt[0] = atoi(temp_s);
+
         tctrl = (wxTextCtrl *)this->FindWindow(XRCID("IDC_EDIT_HD5"));
         strcpy(hd_fn[1], tctrl->GetValue().mb_str());
-
+        temp_s = ((wxTextCtrl *)this->FindWindow(XRCID("IDC_EDIT_CYLINDERS_5")))->GetValue();
+        hd_cyl[1] = atoi(temp_s);
+        temp_s = ((wxTextCtrl *)this->FindWindow(XRCID("IDC_EDIT_HEADS_5")))->GetValue();
+        hd_hpc[1] = atoi(temp_s);
+        temp_s = ((wxTextCtrl *)this->FindWindow(XRCID("IDC_EDIT_SECTORS_5")))->GetValue();
+        hd_spt[1] = atoi(temp_s);
+        
         for (c = 0; c < 4; c++)
                 strncpy(podule_names[c], config_podules[c], 15);
                 
@@ -573,48 +620,89 @@ void ConfigDialog::OnHDSel(wxCommandEvent &event)
 
         if (dlg.ShowModal() == wxID_OK)
         {
-                wxTextCtrl *tctrl;
-
-                hd_fns[hd_nr] = dlg.GetPath();
+                wxString new_fn = dlg.GetPath();
+                char new_fn_c[256];
+                int new_sectors, new_heads, new_cylinders;
                 
-                if (hd_nr)
-                        tctrl = (wxTextCtrl *)this->FindWindow(XRCID("IDC_EDIT_HD5"));
-                else
-                        tctrl = (wxTextCtrl *)this->FindWindow(XRCID("IDC_EDIT_HD4"));
-                tctrl->SetValue(hd_fns[hd_nr]);
+                strncpy(new_fn_c, new_fn, sizeof(new_fn_c));
+                
+                if (ShowConfHD(this, &new_sectors, &new_heads, &new_cylinders, new_fn_c, config_io != IO_NEW))
+                {
+                        char temp_s[80];
+                        int new_size;
+                        
+                        if (config_io != IO_NEW)
+                                new_size = (new_cylinders * new_heads * new_sectors * 256) / (1024 * 1024);
+                        else
+                                new_size = (new_cylinders * new_heads * new_sectors * 512) / (1024 * 1024);
+
+                        if (!hd_nr)
+                        {
+                                sprintf(temp_s, "%i", new_cylinders);
+                                ((wxTextCtrl *)this->FindWindow(XRCID("IDC_EDIT_CYLINDERS_4")))->SetValue(temp_s);
+                                sprintf(temp_s, "%i", new_heads);
+                                ((wxTextCtrl *)this->FindWindow(XRCID("IDC_EDIT_HEADS_4")))->SetValue(temp_s);
+                                sprintf(temp_s, "%i", new_sectors);
+                                ((wxTextCtrl *)this->FindWindow(XRCID("IDC_EDIT_SECTORS_4")))->SetValue(temp_s);
+                                sprintf(temp_s, "%i", new_size);
+                                ((wxTextCtrl *)this->FindWindow(XRCID("IDC_EDIT_SIZE_4")))->SetValue(temp_s);
+                                ((wxTextCtrl *)this->FindWindow(XRCID("IDC_EDIT_HD4")))->SetValue(new_fn);
+                        }
+                        else
+                        {
+                                sprintf(temp_s, "%i", new_cylinders);
+                                ((wxTextCtrl *)this->FindWindow(XRCID("IDC_EDIT_CYLINDERS_5")))->SetValue(temp_s);
+                                sprintf(temp_s, "%i", new_heads);
+                                ((wxTextCtrl *)this->FindWindow(XRCID("IDC_EDIT_HEADS_5")))->SetValue(temp_s);
+                                sprintf(temp_s, "%i", new_sectors);
+                                ((wxTextCtrl *)this->FindWindow(XRCID("IDC_EDIT_SECTORS_5")))->SetValue(temp_s);
+                                sprintf(temp_s, "%i", new_size);
+                                ((wxTextCtrl *)this->FindWindow(XRCID("IDC_EDIT_SIZE_5")))->SetValue(temp_s);
+                                ((wxTextCtrl *)this->FindWindow(XRCID("IDC_EDIT_HD5")))->SetValue(new_fn);
+                        }
+                }
         }
 }
 void ConfigDialog::OnHDNew(wxCommandEvent &event)
 {
-        int hd_nr = (event.GetId() == XRCID("IDC_NEW_HD4")) ? 0 : 1;
-
-        wxFileDialog dlg(NULL, "New a disc image", "", hd_fns[hd_nr],
-                        "HDF Disc Image|*.hdf|All Files|*.*",
-                        wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
-
-        if (dlg.ShowModal() == wxID_OK)
+        int new_sectors, new_heads, new_cylinders;
+        char new_fn[256];
+        
+        int ret = ShowNewHD(this, &new_sectors, &new_heads, &new_cylinders, new_fn, sizeof(new_fn), config_io != IO_NEW);
+        
+        if (ret)
         {
-                wxString new_fn_str = dlg.GetPath();
-                FILE *f;
-
-                f = fopen(new_fn_str.mb_str(), "wb");
-                if (f)
+                char temp_s[256];
+                int new_size;
+                
+                if (config_io != IO_NEW)
+                        new_size = (new_cylinders * new_heads * new_sectors * 256) / (1024 * 1024);
+                else
+                        new_size = (new_cylinders * new_heads * new_sectors * 512) / (1024 * 1024);
+                if (event.GetId() == XRCID("IDC_NEW_HD4"))
                 {
-                        wxTextCtrl *tctrl;
-
-                        putc(0, f);
-                        fclose(f);
-
-                        hd_fns[hd_nr] = new_fn_str;
-
-                        if (hd_nr)
-                                tctrl = (wxTextCtrl *)this->FindWindow(XRCID("IDC_EDIT_HD5"));
-                        else
-                                tctrl = (wxTextCtrl *)this->FindWindow(XRCID("IDC_EDIT_HD4"));
-                        tctrl->SetValue(hd_fns[hd_nr]);
+                        sprintf(temp_s, "%i", new_cylinders);
+                        ((wxTextCtrl *)this->FindWindow(XRCID("IDC_EDIT_CYLINDERS_4")))->SetValue(temp_s);
+                        sprintf(temp_s, "%i", new_heads);
+                        ((wxTextCtrl *)this->FindWindow(XRCID("IDC_EDIT_HEADS_4")))->SetValue(temp_s);
+                        sprintf(temp_s, "%i", new_sectors);
+                        ((wxTextCtrl *)this->FindWindow(XRCID("IDC_EDIT_SECTORS_4")))->SetValue(temp_s);
+                        sprintf(temp_s, "%i", new_size);
+                        ((wxTextCtrl *)this->FindWindow(XRCID("IDC_EDIT_SIZE_4")))->SetValue(temp_s);
+                        ((wxTextCtrl *)this->FindWindow(XRCID("IDC_EDIT_HD4")))->SetValue(new_fn);
                 }
                 else
-                        wxMessageBox("Could not create " + new_fn_str, "Arculator", wxOK | wxCENTRE | wxSTAY_ON_TOP, this);
+                {
+                        sprintf(temp_s, "%i", new_cylinders);
+                        ((wxTextCtrl *)this->FindWindow(XRCID("IDC_EDIT_CYLINDERS_5")))->SetValue(temp_s);
+                        sprintf(temp_s, "%i", new_heads);
+                        ((wxTextCtrl *)this->FindWindow(XRCID("IDC_EDIT_HEADS_5")))->SetValue(temp_s);
+                        sprintf(temp_s, "%i", new_sectors);
+                        ((wxTextCtrl *)this->FindWindow(XRCID("IDC_EDIT_SECTORS_5")))->SetValue(temp_s);
+                        sprintf(temp_s, "%i", new_size);
+                        ((wxTextCtrl *)this->FindWindow(XRCID("IDC_EDIT_SIZE_5")))->SetValue(temp_s);
+                        ((wxTextCtrl *)this->FindWindow(XRCID("IDC_EDIT_HD5")))->SetValue(new_fn);
+                }
         }
 }
 void ConfigDialog::OnHDEject(wxCommandEvent &event)

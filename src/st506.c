@@ -18,14 +18,18 @@ static void st506_callback(void *p);
 int st506_present;
 static st506_t internal_st506;
 
-void st506_init(st506_t *st506, char *fn_pri, char *fn_sec, void (*irq_raise)(st506_t *st506), void (*irq_clear)(st506_t *st506), void *p)
+void st506_init(st506_t *st506, char *fn_pri, int pri_spt, int pri_hpc, char *fn_sec, int sec_spt, int sec_hpc, void (*irq_raise)(st506_t *st506), void (*irq_clear)(st506_t *st506), void *p)
 {
         st506->status = 0;
         st506->rp = st506->wp = 0;
         st506->drq = 0;
         st506->first = 0;
         st506->hdfile[0] = fopen(fn_pri, "rb+");
+        st506->spt[0] = pri_spt;
+        st506->hpc[0] = pri_hpc;
         st506->hdfile[1] = fopen(fn_sec, "rb+");
+        st506->spt[1] = sec_spt;
+        st506->hpc[1] = sec_hpc;
         timer_add(&st506->timer, st506_callback, st506, 0);
         st506->irq_raise = irq_raise;
         st506->irq_clear = irq_clear;
@@ -74,7 +78,7 @@ static void readdataerror(st506_t *st506)
         st506->param[1] = st506->ssb;
 }
 
-static int check_chs_params(st506_t *st506)
+static int check_chs_params(st506_t *st506, int drive)
 {
         if (st506->lcyl > 1023)
         {
@@ -82,13 +86,13 @@ static int check_chs_params(st506_t *st506)
                 readdataerror(st506);
                 return 1;
         }
-        if (st506->lhead > 7)
+        if (st506->lhead >= st506->hpc[drive])
         {
                 st506_error(st506, IPH);
                 readdataerror(st506);
                 return 1;
         }
-        if (st506->lsect > 31)
+        if (st506->lsect >= st506->spt[drive])
         {
                 st506_error(st506, TOV);
                 readdataerror(st506);
@@ -226,9 +230,9 @@ void st506_writel(st506_t *st506, uint32_t a, uint32_t v)
                         st506->lsect = st506->param[5];
                         st506->oplen = (st506->param[6] << 8) | st506->param[7];
                         rpclog("Read data : cylinder %i head %i sector %i   length %i sectors\n",st506->lcyl,st506->lhead,st506->lsect,st506->oplen);
-                        if (check_chs_params(st506))
+                        if (check_chs_params(st506, st506->drive))
                                 return;
-                        fseek(st506->hdfile[st506->drive], (((((st506->lcyl*8)+st506->lhead)*32)+st506->lsect)*256), SEEK_SET);
+                        fseek(st506->hdfile[st506->drive], (((((st506->lcyl*st506->hpc[st506->drive])+st506->lhead)*st506->spt[st506->drive])+st506->lsect)*256), SEEK_SET);
 //                        rpclog("Seeked to %08X\n",(((((st506->lcyl*8)+st506->lhead)*32)+st506->lsect)*256));
                         timer_set_delay_u64(&st506->timer, 5000 * TIMER_USEC);
                         st506->status |= 0x80;
@@ -247,9 +251,9 @@ void st506_writel(st506_t *st506, uint32_t a, uint32_t v)
                         st506->lsect = st506->param[5];
                         st506->oplen = (st506->param[6] << 8) | st506->param[7];
                         rpclog("Check data : cylinder %i head %i sector %i   length %i sectors\n",st506->lcyl,st506->lhead,st506->lsect,st506->oplen);
-                        if (check_chs_params(st506))
+                        if (check_chs_params(st506, st506->drive))
                                 return;
-                        fseek(st506->hdfile[st506->drive], (((((st506->lcyl*8)+st506->lhead)*32)+st506->lsect)*256), SEEK_SET);
+                        fseek(st506->hdfile[st506->drive], (((((st506->lcyl*st506->hpc[st506->drive])+st506->lhead)*st506->spt[st506->drive])+st506->lsect)*256), SEEK_SET);
                         timer_set_delay_u64(&st506->timer, 5000 * TIMER_USEC);
                         st506->status |= 0x80;
                         return;
@@ -267,9 +271,9 @@ void st506_writel(st506_t *st506, uint32_t a, uint32_t v)
                         st506->lsect = st506->param[5];
                         st506->oplen = (st506->param[6] << 8) | st506->param[7];
                         rpclog("Write data : cylinder %i head %i sector %i   length %i sectors\n",st506->lcyl,st506->lhead,st506->lsect,st506->oplen);
-                        if (check_chs_params(st506))
+                        if (check_chs_params(st506, st506->drive))
                                 return;
-                        fseek(st506->hdfile[st506->drive], (((((st506->lcyl*8)+st506->lhead)*32)+st506->lsect)*256), SEEK_SET);
+                        fseek(st506->hdfile[st506->drive], (((((st506->lcyl*st506->hpc[st506->drive])+st506->lhead)*st506->spt[st506->drive])+st506->lsect)*256), SEEK_SET);
 //                        rpclog("Seeked to %08X\n",(((((st506->lcyl*8)+st506->lhead)*32)+st506->lsect)*256));
                         timer_set_delay_u64(&st506->timer, 5000 * TIMER_USEC);
                         st506->status |= 0x80;
@@ -289,9 +293,9 @@ void st506_writel(st506_t *st506, uint32_t a, uint32_t v)
                         st506->lsect = 0;
                         st506->oplen = (st506->param[2] << 8) | st506->param[3];
                         rpclog("Write format : drive %i cylinder %i head %i sector %i   length %i sectors\n",st506->drive,st506->lcyl,st506->lhead,st506->lsect,st506->oplen);
-                        if (check_chs_params(st506))
+                        if (check_chs_params(st506, st506->drive))
                                 return;
-                        fseek(st506->hdfile[st506->drive], (((((st506->lcyl*8)+st506->lhead)*32)+st506->lsect)*256), SEEK_SET);
+                        fseek(st506->hdfile[st506->drive], (((((st506->lcyl*st506->hpc[st506->drive])+st506->lhead)*st506->spt[st506->drive])+st506->lsect)*256), SEEK_SET);
                         timer_set_delay_u64(&st506->timer, 5000 * TIMER_USEC);
                         st506->status |= 0x80;
                         st506->first = 1;
@@ -465,11 +469,11 @@ static void st506_callback(void *p)
                 {
 //                        if (st506->lsect>31)  { st506error(TOV); readdataerror(); return; }
                         st506->lsect++;
-                        if (st506->lsect == 32)
+                        if (st506->lsect == st506->spt[st506->drive])
                         {
                                 st506->lsect = 0;
                                 st506->lhead++;
-                                if (st506->lhead == 8)
+                                if (st506->lhead == st506->hpc[st506->drive])
                                 {
                                         st506->lhead = 0;
                                         st506->lcyl++;
@@ -517,11 +521,11 @@ static void st506_callback(void *p)
                 if (st506->oplen)
                 {
                         st506->lsect++;
-                        if (st506->lsect == 32)
+                        if (st506->lsect == st506->spt[st506->drive])
                         {
                                 st506->lsect = 0;
                                 st506->lhead++;
-                                if (st506->lhead == 8)
+                                if (st506->lhead == st506->hpc[st506->drive])
                                 {
                                         st506->lhead = 0;
                                         st506->lcyl++;
@@ -564,11 +568,11 @@ static void st506_callback(void *p)
                 else
                 {
                         st506->lsect++;
-                        if (st506->lsect == 32)
+                        if (st506->lsect == st506->spt[st506->drive])
                         {
                                 st506->lsect = 0;
                                 st506->lhead++;
-                                if (st506->lhead == 8)
+                                if (st506->lhead == st506->hpc[st506->drive])
                                 {
                                         st506->lhead = 0;
                                         st506->lcyl++;
@@ -629,11 +633,11 @@ static void st506_callback(void *p)
                         while (c < 256 && st506->oplen)
                         {
                                 st506->lsect++;
-                                if (st506->lsect == 32)
+                                if (st506->lsect == st506->spt[st506->drive])
                                 {
                                         st506->lsect = 0;
                                         st506->lhead++;
-                                        if (st506->lhead == 8)
+                                        if (st506->lhead == st506->hpc[st506->drive])
                                         {
                                                 st506->lhead = 0;
                                                 st506->lcyl++;
@@ -682,7 +686,7 @@ static void st506_internal_irq_clear(st506_t *st506)
 
 void st506_internal_init(void)
 {
-        st506_init(&internal_st506, hd_fn[0], hd_fn[1], st506_internal_irq_raise, st506_internal_irq_clear, NULL);
+        st506_init(&internal_st506, hd_fn[0], hd_spt[0], hd_hpc[0], hd_fn[1], hd_spt[1], hd_hpc[1], st506_internal_irq_raise, st506_internal_irq_clear, NULL);
 }
 void st506_internal_close(void)
 {

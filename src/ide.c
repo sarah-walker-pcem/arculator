@@ -30,7 +30,10 @@ void closeide(ide_t *ide)
                 fclose(ide->hdfile[1]);
 }
 
-void resetide(ide_t *ide, char *fn_pri, char *fn_sec, void (*irq_raise)(ide_t *ide), void (*irq_clear)(ide_t *ide))
+void resetide(ide_t *ide,
+                char *fn_pri, int pri_spt, int pri_hpc, int pri_cyl,
+                char *fn_sec, int sec_spt, int sec_hpc, int sec_cyl,
+                void (*irq_raise)(ide_t *ide), void (*irq_clear)(ide_t *ide))
 {
         int c;
 
@@ -46,37 +49,18 @@ void resetide(ide_t *ide, char *fn_pri, char *fn_sec, void (*irq_raise)(ide_t *i
         for (c = 0; c < 2; c++)
         {
                 if (!c)
-                {
                         ide->hdfile[c] = fopen(fn_pri, "rb+");
-                        rpclog("HD open %i %s %i\n", c, fn_pri, ide->hdfile[c]);
-                }
                 else
-                {
                         ide->hdfile[c] = fopen(fn_sec, "rb+");
-                        rpclog("HD open %i %s %i\n", c, fn_sec, ide->hdfile[c]);
-                }
-                if (ide->hdfile[c])
-                {
-                        fseek(ide->hdfile[c],0xFC1,SEEK_SET);
-                        ide->spt[c]=getc(ide->hdfile[c]);
-                        ide->hpc[c]=getc(ide->hdfile[c]);
-                        ide->skip512[c]=1;
-                        if (!ide->spt[c] || !ide->hpc[c])
-                        {
-                                fseek(ide->hdfile[c],0xDC1,SEEK_SET);
-                                ide->spt[c]=getc(ide->hdfile[c]);
-                                ide->hpc[c]=getc(ide->hdfile[c]);
-                                ide->skip512[c]=0;
-                                if (!ide->spt[c] || !ide->hpc[c])
-                                {
-                                        ide->spt[c]=63;
-                                        ide->hpc[c]=16;
-//                                        ide->skip512[c]=1;
-                                }
-                        }
-                }
 //        rpclog("Drive %i - %i %i\n",c,ide->spt[c],ide->hpc[c]);
         }
+        ide->def_spt[0] = ide->spt[0] = pri_spt;
+        ide->def_hpc[0] = ide->hpc[0] = pri_hpc;
+        ide->def_cyl[0] = ide->cyl[0] = pri_cyl;
+        ide->def_spt[1] = ide->spt[1] = sec_spt;
+        ide->def_hpc[1] = ide->hpc[1] = sec_hpc;
+        ide->def_cyl[1] = ide->cyl[1] = sec_cyl;
+
 //        ide->spt=63;
 //        ide->hpc=16;
 //        ide->spt=16;
@@ -412,7 +396,8 @@ void callbackide(void *p)
                 case 0x91: /*Set parameters*/
                 ide->spt[ide->drive]=ide->secount;
                 ide->hpc[ide->drive]=ide->head+1;
-//                rpclog("%i sectors per track, %i heads per cylinder  %i %i  %i\n",ide->spt[ide->drive],ide->hpc[ide->drive],ide->secount,ide->head,ide->drive);
+                ide->cyl[ide->drive] = (ide->def_cyl[ide->drive] * ide->def_hpc[ide->drive] * ide->def_spt[ide->drive]) /
+                                       (ide->hpc[ide->drive] * ide->spt[ide->drive]);
                 ide->atastat=0x40;
                 ide_raise_irq(ide);
                 return;
@@ -426,18 +411,18 @@ void callbackide(void *p)
                 case 0xEC:
 //                        rpclog("Callback EC\n");
                 memset(ide->idebuffer,0,512);
-                ide->idebuffer[1]=101; /*Cylinders*/
-                ide->idebuffer[3]=16;  /*Heads*/
-                ide->idebuffer[6]=63;  /*Sectors*/
+                ide->idebuffer[1] = ide->def_cyl[ide->drive]; /*Cylinders*/
+                ide->idebuffer[3] = ide->def_hpc[ide->drive];  /*Heads*/
+                ide->idebuffer[6] = ide->def_spt[ide->drive];  /*Sectors*/
                 for (addr=10;addr<20;addr++)
                     ide->idebuffer[addr]=0x2020;
                 ide->idebuffer[10]=0x3030;
                 for (addr=23;addr<47;addr++)
                     ide->idebuffer[addr]=0x2020;
                 ide->idebufferb[46^1]='v'; /*Firmware version*/
-                ide->idebufferb[47^1]='0';
+                ide->idebufferb[47^1]='2';
                 ide->idebufferb[48^1]='.';
-                ide->idebufferb[49^1]='5';
+                ide->idebufferb[49^1]='0';
                 ide->idebufferb[54^1]='A'; /*Drive model*/
                 ide->idebufferb[55^1]='r';
                 ide->idebufferb[56^1]='c';
@@ -450,6 +435,12 @@ void callbackide(void *p)
                 ide->idebufferb[63^1]='H';
                 ide->idebufferb[64^1]='D';
                 ide->idebuffer[50]=0x4000; /*Capabilities*/
+                ide->idebuffer[53] = 1;
+                ide->idebuffer[54] = ide->cyl[ide->drive];
+                ide->idebuffer[55] = ide->hpc[ide->drive];
+                ide->idebuffer[56] = ide->spt[ide->drive];
+                ide->idebuffer[57] = (ide->cyl[ide->drive] * ide->hpc[ide->drive] * ide->spt[ide->drive]) & 0xffff;
+                ide->idebuffer[58] = (ide->cyl[ide->drive] * ide->hpc[ide->drive] * ide->spt[ide->drive]) >> 16;
                 ide->pos=0;
                 ide->atastat=0x08;
 //                rpclog("ID callback\n");

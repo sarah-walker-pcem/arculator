@@ -83,5 +83,8 @@ static void c82c711_ide_irq_clear(ide_t *ide)
 
 void c82c711_init(void)
 {
-        resetide(&ide_internal, hd_fn[0], hd_fn[1], c82c711_ide_irq_raise, c82c711_ide_irq_clear);
+        resetide(&ide_internal,
+                 hd_fn[0], hd_spt[0], hd_hpc[0], hd_cyl[0],
+                 hd_fn[1], hd_spt[1], hd_hpc[1], hd_cyl[1],
+                 c82c711_ide_irq_raise, c82c711_ide_irq_clear);
 }

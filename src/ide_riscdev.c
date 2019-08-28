@@ -35,6 +35,7 @@ static int riscdev_ide_init(struct podule_t *podule)
         FILE *f;
         char fn[512];
         char hd4_fn[512] = {0}, hd5_fn[512] = {0};
+        int hd_spt[2], hd_hpc[2], hd_cyl[2];
         const char *p;
 
         riscdev_ide_t *riscdev = malloc(sizeof(riscdev_ide_t));
@@ -57,11 +58,20 @@ static int riscdev_ide_init(struct podule_t *podule)
         p = podule_callbacks->config_get_string(podule, "hd4_fn", "");
         if (p)
                 strcpy(hd4_fn, p);
+        hd_spt[0] = podule_callbacks->config_get_int(podule, "hd4_sectors", 63);
+        hd_hpc[0] = podule_callbacks->config_get_int(podule, "hd4_heads", 16);
+        hd_cyl[0] = podule_callbacks->config_get_int(podule, "hd4_cylinders", 100);
         p = podule_callbacks->config_get_string(podule, "hd5_fn", "");
         if (p)
                 strcpy(hd5_fn, p);
+        hd_spt[1] = podule_callbacks->config_get_int(podule, "hd4_sectors", 63);
+        hd_hpc[1] = podule_callbacks->config_get_int(podule, "hd4_heads", 16);
+        hd_cyl[1] = podule_callbacks->config_get_int(podule, "hd4_cylinders", 100);
 
-        resetide(&riscdev->ide, hd4_fn, hd5_fn, riscdev_ide_irq_raise, riscdev_ide_irq_clear);
+        resetide(&riscdev->ide,
+                 hd4_fn, hd_spt[0], hd_hpc[0], hd_cyl[0],
+                 hd5_fn, hd_spt[1], hd_hpc[1], hd_cyl[1],
+                 riscdev_ide_irq_raise, riscdev_ide_irq_clear);
 
         podule->p = riscdev;
 

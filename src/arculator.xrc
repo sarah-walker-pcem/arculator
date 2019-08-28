@@ -405,7 +405,7 @@
 							<style>wxTAB_TRAVERSAL</style>
 							<object class="wxFlexGridSizer">
 								<rows>0</rows>
-								<cols>2</cols>
+								<cols>1</cols>
 								<vgap>0</vgap>
 								<hgap>0</hgap>
 								<growablecols></growablecols>
@@ -437,6 +437,92 @@
 									<border>5</border>
 									<size>0,0</size>
 								</object>
+						                  <object class="sizeritem">
+							                 <option>1</option>
+							                 <flag>wxEXPAND</flag>
+							                 <border>5</border>
+							                 <object class="wxFlexGridSizer">
+								                <rows>0</rows>
+								                <cols>4</cols>
+								                <vgap>0</vgap>
+								                <hgap>0</hgap>
+								                <growablecols></growablecols>
+								                <growablerows></growablerows>
+								                <object class="sizeritem">
+									               <option>0</option>
+									               <flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+									               <border>5</border>
+									               <object class="wxStaticText">
+										              <label>Sectors:</label>
+										              <wrap>-1</wrap>
+									               </object>
+								                </object>
+								                <object class="sizeritem">
+									               <option>0</option>
+									               <flag>wxALL</flag>
+									               <border>5</border>
+								                       <object class="wxTextCtrl" name="IDC_EDIT_SECTORS_4">
+        								                      <style>wxTE_READONLY</style>
+										              <value></value>
+									               </object>
+								                </object>
+								                <object class="sizeritem">
+									               <option>0</option>
+									               <flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+									               <border>5</border>
+									               <object class="wxStaticText">
+										              <label>Heads:</label>
+										              <wrap>-1</wrap>
+									               </object>
+								                </object>
+								                <object class="sizeritem">
+									               <option>0</option>
+									               <flag>wxALL</flag>
+									               <border>5</border>
+									               <object class="wxTextCtrl" name="IDC_EDIT_HEADS_4">
+                                                                                              <style>wxTE_READONLY</style>
+										              <value></value>
+									               </object>
+								                </object>
+								                <object class="sizeritem">
+									               <option>0</option>
+									               <flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+									               <border>5</border>
+									               <object class="wxStaticText">
+										              <label>Cylinders:</label>
+										              <wrap>-1</wrap>
+									               </object>
+								                </object>
+								                <object class="sizeritem">
+									               <option>0</option>
+									               <flag>wxALL</flag>
+									               <border>5</border>
+									               <object class="wxTextCtrl" name="IDC_EDIT_CYLINDERS_4">
+                                                                                              <style>wxTE_READONLY</style>
+										              <value></value>
+								        	       </object>
+							 	                </object>
+                								<object class="sizeritem">
+                									<option>0</option>
+                									<flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                									<border>5</border>
+                									<object class="wxStaticText">
+                										<label>Size (MB):</label>
+                										<wrap>-1</wrap>
+                									</object>
+                								</object>
+                								<object class="sizeritem">
+                									<option>0</option>
+                									<flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                									<border>5</border>
+                									<object class="wxTextCtrl" name="IDC_EDIT_SIZE_4">
+                                                                                                <style>wxTE_READONLY</style>
+                										<value></value>
+                									</object>
+                								</object>
+                							</object>
+                						</object>
+
 								<object class="sizeritem">
 									<option>1</option>
 									<flag>wxEXPAND</flag>
@@ -507,6 +593,91 @@
 									<border>5</border>
 									<size>0,0</size>
 								</object>
+						                  <object class="sizeritem">
+							                 <option>1</option>
+							                 <flag>wxEXPAND</flag>
+							                 <border>5</border>
+							                 <object class="wxFlexGridSizer">
+								                <rows>0</rows>
+								                <cols>4</cols>
+								                <vgap>0</vgap>
+								                <hgap>0</hgap>
+								                <growablecols></growablecols>
+								                <growablerows></growablerows>
+								                <object class="sizeritem">
+									               <option>0</option>
+									               <flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+									               <border>5</border>
+									               <object class="wxStaticText">
+										              <label>Sectors:</label>
+										              <wrap>-1</wrap>
+									               </object>
+								                </object>
+								                <object class="sizeritem">
+									               <option>0</option>
+									               <flag>wxALL</flag>
+									               <border>5</border>
+								                       <object class="wxTextCtrl" name="IDC_EDIT_SECTORS_5">
+								                              <style>wxTE_READONLY</style>
+										              <value></value>
+									               </object>
+								                </object>
+								                <object class="sizeritem">
+									               <option>0</option>
+									               <flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+									               <border>5</border>
+									               <object class="wxStaticText">
+										              <label>Heads:</label>
+										              <wrap>-1</wrap>
+									               </object>
+								                </object>
+								                <object class="sizeritem">
+									               <option>0</option>
+									               <flag>wxALL</flag>
+									               <border>5</border>
+									               <object class="wxTextCtrl" name="IDC_EDIT_HEADS_5">
+									                      <style>wxTE_READONLY</style>
+										              <value></value>
+									               </object>
+								                </object>
+								                <object class="sizeritem">
+									               <option>0</option>
+									               <flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+									               <border>5</border>
+									               <object class="wxStaticText">
+										              <label>Cylinders:</label>
+										              <wrap>-1</wrap>
+									               </object>
+								                </object>
+								                <object class="sizeritem">
+									               <option>0</option>
+									               <flag>wxALL</flag>
+									               <border>5</border>
+									               <object class="wxTextCtrl" name="IDC_EDIT_CYLINDERS_5">
+                                                                                              <style>wxTE_READONLY</style>
+										              <value></value>
+								        	       </object>
+							 	                </object>
+                								<object class="sizeritem">
+                									<option>0</option>
+                									<flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                									<border>5</border>
+                									<object class="wxStaticText">
+                										<label>Size (MB):</label>
+                										<wrap>-1</wrap>
+                									</object>
+                								</object>
+                								<object class="sizeritem">
+                									<option>0</option>
+                									<flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                									<border>5</border>
+                									<object class="wxTextCtrl" name="IDC_EDIT_SIZE_5">
+                									        <style>wxTE_READONLY</style>
+                										<value></value>
+                									</object>
+                								</object>
+                							</object>
+                						</object>
 								<object class="sizeritem">
 									<option>1</option>
 									<flag>wxEXPAND</flag>
@@ -871,6 +1042,336 @@
 							<tooltip>Quit</tooltip>
 							<bitmap>icons/32x32/door_in.png</bitmap>
 							<default>0</default>
+						</object>
+					</object>
+				</object>
+			</object>
+		</object>
+	</object>
+
+	<object class="wxDialog" name="HdNewDlg">
+		<title>New Hard Disc</title>
+		<centered>1</centered>
+		<object class="wxPanel" name="ROOT_PANEL">
+			<object class="wxFlexGridSizer">
+				<rows>0</rows>
+				<cols>1</cols>
+				<vgap>0</vgap>
+				<hgap>0</hgap>
+				<growablecols></growablecols>
+				<growablerows></growablerows>
+				<object class="sizeritem">
+					<option>1</option>
+					<flag>wxEXPAND</flag>
+					<border>5</border>
+					<object class="wxFlexGridSizer">
+						<rows>0</rows>
+						<cols>3</cols>
+						<vgap>0</vgap>
+						<hgap>0</hgap>
+						<growablecols>1</growablecols>
+						<growablerows></growablerows>
+						<object class="sizeritem">
+							<option>0</option>
+							<flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+							<border>5</border>
+							<object class="wxStaticText">
+								<size>80,-1</size>
+								<label>File:</label>
+								<wrap>-1</wrap>
+							</object>
+						</object>
+						<object class="sizeritem">
+							<option>0</option>
+							<flag>wxALL</flag>
+							<border>5</border>
+							<object class="wxTextCtrl" name="IDC_EDIT_FN">
+								<style>wxTE_READONLY</style>
+								<size>350,-1</size>
+								<value></value>
+							</object>
+						</object>
+						<object class="sizeritem">
+							<option>0</option>
+							<flag>wxALL</flag>
+							<border>5</border>
+							<object class="wxBitmapButton" name="IDC_CFILE">
+								<style>wxBU_AUTODRAW</style>
+								<bitmap>icons/16x16/folder.png</bitmap>
+								<default>0</default>
+							</object>
+						</object>
+						<object class="spacer">
+							<option>1</option>
+							<flag>wxEXPAND</flag>
+							<border>5</border>
+							<size>0,0</size>
+						</object>
+						<object class="sizeritem">
+							<option>1</option>
+							<flag>wxEXPAND</flag>
+							<border>5</border>
+							<object class="wxFlexGridSizer">
+								<rows>0</rows>
+								<cols>4</cols>
+								<vgap>0</vgap>
+								<hgap>0</hgap>
+								<growablecols></growablecols>
+								<growablerows></growablerows>
+								<object class="sizeritem">
+									<option>0</option>
+									<flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+									<border>5</border>
+									<object class="wxStaticText">
+										<label>Sectors:</label>
+										<wrap>-1</wrap>
+									</object>
+								</object>
+								<object class="sizeritem">
+									<option>0</option>
+									<flag>wxALL</flag>
+									<border>5</border>
+									<object class="wxTextCtrl" name="IDC_EDIT_SECTORS">
+										<value></value>
+									</object>
+								</object>
+								<object class="sizeritem">
+									<option>0</option>
+									<flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+									<border>5</border>
+									<object class="wxStaticText">
+										<label>Heads:</label>
+										<wrap>-1</wrap>
+									</object>
+								</object>
+								<object class="sizeritem">
+									<option>0</option>
+									<flag>wxALL</flag>
+									<border>5</border>
+									<object class="wxTextCtrl" name="IDC_EDIT_HEADS">
+										<value></value>
+									</object>
+								</object>
+								<object class="sizeritem">
+									<option>0</option>
+									<flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+									<border>5</border>
+									<object class="wxStaticText">
+										<label>Cylinders:</label>
+										<wrap>-1</wrap>
+									</object>
+								</object>
+								<object class="sizeritem">
+									<option>0</option>
+									<flag>wxALL</flag>
+									<border>5</border>
+									<object class="wxTextCtrl" name="IDC_EDIT_CYLINDERS">
+										<value></value>
+									</object>
+								</object>
+								<object class="sizeritem">
+									<option>0</option>
+									<flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+									<border>5</border>
+									<object class="wxStaticText">
+										<label>Size (MB):</label>
+										<wrap>-1</wrap>
+									</object>
+								</object>
+								<object class="sizeritem">
+									<option>0</option>
+									<flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+									<border>5</border>
+									<object class="wxTextCtrl" name="IDC_EDIT_SIZE">
+										<value></value>
+									</object>
+								</object>
+							</object>
+						</object>
+						<object class="spacer">
+							<option>1</option>
+							<flag>wxEXPAND</flag>
+							<border>5</border>
+							<size>0,0</size>
+						</object>
+					</object>
+				</object>
+				<object class="sizeritem">
+					<option>1</option>
+					<flag>wxEXPAND</flag>
+					<border>5</border>
+					<object class="wxBoxSizer">
+						<orient>wxHORIZONTAL</orient>
+						<object class="spacer">
+							<option>1</option>
+							<flag>wxEXPAND</flag>
+							<border>5</border>
+							<size>0,0</size>
+						</object>
+						<object class="sizeritem">
+							<option>0</option>
+							<flag>wxALL</flag>
+							<border>5</border>
+							<object class="wxButton" name="wxID_OK">
+								<label>OK</label>
+								<default>1</default>
+							</object>
+						</object>
+						<object class="sizeritem">
+							<option>0</option>
+							<flag>wxALL</flag>
+							<border>5</border>
+							<object class="wxButton" name="wxID_CANCEL">
+								<label>Cancel</label>
+								<default>0</default>
+							</object>
+						</object>
+					</object>
+				</object>
+			</object>
+		</object>
+	</object>
+
+	<object class="wxDialog" name="HdConfDlg">
+		<title>Hard Disc Parameters</title>
+		<centered>1</centered>
+		<object class="wxPanel" name="ROOT_PANEL">
+			<object class="wxFlexGridSizer">
+				<rows>0</rows>
+				<cols>1</cols>
+				<vgap>0</vgap>
+				<hgap>0</hgap>
+				<growablecols></growablecols>
+				<growablerows></growablerows>
+				<object class="sizeritem">
+					<option>1</option>
+					<flag>wxEXPAND</flag>
+					<border>5</border>
+					<object class="wxFlexGridSizer">
+						<rows>0</rows>
+						<cols>3</cols>
+						<vgap>0</vgap>
+						<hgap>0</hgap>
+						<growablecols>1</growablecols>
+						<growablerows></growablerows>
+						<object class="sizeritem">
+							<option>1</option>
+							<flag>wxEXPAND</flag>
+							<border>5</border>
+							<object class="wxFlexGridSizer">
+								<rows>0</rows>
+								<cols>4</cols>
+								<vgap>0</vgap>
+								<hgap>0</hgap>
+								<growablecols></growablecols>
+								<growablerows></growablerows>
+								<object class="sizeritem">
+									<option>0</option>
+									<flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+									<border>5</border>
+									<object class="wxStaticText">
+										<label>Sectors:</label>
+										<wrap>-1</wrap>
+									</object>
+								</object>
+								<object class="sizeritem">
+									<option>0</option>
+									<flag>wxALL</flag>
+									<border>5</border>
+									<object class="wxTextCtrl" name="IDC_EDIT_SECTORS">
+										<value></value>
+									</object>
+								</object>
+								<object class="sizeritem">
+									<option>0</option>
+									<flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+									<border>5</border>
+									<object class="wxStaticText">
+										<label>Heads:</label>
+										<wrap>-1</wrap>
+									</object>
+								</object>
+								<object class="sizeritem">
+									<option>0</option>
+									<flag>wxALL</flag>
+									<border>5</border>
+									<object class="wxTextCtrl" name="IDC_EDIT_HEADS">
+										<value></value>
+									</object>
+								</object>
+								<object class="sizeritem">
+									<option>0</option>
+									<flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+									<border>5</border>
+									<object class="wxStaticText">
+										<label>Cylinders:</label>
+										<wrap>-1</wrap>
+									</object>
+								</object>
+								<object class="sizeritem">
+									<option>0</option>
+									<flag>wxALL</flag>
+									<border>5</border>
+									<object class="wxTextCtrl" name="IDC_EDIT_CYLINDERS">
+										<value></value>
+									</object>
+								</object>
+								<object class="sizeritem">
+									<option>0</option>
+									<flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+									<border>5</border>
+									<object class="wxStaticText">
+										<label>Size (MB):</label>
+										<wrap>-1</wrap>
+									</object>
+								</object>
+								<object class="sizeritem">
+									<option>0</option>
+									<flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+									<border>5</border>
+									<object class="wxTextCtrl" name="IDC_EDIT_SIZE">
+										<value></value>
+									</object>
+								</object>
+							</object>
+						</object>
+						<object class="spacer">
+							<option>1</option>
+							<flag>wxEXPAND</flag>
+							<border>5</border>
+							<size>0,0</size>
+						</object>
+					</object>
+				</object>
+				<object class="sizeritem">
+					<option>1</option>
+					<flag>wxEXPAND</flag>
+					<border>5</border>
+					<object class="wxBoxSizer">
+						<orient>wxHORIZONTAL</orient>
+						<object class="spacer">
+							<option>1</option>
+							<flag>wxEXPAND</flag>
+							<border>5</border>
+							<size>0,0</size>
+						</object>
+						<object class="sizeritem">
+							<option>0</option>
+							<flag>wxALL</flag>
+							<border>5</border>
+							<object class="wxButton" name="wxID_OK">
+								<label>OK</label>
+								<default>1</default>
+							</object>
+						</object>
+						<object class="sizeritem">
+							<option>0</option>
+							<flag>wxALL</flag>
+							<border>5</border>
+							<object class="wxButton" name="wxID_CANCEL">
+								<label>Cancel</label>
+								<default>0</default>
+							</object>
 						</object>
 					</object>
 				</object>

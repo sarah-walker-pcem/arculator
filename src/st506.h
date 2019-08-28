@@ -14,6 +14,8 @@ typedef struct st506_t
         uint8_t ssb;
         int drq;
         int first;
+        
+        int spt[2], hpc[2];
 
         timer_t timer;
         FILE *hdfile[2];
@@ -25,7 +27,7 @@ typedef struct st506_t
         void *p;
 } st506_t;
 
-void st506_init(st506_t *st506, char *fn_pri, char *fn_sec, void (*irq_raise)(st506_t *st506), void (*irq_clear)(st506_t *st506), void *p);
+void st506_init(st506_t *st506, char *fn_pri, int pri_spt, int pri_hpc, char *fn_sec, int sec_spt, int sec_hpc, void (*irq_raise)(st506_t *st506), void (*irq_clear)(st506_t *st506), void *p);
 void st506_close(st506_t *st506);
 uint8_t st506_readb(st506_t *st506, uint32_t addr);
 uint32_t st506_readl(st506_t *st506, uint32_t addr);

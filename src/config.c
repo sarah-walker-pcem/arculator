@@ -12,6 +12,7 @@
 #include "video.h"
 
 char hd_fn[2][512];
+int hd_spt[2], hd_hpc[2], hd_cyl[2];
 
 char *get_filename(char *s)
 {
@@ -545,11 +546,17 @@ void loadconfig()
                 strcpy(hd_fn[0], p);
         else
                 hd_fn[0][0] = 0;
+        hd_spt[0] = config_get_int(CFG_MACHINE, NULL, "hd4_sectors", 63);
+        hd_hpc[0] = config_get_int(CFG_MACHINE, NULL, "hd4_heads", 16);
+        hd_cyl[0] = config_get_int(CFG_MACHINE, NULL, "hd4_cylinders", 100);
         p = (char *)config_get_string(CFG_MACHINE, NULL,"hd5_fn",NULL);
         if (p)
                 strcpy(hd_fn[1], p);
         else
                 hd_fn[1][0] = 0;
+        hd_spt[1] = config_get_int(CFG_MACHINE, NULL, "hd5_sectors", 63);
+        hd_hpc[1] = config_get_int(CFG_MACHINE, NULL, "hd5_heads", 16);
+        hd_cyl[1] = config_get_int(CFG_MACHINE, NULL, "hd5_cylinders", 100);
         p = (char *)config_get_string(CFG_MACHINE, NULL, "renderer_driver", "auto");
         selected_video_renderer = video_renderer_get_id(p);
         p = (char *)config_get_string(CFG_MACHINE, NULL, "podule_0", NULL);
@@ -603,7 +610,13 @@ void saveconfig()
         config_set_int(CFG_MACHINE, NULL, "rom_set", romset);
         config_set_int(CFG_GLOBAL, NULL, "stereo", stereo);
         config_set_string(CFG_MACHINE, NULL, "hd4_fn", hd_fn[0]);
+        config_set_int(CFG_MACHINE, NULL, "hd4_sectors", hd_spt[0]);
+        config_set_int(CFG_MACHINE, NULL, "hd4_heads", hd_hpc[0]);
+        config_set_int(CFG_MACHINE, NULL, "hd4_cylinders", hd_cyl[0]);
         config_set_string(CFG_MACHINE, NULL, "hd5_fn", hd_fn[1]);
+        config_set_int(CFG_MACHINE, NULL, "hd5_sectors", hd_spt[1]);
+        config_set_int(CFG_MACHINE, NULL, "hd5_heads", hd_hpc[1]);
+        config_set_int(CFG_MACHINE, NULL, "hd5_cylinders", hd_cyl[1]);
         config_set_string(CFG_MACHINE, NULL, "renderer_driver", video_renderer_get_name(selected_video_renderer));
         config_set_string(CFG_MACHINE, NULL, "podule_0", podule_names[0]);
         config_set_string(CFG_MACHINE, NULL, "podule_1", podule_names[1]);

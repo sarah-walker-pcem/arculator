@@ -234,6 +234,8 @@ uint8_t wd1770_read(uint16_t addr)
         return 0xFE;
 }
 
+#define FDC_LATCHA_DSKCHG_CLEAR (1 << 7)
+
 void wd1770_writelatch_a(uint8_t val)
 {
 //        rpclog("Write latch A %02X\n", val);
@@ -249,6 +251,8 @@ void wd1770_writelatch_a(uint8_t val)
            fdc_ready = 0;
         else
            fdc_ready = 4;
+        if (!(val & FDC_LATCHA_DSKCHG_CLEAR))
+                ioc_discchange_clear(curdrive);
 }
 void wd1770_writelatch_b(uint8_t val)
 {

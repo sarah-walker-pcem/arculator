@@ -15,14 +15,21 @@ enum
         ID_DRIVE_5
 };
 
-#define MAX_CYLINDERS 1024
-#define MAX_HEADS 16
-#define MAX_SECTORS 63
-#define MAX_SIZE ((MAX_CYLINDERS * MAX_HEADS * MAX_SECTORS) / (1024 * 1024 / 512))
+static int MAX_CYLINDERS = 1024;
+static int MAX_HEADS = 16;
+static int MIN_SECTORS = 1;
+static int MAX_SECTORS = 63;
+static int SECTOR_SIZE = 512;
+#define MAX_SIZE ((MAX_CYLINDERS * MAX_HEADS * MAX_SECTORS) / (1024 * 1024 / SECTOR_SIZE))
 
 static const podule_callbacks_t *podule_callbacks;
 
 void ide_config_init(const podule_callbacks_t *callbacks)
+{
+        podule_callbacks = callbacks;
+}
+
+void st506_config_init(const podule_callbacks_t *callbacks)
 {
         podule_callbacks = callbacks;
 }
@@ -61,8 +68,14 @@ static int changed_chs(void *window_p, const struct podule_config_item_t *item, 
                 snprintf(size_s, sizeof(size_s), "%i", sectors);
                 podule_callbacks->config_set_current(window_p, ID_SECTORS, size_s);
         }
+        else if (sectors < MIN_SECTORS)
+        {
+                sectors = MIN_SECTORS;
+                snprintf(size_s, sizeof(size_s), "%i", sectors);
+                podule_callbacks->config_set_current(window_p, ID_SECTORS, size_s);
+        }
 
-        size = (cylinders * heads * sectors) / (1024 * 1024 / 512);
+        size = (cylinders * heads * sectors) / (1024 * 1024 / SECTOR_SIZE);
         snprintf(size_s, sizeof(size_s), "%i", size);
         podule_callbacks->config_set_current(window_p, ID_SIZE, size_s);
 
@@ -88,7 +101,7 @@ static int changed_size(void *window_p, const struct podule_config_item_t *item,
 
         heads = MAX_HEADS;
         sectors = MAX_SECTORS;
-        cylinders = (size * (1024 * 1024 / 512)) / (MAX_HEADS * MAX_SECTORS);
+        cylinders = (size * (1024 * 1024 / SECTOR_SIZE)) / (MAX_HEADS * MAX_SECTORS);
 
         snprintf(size_s, sizeof(size_s), "%i", cylinders);
         podule_callbacks->config_set_current(window_p, ID_CYLINDERS, size_s);
@@ -118,6 +131,18 @@ static int new_cylinders, new_heads, new_sectors;
 static char new_fn[256];
 static int new_drive_valid;
 
+static void new_drive_init(void *window_p)
+{
+        char size_s[80];
+        
+        snprintf(size_s, sizeof(size_s), "%i", 100);
+        podule_callbacks->config_set_current(window_p, ID_CYLINDERS, size_s);
+        snprintf(size_s, sizeof(size_s), "%i", MAX_HEADS);
+        podule_callbacks->config_set_current(window_p, ID_HEADS, size_s);
+        snprintf(size_s, sizeof(size_s), "%i", MAX_SECTORS);
+        podule_callbacks->config_set_current(window_p, ID_SECTORS, size_s);
+}
+
 static int new_drive_close(void *window_p)
 {
         FILE *f;
@@ -144,9 +169,9 @@ static int new_drive_close(void *window_p)
                 int c;
                 int nr_sectors = cylinders*heads*sectors;
 
-                memset(data, 0, 512);
+                memset(data, 0, SECTOR_SIZE);
                 for (c = 0; c < nr_sectors; c++)
-                        fwrite(data, 512, 1, f);
+                        fwrite(data, SECTOR_SIZE, 1, f);
                 fclose(f);
 
                 new_cylinders = cylinders;
@@ -162,6 +187,7 @@ static int new_drive_close(void *window_p)
 static podule_config_t ide_new_drive_config =
 {
         .title = "New drive",
+        .init = new_drive_init,
         .close = new_drive_close,
         .items =
         {
@@ -227,7 +253,7 @@ static int config_new_drive(void *window_p, const struct podule_config_item_t *i
                 podule_callbacks->config_set_current(window_p, ID_HEADS, temp_s);
                 snprintf(temp_s, sizeof(temp_s), "%i", new_sectors);
                 podule_callbacks->config_set_current(window_p, ID_SECTORS, temp_s);
-                snprintf(temp_s, sizeof(temp_s), "%i", (new_cylinders * new_heads * new_sectors) / (1024 * 1024 / 512));
+                snprintf(temp_s, sizeof(temp_s), "%i", (new_cylinders * new_heads * new_sectors) / (1024 * 1024 / SECTOR_SIZE));
                 podule_callbacks->config_set_current(window_p, ID_SIZE, temp_s);
                 podule_callbacks->config_set_current(window_p, ID_PATH, new_fn);
                 
@@ -248,7 +274,7 @@ static void drive_load_open(void *window_p)
         podule_callbacks->config_set_current(window_p, ID_HEADS, temp_s);
         snprintf(temp_s, sizeof(temp_s), "%i", new_sectors);
         podule_callbacks->config_set_current(window_p, ID_SECTORS, temp_s);
-        snprintf(temp_s, sizeof(temp_s), "%i", (new_cylinders * new_heads * new_sectors) / (1024 * 1024 / 512));
+        snprintf(temp_s, sizeof(temp_s), "%i", (new_cylinders * new_heads * new_sectors) / (1024 * 1024 / SECTOR_SIZE));
         podule_callbacks->config_set_current(window_p, ID_SIZE, temp_s);
 }
 
@@ -330,8 +356,9 @@ static int config_load_drive(void *window_p, const struct podule_config_item_t *
 //                rpclog("filesize=%i\n", filesize);
                 
                 /*Try to detect drive size geometry disc record. Valid disc record
-                  will have log2secsize of 9 (512 bytes per sector), density of
-                  0, and sector and head counts within valid range*/
+                  will have log2secsize of 8 (256 bytes per sector) or 9 (512
+                  bytes per sector), density of 0, and sector and head counts
+                  within valid range*/
                 /*Initially assume stupid 512 byte header created by RPCemu and
                   older Arculator*/
                 fseek(f, 0xFC0, SEEK_SET);
@@ -340,7 +367,7 @@ static int config_load_drive(void *window_p, const struct podule_config_item_t *
                 new_heads = getc(f);
                 density = getc(f);
 
-                if (log2secsize != 9 || !new_sectors || !new_heads || new_sectors > 63 || new_heads > 16 || density != 0)
+                if ((log2secsize != 8 && log2secsize != 9) || !new_sectors || !new_heads || new_sectors > 63 || new_heads > 16 || density != 0)
                 {
                         /*Invalid geometry, try without header*/
                         fseek(f, 0xDC0, SEEK_SET);
@@ -349,7 +376,7 @@ static int config_load_drive(void *window_p, const struct podule_config_item_t *
                         new_heads = getc(f);
                         density = getc(f);
                         
-                        if (log2secsize != 9 || !new_sectors || !new_heads || new_sectors > 63 || new_heads > 16 || density != 0)
+                        if ((log2secsize != 8 && log2secsize != 9) || !new_sectors || !new_heads || new_sectors > 63 || new_heads > 16 || density != 0)
                         {
                                 /*Invalid geometry, assume max*/
                                 new_sectors = 63;
@@ -477,9 +504,52 @@ static int config_drive(void *window_p, const struct podule_config_item_t *item,
         return 0;
 }
 
+static void ide_podule_config_init(void *window_p)
+{
+        MAX_CYLINDERS = 1024;
+        MAX_HEADS = 16;
+        MIN_SECTORS = 1;
+        MAX_SECTORS = 63;
+        SECTOR_SIZE = 512;
+}
+
 podule_config_t ide_podule_config =
 {
         .title = "IDE podule configuration",
+        .init = ide_podule_config_init,
+        .items =
+        {
+                {
+                        .description = "Configure drive :4...",
+                        .type = CONFIG_BUTTON,
+                        .function = config_drive,
+                        .id = ID_DRIVE_4
+                },
+                {
+                        .description = "Configure drive :5...",
+                        .type = CONFIG_BUTTON,
+                        .function = config_drive,
+                        .id = ID_DRIVE_5
+                },
+                {
+                        .type = -1
+                }
+        }
+};
+
+static void st506_podule_config_init(void *window_p)
+{
+        MAX_CYLINDERS = 1024;
+        MAX_HEADS = 8;
+        MIN_SECTORS = 32;
+        MAX_SECTORS = 32;
+        SECTOR_SIZE = 256;
+}
+
+podule_config_t st506_podule_config =
+{
+        .title = "ST-506 podule configuration",
+        .init = st506_podule_config_init,
         .items =
         {
                 {

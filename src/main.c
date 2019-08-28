@@ -92,7 +92,8 @@ void rpclog(const char *format, ...)
    vsprintf(buf, format, ap);
    va_end(ap);
 
-   fprintf(stderr, "%s", buf);
+   fprintf(stderr, "[%08i]: %s", (uint32_t)(tsc >> 10), buf);
+   fprintf(rlog, "[%08i]: %s", (uint32_t)(tsc >> 10), buf);
 
    fputs(buf,rlog);
    fflush(rlog);

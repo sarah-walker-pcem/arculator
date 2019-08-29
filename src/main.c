@@ -217,6 +217,7 @@ void arc_init()
 
         c82c711_init();
         disc_init();
+        disc_reset();
         adf_init();
         apd_init();
         fdi_init();
@@ -269,7 +270,7 @@ void arc_reset()
         ioc_reset();
         vidc_reset();
         keyboard_init();
-        disc_init();
+        disc_reset();
         wd1770_reset();
         c82c711_fdc_init();
         if (!fdctype && st506_present)

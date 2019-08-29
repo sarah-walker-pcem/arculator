@@ -237,6 +237,10 @@ void disc_init()
         drives[0].poll = drives[1].poll = 0;
         drives[0].seek = drives[1].seek = 0;
         drives[0].readsector = drives[1].readsector = 0;
+}
+
+void disc_reset()
+{
         curdrive = 0;
         timer_add(&disc_timer, disc_poll, NULL, 0);
 }

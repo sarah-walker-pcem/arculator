@@ -52,6 +52,22 @@ void resetide(ide_t *ide,
                         ide->hdfile[c] = fopen(fn_pri, "rb+");
                 else
                         ide->hdfile[c] = fopen(fn_sec, "rb+");
+
+                if (ide->hdfile[c])
+                {
+                        uint8_t log2secsize, sectors, heads, density;
+                        
+                        fseek(ide->hdfile[c], 0xFC0, SEEK_SET);
+                        log2secsize = getc(ide->hdfile[c]);
+                        sectors = getc(ide->hdfile[c]);
+                        heads = getc(ide->hdfile[c]);
+                        density = getc(ide->hdfile[c]);
+
+                        if ((log2secsize != 8 && log2secsize != 9) || !sectors || !heads || sectors > 63 || heads > 16 || density != 0)
+                                ide->skip512[c] = 0;
+                        else
+                                ide->skip512[c] = 1;
+                }
 //        rpclog("Drive %i - %i %i\n",c,ide->spt[c],ide->hpc[c]);
         }
         ide->def_spt[0] = ide->spt[0] = pri_spt;

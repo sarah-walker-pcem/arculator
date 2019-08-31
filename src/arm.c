@@ -887,6 +887,8 @@ static void exception(uint32_t vector, int new_mode, int pc_offset)
                         refillpipeline(); \
                 } while (0)
 
+#define CHECK_ADDR_EXCEPTION(a) if ((a) & 0xfc000000) { databort = 2; break; }
+
 int refreshcount = 32;
 static int total_cycles;
 
@@ -1203,6 +1205,7 @@ void execarm(int cycles_to_execute)
                                 if (arm_has_swp)
                                 {
                                         addr = GETADDR(RN);
+                                        CHECK_ADDR_EXCEPTION(addr);
                                         templ = GETREG(RM);
                                         LOADREG(RD, readmeml(addr));
                                         cache_read_timing(PC, 1);
@@ -1268,6 +1271,7 @@ void execarm(int cycles_to_execute)
                                 if (arm_has_swp)
                                 {
                                         addr = armregs[RN];
+                                        CHECK_ADDR_EXCEPTION(addr);
                                         templ = GETREG(RM);
                                         LOADREG(RD, readmemb(addr));
                                         cache_read_timing(addr, 1);
@@ -1793,6 +1797,7 @@ void execarm(int cycles_to_execute)
                                         addr2 = -addr2;
                                 if (opcode & 0x1000000)
                                         addr += addr2;
+                                CHECK_ADDR_EXCEPTION(addr);
                                 templ = memmode;
                                 memmode = 0;
                                 templ2 = readmemb(addr);
@@ -1825,6 +1830,7 @@ void execarm(int cycles_to_execute)
                                 }
                                 else
                                         addr2 = opcode & 0xFFF;
+                                CHECK_ADDR_EXCEPTION(addr);
                                 templ2 = ldrresult(readmeml(addr), addr);
                                 if (databort)
                                         break;
@@ -1850,6 +1856,7 @@ void execarm(int cycles_to_execute)
                                 }
                                 else
                                         addr2 = opcode & 0xFFF;
+                                CHECK_ADDR_EXCEPTION(addr);
                                 templ = memmode;
                                 memmode = 0;
                                 templ2 = ldrresult(readmeml(addr), addr);
@@ -1879,6 +1886,7 @@ void execarm(int cycles_to_execute)
                                 }
                                 else
                                         addr2 = opcode & 0xFFF;
+                                CHECK_ADDR_EXCEPTION(addr);
                                 if (RD == 15) { writememl(addr, armregs[RD] + 4); }
                                 else          { writememl(addr, armregs[RD]); }
                                 if (databort)
@@ -1903,6 +1911,7 @@ void execarm(int cycles_to_execute)
                                 }
                                 else
                                         addr2 = opcode & 0xFFF;
+                                CHECK_ADDR_EXCEPTION(addr);
                                 templ = memmode;
                                 memmode = 0;
                                 if (RD == 15) { writememl(addr,armregs[RD]+4); }
@@ -1934,6 +1943,7 @@ void execarm(int cycles_to_execute)
                                         addr = GETADDR(RN) + addr2;
                                 else
                                         addr = GETADDR(RN) - addr2;
+                                CHECK_ADDR_EXCEPTION(addr);
                                 if (RD==15) { writememl(addr,armregs[RD]+4); }
                                 else        { writememl(addr,armregs[RD]); }
                                 if (databort)
@@ -1956,6 +1966,7 @@ void execarm(int cycles_to_execute)
                                         addr2 = shift_mem(opcode);
                                 else
                                         addr2 = opcode & 0xFFF;
+                                CHECK_ADDR_EXCEPTION(addr);
                                 writememb(addr, armregs[RD]);
                                 if (databort)
                                         break;
@@ -1979,6 +1990,7 @@ void execarm(int cycles_to_execute)
                                         addr2 = shift_mem(opcode);
                                 else
                                         addr2 = opcode & 0xFFF;
+                                CHECK_ADDR_EXCEPTION(addr);
                                 writememb(addr, armregs[RD]);
                                 templ = memmode;
                                 memmode = 0;
@@ -2008,6 +2020,7 @@ void execarm(int cycles_to_execute)
                                         addr = GETADDR(RN) + addr2;
                                 else
                                         addr = GETADDR(RN) - addr2;
+                                CHECK_ADDR_EXCEPTION(addr);
                                 writememb(addr, armregs[RD]);
                                 if (databort)
                                         break;
@@ -2036,6 +2049,7 @@ void execarm(int cycles_to_execute)
                                         addr2 = -addr2;
                                 if (opcode & 0x1000000)
                                         addr += addr2;
+                                CHECK_ADDR_EXCEPTION(addr);
                                 templ = readmeml(addr);
                                 templ = ldrresult(templ, addr);
                                 if (databort)
@@ -2071,6 +2085,7 @@ void execarm(int cycles_to_execute)
                                         addr2=-addr2;
                                 if (opcode&0x1000000)
                                         addr+=addr2;
+                                CHECK_ADDR_EXCEPTION(addr);
                                 templ = readmemb(addr);
                                 if (databort)
                                         break;
@@ -2088,6 +2103,7 @@ void execarm(int cycles_to_execute)
                                 break;
 
 #define STMfirst()      mask=1; \
+                        CHECK_ADDR_EXCEPTION(addr); \
                         for (c = 0; c < 15; c++) \
                         { \
                                 if (opcode & mask) \
@@ -2119,6 +2135,7 @@ void execarm(int cycles_to_execute)
                         }
 
 #define STMfirstS()     mask = 1; \
+                        CHECK_ADDR_EXCEPTION(addr); \
                         for (c = 0; c < 15; c++) \
                         { \
                                 if (opcode & mask) \
@@ -2150,6 +2167,7 @@ void execarm(int cycles_to_execute)
                         }
 
 #define LDMall()        mask = 1; \
+                        CHECK_ADDR_EXCEPTION(addr); \
                         for (c = 0; c < 15; c++) \
                         { \
                                 if (opcode & mask) \
@@ -2170,6 +2188,7 @@ void execarm(int cycles_to_execute)
                         }
 
 #define LDMallS()       mask = 1; \
+                        CHECK_ADDR_EXCEPTION(addr); \
                         if (opcode & 0x8000) \
                         { \
                                 for (c = 0; c < 15; c++) \

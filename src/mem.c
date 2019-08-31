@@ -217,7 +217,7 @@ uint8_t readmemfb(uint32_t a)
                 rpclog("Read byte %08X %07X %02X  R2=%08X R4=%08X R5=%08X\n",a,PC,mempointb[((a)>>15)&0x7FF][((a)&0x7FFF)],armregs[2],armregs[4],armregs[5]);
                 return mempointb[((a)>>15)&0x7FF][((a)&0x7FFF)];
         }*/
-        if (a&0xFC000000) { LOG_DATABORT("Dat abort readmemfb %08X %08X\n",a,PC); databort=2; return 0xef; }
+        a &= 0x3ffffff;
 /*        if ((a&~0xFFF)==0x8000)
         {
                 printf("Read %04X %08X %02X\n",a,PC,mempointb[((a)>>15)&0x7FF][(a)&0x7FFF]);
@@ -315,7 +315,7 @@ uint32_t readmemfl(uint32_t a)
                 rpclog("Read long %08X %07X %08X R2=%08X R4=%08X R5=%08X\n",a,PC,mempoint[((a)>>15)&0x7FF][((a)&0x7FFF)>>2],armregs[2],armregs[4],armregs[5]);
                 return mempoint[((a)>>15)&0x7FF][((a)&0x7FFF)>>2];
         }*/
-        if (a&0xFC000000) { LOG_DATABORT("Dat abort readmemfl %08X\n",a); databort=2; return 0xdeadbeef; }
+        a &= 0x3ffffff;
         switch (a>>20)
         {
 #if 0
@@ -415,7 +415,8 @@ int f42count=0;
 void writememfb(uint32_t a,uint8_t v)
 {
         int bank;
-        if (a&0xFC000000) { LOG_DATABORT("Dat abort writememfb %08X\n",a); databort=2; return; }
+
+        a &= 0x3ffffff;
         switch (a>>20)
         {
 #if 0
@@ -520,7 +521,7 @@ void writememfb(uint32_t a,uint8_t v)
 
 void writememfl(uint32_t a,uint32_t v)
 {
-        if (a&0xFC000000) { LOG_DATABORT("Dat abort writememfl %08X %07X\n",a,PC); databort=2; return; }
+        a &= 0x3ffffff;
 /*        if (a==(0x1801010))
         {
                 rpclog("Writel R12+284 %07X %08X %08X\n",PC,v,a);

@@ -66,6 +66,8 @@ extern void fatal(const char *format, ...);
         (type *)( (char *)__mptr - offsetof(type,member) );})
         
 
+#define nr_elems(array) (int)(sizeof(array) / sizeof(array[0]))
+
 extern void arc_set_cpu(int cpu, int memc);
 extern void arc_setspeed(int mhz);
 extern void updatewindowsize(int x, int y);

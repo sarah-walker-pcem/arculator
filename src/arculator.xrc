@@ -219,32 +219,42 @@
 									<border>5</border>
 									<object class="wxFlexGridSizer">
 										<rows>0</rows>
-										<cols>3</cols>
+										<cols>2</cols>
 										<vgap>0</vgap>
 										<hgap>0</hgap>
 										<growablecols></growablecols>
 										<growablerows></growablerows>
-										<object class="spacer">
-											<option>1</option>
-											<flag>wxEXPAND</flag>
+										<object class="sizeritem">
+											<option>0</option>
+											<flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
 											<border>5</border>
-											<size>0,0</size>
+											<object class="wxStaticText" name="m_staticText1">
+												<size>70,-1</size>
+												<label>Machine :</label>
+												<wrap>-1</wrap>
+											</object>
 										</object>
 										<object class="sizeritem">
 											<option>0</option>
-											<flag>wxALIGN_CENTER_HORIZONTAL|wxALL</flag>
+											<flag>wxALL</flag>
 											<border>5</border>
-											<object class="wxButton" name="IDC_LOAD_PRESET">
-												<label>Load Preset...</label>
-												<default>0</default>
+											<object class="wxComboBox" name="IDC_COMBO_MACHINE">
+												<style>wxCB_DROPDOWN|wxCB_READONLY</style>
+												<size>272,-1</size>
+												<value></value>
+												<content />
 											</object>
 										</object>
-										<object class="spacer">
-											<option>1</option>
-											<flag>wxEXPAND</flag>
-											<border>5</border>
-											<size>0,0</size>
-										</object>
+									</object>
+								</object>
+								<object class="sizeritem">
+									<option>0</option>
+									<flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+									<border>5</border>
+									<object class="wxStaticText" name="IDC_TEXT_MACHINE">
+										<label>Machine :</label>
+										<wrap>-1</wrap>
+										<style>wxALIGN_CENTRE_HORIZONTAL</style>
 									</object>
 								</object>
 								<object class="sizeritem">
@@ -282,7 +292,7 @@
 											<border>5</border>
 											<object class="wxComboBox" name="IDC_COMBO_CPU">
 												<style>wxCB_DROPDOWN|wxCB_READONLY</style>
-												<size>240,-1</size>
+												<size>272,-1</size>
 												<value></value>
 												<content />
 											</object>
@@ -303,7 +313,7 @@
 											<border>5</border>
 											<object class="wxComboBox" name="IDC_COMBO_FPU">
 												<style>wxCB_DROPDOWN|wxCB_READONLY</style>
-												<size>240,-1</size>
+												<size>272,-1</size>
 												<value></value>
 												<content />
 											</object>
@@ -324,7 +334,7 @@
 											<border>5</border>
 											<object class="wxComboBox" name="IDC_COMBO_MEMORY">
 												<style>wxCB_DROPDOWN|wxCB_READONLY</style>
-												<size>240,-1</size>
+												<size>272,-1</size>
 												<value></value>
 												<content />
 											</object>
@@ -345,28 +355,7 @@
 											<border>5</border>
 											<object class="wxComboBox" name="IDC_COMBO_MEMC">
 												<style>wxCB_DROPDOWN|wxCB_READONLY</style>
-												<size>240,-1</size>
-												<value></value>
-												<content />
-											</object>
-										</object>
-										<object class="sizeritem">
-											<option>0</option>
-											<flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
-											<border>5</border>
-											<object class="wxStaticText" name="m_staticText6">
-												<size>70,-1</size>
-												<label>IO :</label>
-												<wrap>-1</wrap>
-											</object>
-										</object>
-										<object class="sizeritem">
-											<option>0</option>
-											<flag>wxALL</flag>
-											<border>5</border>
-											<object class="wxComboBox" name="IDC_COMBO_IO">
-												<style>wxCB_DROPDOWN|wxCB_READONLY</style>
-												<size>240,-1</size>
+												<size>272,-1</size>
 												<value></value>
 												<content />
 											</object>
@@ -387,7 +376,7 @@
 											<border>5</border>
 											<object class="wxComboBox" name="IDC_COMBO_OS">
 												<style>wxCB_DROPDOWN|wxCB_READONLY</style>
-												<size>240,-1</size>
+												<size>272,-1</size>
 												<value></value>
 												<content />
 											</object>
@@ -753,7 +742,7 @@
 									<border>5</border>
 									<object class="wxComboBox" name="IDC_COMBO_PODULE0">
 										<style>wxCB_DROPDOWN|wxCB_READONLY</style>
-										<size>195,-1</size>
+										<size>224,-1</size>
 										<value></value>
 										<content />
 									</object>
@@ -784,7 +773,7 @@
 									<border>5</border>
 									<object class="wxComboBox" name="IDC_COMBO_PODULE1">
 										<style>wxCB_DROPDOWN|wxCB_READONLY</style>
-										<size>195,-1</size>
+										<size>224,-1</size>
 										<value></value>
 										<content />
 									</object>
@@ -815,7 +804,7 @@
 									<border>5</border>
 									<object class="wxComboBox" name="IDC_COMBO_PODULE2">
 										<style>wxCB_DROPDOWN|wxCB_READONLY</style>
-										<size>195,-1</size>
+										<size>224,-1</size>
 										<value></value>
 										<content />
 									</object>
@@ -846,7 +835,7 @@
 									<border>5</border>
 									<object class="wxComboBox" name="IDC_COMBO_PODULE3">
 										<style>wxCB_DROPDOWN|wxCB_READONLY</style>
-										<size>195,-1</size>
+										<size>224,-1</size>
 										<value></value>
 										<content />
 									</object>

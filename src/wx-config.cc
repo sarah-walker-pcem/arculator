@@ -30,8 +30,47 @@ enum
         CPU_ARM3_26,
         CPU_ARM3_30,
         CPU_ARM3_33,
-        CPU_ARM3_35
+        CPU_ARM3_35,
+        CPU_MAX
 };
+
+const char *cpu_names[] =
+{
+        "ARM2",
+        "ARM250",
+        "ARM3 @ 20 MHz",
+        "ARM3 @ 25 MHz",
+        "ARM3 @ 26 MHz",
+        "ARM3 @ 30 MHz",
+        "ARM3 @ 33 MHz",
+        "ARM3 @ 35 MHz"
+};
+
+enum
+{
+        CPU_MASK_ARM2    = (1 << CPU_ARM2),
+        CPU_MASK_ARM250  = (1 << CPU_ARM250),
+        CPU_MASK_ARM3_20 = (1 << CPU_ARM3_20),
+        CPU_MASK_ARM3_25 = (1 << CPU_ARM3_25),
+        CPU_MASK_ARM3_26 = (1 << CPU_ARM3_26),
+        CPU_MASK_ARM3_30 = (1 << CPU_ARM3_30),
+        CPU_MASK_ARM3_33 = (1 << CPU_ARM3_33),
+        CPU_MASK_ARM3_35 = (1 << CPU_ARM3_35)
+};
+
+#define CPU_ARM2_AND_LATER (CPU_MASK_ARM2 | CPU_MASK_ARM3_20 | CPU_MASK_ARM3_25 | \
+                CPU_MASK_ARM3_26 | CPU_MASK_ARM3_30 | CPU_MASK_ARM3_33 | \
+                CPU_MASK_ARM3_35)
+
+#define CPU_ARM250_ONLY (CPU_MASK_ARM250)
+
+#define CPU_ARM3_25_AND_LATER (CPU_MASK_ARM3_25 | CPU_MASK_ARM3_26 | \
+                CPU_MASK_ARM3_30 | CPU_MASK_ARM3_33 | CPU_MASK_ARM3_35)
+
+#define CPU_ARM3_26_AND_LATER (CPU_MASK_ARM3_26 | CPU_MASK_ARM3_30 | \
+                CPU_MASK_ARM3_33 | CPU_MASK_ARM3_35)
+
+#define CPU_ARM3_33_AND_LATER (CPU_MASK_ARM3_33 | CPU_MASK_ARM3_35)
 
 enum
 {
@@ -46,7 +85,30 @@ enum
         MEMC_MEMC1A_8,
         MEMC_MEMC1A_12,
         MEMC_MEMC1A_16,
+        MEMC_MAX
 };
+
+const char *memc_names[] =
+{
+        "MEMC1",
+        "MEMC1a (8 MHz)",
+        "MEMC1a (12 MHz)",
+        "MEMC1a (16 MHz - overclocked)"
+};
+
+enum
+{
+        MEMC_MASK_MEMC1     = (1 << MEMC_MEMC1),
+        MEMC_MASK_MEMC1A_8  = (1 << MEMC_MEMC1A_8),
+        MEMC_MASK_MEMC1A_12 = (1 << MEMC_MEMC1A_12),
+        MEMC_MASK_MEMC1A_16 = (1 << MEMC_MEMC1A_16)
+};
+
+#define MEMC_MIN_MEMC1     (MEMC_MASK_MEMC1 | MEMC_MASK_MEMC1A_8 | \
+                MEMC_MASK_MEMC1A_12 | MEMC_MASK_MEMC1A_16)
+#define MEMC_MIN_MEMC1A    (MEMC_MASK_MEMC1A_8 | MEMC_MASK_MEMC1A_12 | \
+                MEMC_MASK_MEMC1A_16)
+#define MEMC_MIN_MEMC1A_12 (MEMC_MASK_MEMC1A_12 | MEMC_MASK_MEMC1A_16)
 
 enum
 {
@@ -62,8 +124,42 @@ enum
         MEM_2M,
         MEM_4M,
         MEM_8M,
-        MEM_16M
+        MEM_16M,
+        MEM_MAX
 };
+
+const char *mem_names[] =
+{
+        "512 kB",
+        "1 MB",
+        "2 MB",
+        "4 MB",
+        "8 MB",
+        "16 MB"
+};
+
+enum
+{
+        MEM_MASK_512K = (1 << MEM_512K),
+        MEM_MASK_1M   = (1 << MEM_1M),
+        MEM_MASK_2M   = (1 << MEM_2M),
+        MEM_MASK_4M   = (1 << MEM_4M),
+        MEM_MASK_8M   = (1 << MEM_8M),
+        MEM_MASK_16M  = (1 << MEM_16M)
+};
+
+#define MEM_MIN_512K (MEM_MASK_512K | MEM_MASK_1M | MEM_MASK_2M | MEM_MASK_4M | \
+                MEM_MASK_8M | MEM_MASK_16M)
+
+#define MEM_MIN_1M (MEM_MASK_1M | MEM_MASK_2M | MEM_MASK_4M | MEM_MASK_8M | \
+                MEM_MASK_16M)
+
+#define MEM_MIN_2M (MEM_MASK_2M | MEM_MASK_4M | MEM_MASK_8M | MEM_MASK_16M)
+
+#define MEM_MIN_4M (MEM_MASK_4M | MEM_MASK_8M | MEM_MASK_16M)
+
+#define MEM_1M_4M  (MEM_MASK_1M | MEM_MASK_2M | MEM_MASK_4M)
+#define MEM_2M_4M  (MEM_MASK_2M | MEM_MASK_4M)
 
 enum
 {
@@ -72,25 +168,32 @@ enum
         ROM_RISCOS_3
 };
 
-static struct
+typedef struct machine_preset_t
 {
         const char *name;
-        int cpu, fpu, memc, io, mem;
-} presets[] =
+        const char *config_name;
+        const char *description;
+        unsigned int allowed_cpu_mask;
+        unsigned int allowed_mem_mask;
+        unsigned int allowed_memc_mask;
+        int default_cpu, default_mem, default_memc, io;
+} machine_preset_t;
+
+static const machine_preset_t presets[] =
 {
-        {"Archimedes 305",   CPU_ARM2,    FPU_NONE, MEMC_MEMC1,     IO_OLD,       MEM_512K},
-        {"Archimedes 310",   CPU_ARM2,    FPU_NONE, MEMC_MEMC1,     IO_OLD,       MEM_1M},
-        {"Archimedes 440",   CPU_ARM2,    FPU_NONE, MEMC_MEMC1,     IO_OLD_ST506, MEM_4M},
-        {"Archimedes 410/1", CPU_ARM2,    FPU_NONE, MEMC_MEMC1A_8,  IO_OLD_ST506, MEM_1M},
-        {"Archimedes 420/1", CPU_ARM2,    FPU_NONE, MEMC_MEMC1A_8,  IO_OLD_ST506, MEM_2M},
-        {"Archimedes 440/1", CPU_ARM2,    FPU_NONE, MEMC_MEMC1A_8,  IO_OLD_ST506, MEM_4M},
-        {"A3000",            CPU_ARM2,    FPU_NONE, MEMC_MEMC1A_8,  IO_OLD,       MEM_1M},
-        {"Archimedes 540",   CPU_ARM3_26, FPU_NONE, MEMC_MEMC1A_12, IO_OLD,       MEM_4M},
-        {"A5000",            CPU_ARM3_25, FPU_NONE, MEMC_MEMC1A_12, IO_NEW,       MEM_2M},
-        {"A3010",            CPU_ARM250,  FPU_NONE, MEMC_MEMC1A_12, IO_NEW,       MEM_1M},
-        {"A3020",            CPU_ARM250,  FPU_NONE, MEMC_MEMC1A_12, IO_NEW,       MEM_2M},
-        {"A4000",            CPU_ARM250,  FPU_NONE, MEMC_MEMC1A_12, IO_NEW,       MEM_2M},
-        {"A5000a",           CPU_ARM3_33, FPU_NONE, MEMC_MEMC1A_12, IO_NEW,       MEM_4M},
+        {"Archimedes 305",   "a305",   "ARM2, 512kB RAM, MEMC1, Old IO, Arthur",               CPU_ARM2_AND_LATER,    MEM_MIN_512K, MEMC_MIN_MEMC1,     CPU_ARM2,    MEM_512K, MEMC_MEMC1,     IO_OLD},
+        {"Archimedes 310",   "a310",   "ARM2, 1MB RAM, MEMC1, Old IO, Arthur",                 CPU_ARM2_AND_LATER,    MEM_MIN_1M,   MEMC_MIN_MEMC1,     CPU_ARM2,    MEM_1M,   MEMC_MEMC1,     IO_OLD},
+        {"Archimedes 440",   "a440",   "ARM2, 1MB RAM, MEMC1, Old IO + ST-506 HD, Arthur",     CPU_ARM2_AND_LATER,    MEM_MIN_4M,   MEMC_MIN_MEMC1,     CPU_ARM2,    MEM_4M,   MEMC_MEMC1,     IO_OLD_ST506},
+        {"Archimedes 410/1", "a410/1", "ARM2, 1MB RAM, MEMC1A, Old IO + ST-506 HD, RISC OS 2", CPU_ARM2_AND_LATER,    MEM_MIN_1M,   MEMC_MIN_MEMC1A,    CPU_ARM2,    MEM_1M,   MEMC_MEMC1A_8,  IO_OLD_ST506},
+        {"Archimedes 420/1", "a420/1", "ARM2, 2MB RAM, MEMC1A, Old IO + ST-506 HD, RISC OS 2", CPU_ARM2_AND_LATER,    MEM_MIN_2M,   MEMC_MIN_MEMC1A,    CPU_ARM2,    MEM_2M,   MEMC_MEMC1A_8,  IO_OLD_ST506},
+        {"Archimedes 440/1", "a440/1", "ARM2, 4MB RAM, MEMC1A, Old IO + ST-506 HD, RISC OS 2", CPU_ARM2_AND_LATER,    MEM_MIN_4M,   MEMC_MIN_MEMC1A,    CPU_ARM2,    MEM_4M,   MEMC_MEMC1A_8,  IO_OLD_ST506},
+        {"A3000",            "a3000",  "ARM2, 1MB RAM, MEMC1A, Old IO, RISC OS 2",             CPU_ARM2_AND_LATER,    MEM_MIN_1M,   MEMC_MIN_MEMC1A,    CPU_ARM2,    MEM_1M,   MEMC_MEMC1A_8,  IO_OLD},
+        {"Archimedes 540",   "a540",   "ARM3/26, 4MB RAM, MEMC1A, Old IO, RISC OS 2.01",       CPU_ARM3_26_AND_LATER, MEM_MIN_4M,   MEMC_MIN_MEMC1A_12, CPU_ARM3_26, MEM_4M,   MEMC_MEMC1A_12, IO_OLD},
+        {"A5000",            "a5000",  "ARM3/25, 1MB RAM, MEMC1A, New IO, RISC OS 3.0",        CPU_ARM3_25_AND_LATER, MEM_MIN_1M,   MEMC_MIN_MEMC1A_12, CPU_ARM3_25, MEM_2M,   MEMC_MEMC1A_12, IO_NEW},
+        {"A3010",            "a3010",  "ARM250, 1MB RAM, MEMC1A, New IO, RISC OS 3.1",         CPU_ARM250_ONLY,       MEM_1M_4M,    MEMC_MIN_MEMC1A_12, CPU_ARM250,  MEM_1M,   MEMC_MEMC1A_12, IO_NEW},
+        {"A3020",            "a3020",  "ARM250, 2MB RAM, MEMC1A, New IO, RISC OS 3.1",         CPU_ARM250_ONLY,       MEM_2M_4M,    MEMC_MIN_MEMC1A_12, CPU_ARM250,  MEM_2M,   MEMC_MEMC1A_12, IO_NEW},
+        {"A4000",            "a4000",  "ARM250, 2MB RAM, MEMC1A, New IO, RISC OS 3.1",         CPU_ARM250_ONLY,       MEM_2M_4M,    MEMC_MIN_MEMC1A_12, CPU_ARM250,  MEM_2M,   MEMC_MEMC1A_12, IO_NEW},
+        {"A5000a",           "a5000a", "ARM3/33, 4MB RAM, MEMC1A, New IO, RISC OS 3.1",        CPU_ARM3_33_AND_LATER, MEM_MIN_4M,   MEMC_MIN_MEMC1A_12, CPU_ARM3_33, MEM_4M,   MEMC_MEMC1A_12, IO_NEW},
         {"", 0, 0, 0, 0, 0}
 };
 
@@ -102,10 +205,9 @@ public:
 private:
 	void OnOK(wxCommandEvent &event);
 	void OnCancel(wxCommandEvent &event);
-	void OnPreset(wxCommandEvent &event);
+	void OnMachine(wxCommandEvent &event);
 	void OnComboCPU(wxCommandEvent &event);
 	void OnComboFPU(wxCommandEvent &event);
-	void OnComboIO(wxCommandEvent &event);
 	void OnComboMEMC(wxCommandEvent &event);
 	void OnComboMemory(wxCommandEvent &event);
 	void OnComboOS(wxCommandEvent &event);
@@ -121,12 +223,81 @@ private:
 	void PopulatePoduleLists(void);
 	bool PoduleGetConfigEnable(int slot_nr);
 	
+	int get_preset(char *machine);
+	int get_preset_config(char *machine);
+
+        int get_cpu(char *cpu);
+        int get_memc(char *memc);
+        int get_mem(char *mem);
+
+	int config_preset;
 	int config_cpu, config_mem, config_memc, config_fpu, config_io, config_rom;
         wxString hd_fns[2];
         char config_podules[4][16];
 	
 	bool running;
 };
+
+int ConfigDialog::get_preset(char *machine)
+{
+        int c = 0;
+
+        while (presets[c].name[0])
+        {
+                if (!strcmp(presets[c].name, machine))
+                        return c;
+
+                c++;
+        }
+
+        return 0;
+}
+
+int ConfigDialog::get_preset_config(char *machine)
+{
+        int c = 0;
+        
+        while (presets[c].name[0])
+        {
+                if (!strcmp(presets[c].config_name, machine))
+                        return c;
+                        
+                c++;
+        }
+        
+        return 0;
+}
+
+int ConfigDialog::get_cpu(char *cpu)
+{
+        for (int c = 0; c < nr_elems(cpu_names); c++)
+        {
+                if (!strcmp(cpu_names[c], cpu))
+                        return c;
+        }
+
+        return 0;
+}
+int ConfigDialog::get_memc(char *memc)
+{
+        for (int c = 0; c < nr_elems(memc_names); c++)
+        {
+                if (!strcmp(memc_names[c], memc))
+                        return c;
+        }
+
+        return 0;
+}
+int ConfigDialog::get_mem(char *mem)
+{
+        for (int c = 0; c < nr_elems(mem_names); c++)
+        {
+                if (!strcmp(mem_names[c], mem))
+                        return c;
+        }
+
+        return 0;
+}
 
 void ConfigDialog::CommonInit(wxWindow *parent, bool is_running)
 {
@@ -135,10 +306,9 @@ void ConfigDialog::CommonInit(wxWindow *parent, bool is_running)
 
         Bind(wxEVT_BUTTON, &ConfigDialog::OnOK, this, wxID_OK);
         Bind(wxEVT_BUTTON, &ConfigDialog::OnCancel, this, wxID_CANCEL);
-        Bind(wxEVT_BUTTON, &ConfigDialog::OnPreset, this, XRCID("IDC_LOAD_PRESET"));
+        Bind(wxEVT_COMBOBOX, &ConfigDialog::OnMachine, this, XRCID("IDC_COMBO_MACHINE"));
         Bind(wxEVT_COMBOBOX, &ConfigDialog::OnComboCPU, this, XRCID("IDC_COMBO_CPU"));
         Bind(wxEVT_COMBOBOX, &ConfigDialog::OnComboFPU, this, XRCID("IDC_COMBO_FPU"));
-        Bind(wxEVT_COMBOBOX, &ConfigDialog::OnComboIO, this, XRCID("IDC_COMBO_IO"));
         Bind(wxEVT_COMBOBOX, &ConfigDialog::OnComboMEMC, this, XRCID("IDC_COMBO_MEMC"));
         Bind(wxEVT_COMBOBOX, &ConfigDialog::OnComboMemory, this, XRCID("IDC_COMBO_MEMORY"));
         Bind(wxEVT_COMBOBOX, &ConfigDialog::OnComboOS, this, XRCID("IDC_COMBO_OS"));
@@ -202,6 +372,7 @@ ConfigDialog::ConfigDialog(wxWindow *parent, bool is_running)
 {
         int c;
         
+        config_preset = get_preset_config(machine);
         config_cpu = arm_cpu_type;
         config_fpu = fpaena ? (fpu_type ? FPU_FPPC : FPU_FPA10) : FPU_NONE;
         config_memc = memc_type;
@@ -246,10 +417,11 @@ ConfigDialog::ConfigDialog(wxWindow *parent, bool is_running)
 
 ConfigDialog::ConfigDialog(wxWindow *parent, bool is_running, int preset)
 {
-        config_cpu  = presets[preset].cpu;
-        config_mem  = presets[preset].mem;
-        config_memc = presets[preset].memc;
-        config_fpu  = presets[preset].fpu;
+        config_preset = preset;
+        config_cpu  = presets[preset].default_cpu;
+        config_mem  = presets[preset].default_mem;
+        config_memc = presets[preset].default_memc;
+        config_fpu  = FPU_NONE;
         config_io   = presets[preset].io;
 
         CommonInit(parent, is_running);
@@ -267,43 +439,44 @@ ConfigDialog::ConfigDialog(wxWindow *parent, bool is_running, int preset)
 
 void ConfigDialog::UpdateList(int cpu, int mem, int memc, int fpu, int io)
 {
-        wxComboBox *cbox = (wxComboBox *)this->FindWindow(XRCID("IDC_COMBO_CPU"));
+        int c;
+        wxComboBox *cbox = (wxComboBox *)this->FindWindow(XRCID("IDC_COMBO_MACHINE"));
         cbox->SetValue("");
         cbox->Clear();
-        cbox->Append("ARM2");
-        cbox->Append("ARM250");
-        cbox->Append("ARM3 @ 20 MHz");
-        cbox->Append("ARM3 @ 25 MHz");
-        cbox->Append("ARM3 @ 26 MHz");
-        cbox->Append("ARM3 @ 30 MHz");
-        cbox->Append("ARM3 @ 33 MHz");
-        cbox->Append("ARM3 @ 35 MHz");
-        cbox->Select(cpu);
+        c = 0;
+        while (presets[c].name[0])
+                cbox->Append(presets[c++].name);
+        cbox->Select(config_preset);
+
+        cbox = (wxComboBox *)this->FindWindow(XRCID("IDC_COMBO_CPU"));
+        cbox->SetValue("");
+        cbox->Clear();
+        for (c = 0; c < nr_elems(cpu_names); c++)
+        {
+                if (presets[config_preset].allowed_cpu_mask & (1 << c))
+                        cbox->Append(cpu_names[c]);
+        }
+        cbox->SetValue(cpu_names[cpu]);
 
         cbox = (wxComboBox *)this->FindWindow(XRCID("IDC_COMBO_MEMORY"));
         cbox->SetValue("");
         cbox->Clear();
-        cbox->Append("512 kB");
-        cbox->Append("1 MB");
-        cbox->Append("2 MB");
-        cbox->Append("4 MB");
-        if (cpu != CPU_ARM250)
+        for (c = 0; c < nr_elems(mem_names); c++)
         {
-                cbox->Append("8 MB");
-                cbox->Append("16 MB");
+                if (presets[config_preset].allowed_mem_mask & (1 << c))
+                        cbox->Append(mem_names[c]);
         }
-        cbox->Select(mem);
-        
+        cbox->SetValue(mem_names[mem]);
+
         cbox = (wxComboBox *)this->FindWindow(XRCID("IDC_COMBO_MEMC"));
         cbox->SetValue("");
         cbox->Clear();
-        if (cpu == CPU_ARM2)
-                cbox->Append("MEMC1");
-        if (cpu != CPU_ARM250)
-                cbox->Append("MEMC1a (8 MHz)");
-        cbox->Append("MEMC1a (12 MHz)");
-        cbox->Append("MEMC1a (16 MHz - overclocked)");
-        cbox->Select((cpu == CPU_ARM250) ? memc-2 : ((cpu != CPU_ARM2) ? memc-1 : memc));
+        for (c = 0; c < nr_elems(memc_names); c++)
+        {
+                if (presets[config_preset].allowed_memc_mask & (1 << c))
+                        cbox->Append(memc_names[c]);
+        }
+        cbox->SetValue(memc_names[memc]);
 
         cbox = (wxComboBox *)this->FindWindow(XRCID("IDC_COMBO_FPU"));
         cbox->SetValue("");
@@ -315,18 +488,6 @@ void ConfigDialog::UpdateList(int cpu, int mem, int memc, int fpu, int io)
                 cbox->Append("FPA10");
         cbox->Select(fpu ? 1 : 0);
 
-        cbox = (wxComboBox *)this->FindWindow(XRCID("IDC_COMBO_IO"));
-        cbox->SetValue("");
-        cbox->Clear();
-        if (cpu != CPU_ARM250)
-        {
-                cbox->Append("Old (1772)");
-                cbox->Append("Old + ST506");
-        }
-        if (memc >= MEMC_MEMC1A_8 && cpu != CPU_ARM2)
-                cbox->Append("New (SuperIO)");
-        cbox->Select((cpu == CPU_ARM250) ? io-2 : io);
-
         cbox = (wxComboBox *)this->FindWindow(XRCID("IDC_COMBO_OS"));
         cbox->SetValue("");
         cbox->Clear();
@@ -337,6 +498,8 @@ void ConfigDialog::UpdateList(int cpu, int mem, int memc, int fpu, int io)
         }
         cbox->Append("RISC OS 3");
         cbox->Select((cpu == CPU_ARM250) ? config_rom-2 : config_rom);
+
+        ((wxStaticText *)this->FindWindow(XRCID("IDC_TEXT_MACHINE")))->SetLabelText(presets[config_preset].description);
 }
 
 void ConfigDialog::PopulatePoduleList(int slot_nr, wxComboBox *cbox)
@@ -499,7 +662,9 @@ void ConfigDialog::OnOK(wxCommandEvent &event)
         
         for (c = 0; c < 4; c++)
                 strncpy(podule_names[c], config_podules[c], 15);
-                
+
+        strncpy(machine, presets[config_preset].config_name, sizeof(machine));
+        
         saveconfig();
         if (running)
                 arc_reset();
@@ -510,44 +675,36 @@ void ConfigDialog::OnCancel(wxCommandEvent &event)
 {
         EndModal(-1);
 }
-void ConfigDialog::OnPreset(wxCommandEvent &event)
+void ConfigDialog::OnMachine(wxCommandEvent &event)
 {
-        int preset = ShowPresetList();
-        
-        if (preset != -1)
-        {
-                config_cpu  = presets[preset].cpu;
-                config_mem  = presets[preset].mem;
-                config_memc = presets[preset].memc;
-                config_fpu  = presets[preset].fpu;
-                config_io   = presets[preset].io;
+        char machine_c_s[256];
+        wxString machine_s = ((wxComboBox *)this->FindWindow(XRCID("IDC_COMBO_MACHINE")))->GetValue();
+        strncpy(machine_c_s, machine_s, sizeof(machine_c_s));
 
-                UpdateList(config_cpu, config_mem, config_memc, config_fpu, config_io);
-        }
+        config_preset = get_preset(machine_c_s);
+
+        config_cpu  = presets[config_preset].default_cpu;
+        config_mem  = presets[config_preset].default_mem;
+        config_memc = presets[config_preset].default_memc;
+        config_io   = presets[config_preset].io;
+
+        UpdateList(config_cpu, config_mem, config_memc, config_fpu, config_io);
 }
 
 void ConfigDialog::OnComboCPU(wxCommandEvent &event)
 {
-        wxComboBox *cbox = (wxComboBox *)this->FindWindow(event.GetId());
-        
-        config_cpu = cbox->GetCurrentSelection();
-        if (config_cpu == CPU_ARM250)
-        {
-                /*ARM250 only supports 4MB, no FPA, new IO*/
-                if (config_memc < MEMC_MEMC1A_12)
-                        config_memc = MEMC_MEMC1A_12;
-                config_fpu = FPU_NONE;
-                config_io = IO_NEW;
-                if (config_mem > MEM_4M)
-                        config_mem = MEM_4M;
-        }
-        else if (config_cpu == CPU_ARM2)
+        char cpu_c_s[256];
+        wxString cpu_s = ((wxComboBox *)this->FindWindow(event.GetId()))->GetValue();
+        strncpy(cpu_c_s, cpu_s, sizeof(cpu_c_s));
+
+        rpclog("New CPU = %s\n", cpu_c_s);
+        config_cpu = get_cpu(cpu_c_s);
+        rpclog("config_cpu = %i\n", config_cpu);
+        if (config_cpu == CPU_ARM2)
         {
                 /*ARM2 does not support FPA*/
                 if (config_fpu != FPU_NONE)
                         config_fpu = FPU_FPPC;
-                if (config_io == IO_NEW)
-                        config_io = IO_OLD_ST506;
         }
         else
         {
@@ -562,23 +719,20 @@ void ConfigDialog::OnComboCPU(wxCommandEvent &event)
 
 void ConfigDialog::OnComboMemory(wxCommandEvent &event)
 {
-        wxComboBox *cbox = (wxComboBox *)this->FindWindow(event.GetId());
+        char mem_c_s[256];
+        wxString mem_s = ((wxComboBox *)this->FindWindow(event.GetId()))->GetValue();
+        strncpy(mem_c_s, mem_s, sizeof(mem_c_s));
 
-        config_mem = cbox->GetCurrentSelection();
+        config_mem = get_mem(mem_c_s);
 }
 
 void ConfigDialog::OnComboMEMC(wxCommandEvent &event)
 {
-        wxComboBox *cbox = (wxComboBox *)this->FindWindow(event.GetId());
+        char memc_c_s[256];
+        wxString memc_s = ((wxComboBox *)this->FindWindow(event.GetId()))->GetValue();
+        strncpy(memc_c_s, memc_s, sizeof(memc_c_s));
 
-        config_memc = cbox->GetCurrentSelection();
-        if (config_cpu == CPU_ARM250)
-                config_memc += 2;
-        else if (config_cpu != CPU_ARM2)
-                config_memc++;
-        if (config_memc == MEMC_MEMC1)
-                config_fpu = FPU_NONE;
-        UpdateList(config_cpu, config_mem, config_memc, config_fpu, config_io);
+        config_memc = get_memc(memc_c_s);
 }
 
 void ConfigDialog::OnComboFPU(wxCommandEvent &event)
@@ -588,26 +742,11 @@ void ConfigDialog::OnComboFPU(wxCommandEvent &event)
         config_fpu = cbox->GetCurrentSelection();
 }
 
-void ConfigDialog::OnComboIO(wxCommandEvent &event)
-{
-        wxComboBox *cbox = (wxComboBox *)this->FindWindow(event.GetId());
-
-        config_io = cbox->GetCurrentSelection();
-        if (config_cpu == CPU_ARM250)
-                config_io = IO_NEW;
-        UpdateList(config_cpu, config_mem, config_memc, config_fpu, config_io);
-}
-
 void ConfigDialog::OnComboOS(wxCommandEvent &event)
 {
         wxComboBox *cbox = (wxComboBox *)this->FindWindow(event.GetId());
 
         config_rom = cbox->GetCurrentSelection();
-        if (config_cpu == CPU_ARM250)
-                config_rom = ROM_RISCOS_3;
-        if (config_rom < ROM_RISCOS_3 && config_io == IO_NEW)
-                config_io = IO_OLD_ST506;
-        UpdateList(config_cpu, config_mem, config_memc, config_fpu, config_io);
 }
 
 void ConfigDialog::OnHDSel(wxCommandEvent &event)

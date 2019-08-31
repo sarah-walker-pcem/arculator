@@ -14,6 +14,8 @@
 char hd_fn[2][512];
 int hd_spt[2], hd_hpc[2], hd_cyl[2];
 
+char machine[7];
+
 char *get_filename(char *s)
 {
         int c = strlen(s) - 1;
@@ -523,6 +525,11 @@ void loadconfig()
         config_load(CFG_MACHINE, machine_config_file);
         config_dump(CFG_MACHINE);
 
+        p = (char *)config_get_string(CFG_MACHINE, NULL, "machine", "a3000");
+        if (p)
+                strcpy(machine, p);
+        else
+                machine[0] = 0;
         soundena = config_get_int(CFG_GLOBAL, NULL, "sound_enable", 1);
         display_mode = config_get_int(CFG_MACHINE, NULL, "display_mode", DISPLAY_MODE_NO_BORDERS);
         arm_cpu_type = config_get_int(CFG_MACHINE, NULL, "cpu_type", 0);
@@ -587,6 +594,7 @@ void saveconfig()
 
         append_filename(config_file, exname, "arc.cfg", 511);
 
+        config_set_string(CFG_MACHINE, NULL, "machine", machine);
         config_set_string(CFG_MACHINE, NULL,"disc_name_0",discname[0]);
         config_set_string(CFG_MACHINE, NULL,"disc_name_1",discname[1]);
         config_set_string(CFG_MACHINE, NULL,"disc_name_2",discname[2]);

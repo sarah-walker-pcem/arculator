@@ -7,6 +7,7 @@
 #include "arm.h"
 #include "82c711.h"
 #include "82c711_fdc.h"
+#include "config.h"
 #include "cp15.h"
 #include "eterna.h"
 #include "ide.h"
@@ -232,7 +233,7 @@ uint8_t readmemfb(uint32_t a)
                 if (!(a & ((1 << 16) | (1 << 17) | (1 << 21)))) /*MEMC podule space*/
                         return podule_memc_read_b((a & 0xc000) >> 14, a & 0x3fff);
 
-                if (romset == 3 && a>=0x3012000 && a<=0x302A000)
+                if (fdctype == FDC_82C711 && a >= 0x3012000 && a <= 0x302A000)
                         return c82c711_fdc_dmaread(a);
 
                 bank=(a>>16)&7;
@@ -244,7 +245,8 @@ uint8_t readmemfb(uint32_t a)
                                 return ioc_read(a);
                         return 0xff;
                         case 1: /*1772 FDC*/
-                        if (romset<3) return wd1770_read(a);
+                        if (fdctype == FDC_WD1770)
+                                return wd1770_read(a);
                         return c82c711_read(a);
                         case 2: /*Econet*/
                         return 0xFF;
@@ -338,7 +340,7 @@ uint32_t readmemfl(uint32_t a)
                 if (!(a & ((1 << 16) | (1 << 17) | (1 << 21)))) /*MEMC podule space*/
                         return podule_memc_read_w((a & 0xc000) >> 14, a & 0x3fff);
 
-                if (romset == 3 && a>=0x3012000 && a<=0x302A000)
+                if (fdctype == FDC_82C711 && a >= 0x3012000 && a <= 0x302A000)
                         return c82c711_fdc_dmaread(a);
 
 //                        if (output) rpclog("IOC space readl %08X\n",a);
@@ -350,7 +352,8 @@ uint32_t readmemfl(uint32_t a)
                                 return ioc_read(a);
                         return 0xff;
                         case 1: /*1772 FDC*/
-                        if (romset<3) return wd1770_read(a);
+                        if (fdctype == FDC_WD1770)
+                                return wd1770_read(a);
                         if ((a&0xFFF)==0x7C0)
                                 return readidew(&ide_internal);
                         return c82c711_read(a);
@@ -443,7 +446,7 @@ void writememfb(uint32_t a,uint8_t v)
                         return;
                 }
 
-                if (romset == 3 && a >= 0x3012000 && a <= 0x302A000)
+                if (fdctype == FDC_82C711 && a >= 0x3012000 && a <= 0x302A000)
                 {
                         c82c711_fdc_dmawrite(a, v);
                         return;
@@ -458,7 +461,7 @@ void writememfb(uint32_t a,uint8_t v)
                                 ioc_write(a, v);
                         return;
                         case 1: /*1772 FDC*/
-                        if (romset<3)
+                        if (fdctype == FDC_WD1770)
                                 wd1770_write(a,v);
                         else
                                 c82c711_write(a,v);
@@ -486,13 +489,13 @@ void writememfb(uint32_t a,uint8_t v)
                                 return;
                                 case 0x0010: return; /*Printer*/
                                 case 0x0018:
-                                if (romset < 3)
-                                   wd1770_writelatch_b(v);
+                                if (fdctype == FDC_WD1770)
+                                        wd1770_writelatch_b(v);
 //                                ddensity=!(v&2);
                                 return; /*FDC Latch B*/
                                 case 0x0040: /*FDC Latch A*/
-                                if (romset < 3)
-                                   wd1770_writelatch_a(v);
+                                if (fdctype == FDC_WD1770)
+                                        wd1770_writelatch_a(v);
                                 return;
                                 case 0x0048: /*Video clock*/
                                 vidc_setclock(v & 3);
@@ -566,7 +569,7 @@ void writememfl(uint32_t a,uint32_t v)
                         podule_memc_write_w((a & 0xc000) >> 14, a & 0x3fff, v);
                         return;
                 }
-                if (romset == 3 && a >= 0x3012000 && a <= 0x302A000)
+                if (fdctype == FDC_82C711 && a >= 0x3012000 && a <= 0x302A000)
                 {
                         c82c711_fdc_dmawrite(a, v);
                         return;
@@ -580,7 +583,7 @@ void writememfl(uint32_t a,uint32_t v)
                                 ioc_write(a,v>>16);
                         return;
                         case 1: /*1772 FDC*/
-                        if (romset<3)
+                        if (fdctype == FDC_WD1770)
                                 wd1770_write(a,v>>16);
                         else
                         {
@@ -616,13 +619,13 @@ void writememfl(uint32_t a,uint32_t v)
                                 return;
                                 case 0x0010: return; /*Printer*/
                                 case 0x0018:
-                                if (romset < 3)
-                                   wd1770_writelatch_b(v);
+                                if (fdctype == FDC_WD1770)
+                                        wd1770_writelatch_b(v);
 //                                ddensity=!(v&2);
                                 return; /*FDC Latch B*/
                                 case 0x0040: /*FDC Latch A*/
-                                if (romset < 3)
-                                   wd1770_writelatch_a(v);
+                                if (fdctype == FDC_WD1770)
+                                        wd1770_writelatch_a(v);
                                 return;
                                 case 0x0048: return; /*????*/
                                 case 0x0050: return; /*IOEB*/

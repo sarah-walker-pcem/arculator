@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include "arc.h"
 #include "disc.h"
+#include "config.h"
 #include "ioc.h"
 #include "keyboard.h"
 #include "timer.h"
@@ -16,7 +17,7 @@ int keydelay=0,keydelay2;
 
 void ioc_updateirqs()
 {
-        if (!fdctype || romset<2)
+        if (fdctype == FDC_WD1770)
         {
                 if (discchange[curdrive])
                 {

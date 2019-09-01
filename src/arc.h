@@ -74,8 +74,6 @@ extern void updatewindowsize(int x, int y);
 
 extern int updatemips,inssec;
 
-extern FILE *olog;
-
 /*ARM*/
 extern uint32_t armregs[16];
 extern int armirq,armfiq;
@@ -124,16 +122,6 @@ extern uint32_t readmemfl(uint32_t a);
 extern void writememfb(uint32_t a,uint8_t v);
 extern void writememfl(uint32_t a,uint32_t v);
 
-/*arcrom*/
-extern void resetarcrom();
-extern void writearcrom(uint32_t addr, uint8_t val);
-extern uint8_t readarcrom(uint32_t addr);
-
-/*ics (idefs, icsrom)*/
-extern void resetics();
-extern void writeics(uint32_t addr, uint8_t val);
-extern uint8_t readics(uint32_t addr);
-
 /*MEMC*/
 extern uint32_t vinit;
 extern uint32_t vstart; /*Start of video RAM*/
@@ -145,11 +133,6 @@ extern int prefabort, prefabort_next;
 extern void initmemc();
 extern void writememc(uint32_t a);
 extern void writecam(uint32_t a);
-
-/*Sound*/
-extern void initsound();
-extern void deinitsound();
-extern void mixsound();
 
 /*VIDC*/
 extern int soundper;
@@ -171,62 +154,14 @@ extern void clearbitmap();
 
 /*Disc*/
 extern char discname[4][512];
-extern int curdrive;
 extern int discchange[4];
-extern uint8_t disc[4][2][80][16][1024]; /*Disc - E format (2 sides, 80 tracks, 5 sectors, 1024 bytes)*/
 extern int fdctype;
 extern int readflash[4];
 extern int fastdisc;
 
-extern void loaddisc(char *fn, int dosdisc, int drive);
-extern void updatedisc(char *fn, int drive);
-
-/*1772*/
-extern void callback();
-extern uint8_t read1772(unsigned a);
-extern void write1772(unsigned addr, unsigned val);
-extern void giveup1772();
-extern int motoron;
-
-/*82c711*/
-extern void reset82c711();
-extern void callbackfdc();
-extern uint8_t read82c711(uint32_t addr);
-extern void write82c711(uint32_t addr, uint32_t val);
-extern uint8_t readfdcdma(uint32_t addr);
-extern void writefdcdma(uint32_t addr, uint8_t val);
-
-/*ST-506*/
-extern void resetst506();
-extern void callbackst506();
-extern uint8_t readst506(uint32_t a);
-extern uint32_t readst506l(uint32_t a);
-extern void writest506(uint32_t addr, uint8_t val);
-extern void writest506l(uint32_t addr, uint32_t val);
-
-extern int soundena,oshack;
 
 /*Causes a databort during RISC OS 3.11 startup*/
 #define mousehack 0
-
-/*Mouse*/
-extern void doosmouse();
-extern void setmousepos(uint32_t a);
-extern void getunbufmouse(uint32_t a);
-extern void getosmouse();
-extern void setmouseparams(uint32_t a);
-extern void resetmouse();
-
-/*Keyboard*/
-extern void initkeyboard();
-extern void keycallback();
-extern void keycallback2();
-extern void updatekeys();
-extern void writekeyboard(uint8_t v);
-extern void sendkey(uint8_t v);
-extern void keyboard_poll();
-extern uint8_t keyboard_read();
-extern void keyboard_write(uint8_t val);
 
 extern char exname[512];
 
@@ -238,18 +173,8 @@ extern void writeeterna(uint32_t addr, uint32_t val);
 extern int romset;
 extern int stereo;
 
-#if 0
-/*ArculFS*/
-extern void initarculfs();
-extern void arculfs(int call);
-#endif
 
-
-extern int hdensity;
-
-
-
-extern int soundena,stereo;
+extern int soundena;
 
 extern int hires;
 extern int fullscreen;
@@ -266,7 +191,6 @@ extern int fdctype;
 
 
 extern int speed_mhz;
-extern int speed_to_mhz[5];
 
 
 extern int mousecapture;

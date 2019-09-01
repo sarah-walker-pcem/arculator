@@ -248,11 +248,11 @@ void keyboard_poll(void *p)
         
         timer_advance_u64(&keyboard_timer, TIMER_USEC * 10000);
         
-        if (romset > 3)
+        /*if (romset > 3)
         {
                 ioc_irqb(IOC_IRQB_PODULE_IRQ);
                 return;
-        }
+        }*/
 //        LOG_KB_MOUSE("Updatekeys %i %i\n",keystat,keyena);
 //        int mouseb=mouse_b;
 //        mouse_b|=(key[KEY_MENU])?4:0;

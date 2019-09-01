@@ -253,12 +253,12 @@ uint8_t readmemfb(uint32_t a)
                         case 3: /*Serial*/
                         return 0xFF;
                         case 4: /*Internal podules*/
-                        if (romset>3)
+/*                        if (romset>3)
                         {
                                 if ((a&~0x1F)==0x33c0004) return readeterna(a);
                                 if ((a&~0x1F)==0x3340000) return readeterna(a);
                                 if ((a&~0x1F)==0x33C0000) return readeterna(a);
-                        }
+                        }*/
                         return podule_read_b((a & 0xC000) >> 14, a & 0x3FFF);
                         case 5: /*Internal latches*/
                         switch (a&0xFFFC)
@@ -362,12 +362,12 @@ uint32_t readmemfl(uint32_t a)
                         case 3: /*Serial*/
                         return 0xFFFF;
                         case 4: /*Internal podules*/
-                        if (romset>3)
+/*                        if (romset>3)
                         {
                                 if ((a&~0x1F)==0x33c0004) return readeterna(a);
                                 if ((a&~0x1F)==0x3340000) return readeterna(a);
                                 if ((a&~0x1F)==0x33C0000) return readeterna(a);
-                        }
+                        }*/
                         return podule_read_w((a & 0xC000) >> 14, a & 0x3FFF);
                         case 5: /*Internal latches*/
                         switch (a&0xFFFC)
@@ -471,12 +471,12 @@ void writememfb(uint32_t a,uint8_t v)
                         case 3: /*Serial*/
                         return;
                         case 4: /*Internal podules*/
-                        if (romset>3)
+/*                        if (romset>3)
                         {
                                 if ((a&~0x1F)==0x33c0004) { writeeterna(a,v); return; }
                                 if ((a&~0x1F)==0x3340000) { writeeterna(a,v); return; }
                                 if ((a&~0x1F)==0x33C0000) { writeeterna(a,v); return; }
-                        }
+                        }*/
                         podule_write_b((a & 0xC000) >> 14, a & 0x3FFF, v);
                         return;
                         case 5: /*Internal latches*/
@@ -600,12 +600,12 @@ void writememfl(uint32_t a,uint32_t v)
                         case 3: /*Serial*/
                         return;
                         case 4: /*Internal podules*/
-                        if (romset>3)
+/*                        if (romset>3)
                         {
                                 if ((a&~0x1F)==0x33c0004) { writeeterna(a,v); return; }
                                 if ((a&~0x1F)==0x3340000) { writeeterna(a,v); return; }
                                 if ((a&~0x1F)==0x33C0000) { writeeterna(a,v); return; }
-                        }
+                        }*/
                         podule_write_w((a & 0xC000) >> 14, a & 0x3FFF, v);
                         return;
                         case 5: /*Internal latches*/

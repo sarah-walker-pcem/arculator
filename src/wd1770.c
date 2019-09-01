@@ -251,7 +251,7 @@ void wd1770_writelatch_a(uint8_t val)
            fdc_ready = 0;
         else
            fdc_ready = 4;
-        if (!(val & FDC_LATCHA_DSKCHG_CLEAR))
+        if (!(val & FDC_LATCHA_DSKCHG_CLEAR) && !disc_empty(curdrive))
                 ioc_discchange_clear(curdrive);
 }
 void wd1770_writelatch_b(uint8_t val)

@@ -264,9 +264,9 @@ int oldtrack[4] = {0, 0, 0, 0};
 void disc_seek(int drive, int track)
 {
         if (drives[drive].seek)
-           drives[drive].seek(drive, track);
-        if (track != oldtrack[drive])
-           ioc_discchange_clear(drive);
+                drives[drive].seek(drive, track);
+        if (track != oldtrack[drive] && !disc_empty(drive))
+                ioc_discchange_clear(drive);
         ddnoise_seek(track - oldtrack[drive]);
         oldtrack[drive] = track;
 }

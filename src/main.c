@@ -205,6 +205,7 @@ int arc_init()
         if (!fdctype && st506_present)
                 st506_internal_init();
 
+        cmos_init();
         podules_init();
         podules_reset();
         
@@ -238,6 +239,7 @@ void arc_reset()
         if (!fdctype && st506_present)
                 st506_internal_init();
         sound_init();
+        cmos_init();
         podules_close();
         podules_init();
         podules_reset();
@@ -303,7 +305,6 @@ void arc_run()
 {
         LOG_EVENT_LOOP("arc_run()\n");
         execarm((speed_mhz * 1000000) / 100);
-        cmostick();
         polljoy();
         mouse_poll_host();
         keyboard_poll_host();

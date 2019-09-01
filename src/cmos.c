@@ -9,6 +9,9 @@
 #include "arc.h"
 #include "cmos.h"
 #include "config.h"
+#include "timer.h"
+
+static timer_t cmos_timer;
 
 int cmos_changed = 0;
 
@@ -18,9 +21,6 @@ int lastdata;
 uint8_t i2cbyte;
 int i2cclock=1,i2cdata=1,i2cpos;
 int i2ctransmit=-1;
-#ifdef WIN32
-SYSTEMTIME systemtime;
-#endif
 
 #define CMOS 1
 #define ARM -1
@@ -40,6 +40,21 @@ uint8_t cmosaddr;
 uint8_t cmosram[256];
 int cmosrw;
 FILE *cmosf;
+
+typedef struct tod_t
+{
+        int msec;
+        int sec;
+        int min;
+        int hour;
+        int day;
+        int mon;
+        int year;
+} tod_t;
+
+static tod_t systemtime;
+
+static int rtc_days_in_month[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
 
 void cmosgettime();
 
@@ -85,6 +100,7 @@ void savecmos()
         LOG_CMOS("Writing CMOS %i\n",romset);
         snprintf(cmos_name, sizeof(cmos_name), "cmos/%s.%s.cmos.bin", machine_config_name, config_get_cmos_name(romset, fdctype));
         append_filename(fn, exname, cmos_name, 511);
+
         LOG_CMOS("Writing %s\n",fn);
         cmosf=fopen(fn,"wb");
         fwrite(cmosram,256,1,cmosf);
@@ -103,70 +119,88 @@ void cmosnextbyte()
         LOG_CMOS("cmosnextbyte(%d)\n", cmosaddr);
         i2cbyte=cmosram[(cmosaddr++)&0xFF];
 }
-int rtcdisable=0;
+
 void cmosgettime()
 {
+        int c, d;
+        
         LOG_CMOS("cmosgettime()\n");
-        if (rtcdisable) return;
-#ifdef WIN32
-/*        GetLocalTime(&systemtime);
-        c=systemtime.wMilliseconds/10;
-        d=c%10;
-        c/=10;
-        cmosram[1]=d|(c<<4);
-        d=systemtime.wSecond%10;
-        c=systemtime.wSecond/10;
-        cmosram[2]=d|(c<<4);
-        d=systemtime.wMinute%10;
-        c=systemtime.wMinute/10;
-        cmosram[3]=d|(c<<4);
-        d=systemtime.wHour%10;
-        c=systemtime.wHour/10;
-        cmosram[4]=d|(c<<4);
-        d=systemtime.wDay%10;
-        c=systemtime.wDay/10;
-        cmosram[5]=d|(c<<4);
-        d=systemtime.wMonth%10;
-        c=systemtime.wMonth/10;
-        cmosram[6]=d|(c<<4);*/
-#endif
-/*        d=systemtime.wYear%10;
-        c=(systemtime.wYear/10)%10;
-        cmosram[128]=d|(c<<4);
-        systemtime.wYear/=100;
-        d=systemtime.wYear%10;
-        c=systemtime.wYear/10;
-        cmosram[129]=d|(c<<4);*/
+
+        c = systemtime.msec / 10;
+        d = c % 10;
+        c /= 10;
+        cmosram[1] = d | (c << 4);
+        d = systemtime.sec % 10;
+        c = systemtime.sec / 10;
+        cmosram[2] = d | (c << 4);
+        d = systemtime.min % 10;
+        c = systemtime.min / 10;
+        cmosram[3] = d | (c << 4);
+        d = systemtime.hour % 10;
+        c = systemtime.hour / 10;
+        cmosram[4] = d | (c << 4);
+        d = systemtime.day % 10;
+        c = systemtime.day / 10;
+        cmosram[5] = d | (c << 4);
+        d = systemtime.mon % 10;
+        c = systemtime.mon / 10;
+        cmosram[6] = d | (c << 4);
 //        LOG_CMOS("Read time - %02X %02X %02X %02X %02X %02X\n",cmosram[1],cmosram[2],cmosram[3],cmosram[4],cmosram[5],cmosram[6]);
-/*        if (!olog) olog=fopen("olog.txt","wt");
-        sprintf(s,"Read time - %02X %02X %02X %02X %02X %02X\n",cmosram[1],cmosram[2],cmosram[3],cmosram[4],cmosram[5],cmosram[6]);
-        fputs(s,olog);*/
 }
 
-void cmostick()
+void cmos_tick(void *p)
 {
-#ifdef WIN32
-        systemtime.wMilliseconds+=2;
-        if (systemtime.wMilliseconds>=100)
+        timer_advance_u64(&cmos_timer, TIMER_USEC * 10000); /*10ms*/
+        
+        systemtime.msec += 10;
+        if (systemtime.msec >= 1000)
         {
-                systemtime.wMilliseconds-=100;
-                systemtime.wSecond++;
-                if (systemtime.wSecond>=60)
+                systemtime.msec = 0;
+                systemtime.sec++;
+                if (systemtime.sec >= 60)
                 {
-                        systemtime.wSecond-=60;
-                        systemtime.wMinute++;
-                        if (systemtime.wMinute>=60)
+                        systemtime.sec = 0;
+                        systemtime.min++;
+                        if (systemtime.min >= 60)
                         {
-                                systemtime.wHour++;
-                                if (systemtime.wMinute>=24)
+                                systemtime.min = 0;
+                                systemtime.hour++;
+                                if (systemtime.hour >= 24)
                                 {
-                                        systemtime.wHour=0;
-                                        systemtime.wDay++;
+                                        systemtime.hour = 0;
+                                        systemtime.day++;
+                                        if (systemtime.day >= rtc_days_in_month[systemtime.mon])
+                                        {
+                                                systemtime.day = 0;
+                                                systemtime.mon++;
+                                                if (systemtime.mon >= 12)
+                                                {
+                                                        systemtime.mon = 0;
+                                                        systemtime.year++;
+                                                }
+                                        }
                                 }
                         }
                 }
         }
+}
+
+void cmos_init()
+{
+#ifdef WIN32
+        SYSTEMTIME real_time;
+
+        GetLocalTime(&real_time);
+        systemtime.msec = real_time.wMilliseconds;
+        systemtime.sec = real_time.wSecond;
+        systemtime.min = real_time.wMinute;
+        systemtime.hour = real_time.wHour;
+        systemtime.day = real_time.wDay;
+        systemtime.mon = real_time.wMonth;
+        systemtime.year = real_time.wYear;
 #endif
+
+        timer_add(&cmos_timer, cmos_tick, NULL, 1);
 }
 
 void cmoswrite(uint8_t byte)

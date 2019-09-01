@@ -49,14 +49,7 @@ void loadcmos()
         char cmos_name[512];
         
         LOG_CMOS("Read cmos %i\n",romset);
-        if (romset>3) return;
-        switch (romset)
-        {
-                case 0: sprintf(cmos_name, "cmos/%s.arthur.cmos.bin", machine_config_name); break;
-                case 1: sprintf(cmos_name, "cmos/%s.riscos2.cmos.bin", machine_config_name); break;
-                case 2: sprintf(cmos_name, "cmos/%s.riscos3_old.cmos.bin", machine_config_name); break;
-                case 3: sprintf(cmos_name, "cmos/%s.riscos3_new.cmos.bin", machine_config_name); break;
-        }
+        snprintf(cmos_name, sizeof(cmos_name), "cmos/%s.%s.cmos.bin", machine_config_name, config_get_cmos_name(romset, fdctype));
         append_filename(fn, exname, cmos_name, 511);
 
         cmosf=fopen(fn,"rb");
@@ -69,13 +62,8 @@ void loadcmos()
         else
         {
                 LOG_CMOS("%s doesn't exist; resetting CMOS\n", fn);
-                switch (romset)
-                {
-                        case 0: append_filename(fn, exname, "cmos/arthur/cmos.bin", 511); break;
-                        case 1: append_filename(fn, exname, "cmos/riscos2/cmos.bin", 511); break;
-                        case 2: append_filename(fn, exname, "cmos/riscos3_old/cmos.bin", 511); break;
-                        case 3: append_filename(fn, exname, "cmos/riscos3_new/cmos.bin", 511); break;
-                }
+                snprintf(cmos_name, sizeof(cmos_name), "cmos/%s/cmos.bin", config_get_cmos_name(romset, fdctype));
+                append_filename(fn, exname, cmos_name, 511);
 
                 cmosf = fopen(fn, "rb");
                 if (cmosf)
@@ -95,14 +83,7 @@ void savecmos()
         char cmos_name[512];
         
         LOG_CMOS("Writing CMOS %i\n",romset);
-        if (romset>3) return;
-        switch (romset)
-        {
-                case 0: sprintf(cmos_name, "cmos/%s.arthur.cmos.bin", machine_config_name); break;
-                case 1: sprintf(cmos_name, "cmos/%s.riscos2.cmos.bin", machine_config_name); break;
-                case 2: sprintf(cmos_name, "cmos/%s.riscos3_old.cmos.bin", machine_config_name); break;
-                case 3: sprintf(cmos_name, "cmos/%s.riscos3_new.cmos.bin", machine_config_name); break;
-        }
+        snprintf(cmos_name, sizeof(cmos_name), "cmos/%s.%s.cmos.bin", machine_config_name, config_get_cmos_name(romset, fdctype));
         append_filename(fn, exname, cmos_name, 511);
         LOG_CMOS("Writing %s\n",fn);
         cmosf=fopen(fn,"wb");

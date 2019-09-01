@@ -245,7 +245,16 @@ static void arc_main_thread(LPVOID wx_menu)
 
         window_create(wx_menu);
         
-        arc_init();
+        if (arc_init())
+        {
+                MessageBox(NULL, "Configured ROM set is not available.\nConfiguration could not be run.", "Arculator", MB_OK);
+
+                arc_close();
+                UnregisterClass(szClassName, hinstance);
+                arc_stop_emulation();
+                
+                return;
+        }
 
         arc_update_menu();
         

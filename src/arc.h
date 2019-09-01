@@ -287,7 +287,7 @@ void arc_setspeed(int mhz);
 
 void updatewindowsize(int x, int y);
 
-void arc_init();
+int arc_init();
 void arc_reset();
 void arc_run();
 void arc_close();

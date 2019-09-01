@@ -417,7 +417,7 @@ int fpaopcode(uint32_t opcode)
         double tempf;
         int len;
         uint32_t addr;
-        if (romset<2 || romset>3) return 1;
+        //if (romset<2 || romset>3) return 1;
 /*        if (PC < 0x1800000 || output)
         {
                 dumpfpa();

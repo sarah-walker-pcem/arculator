@@ -512,6 +512,72 @@ void config_save(int is_global, char *fn)
         fclose(f);
 }
 
+static struct
+{
+        int romset;
+        char *config_name;
+        char *cmos_name;
+} romset_lookup[] =
+{
+        {ROM_ARTHUR_030, "arthur030", "arthur"},
+        {ROM_ARTHUR_120, "arthur120", "arthur"},
+        {ROM_RISCOS_200, "riscos200", "riscos2"},
+        {ROM_RISCOS_201, "riscos201", "riscos2"},
+        {ROM_RISCOS_300, "riscos300", "riscos3"},
+        {ROM_RISCOS_310, "riscos310", "riscos3"},
+        {ROM_RISCOS_311, "riscos311", "riscos3"},
+        {ROM_RISCOS_319, "riscos319", "riscos3"}
+};
+
+static int get_romset(char *name)
+{
+        int c;
+        
+        for (c = 0; c < nr_elems(romset_lookup); c++)
+        {
+                if (!strcmp(name, romset_lookup[c].config_name))
+                        return romset_lookup[c].romset;
+        }
+        
+        return 0;
+}
+
+char *config_get_romset_name(int romset)
+{
+        int c;
+
+        for (c = 0; c < nr_elems(romset_lookup); c++)
+        {
+                if (romset == romset_lookup[c].romset)
+                        return romset_lookup[c].config_name;
+        }
+
+        return "riscos311";
+}
+
+static char cmos_name[80];
+char *config_get_cmos_name(int romset, int fdctype)
+{
+        int c;
+
+        for (c = 0; c < nr_elems(romset_lookup); c++)
+        {
+                if (romset == romset_lookup[c].romset)
+                {
+                        if (romset >= ROM_RISCOS_300 && romset <= ROM_RISCOS_319)
+                        {
+                                snprintf(cmos_name, sizeof(cmos_name), "%s_%s",
+                                                romset_lookup[c].cmos_name, (fdctype == FDC_WD1770) ? "old" : "new");
+                                                
+                                return cmos_name;
+                        }
+                        else
+                                return romset_lookup[c].cmos_name;
+                }
+        }
+        
+        return "riscos3";
+}
 
 void loadconfig()
 {
@@ -547,7 +613,8 @@ void loadconfig()
         st506_present = config_get_int(CFG_MACHINE, NULL, "st506_present", 0);
         stereo = config_get_int(CFG_GLOBAL, NULL, "stereo", 1);
         memsize = config_get_int(CFG_MACHINE, NULL, "mem_size", 4096);
-        romset = config_get_int(CFG_MACHINE, NULL, "rom_set", 3);
+        p = (char *)config_get_string(CFG_MACHINE, NULL, "rom_set", "riscos311");
+        romset = get_romset(p);
         p = (char *)config_get_string(CFG_MACHINE, NULL,"hd4_fn",NULL);
         if (p)
                 strcpy(hd_fn[0], p);
@@ -615,7 +682,7 @@ void saveconfig()
         config_set_int(CFG_MACHINE, NULL, "fast_disc", fastdisc);
         config_set_int(CFG_MACHINE, NULL, "fdc_type", fdctype);
         config_set_int(CFG_MACHINE, NULL, "st506_present", st506_present);
-        config_set_int(CFG_MACHINE, NULL, "rom_set", romset);
+        config_set_string(CFG_MACHINE, NULL, "rom_set", config_get_romset_name(romset));
         config_set_int(CFG_GLOBAL, NULL, "stereo", stereo);
         config_set_string(CFG_MACHINE, NULL, "hd4_fn", hd_fn[0]);
         config_set_int(CFG_MACHINE, NULL, "hd4_sectors", hd_spt[0]);

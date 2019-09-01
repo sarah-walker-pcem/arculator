@@ -106,6 +106,7 @@ int loadrom()
         int find_file;
 //        char s[256];
         char fn[512];
+        char s[512];
         char *ext;
 #ifdef WIN32
         struct _finddata_t finddata;
@@ -124,16 +125,8 @@ int loadrom()
         {
                 chdir(olddir);
         }
-//        append_filename(fn,exname,"roms\\",511);
-        switch (romset)
-        {
-                case 0: append_filename(fn,exname,"roms/arthur",511); break;
-                case 1: append_filename(fn,exname,"roms/riscos2",511); break;
-                case 2: case 3: append_filename(fn,exname,"roms/riscos3",511); break;
-                case 4: append_filename(fn,exname,"roms/ertictac",511); chdir(fn); return loadertictac();
-                case 5: append_filename(fn,exname,"roms/poizone",511); chdir(fn); return loadpoizone();
-                case 6: append_filename(fn,exname,"roms/wtiger",511); break;
-        }
+        snprintf(s, sizeof(s), "roms/%s", config_get_romset_name(romset));
+        append_filename(fn, exname, s, sizeof(fn));
 
         rpclog("Loading ROM set %d from %s\n",romset, fn);
         if (chdir(fn) != 0)
@@ -153,7 +146,7 @@ int loadrom()
         while (!finished && file<16)
         {
                 ext = (char *)get_extension(finddata.name);
-                if (stricmp(ext,"txt"))
+                if (stricmp(ext,"txt") && strcmp(finddata.name, ".") && strcmp(finddata.name, ".."))
                 {
 //                        rpclog("Found %s\n",ff.name);
                         strcpy(romfns[file],finddata.name);
@@ -228,4 +221,23 @@ int loadrom()
         chdir(olddir);
 //        rpclog("Successfully loaded!\n");
         return 0;
+}
+
+int romset_available_mask = 0;
+
+/*Establish which ROMs are available*/
+int rom_establish_availability()
+{
+        int old_romset = romset;
+        int c;
+
+        for (romset = 0; romset < ROM_MAX; romset++)
+        {
+                if (!loadrom())
+                        romset_available_mask |= (1 << romset);
+        }
+
+        romset = old_romset;
+
+        return (!romset_available_mask);
 }

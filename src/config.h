@@ -6,6 +6,25 @@ enum
 
 extern int fdctype;
 
+enum
+{
+        ROM_ARTHUR_030,
+        ROM_ARTHUR_120,
+        ROM_RISCOS_200,
+        ROM_RISCOS_201,
+        ROM_RISCOS_300,
+        ROM_RISCOS_310,
+        ROM_RISCOS_311,
+        ROM_RISCOS_319,
+        
+        ROM_MAX
+};
+
+extern int romset_available_mask;
+
+char *config_get_romset_name(int romset);
+char *config_get_cmos_name(int romset, int fdctype);
+        
 extern float config_get_float(int is_global, const char *head, const char *name, float def);
 extern int config_get_int(int is_global, const char *head, const char *name, int def);
 extern const char *config_get_string(int is_global, const char *head, const char *name, const char *def);

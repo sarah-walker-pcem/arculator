@@ -47,7 +47,6 @@
   used for WD1772 - the effect is that WD1772 will hang more often if they are the
   same set.*/
 int romset=2;
-int romsavailable[6];
 
 void fdiclose();
 int firstfull=1;
@@ -137,47 +136,9 @@ void error(const char *format, ...)
    exit(-1);
 }
 
-/*Preference order : ROS3, ROS2, Arthur, Poizone, Erotactic/Tictac
-  ROS3 with WD1772 is not considered, if ROS3 is available run with 82c711 as
-  this is of more use to most users*/
-int rompreffered[5]={3,1,0,5,4};
-
-/*Establish which ROMs are available*/
-void establishromavailability()
-{
-        int d=0;
-        int c=romset;
-        for (romset=0;romset<7;romset++)
-        {
-                romsavailable[romset]=!loadrom();
-//                rpclog("romset %i %s\n",romset,(romsavailable[romset])?"available":"not available");
-        }
-        romset=c;
-        for (c=0;c<6;c++)
-            d|=romsavailable[c];
-        if (!d)
-        {
-                error("No ROMs are present!");
-                exit(-1);
-        }
-        if (romsavailable[romset])
-        {
-                loadrom();
-                return;
-        }
-        for (c=0;c<5;c++)
-        {
-                romset=rompreffered[c];
-                if (!loadrom())
-                   return;
-        }
-        error("No ROM sets available!");
-        exit(-1);
-}
-
 void arc_set_cpu(int cpu, int memc);
 
-void arc_init()
+int arc_init()
 {
         char *p;
         char s[512];
@@ -195,7 +156,8 @@ void arc_init()
         hostfs_init();
         initmem(memsize);
         
-        establishromavailability();
+        if (loadrom())
+                return -1;
 
         resizemem(memsize);
         
@@ -239,14 +201,14 @@ void arc_init()
                    ioc_discchange(c);
                 }
         }
-        if (romset==3) fdctype=1;
-        else	       fdctype=0;
 
         if (!fdctype && st506_present)
                 st506_internal_init();
 
         podules_init();
         podules_reset();
+        
+        return 0;
 }
 
 int speed_mhz;

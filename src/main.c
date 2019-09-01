@@ -163,7 +163,7 @@ int arc_init()
         
         initmemc();
         resetarm();
-        loadcmos();
+        cmos_load();
         ioc_reset();
         vidc_reset();
         keyboard_init();
@@ -221,10 +221,10 @@ void arc_reset()
         if (cmos_changed)
         {
                 cmos_changed = 0;
-                savecmos();
+                cmos_save();
         }
         loadrom();
-        loadcmos();
+        cmos_load();
         resizemem(memsize);
         arc_set_cpu(arm_cpu_type, memc_type);
         resetarm();
@@ -320,7 +320,7 @@ void arc_run()
         {
                 cmos_changed--;
                 if (!cmos_changed)
-                        savecmos();
+                        cmos_save();
         }
         LOG_EVENT_LOOP("END arc_run()\n");
 }
@@ -331,7 +331,7 @@ void arc_close()
 //        execarm(16000);
 //        vidc_dumppal();
         dumpregs();
-        savecmos();
+        cmos_save();
         saveconfig();
         podules_close();
         disc_close(0);

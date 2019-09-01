@@ -244,13 +244,6 @@ extern void initarculfs();
 extern void arculfs(int call);
 #endif
 
-/*CMOS / I2C*/
-extern int i2cclock,i2cdata;
-
-extern void cmosi2cchange(int nuclock, int nudata);
-extern void loadcmos();
-extern void savecmos();
-extern void cmostick();
 
 extern int hdensity;
 

@@ -2,6 +2,7 @@
   IOC emulation*/
 #include <stdio.h>
 #include "arc.h"
+#include "cmos.h"
 #include "disc.h"
 #include "config.h"
 #include "ioc.h"
@@ -64,7 +65,7 @@ void ioc_write(uint32_t addr, uint32_t v)
         switch (addr & 0x7C)
         {
                 case 0x00: 
-                cmosi2cchange(v & 2, v & 1); 
+                i2c_change(v & 2, v & 1);
                 ioc.ctrl = v & 0xFC; 
                 return;
                 case 0x04: 
@@ -152,7 +153,7 @@ uint8_t ioc_read(uint32_t addr)
         switch (addr & 0x7C)
         {
                 case 0x00: 
-                return ((i2cclock) ? 2 : 0) | ((i2cdata) ? 1 : 0) | flyback | 4;
+                return ((i2c_clock) ? 2 : 0) | ((i2c_data) ? 1 : 0) | flyback | 4;
                 case 0x04: 
                 ioc_irqbc(IOC_IRQB_KEYBOARD_RX);
                 temp = keyboard_read();

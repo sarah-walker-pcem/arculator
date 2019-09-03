@@ -831,7 +831,7 @@ int fpaopcode(uint32_t opcode)
                                 case 3: /*RFS*/
                                 if (FPA_DISABLED)
                                         return 1;
-                                rpclog("Read FPSR - %08X\n",fpsr);
+//                                rpclog("Read FPSR - %08X\n",fpsr);
                                 armregs[RD]=fpsr|0x400;
                                 arm_clock_i(3);
                                 return 0;

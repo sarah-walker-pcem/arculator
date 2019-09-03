@@ -83,17 +83,6 @@
 			<object class="wxMenuItem" name="IDM_MACHINE_CONFIGURE">
 				<label>_Configure...</label>
 			</object>
-                        <object class="wxMenu">
-                                <label>_Monitor type</label>
-        			<object class="wxMenuItem" name="IDM_MONITOR_NORMAL">
-        				<label>_Normal</label>
-        				<radio>1</radio>
-        			</object>
-        			<object class="wxMenuItem" name="IDM_MONITOR_HIRES">
-        				<label>_Hi-res mono</label>
-        				<radio>1</radio>
-        			</object>
-                        </object>
 		</object>
 		<object class="wxMenu">
 			<label>Video</label>
@@ -375,6 +364,27 @@
 											<flag>wxALL</flag>
 											<border>5</border>
 											<object class="wxComboBox" name="IDC_COMBO_OS">
+												<style>wxCB_DROPDOWN|wxCB_READONLY</style>
+												<size>272,-1</size>
+												<value></value>
+												<content />
+											</object>
+										</object>
+										<object class="sizeritem">
+											<option>0</option>
+											<flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+											<border>5</border>
+											<object class="wxStaticText" name="m_staticText7">
+												<size>70,-1</size>
+												<label>Monitor :</label>
+												<wrap>-1</wrap>
+											</object>
+										</object>
+										<object class="sizeritem">
+											<option>0</option>
+											<flag>wxALL</flag>
+											<border>5</border>
+											<object class="wxComboBox" name="IDC_COMBO_MONITOR">
 												<style>wxCB_DROPDOWN|wxCB_READONLY</style>
 												<size>272,-1</size>
 												<value></value>

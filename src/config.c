@@ -16,6 +16,8 @@ int hd_spt[2], hd_hpc[2], hd_cyl[2];
 
 char machine[7];
 
+int monitor_type;
+
 char *get_filename(char *s)
 {
         int c = strlen(s) - 1;
@@ -579,6 +581,44 @@ char *config_get_cmos_name(int romset, int fdctype)
         return "riscos3";
 }
 
+static struct
+{
+        int monitor_type;
+        char *config_name;
+} monitor_type_lookup[] =
+{
+        {MONITOR_STANDARD,  "standard"},
+        {MONITOR_MULTISYNC, "multisync"},
+        {MONITOR_VGA,       "vga"},
+        {MONITOR_MONO,      "mono"}
+};
+
+static int get_monitor_type(char *name)
+{
+        int c;
+
+        for (c = 0; c < nr_elems(monitor_type_lookup); c++)
+        {
+                if (!strcmp(name, monitor_type_lookup[c].config_name))
+                        return monitor_type_lookup[c].monitor_type;
+        }
+
+        return 0;
+}
+
+static char *get_monitor_type_name(int monitor_type)
+{
+        int c;
+
+        for (c = 0; c < nr_elems(monitor_type_lookup); c++)
+        {
+                if (monitor_type == monitor_type_lookup[c].monitor_type)
+                        return monitor_type_lookup[c].config_name;
+        }
+
+        return "multisync";
+}
+
 void loadconfig()
 {
         char config_file[512];
@@ -602,7 +642,6 @@ void loadconfig()
         memc_type = config_get_int(CFG_MACHINE, NULL, "memc_type", 0);
         fpaena = config_get_int(CFG_MACHINE, NULL, "fpa", 0);
         fpu_type = config_get_int(CFG_MACHINE, NULL, "fpu_type", 0);
-        hires = config_get_int(CFG_MACHINE, NULL, "hires", 0);
         firstfull = config_get_int(CFG_GLOBAL, NULL, "first_fullscreen", 1);
         dblscan = config_get_int(CFG_MACHINE, NULL, "double_scan", 1);
         video_fullscreen_scale = config_get_int(CFG_MACHINE, NULL, "video_fullscreen_scale", FULLSCR_SCALE_FULL);
@@ -615,6 +654,8 @@ void loadconfig()
         memsize = config_get_int(CFG_MACHINE, NULL, "mem_size", 4096);
         p = (char *)config_get_string(CFG_MACHINE, NULL, "rom_set", "riscos311");
         romset = get_romset(p);
+        p = (char *)config_get_string(CFG_MACHINE, NULL, "monitor_type", "multisync");
+        monitor_type = get_monitor_type(p);
         p = (char *)config_get_string(CFG_MACHINE, NULL,"hd4_fn",NULL);
         if (p)
                 strcpy(hd_fn[0], p);
@@ -672,7 +713,6 @@ void saveconfig()
         config_set_int(CFG_MACHINE, NULL, "memc_type", memc_type);
         config_set_int(CFG_MACHINE, NULL, "fpa", fpaena);
         config_set_int(CFG_MACHINE, NULL, "fpu_type", fpu_type);
-        config_set_int(CFG_MACHINE, NULL, "hires",hires);
         config_set_int(CFG_MACHINE, NULL, "display_mode", display_mode);
         config_set_int(CFG_GLOBAL, NULL, "first_fullscreen", firstfull);
         config_set_int(CFG_MACHINE, NULL, "double_scan", dblscan);
@@ -683,6 +723,7 @@ void saveconfig()
         config_set_int(CFG_MACHINE, NULL, "fdc_type", fdctype);
         config_set_int(CFG_MACHINE, NULL, "st506_present", st506_present);
         config_set_string(CFG_MACHINE, NULL, "rom_set", config_get_romset_name(romset));
+        config_set_string(CFG_MACHINE, NULL, "monitor_type", get_monitor_type_name(monitor_type));
         config_set_int(CFG_GLOBAL, NULL, "stereo", stereo);
         config_set_string(CFG_MACHINE, NULL, "hd4_fn", hd_fn[0]);
         config_set_int(CFG_MACHINE, NULL, "hd4_sectors", hd_spt[0]);

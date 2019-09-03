@@ -8,6 +8,7 @@ extern void vidc_setclock(int clock);
 extern int vidc_getclock();
 extern int vidc_update_cycles();
 extern int vidcgetcycs();
+int vidc_get_hs();
 extern void closevideo();
 
 extern int vidc_framecount;

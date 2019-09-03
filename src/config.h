@@ -25,6 +25,16 @@ extern int romset_available_mask;
 char *config_get_romset_name(int romset);
 char *config_get_cmos_name(int romset, int fdctype);
         
+enum
+{
+        MONITOR_STANDARD,
+        MONITOR_MULTISYNC,
+        MONITOR_VGA,
+        MONITOR_MONO
+};
+
+extern int monitor_type;
+
 extern float config_get_float(int is_global, const char *head, const char *name, float def);
 extern int config_get_int(int is_global, const char *head, const char *name, int def);
 extern const char *config_get_string(int is_global, const char *head, const char *name, const char *def);

@@ -205,6 +205,29 @@ enum
 /*RISC OS 3.10 and later - A3010, A3020, A4000, A5000a*/
 #define ROM_RISCOS31 (ROM_RISCOS_310_MASK | ROM_RISCOS_311_MASK | ROM_RISCOS_319_MASK)
 
+const char *monitor_names[] =
+{
+        "Standard",
+        "Multisync",
+        "VGA",
+        "High res mono"
+};
+
+enum
+{
+        MONITOR_STANDARD_MASK  = (1 << MONITOR_STANDARD),
+        MONITOR_MULTISYNC_MASK = (1 << MONITOR_MULTISYNC),
+        MONITOR_VGA_MASK       = (1 << MONITOR_VGA),
+        MONITOR_MONO_MASK      = (1 << MONITOR_MONO)
+};
+
+/*Machines supporting high res mono - Archimedes 440, 4x0/1, 540*/
+#define MONITOR_ALL (MONITOR_STANDARD_MASK | MONITOR_MULTISYNC_MASK | MONITOR_VGA_MASK | \
+                MONITOR_MONO_MASK)
+
+/*Machines not supporting high res mono - everythine else*/
+#define MONITOR_NO_MONO (MONITOR_STANDARD_MASK | MONITOR_MULTISYNC_MASK | MONITOR_VGA_MASK)
+
 typedef struct machine_preset_t
 {
         const char *name;
@@ -214,24 +237,25 @@ typedef struct machine_preset_t
         unsigned int allowed_mem_mask;
         unsigned int allowed_memc_mask;
         unsigned int allowed_romset_mask;
+        unsigned int allowed_monitor_mask;
         int default_cpu, default_mem, default_memc, io;
 } machine_preset_t;
 
 static const machine_preset_t presets[] =
 {
-        {"Archimedes 305",   "a305",   "ARM2, 512kB RAM, MEMC1, Old IO, Arthur",               CPU_ARM2_AND_LATER,    MEM_MIN_512K, MEMC_MIN_MEMC1,     ROM_ALL,       CPU_ARM2,    MEM_512K, MEMC_MEMC1,     IO_OLD},
-        {"Archimedes 310",   "a310",   "ARM2, 1MB RAM, MEMC1, Old IO, Arthur",                 CPU_ARM2_AND_LATER,    MEM_MIN_1M,   MEMC_MIN_MEMC1,     ROM_ALL,       CPU_ARM2,    MEM_1M,   MEMC_MEMC1,     IO_OLD},
-        {"Archimedes 440",   "a440",   "ARM2, 1MB RAM, MEMC1, Old IO + ST-506 HD, Arthur",     CPU_ARM2_AND_LATER,    MEM_MIN_4M,   MEMC_MIN_MEMC1,     ROM_ALL,       CPU_ARM2,    MEM_4M,   MEMC_MEMC1,     IO_OLD_ST506},
-        {"Archimedes 410/1", "a410/1", "ARM2, 1MB RAM, MEMC1A, Old IO + ST-506 HD, RISC OS 2", CPU_ARM2_AND_LATER,    MEM_MIN_1M,   MEMC_MIN_MEMC1A,    ROM_RISCOS,    CPU_ARM2,    MEM_1M,   MEMC_MEMC1A_8,  IO_OLD_ST506},
-        {"Archimedes 420/1", "a420/1", "ARM2, 2MB RAM, MEMC1A, Old IO + ST-506 HD, RISC OS 2", CPU_ARM2_AND_LATER,    MEM_MIN_2M,   MEMC_MIN_MEMC1A,    ROM_RISCOS,    CPU_ARM2,    MEM_2M,   MEMC_MEMC1A_8,  IO_OLD_ST506},
-        {"Archimedes 440/1", "a440/1", "ARM2, 4MB RAM, MEMC1A, Old IO + ST-506 HD, RISC OS 2", CPU_ARM2_AND_LATER,    MEM_MIN_4M,   MEMC_MIN_MEMC1A,    ROM_RISCOS,    CPU_ARM2,    MEM_4M,   MEMC_MEMC1A_8,  IO_OLD_ST506},
-        {"A3000",            "a3000",  "ARM2, 1MB RAM, MEMC1A, Old IO, RISC OS 2",             CPU_ARM2_AND_LATER,    MEM_MIN_1M,   MEMC_MIN_MEMC1A,    ROM_RISCOS,    CPU_ARM2,    MEM_1M,   MEMC_MEMC1A_8,  IO_OLD},
-        {"Archimedes 540",   "a540",   "ARM3/26, 4MB RAM, MEMC1A, Old IO, RISC OS 2.01",       CPU_ARM3_26_AND_LATER, MEM_MIN_4M,   MEMC_MIN_MEMC1A_12, ROM_RISCOS201, CPU_ARM3_26, MEM_4M,   MEMC_MEMC1A_12, IO_OLD},
-        {"A5000",            "a5000",  "ARM3/25, 1MB RAM, MEMC1A, New IO, RISC OS 3.0",        CPU_ARM3_25_AND_LATER, MEM_MIN_1M,   MEMC_MIN_MEMC1A_12, ROM_RISCOS3,   CPU_ARM3_25, MEM_2M,   MEMC_MEMC1A_12, IO_NEW},
-        {"A3010",            "a3010",  "ARM250, 1MB RAM, MEMC1A, New IO, RISC OS 3.1",         CPU_ARM250_ONLY,       MEM_1M_4M,    MEMC_MIN_MEMC1A_12, ROM_RISCOS31,  CPU_ARM250,  MEM_1M,   MEMC_MEMC1A_12, IO_NEW},
-        {"A3020",            "a3020",  "ARM250, 2MB RAM, MEMC1A, New IO, RISC OS 3.1",         CPU_ARM250_ONLY,       MEM_2M_4M,    MEMC_MIN_MEMC1A_12, ROM_RISCOS31,  CPU_ARM250,  MEM_2M,   MEMC_MEMC1A_12, IO_NEW},
-        {"A4000",            "a4000",  "ARM250, 2MB RAM, MEMC1A, New IO, RISC OS 3.1",         CPU_ARM250_ONLY,       MEM_2M_4M,    MEMC_MIN_MEMC1A_12, ROM_RISCOS31,  CPU_ARM250,  MEM_2M,   MEMC_MEMC1A_12, IO_NEW},
-        {"A5000a",           "a5000a", "ARM3/33, 4MB RAM, MEMC1A, New IO, RISC OS 3.1",        CPU_ARM3_33_AND_LATER, MEM_MIN_4M,   MEMC_MIN_MEMC1A_12, ROM_RISCOS31,  CPU_ARM3_33, MEM_4M,   MEMC_MEMC1A_12, IO_NEW},
+        {"Archimedes 305",   "a305",   "ARM2, 512kB RAM, MEMC1, Old IO, Arthur",               CPU_ARM2_AND_LATER,    MEM_MIN_512K, MEMC_MIN_MEMC1,     ROM_ALL,       MONITOR_NO_MONO, CPU_ARM2,    MEM_512K, MEMC_MEMC1,     IO_OLD},
+        {"Archimedes 310",   "a310",   "ARM2, 1MB RAM, MEMC1, Old IO, Arthur",                 CPU_ARM2_AND_LATER,    MEM_MIN_1M,   MEMC_MIN_MEMC1,     ROM_ALL,       MONITOR_NO_MONO, CPU_ARM2,    MEM_1M,   MEMC_MEMC1,     IO_OLD},
+        {"Archimedes 440",   "a440",   "ARM2, 1MB RAM, MEMC1, Old IO + ST-506 HD, Arthur",     CPU_ARM2_AND_LATER,    MEM_MIN_4M,   MEMC_MIN_MEMC1,     ROM_ALL,       MONITOR_ALL,     CPU_ARM2,    MEM_4M,   MEMC_MEMC1,     IO_OLD_ST506},
+        {"Archimedes 410/1", "a410/1", "ARM2, 1MB RAM, MEMC1A, Old IO + ST-506 HD, RISC OS 2", CPU_ARM2_AND_LATER,    MEM_MIN_1M,   MEMC_MIN_MEMC1A,    ROM_RISCOS,    MONITOR_ALL,     CPU_ARM2,    MEM_1M,   MEMC_MEMC1A_8,  IO_OLD_ST506},
+        {"Archimedes 420/1", "a420/1", "ARM2, 2MB RAM, MEMC1A, Old IO + ST-506 HD, RISC OS 2", CPU_ARM2_AND_LATER,    MEM_MIN_2M,   MEMC_MIN_MEMC1A,    ROM_RISCOS,    MONITOR_ALL,     CPU_ARM2,    MEM_2M,   MEMC_MEMC1A_8,  IO_OLD_ST506},
+        {"Archimedes 440/1", "a440/1", "ARM2, 4MB RAM, MEMC1A, Old IO + ST-506 HD, RISC OS 2", CPU_ARM2_AND_LATER,    MEM_MIN_4M,   MEMC_MIN_MEMC1A,    ROM_RISCOS,    MONITOR_ALL,     CPU_ARM2,    MEM_4M,   MEMC_MEMC1A_8,  IO_OLD_ST506},
+        {"A3000",            "a3000",  "ARM2, 1MB RAM, MEMC1A, Old IO, RISC OS 2",             CPU_ARM2_AND_LATER,    MEM_MIN_1M,   MEMC_MIN_MEMC1A,    ROM_RISCOS,    MONITOR_NO_MONO, CPU_ARM2,    MEM_1M,   MEMC_MEMC1A_8,  IO_OLD},
+        {"Archimedes 540",   "a540",   "ARM3/26, 4MB RAM, MEMC1A, Old IO, RISC OS 2.01",       CPU_ARM3_26_AND_LATER, MEM_MIN_4M,   MEMC_MIN_MEMC1A_12, ROM_RISCOS201, MONITOR_ALL,     CPU_ARM3_26, MEM_4M,   MEMC_MEMC1A_12, IO_OLD},
+        {"A5000",            "a5000",  "ARM3/25, 1MB RAM, MEMC1A, New IO, RISC OS 3.0",        CPU_ARM3_25_AND_LATER, MEM_MIN_1M,   MEMC_MIN_MEMC1A_12, ROM_RISCOS3,   MONITOR_NO_MONO, CPU_ARM3_25, MEM_2M,   MEMC_MEMC1A_12, IO_NEW},
+        {"A3010",            "a3010",  "ARM250, 1MB RAM, MEMC1A, New IO, RISC OS 3.1",         CPU_ARM250_ONLY,       MEM_1M_4M,    MEMC_MIN_MEMC1A_12, ROM_RISCOS31,  MONITOR_NO_MONO, CPU_ARM250,  MEM_1M,   MEMC_MEMC1A_12, IO_NEW},
+        {"A3020",            "a3020",  "ARM250, 2MB RAM, MEMC1A, New IO, RISC OS 3.1",         CPU_ARM250_ONLY,       MEM_2M_4M,    MEMC_MIN_MEMC1A_12, ROM_RISCOS31,  MONITOR_NO_MONO, CPU_ARM250,  MEM_2M,   MEMC_MEMC1A_12, IO_NEW},
+        {"A4000",            "a4000",  "ARM250, 2MB RAM, MEMC1A, New IO, RISC OS 3.1",         CPU_ARM250_ONLY,       MEM_2M_4M,    MEMC_MIN_MEMC1A_12, ROM_RISCOS31,  MONITOR_NO_MONO, CPU_ARM250,  MEM_2M,   MEMC_MEMC1A_12, IO_NEW},
+        {"A5000a",           "a5000a", "ARM3/33, 4MB RAM, MEMC1A, New IO, RISC OS 3.1",        CPU_ARM3_33_AND_LATER, MEM_MIN_4M,   MEMC_MIN_MEMC1A_12, ROM_RISCOS31,  MONITOR_NO_MONO, CPU_ARM3_33, MEM_4M,   MEMC_MEMC1A_12, IO_NEW},
         {"", 0, 0, 0, 0, 0}
 };
 
@@ -249,6 +273,7 @@ private:
 	void OnComboMEMC(wxCommandEvent &event);
 	void OnComboMemory(wxCommandEvent &event);
 	void OnComboOS(wxCommandEvent &event);
+	void OnComboMonitor(wxCommandEvent &event);
         void OnComboPodule(wxCommandEvent &event);
         void OnConfigPodule(wxCommandEvent &event);
 	void OnHDSel(wxCommandEvent &event);
@@ -268,9 +293,10 @@ private:
         int get_memc(char *memc);
         int get_mem(char *mem);
         int get_rom(char *rom);
+        int get_monitor(char *monitor);
 
 	int config_preset;
-	int config_cpu, config_mem, config_memc, config_fpu, config_io, config_rom;
+	int config_cpu, config_mem, config_memc, config_fpu, config_io, config_rom, config_monitor;
         wxString hd_fns[2];
         char config_podules[4][16];
 	
@@ -347,6 +373,16 @@ int ConfigDialog::get_rom(char *rom)
 
         return 0;
 }
+int ConfigDialog::get_monitor(char *monitor)
+{
+        for (int c = 0; c < nr_elems(monitor_names); c++)
+        {
+                if (!strcmp(monitor_names[c], monitor))
+                        return c;
+        }
+
+        return 0;
+}
 
 void ConfigDialog::CommonInit(wxWindow *parent, bool is_running)
 {
@@ -361,6 +397,7 @@ void ConfigDialog::CommonInit(wxWindow *parent, bool is_running)
         Bind(wxEVT_COMBOBOX, &ConfigDialog::OnComboMEMC, this, XRCID("IDC_COMBO_MEMC"));
         Bind(wxEVT_COMBOBOX, &ConfigDialog::OnComboMemory, this, XRCID("IDC_COMBO_MEMORY"));
         Bind(wxEVT_COMBOBOX, &ConfigDialog::OnComboOS, this, XRCID("IDC_COMBO_OS"));
+        Bind(wxEVT_COMBOBOX, &ConfigDialog::OnComboMonitor, this, XRCID("IDC_COMBO_MONITOR"));
         Bind(wxEVT_COMBOBOX, &ConfigDialog::OnComboPodule, this, XRCID("IDC_COMBO_PODULE0"));
         Bind(wxEVT_COMBOBOX, &ConfigDialog::OnComboPodule, this, XRCID("IDC_COMBO_PODULE1"));
         Bind(wxEVT_COMBOBOX, &ConfigDialog::OnComboPodule, this, XRCID("IDC_COMBO_PODULE2"));
@@ -426,6 +463,7 @@ ConfigDialog::ConfigDialog(wxWindow *parent, bool is_running)
         config_fpu = fpaena ? (fpu_type ? FPU_FPPC : FPU_FPA10) : FPU_NONE;
         config_memc = memc_type;
         config_io = fdctype ? IO_NEW : (st506_present ? IO_OLD_ST506 : IO_OLD);
+        config_monitor = monitor_type;
 
         CommonInit(parent, is_running);
 
@@ -469,6 +507,7 @@ ConfigDialog::ConfigDialog(wxWindow *parent, bool is_running, int preset)
         config_memc = presets[preset].default_memc;
         config_fpu  = FPU_NONE;
         config_io   = presets[preset].io;
+        config_monitor = MONITOR_MULTISYNC;
 
         CommonInit(parent, is_running);
         
@@ -550,6 +589,16 @@ void ConfigDialog::UpdateList(int cpu, int mem, int memc, int fpu, int io)
                 cbox->SetValue(rom_names[romset]);
         else
                 wxMessageBox("Configured ROM set is not available.\nYou must select an available ROM set to run this machine.", "Arculator", wxOK | wxCENTRE | wxSTAY_ON_TOP, this);
+
+        cbox = (wxComboBox *)this->FindWindow(XRCID("IDC_COMBO_MONITOR"));
+        cbox->SetValue("");
+        cbox->Clear();
+        for (c = 0; c < nr_elems(monitor_names); c++)
+        {
+                if (presets[config_preset].allowed_monitor_mask & (1 << c))
+                        cbox->Append(monitor_names[c]);
+        }
+        cbox->SetValue(monitor_names[monitor_type]);
 
         ((wxStaticText *)this->FindWindow(XRCID("IDC_TEXT_MACHINE")))->SetLabelText(presets[config_preset].description);
 }
@@ -691,6 +740,8 @@ void ConfigDialog::OnOK(wxCommandEvent &event)
 
         romset = config_rom;
 
+        monitor_type = config_monitor;
+
         wxTextCtrl *tctrl = (wxTextCtrl *)this->FindWindow(XRCID("IDC_EDIT_HD4"));
         strcpy(hd_fn[0], tctrl->GetValue().mb_str());
         wxString temp_s = ((wxTextCtrl *)this->FindWindow(XRCID("IDC_EDIT_CYLINDERS_4")))->GetValue();
@@ -798,6 +849,15 @@ void ConfigDialog::OnComboOS(wxCommandEvent &event)
         strncpy(rom_c_s, rom_s, sizeof(rom_c_s));
 
         config_rom = get_rom(rom_c_s);
+}
+
+void ConfigDialog::OnComboMonitor(wxCommandEvent &event)
+{
+        char monitor_c_s[256];
+        wxString monitor_s = ((wxComboBox *)this->FindWindow(event.GetId()))->GetValue();
+        strncpy(monitor_c_s, monitor_s, sizeof(monitor_c_s));
+
+        config_monitor = get_monitor(monitor_c_s);
 }
 
 void ConfigDialog::OnHDSel(wxCommandEvent &event)

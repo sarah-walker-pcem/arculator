@@ -139,7 +139,6 @@ extern int soundper;
 extern int offsetx,offsety;
 extern int fullscreen;
 extern int fullborders,noborders;
-extern int hires;
 extern int dblscan;
 extern int stereoimages[8];
 extern int flyback;
@@ -176,7 +175,6 @@ extern int stereo;
 
 extern int soundena;
 
-extern int hires;
 extern int fullscreen;
 extern int fullborders,noborders;
 extern int firstfull;
@@ -222,7 +220,6 @@ void arc_enter_fullscreen();
 void arc_renderer_reset();
 void arc_set_display_mode(int new_display_mode);
 void arc_set_dblscan(int new_dblscan);
-void arc_set_hires(int new_hires);
 void arc_set_resizeable();
 
 

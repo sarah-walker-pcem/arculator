@@ -120,11 +120,6 @@ void Frame::UpdateMenu(wxMenu *menu)
         else
                 item = ((wxMenu*)menu)->FindItem(XRCID("IDM_BLIT_SCAN"));
         item->Check(true);
-        if (hires)
-                item = ((wxMenu*)menu)->FindItem(XRCID("IDM_MONITOR_HIRES"));
-        else
-                item = ((wxMenu*)menu)->FindItem(XRCID("IDM_MONITOR_NORMAL"));
-        item->Check(true);
         item = ((wxMenu*)menu)->FindItem(XRCID("IDM_VIDEO_RESIZEABLE"));
         item->Check(video_window_resizeable);
         if (display_mode == DISPLAY_MODE_NO_BORDERS)
@@ -259,20 +254,6 @@ void Frame::OnMenuCommand(wxCommandEvent &event)
                 arc_pause_main_thread();
                 ShowConfig(true);
                 arc_resume_main_thread();
-        }
-        else if (event.GetId() == XRCID("IDM_MONITOR_NORMAL"))
-        {
-                wxMenuItem *item = ((wxMenu*)menu)->FindItem(event.GetId());
-                item->Check(true);
-                
-                arc_set_hires(0);
-        }
-        else if (event.GetId() == XRCID("IDM_MONITOR_MONO"))
-        {
-                wxMenuItem *item = ((wxMenu*)menu)->FindItem(event.GetId());
-                item->Check(true);
-                
-                arc_set_hires(1);
         }
         else if (event.GetId() == XRCID("IDM_VIDEO_FULLSCR"))
         {

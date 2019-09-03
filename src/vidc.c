@@ -10,6 +10,7 @@
 #endif
 #include "arc.h"
 #include "arm.h"
+#include "config.h"
 #include "ioc.h"
 #include "keyboard.h"
 #include "mem.h"
@@ -58,7 +59,6 @@ int soundper;
 int offsetx = 0, offsety = 0;
 int fullscreen;
 int fullborders,noborders;
-int hires;
 int dblscan;
 
 
@@ -152,7 +152,7 @@ uint32_t hirescurcol[4]={0,0,0,0xFFFFFF};
 void redolookup()
 {
         int c;
-        if (hires)
+        if (monitor_type == MONITOR_MONO)
         {
                 for (c=0;c<16;c++)
                 {
@@ -197,7 +197,7 @@ void redolookup()
 
 void recalcse()
 {
-        if (hires)
+        if (monitor_type == MONITOR_MONO)
         {
                         vidc.hdstart=(vidc.hdstart2<<1)-14;
                         vidc.hdend=(vidc.hdend2<<1)-14;
@@ -513,7 +513,8 @@ static void vidc_poll(void *__p)
         LOG_VIDC_TIMING("++ vidc.line == %d\n", vidc.line);
         videodma=vidc.addr;
         mode=(vidcr[VIDC_CR]&0xF);
-        if (hires) mode=2;
+        if (monitor_type == MONITOR_MONO)
+                mode = 2;
 
         if (l>=0 && vidc.line<=1023 && l<1536)
         {
@@ -582,7 +583,8 @@ static void vidc_poll(void *__p)
                                 if (vidc.hdstart<vidc.hbstart) xoffset2=xoffset+(vidc.hdstart-vidc.hbstart);
                                 else                           xoffset2=xoffset;
                         }
-                        if (hires) xoffset2=0;
+                        if (monitor_type == MONITOR_MONO)
+                                xoffset2 = 0;
                         if (vidc.displayon)
                         {
                                 switch (mode)
@@ -603,12 +605,12 @@ static void vidc_poll(void *__p)
                                         break;
                                         case 2: /*Mode 0: 640x256 16MHz 1bpp*/
                                         case 3: /*Mode 25: 640x480 24MHz 1bpp*/
-                                        for (x = (hires ? vidc.hdstart*4 : vidc.hdstart); x < (hires ? vidc.hdend*4 : vidc.hdend); x += 32)
+                                        for (x = ((monitor_type == MONITOR_MONO) ? vidc.hdstart*4 : vidc.hdstart); x < ((monitor_type == MONITOR_MONO) ? vidc.hdend*4 : vidc.hdend); x += 32)
                                         {
                                                 temp = ram[vidc.addr++];
                                                 if (x < 2048)
                                                 {
-                                                        if (hires)
+                                                        if (monitor_type == MONITOR_MONO)
                                                         {
                                                                 for (xx=0;xx<32;xx+=4)
                                                                 {
@@ -761,7 +763,8 @@ static void vidc_poll(void *__p)
                                         case 11: /*Mode 27*/
                                         case 14: /*Mode 15*/
                                         case 15: /*Mode 28*/
-                                        if (hires) break;
+                                        if (monitor_type == MONITOR_MONO)
+                                                break;
                                         if (vidc.hbstart < vidc.hdstart)
                                         {
                                                 if (display_mode == DISPLAY_MODE_TV)
@@ -789,7 +792,7 @@ static void vidc_poll(void *__p)
 
                                 if (((vidc.cys>>14)+2)<=vidc.line && ((vidc.cye>>14)+2)>vidc.line)
                                 {
-                                        if (hires)
+                                        if (monitor_type == MONITOR_MONO)
                                         {
                                                 x = (vidc.cx << 2) - 80;
                                                 temp = ram[vidc.caddr++];
@@ -905,13 +908,13 @@ static void vidc_poll(void *__p)
 
                 oldflash=readflash[0]|readflash[1]|readflash[2]|readflash[3];
 
-                if (display_mode == DISPLAY_MODE_NO_BORDERS || hires)
+                if ((display_mode == DISPLAY_MODE_NO_BORDERS) || (monitor_type == MONITOR_MONO))
                 {
                         int hd_start = (vidc.hbstart > vidc.hdstart) ? vidc.hbstart : vidc.hdstart;
                         int hd_end = (vidc.hbend < vidc.hdend) ? vidc.hbend : vidc.hdend;
                         int height = vidc.disp_y_max - vidc.disp_y_min;
 
-                        if (hires)
+                        if (monitor_type == MONITOR_MONO)
                         {
                                 hd_start = vidc.hdstart * 4;
                                 hd_end = vidc.hdend * 4;
@@ -1025,7 +1028,7 @@ static void vidc_poll(void *__p)
 
                 /*Clear the buffer now so we don't get a persistent ghost when changing
                   from a high vertical res mode to a line-doubled mode.*/
-                clear(buffer);
+                //clear(buffer);
 
                 vidc.line=0;
                 vidc.border_was_disabled = 0;
@@ -1230,6 +1233,12 @@ void vidc_setclock(int clock)
 int vidc_getclock()
 {
         return vidc.clock;
+}
+
+int vidc_get_hs()
+{
+        /*Not quite horizontal sync pulse, but good enough for monitor ID detection*/
+        return vidc.in_display;
 }
 
 void vidc_reset()

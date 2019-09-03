@@ -12,6 +12,7 @@
 #include "eterna.h"
 #include "ide.h"
 #include "ioc.h"
+#include "ioeb.h"
 #include "memc.h"
 #include "podules.h"
 #include "st506.h"
@@ -260,24 +261,29 @@ uint8_t readmemfb(uint32_t a)
                                 if ((a&~0x1F)==0x33C0000) return readeterna(a);
                         }*/
                         return podule_read_b((a & 0xC000) >> 14, a & 0x3FFF);
-                        case 5: /*Internal latches*/
-                        switch (a&0xFFFC)
+                        case 5: 
+                        if (fdctype == FDC_82C711) /*IOEB*/
                         {
-                                case 0x0010: return 0xFF; /*Printer*/
-                                case 0x0018:
-                                return 0xFF; /*FDC Latch B*/
-                                case 0x0008: case 0x000C:
-                                case 0x0020: case 0x0024: case 0x0028: case 0x002C:
-                                if (st506_present)
-                                        return st506_internal_readb(a);
-                                return 0xFF;
-                                case 0x0040: /*FDC Latch A*/
-                                return 0xFF;
-                                case 0x0048: return 0xFF; /*????*/
-                                case 0x0050: return (fdctype)?5:0; /*IOEB*/
-                                case 0x0070: return 0xF;
-                                case 0x0074: return 0xFF; /*????*/
-                                case 0x0078: case 0x7C: return readjoy(a); /*Joystick (A3010)*/
+                                return ioeb_read(a);
+                        }
+                        else /*Internal latches*/
+                        {
+                                switch (a&0xFFFC)
+                                {
+                                        case 0x0010: return 0xFF; /*Printer*/
+                                        case 0x0018:
+                                        return 0xFF; /*FDC Latch B*/
+                                        case 0x0008: case 0x000C:
+                                        case 0x0020: case 0x0024: case 0x0028: case 0x002C:
+                                        if (st506_present)
+                                                return st506_internal_readb(a);
+                                        return 0xFF;
+                                        case 0x0040: /*FDC Latch A*/
+                                        return 0xFF;
+                                        case 0x0048: return 0xFF; /*????*/
+                                        case 0x0050: return 0;
+                                        case 0x0074: return 0xFF; /*????*/
+                                }
                         }
                         case 6: /*Backplane*/
                         switch (a&0xFFFC)
@@ -369,23 +375,30 @@ uint32_t readmemfl(uint32_t a)
                                 if ((a&~0x1F)==0x33C0000) return readeterna(a);
                         }*/
                         return podule_read_w((a & 0xC000) >> 14, a & 0x3FFF);
-                        case 5: /*Internal latches*/
-                        switch (a&0xFFFC)
+                        case 5: /*IOEB*/
+                        if (fdctype == FDC_82C711)
                         {
-                                case 0x0010: return 0xFFFF; /*Printer*/
-                                case 0x0018:
-                                return 0xFFFF; /*FDC Latch B*/
-                                case 0x0008: case 0x000C:
-                                case 0x0020: case 0x0024: case 0x0028: case 0x002C:
-                                if (st506_present)
-                                        return st506_internal_readl(a);
-                                return 0xFFFFFFFF;
-                                case 0x0040: /*FDC Latch A*/
-                                return 0xFFFF;
-                                case 0x0048: return 0xFFFF; /*????*/
-                                case 0x0050: return (fdctype)?5:0; /*IOEB*/
-                                case 0x0074: return 0xFFFF; /*????*/
-                                case 0x0078: return 0xFFFF; /*????*/
+                                return ioeb_read(a);
+                        }
+                        else /*Internal latches*/
+                        {
+                                switch (a&0xFFFC)
+                                {
+                                        case 0x0010: return 0xFFFF; /*Printer*/
+                                        case 0x0018:
+                                        return 0xFFFF; /*FDC Latch B*/
+                                        case 0x0008: case 0x000C:
+                                        case 0x0020: case 0x0024: case 0x0028: case 0x002C:
+                                        if (st506_present)
+                                                return st506_internal_readl(a);
+                                        return 0xFFFFFFFF;
+                                        case 0x0040: /*FDC Latch A*/
+                                        return 0xFFFF;
+                                        case 0x0048: return 0xFFFF; /*????*/
+                                        case 0x0050: return 0;
+                                        case 0x0074: return 0xFFFF; /*????*/
+                                        case 0x0078: return 0xFFFF; /*????*/
+                                }
                         }
                         break;
                         case 6: /*Backplane*/
@@ -479,30 +492,31 @@ void writememfb(uint32_t a,uint8_t v)
                         }*/
                         podule_write_b((a & 0xC000) >> 14, a & 0x3FFF, v);
                         return;
-                        case 5: /*Internal latches*/
-                        switch (a&0xFFFC)
+                        case 5: /*IOEB*/
+                        if (fdctype == FDC_82C711)
                         {
-                                case 0x0000: case 0x0004: case 0x0008: case 0x000C:
-                                case 0x0028: case 0x002C:
-                                if (st506_present)
-                                        st506_internal_writeb(a, v);
-                                return;
-                                case 0x0010: return; /*Printer*/
-                                case 0x0018:
-                                if (fdctype == FDC_WD1770)
+                                ioeb_write(a, v);
+                        }
+                        else /*Internal latches*/
+                        {
+                                switch (a&0xFFFC)
+                                {
+                                        case 0x0000: case 0x0004: case 0x0008: case 0x000C:
+                                        case 0x0028: case 0x002C:
+                                        if (st506_present)
+                                                st506_internal_writeb(a, v);
+                                        return;
+                                        case 0x0010: return; /*Printer*/
+                                        case 0x0018:
                                         wd1770_writelatch_b(v);
-//                                ddensity=!(v&2);
-                                return; /*FDC Latch B*/
-                                case 0x0040: /*FDC Latch A*/
-                                if (fdctype == FDC_WD1770)
+                                        return; /*FDC Latch B*/
+                                        case 0x0040: /*FDC Latch A*/
                                         wd1770_writelatch_a(v);
-                                return;
-                                case 0x0048: /*Video clock*/
-                                vidc_setclock(v & 3);
-                                return; 
-                                case 0x0050: return; /*IOEB*/
-                                case 0x0074: return; /*????*/
-                                case 0x0078: return; /*????*/
+                                        return;
+                                        case 0x0048: /*Video clock (A540)*/
+                                        vidc_setclock(v & 3);
+                                        return;
+                                }
                         }
                         break;
                         case 6: /*Backplane*/
@@ -608,30 +622,34 @@ void writememfl(uint32_t a,uint32_t v)
                         }*/
                         podule_write_w((a & 0xC000) >> 14, a & 0x3FFF, v);
                         return;
-                        case 5: /*Internal latches*/
+                        case 5: /*IOEB*/
                         v>>=16;
-                        switch (a&0xFFFC)
+                        if (fdctype == FDC_82C711)
                         {
-                                case 0x0000: case 0x0004: case 0x0008: case 0x000C:
-                                case 0x0028: case 0x002C:
-                                if (st506_present)
-                                        st506_internal_writel(a, v);
-                                return;
-                                case 0x0010: return; /*Printer*/
-                                case 0x0018:
-                                if (fdctype == FDC_WD1770)
+                                ioeb_write(a, v);
+                        }
+                        else /*Internal latches*/
+                        {
+                                switch (a&0xFFFC)
+                                {
+                                        case 0x0000: case 0x0004: case 0x0008: case 0x000C:
+                                        case 0x0028: case 0x002C:
+                                        if (st506_present)
+                                                st506_internal_writel(a, v);
+                                        return;
+                                        case 0x0010: return; /*Printer*/
+                                        case 0x0018:
                                         wd1770_writelatch_b(v);
-//                                ddensity=!(v&2);
-                                return; /*FDC Latch B*/
-                                case 0x0040: /*FDC Latch A*/
-                                if (fdctype == FDC_WD1770)
+                                        return; /*FDC Latch B*/
+                                        case 0x0040: /*FDC Latch A*/
                                         wd1770_writelatch_a(v);
-                                return;
-                                case 0x0048: return; /*????*/
-                                case 0x0050: return; /*IOEB*/
-                                case 0x0074: return; /*????*/
-                                case 0x0078: return; /*????*/
-//                                default: rpclog("Bad 5 writel %08X\n",a);
+                                        return;
+                                        case 0x0048: return; /*????*/
+                                        case 0x0050: return; /*IOEB*/
+                                        case 0x0074: return; /*????*/
+                                        case 0x0078: return; /*????*/
+//                                        default: rpclog("Bad 5 writel %08X\n",a);
+                                }
                         }
                         break;
                         case 6: /*Backplane*/

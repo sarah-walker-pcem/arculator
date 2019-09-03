@@ -198,8 +198,8 @@ int arc_init()
                    disc_close(c);
                    strcpy(discname[c], p);
                    disc_load(c, discname[c]);
-                   ioc_discchange(c);
                 }
+                ioc_discchange(c);
         }
 
         if (!fdctype && st506_present)

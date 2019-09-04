@@ -801,50 +801,78 @@ void refillpipeline2()
 
 int framecycs;
 
-#define arm_mul_timing(v)       if (memc_is_memc1)                                              \
-                                {                                                               \
-                                        CLOCK_I(); tsc += cyc_i;                            \
-                                        if (v)       { CLOCK_N(0); tsc += cyc_n; }            \
-                                        if (v >>  2) { CLOCK_N(0); tsc += cyc_n; }            \
-                                        if (v >>  4) { CLOCK_N(0); tsc += cyc_n; }            \
-                                        if (v >>  6) { CLOCK_N(0); tsc += cyc_n; }            \
-                                        if (v >>  8) { CLOCK_N(0); tsc += cyc_n; }            \
-                                        if (v >> 10) { CLOCK_N(0); tsc += cyc_n; }            \
-                                        if (v >> 12) { CLOCK_N(0); tsc += cyc_n; }            \
-                                        if (v >> 14) { CLOCK_N(0); tsc += cyc_n; }            \
-                                        if (v >> 16) { CLOCK_N(0); tsc += cyc_n; }            \
-                                        if (v >> 18) { CLOCK_N(0); tsc += cyc_n; }            \
-                                        if (v >> 20) { CLOCK_N(0); tsc += cyc_n; }            \
-                                        if (v >> 22) { CLOCK_N(0); tsc += cyc_n; }            \
-                                        if (v >> 24) { CLOCK_N(0); tsc += cyc_n; }            \
-                                        if (v >> 26) { CLOCK_N(0); tsc += cyc_n; }            \
-                                        if (v >> 28) { CLOCK_N(0); tsc += cyc_n; }            \
-                                        if (!(PC & 0xc))                                        \
-                                        { \
-						CLOCK_I(); \
-                                                tsc += cyc_i;                     \
-					} \
-                                }                                                               \
-                                else                                                            \
-                                {                                                               \
-                                        if ((PC + 4) & 0xc) { CLOCK_I(); tsc += cyc_i; }                   \
-                                        if (v)       { CLOCK_I(); tsc += cyc_i; }            \
-                                        if (v >>  2) { CLOCK_I(); tsc += cyc_i; }            \
-                                        if (v >>  4) { CLOCK_I(); tsc += cyc_i; }            \
-                                        if (v >>  6) { CLOCK_I(); tsc += cyc_i; }            \
-                                        if (v >>  8) { CLOCK_I(); tsc += cyc_i; }            \
-                                        if (v >> 10) { CLOCK_I(); tsc += cyc_i; }            \
-                                        if (v >> 12) { CLOCK_I(); tsc += cyc_i; }            \
-                                        if (v >> 14) { CLOCK_I(); tsc += cyc_i; }            \
-                                        if (v >> 16) { CLOCK_I(); tsc += cyc_i; }            \
-                                        if (v >> 18) { CLOCK_I(); tsc += cyc_i; }            \
-                                        if (v >> 20) { CLOCK_I(); tsc += cyc_i; }            \
-                                        if (v >> 22) { CLOCK_I(); tsc += cyc_i; }            \
-                                        if (v >> 24) { CLOCK_I(); tsc += cyc_i; }            \
-                                        if (v >> 26) { CLOCK_I(); tsc += cyc_i; }            \
-                                        if (v >> 28) { CLOCK_I(); tsc += cyc_i; }            \
-                                }
+/*Booth's algorithm implementation taken from Steve Furber's ARM System-On-Chip
+  Architecture. This should replicate all the chaos caused by invalid register
+  combinations, and is good enough to pass !SICK's 'not Virtual A5000' test.*/
+static void opMUL(uint32_t rn)
+{
+        uint32_t rs = armregs[MULRS];
+        int carry = 0;
+        int shift = 0;
 
+        armregs[MULRD] = rn;
+        while ((rs || carry) && shift < 32)
+        {
+                int m = rs & 3;
+                
+                if (!carry)
+                {
+                        switch (m)
+                        {
+                                case 0:
+                                carry = 0;
+                                break;
+                                case 1:
+                                armregs[MULRD] += (armregs[MULRM] << shift);
+                                carry = 0;
+                                break;
+                                case 2:
+                                armregs[MULRD] -= (armregs[MULRM] << (shift+1));
+                                carry = 1;
+                                break;
+                                case 3:
+                                armregs[MULRD] -= (armregs[MULRM] << shift);
+                                carry = 1;
+                                break;
+                        }
+                }
+                else
+                {
+                        switch (m)
+                        {
+                                case 0:
+                                armregs[MULRD] += (armregs[MULRM] << shift);
+                                carry = 0;
+                                break;
+                                case 1:
+                                armregs[MULRD] += (armregs[MULRM] << (shift+1));
+                                carry = 0;
+                                break;
+                                case 2:
+                                armregs[MULRD] -= (armregs[MULRM] << shift);
+                                carry = 1;
+                                break;
+                                case 3:
+                                carry = 1;
+                                break;
+                        }
+                }
+                
+                if (memc_is_memc1 && shift != 0)
+                {
+                        CLOCK_N(0);
+                        tsc += cyc_n;
+                }
+                else
+                {
+                        CLOCK_I();
+                        tsc += cyc_i;
+                }
+
+                rs >>= 2;
+                shift += 2;
+        }
+}
 
 static void exception(uint32_t vector, int new_mode, int pc_offset)
 {
@@ -944,10 +972,7 @@ void execarm(int cycles_to_execute)
                                 case 0x00: /*AND reg*/
                                 if ((opcode&0xF0) == 0x90) /*MUL*/
                                 {
-                                        arm_mul_timing(armregs[MULRS]);
-                                        armregs[MULRD] = (armregs[MULRM]) * (armregs[MULRS]);
-                                        if (MULRD == MULRM)
-                                                armregs[MULRD] = 0;
+                                        opMUL(0);
                                 }
                                 else
                                 {
@@ -966,10 +991,7 @@ void execarm(int cycles_to_execute)
                                 case 0x01: /*ANDS reg*/
                                 if ((opcode & 0xF0) == 0x90) /*MULS*/
                                 {
-                                        arm_mul_timing(armregs[MULRS]);
-                                        armregs[MULRD] = (armregs[MULRM]) * (armregs[MULRS]);
-                                        if (MULRD == MULRM)
-                                                armregs[MULRD]=0;
+                                        opMUL(0);
                                         setzn(armregs[MULRD]);
                                 }
                                 else
@@ -991,10 +1013,7 @@ void execarm(int cycles_to_execute)
                                 case 0x02: /*EOR reg*/
                                 if ((opcode & 0xF0) == 0x90) /*MLA*/
                                 {
-                                        arm_mul_timing(armregs[MULRS]);
-                                        armregs[MULRD] = ((armregs[MULRM]) * (armregs[MULRS])) + armregs[MULRN];
-                                        if (MULRD == MULRM)
-                                                armregs[MULRD] = 0;
+                                        opMUL(armregs[MULRN]);
                                 }
                                 else
                                 {
@@ -1013,10 +1032,7 @@ void execarm(int cycles_to_execute)
                                 case 0x03: /*EORS reg*/
                                 if ((opcode & 0xF0) == 0x90) /*MLAS*/
                                 {
-                                        arm_mul_timing(armregs[MULRS]);
-                                        armregs[MULRD] = ((armregs[MULRM]) * (armregs[MULRS])) + armregs[MULRN];
-                                        if (MULRD == MULRM)
-                                                armregs[MULRD] = 0;
+                                        opMUL(armregs[MULRN]);
                                         setzn(armregs[MULRD]);
                                 }
                                 else

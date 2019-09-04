@@ -110,10 +110,10 @@ extern void resizemem(int memsize);
 extern int loadrom();
 extern void resetpagesize(int pagesize);
 
-#define readmemb(a)    ((modepritabler[memmode][memstat[((a)>>12)&0x3FFF]] && !((a)>>26))?mempointb[((a)>>12)&0x3FFF][(a)&0xFFF]:readmemfb(a))
-#define readmeml(a)    ((modepritabler[memmode][memstat[((a)>>12)&0x3FFF]] && !((a)>>26))?mempoint[((a)>>12)&0x3FFF][((a)&0xFFF)>>2]:readmemfl(a))
-#define writememb(a,v) do { if (modepritablew[memmode][memstat[((a)>>12)&0x3FFF]] && !((a)>>26)) mempointb[((a)>>12)&0x3FFF][(a)&0xFFF]=(v&0xFF); else { writememfb(a,v); } } while (0)
-#define writememl(a,v) do { if (modepritablew[memmode][memstat[((a)>>12)&0x3FFF]] && !((a)>>26)) mempoint[((a)>>12)&0x3FFF][((a)&0xFFF)>>2]=v; else { writememfl(a,v); } } while (0)
+#define readmemb(a)    ((modepritabler[memmode][memstat[((a)>>12)&0x3FFF]])?mempointb[((a)>>12)&0x3FFF][(a)&0xFFF]:readmemfb(a))
+#define readmeml(a)    ((modepritabler[memmode][memstat[((a)>>12)&0x3FFF]])?mempoint[((a)>>12)&0x3FFF][((a)&0xFFF)>>2]:readmemfl(a))
+#define writememb(a,v) do { if (modepritablew[memmode][memstat[((a)>>12)&0x3FFF]]) mempointb[((a)>>12)&0x3FFF][(a)&0xFFF]=(v&0xFF); else { writememfb(a,v); } } while (0)
+#define writememl(a,v) do { if (modepritablew[memmode][memstat[((a)>>12)&0x3FFF]]) mempoint[((a)>>12)&0x3FFF][((a)&0xFFF)>>2]=v; else { writememfl(a,v); } } while (0)
 #define readmemff(a)    ((modepritabler[memmode][memstat[((a)>>12)&0x3FFF]])?mempoint[((a)>>12)&0x3FFF][((a)&0xFFF)>>2]:readmemf(a))
 
 extern uint32_t readmemf(uint32_t a);

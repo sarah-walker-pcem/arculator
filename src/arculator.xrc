@@ -169,6 +169,41 @@
 					<radio>1</radio>
 				</object>
 			</object>
+			<object class="wxMenu" name="IDM_VIDEO_SCALE_MENU">
+				<label>Output scale</label>
+				<object class="wxMenuItem" name="IDM_VIDEO_SCALE[0]">
+					<label>0.5x</label>
+					<radio>1</radio>
+				</object>
+				<object class="wxMenuItem" name="IDM_VIDEO_SCALE[1]">
+					<label>1x</label>
+					<radio>1</radio>
+				</object>
+				<object class="wxMenuItem" name="IDM_VIDEO_SCALE[2]">
+					<label>1.5x</label>
+					<radio>1</radio>
+				</object>
+				<object class="wxMenuItem" name="IDM_VIDEO_SCALE[3]">
+					<label>2x</label>
+					<radio>1</radio>
+				</object>
+				<object class="wxMenuItem" name="IDM_VIDEO_SCALE[4]">
+					<label>2.5x</label>
+					<radio>1</radio>
+				</object>
+				<object class="wxMenuItem" name="IDM_VIDEO_SCALE[5]">
+					<label>3x</label>
+					<radio>1</radio>
+				</object>
+				<object class="wxMenuItem" name="IDM_VIDEO_SCALE[6]">
+					<label>3.5x</label>
+					<radio>1</radio>
+				</object>
+				<object class="wxMenuItem" name="IDM_VIDEO_SCALE[7]">
+					<label>4x</label>
+					<radio>1</radio>
+				</object>
+			</object>
 		</object>
 	</object>
 

@@ -108,6 +108,7 @@ void Frame::OnStopEmulationEvent(wxCommandEvent &event)
 
 void Frame::UpdateMenu(wxMenu *menu)
 {
+        char menuitem[80];
         wxMenuItem *item = ((wxMenu*)menu)->FindItem(XRCID("IDM_DISC_FAST"));
         item->Check(fastdisc);
         item = ((wxMenu*)menu)->FindItem(XRCID("IDM_OPTIONS_SOUND"));
@@ -143,7 +144,12 @@ void Frame::UpdateMenu(wxMenu *menu)
         else
                 item = ((wxMenu*)menu)->FindItem(XRCID("IDM_VIDEO_SCALE_NEAREST"));
         item->Check(true);
-        
+        item = ((wxMenu*)menu)->FindItem(XRCID("IDM_VIDEO_SCALE_MENU"));
+        item->Enable(!video_window_resizeable);
+        sprintf(menuitem, "IDM_VIDEO_SCALE[%d]", video_scale);
+        item = ((wxMenu*)menu)->FindItem(XRCID(menuitem));
+        item->Check(true);
+
         item = ((wxMenu*)menu)->FindItem(XRCID("IDM_DRIVER_AUTO"));
         item->Enable(video_renderer_available(RENDERER_AUTO) ? true : false);
         item->Check((selected_video_renderer == RENDERER_AUTO) ? true : false);
@@ -274,6 +280,8 @@ void Frame::OnMenuCommand(wxCommandEvent &event)
 
                 wxMenuItem *item = ((wxMenu*)menu)->FindItem(event.GetId());
                 item->Check(video_window_resizeable);
+                item = ((wxMenu*)menu)->FindItem(XRCID("IDM_VIDEO_SCALE_MENU"));
+                item->Enable(!video_window_resizeable);
         }
         else if (event.GetId() == XRCID("IDM_VIDEO_NO_BORDERS"))
         {
@@ -343,6 +351,13 @@ void Frame::OnMenuCommand(wxCommandEvent &event)
 
                 video_linear_filtering = 1;
                 arc_renderer_reset();
+        }
+        else if (event.GetId() >= XRCID("IDM_VIDEO_SCALE[0]") && event.GetId() <= XRCID("IDM_VIDEO_SCALE[7]"))
+        {
+                wxMenuItem *item = ((wxMenu*)menu)->FindItem(event.GetId());
+                item->Check(true);
+
+                video_scale = event.GetId() - XRCID("IDM_VIDEO_SCALE[0]");
         }
         else if (event.GetId() == XRCID("IDM_VIDEO_FS_FULL"))
         {

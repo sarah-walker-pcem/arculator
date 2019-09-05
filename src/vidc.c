@@ -34,6 +34,7 @@
 #define TV_X_MAX_24 (TV_X_MIN_24+1152)
 
 int display_mode;
+int video_scale;
 int video_fullscreen_scale;
 int video_linear_filtering;
 int video_window_resizeable;

@@ -49,7 +49,8 @@ static int infocus = 0;
 
 void updatewindowsize(int x, int y)
 {
-        winsizex = x; winsizey = y;
+        winsizex = (x*(video_scale + 1)) / 2;
+        winsizey = (y*(video_scale + 1)) / 2;
         win_doresize = 1;
 }
 

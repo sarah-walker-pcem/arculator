@@ -644,6 +644,7 @@ void loadconfig()
         fpu_type = config_get_int(CFG_MACHINE, NULL, "fpu_type", 0);
         firstfull = config_get_int(CFG_GLOBAL, NULL, "first_fullscreen", 1);
         dblscan = config_get_int(CFG_MACHINE, NULL, "double_scan", 1);
+        video_scale = config_get_int(CFG_MACHINE, NULL, "video_scale", 1);
         video_fullscreen_scale = config_get_int(CFG_MACHINE, NULL, "video_fullscreen_scale", FULLSCR_SCALE_FULL);
         video_linear_filtering = config_get_int(CFG_MACHINE, NULL, "video_linear_filtering", 0);
         video_window_resizeable = config_get_int(CFG_MACHINE, NULL, "video_window_resizeable", 0);
@@ -716,6 +717,7 @@ void saveconfig()
         config_set_int(CFG_MACHINE, NULL, "display_mode", display_mode);
         config_set_int(CFG_GLOBAL, NULL, "first_fullscreen", firstfull);
         config_set_int(CFG_MACHINE, NULL, "double_scan", dblscan);
+        config_set_int(CFG_MACHINE, NULL, "video_scale", video_scale);
         config_set_int(CFG_MACHINE, NULL, "video_fullscreen_scale", video_fullscreen_scale);
         config_set_int(CFG_MACHINE, NULL, "video_linear_filtering", video_linear_filtering);
         config_set_int(CFG_MACHINE, NULL, "video_window_resizeable", video_window_resizeable);

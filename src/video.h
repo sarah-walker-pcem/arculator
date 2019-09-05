@@ -7,6 +7,7 @@ extern int display_mode;
 /*Display area drawn by TV-res monitor*/
 #define DISPLAY_MODE_TV             2
 
+extern int video_scale;
 extern int video_fullscreen_scale;
 
 enum

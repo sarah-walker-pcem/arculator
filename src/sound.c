@@ -10,6 +10,7 @@
 int stereoimages[8];
 int stereo;
 int soundena;
+int sound_gain = 0;
 
 static timer_t sound_timer;
 static timer_t sound_timer_100ms;

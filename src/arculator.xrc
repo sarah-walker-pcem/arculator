@@ -198,6 +198,49 @@
 				<label>S_tereo sound</label>
 				<checkable>1</checkable>
 			</object>
+			<object class="wxMenu">
+				<label>_Output level</label>
+				<object class="wxMenuItem" name="IDM_SOUND_GAIN[0]">
+					<label>_Normal</label>
+					<radio>1</radio>
+				</object>
+				<object class="wxMenuItem" name="IDM_SOUND_GAIN[1]">
+					<label>+_2 dB</label>
+					<radio>1</radio>
+				</object>
+				<object class="wxMenuItem" name="IDM_SOUND_GAIN[2]">
+					<label>+_4 dB</label>
+					<radio>1</radio>
+				</object>
+				<object class="wxMenuItem" name="IDM_SOUND_GAIN[3]">
+					<label>+_6 dB</label>
+					<radio>1</radio>
+				</object>
+				<object class="wxMenuItem" name="IDM_SOUND_GAIN[4]">
+					<label>+_8 dB</label>
+					<radio>1</radio>
+				</object>
+				<object class="wxMenuItem" name="IDM_SOUND_GAIN[5]">
+					<label>+_10 dB</label>
+					<radio>1</radio>
+				</object>
+				<object class="wxMenuItem" name="IDM_SOUND_GAIN[6]">
+					<label>+12 dB</label>
+					<radio>1</radio>
+				</object>
+				<object class="wxMenuItem" name="IDM_SOUND_GAIN[7]">
+					<label>+14 dB</label>
+					<radio>1</radio>
+				</object>
+				<object class="wxMenuItem" name="IDM_SOUND_GAIN[8]">
+					<label>+16 dB</label>
+					<radio>1</radio>
+				</object>
+				<object class="wxMenuItem" name="IDM_SOUND_GAIN[9]">
+					<label>+18 dB</label>
+					<radio>1</radio>
+				</object>
+			</object>
 		</object>
 		<object class="wxMenu">
 			<label>_Settings</label>

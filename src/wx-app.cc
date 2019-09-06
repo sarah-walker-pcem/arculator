@@ -22,6 +22,7 @@ extern "C"
 {
         #include "arc.h"
         #include "plat_video.h"
+        #include "sound.h"
         #include "video.h"
 }
 
@@ -254,6 +255,13 @@ void Frame::OnMenuCommand(wxCommandEvent &event)
 
                 wxMenuItem *item = ((wxMenu*)menu)->FindItem(event.GetId());
                 item->Check(stereo);
+        }
+        else if (event.GetId() >= XRCID("IDM_SOUND_GAIN[0]") && event.GetId() <= XRCID("IDM_SOUND_GAIN[9]"))
+        {
+                wxMenuItem *item = ((wxMenu*)menu)->FindItem(event.GetId());
+                item->Check(true);
+
+                sound_gain = 2 * (event.GetId() - XRCID("IDM_SOUND_GAIN[0]"));
         }
         else if (event.GetId() == XRCID("IDM_SETTINGS_CONFIGURE"))
         {

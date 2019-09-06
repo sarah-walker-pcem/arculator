@@ -3,6 +3,7 @@
 
 #include <string.h>  
 #include <stdio.h>
+#include <math.h>
 #ifdef __APPLE__
 #include <OpenAL/al.h>
 #include <OpenAL/alc.h>
@@ -11,6 +12,7 @@
 #include <AL/alc.h>
 #endif
 #include "arc.h"
+#include "sound.h"
 #include "soundopenal.h"
 
 static ALuint buffers[4]; // front and back buffers
@@ -160,6 +162,9 @@ void al_givebuffer(int16_t *buf)
         if (processed>=1)
         {
                 ALuint buffer;
+                double gain = pow(10.0, (double)sound_gain / 20.0);
+
+                alListenerf(AL_GAIN, gain);
 
                 alSourceUnqueueBuffers(source[0], 1, &buffer);
 //                printf("U ");

@@ -68,23 +68,6 @@
 			</object>
 		</object>
 		<object class="wxMenu">
-			<label>_Options</label>
-			<object class="wxMenuItem" name="IDM_OPTIONS_SOUND">
-				<label>_Sound enable</label>
-				<checkable>1</checkable>
-			</object>
-			<object class="wxMenuItem" name="IDM_OPTIONS_STEREO">
-				<label>S_tereo sound</label>
-				<checkable>1</checkable>
-			</object>
-		</object>
-		<object class="wxMenu">
-			<label>_Machine</label>
-			<object class="wxMenuItem" name="IDM_MACHINE_CONFIGURE">
-				<label>_Configure...</label>
-			</object>
-		</object>
-		<object class="wxMenu">
 			<label>Video</label>
 			<object class="wxMenuItem" name="IDM_VIDEO_FULLSCR">
 				<label>_Fullscreen</label>
@@ -203,6 +186,23 @@
 					<label>4x</label>
 					<radio>1</radio>
 				</object>
+			</object>
+		</object>
+		<object class="wxMenu">
+			<label>_Sound</label>
+			<object class="wxMenuItem" name="IDM_SOUND_ENABLE">
+				<label>_Sound enable</label>
+				<checkable>1</checkable>
+			</object>
+			<object class="wxMenuItem" name="IDM_SOUND_STEREO">
+				<label>S_tereo sound</label>
+				<checkable>1</checkable>
+			</object>
+		</object>
+		<object class="wxMenu">
+			<label>_Settings</label>
+			<object class="wxMenuItem" name="IDM_SETTINGS_CONFIGURE">
+				<label>_Configure machine...</label>
 			</object>
 		</object>
 	</object>

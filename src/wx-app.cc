@@ -111,9 +111,9 @@ void Frame::UpdateMenu(wxMenu *menu)
         char menuitem[80];
         wxMenuItem *item = ((wxMenu*)menu)->FindItem(XRCID("IDM_DISC_FAST"));
         item->Check(fastdisc);
-        item = ((wxMenu*)menu)->FindItem(XRCID("IDM_OPTIONS_SOUND"));
+        item = ((wxMenu*)menu)->FindItem(XRCID("IDM_SOUND_ENABLE"));
         item->Check(soundena);
-        item = ((wxMenu*)menu)->FindItem(XRCID("IDM_OPTIONS_STEREO"));
+        item = ((wxMenu*)menu)->FindItem(XRCID("IDM_SOUND_STEREO"));
         item->Check(stereo);
 
         if (dblscan)
@@ -241,21 +241,21 @@ void Frame::OnMenuCommand(wxCommandEvent &event)
                 wxMenuItem *item = ((wxMenu*)menu)->FindItem(event.GetId());
                 item->Check(fastdisc);
         }
-        else if (event.GetId() == XRCID("IDM_OPTIONS_SOUND"))
+        else if (event.GetId() == XRCID("IDM_SOUND_ENABLE"))
         {
                 soundena ^= 1;
 
                 wxMenuItem *item = ((wxMenu*)menu)->FindItem(event.GetId());
                 item->Check(soundena);
         }
-        else if (event.GetId() == XRCID("IDM_OPTIONS_STEREO"))
+        else if (event.GetId() == XRCID("IDM_SOUND_STEREO"))
         {
                 stereo ^= 1;
 
                 wxMenuItem *item = ((wxMenu*)menu)->FindItem(event.GetId());
                 item->Check(stereo);
         }
-        else if (event.GetId() == XRCID("IDM_MACHINE_CONFIGURE"))
+        else if (event.GetId() == XRCID("IDM_SETTINGS_CONFIGURE"))
         {
                 arc_pause_main_thread();
                 ShowConfig(true);

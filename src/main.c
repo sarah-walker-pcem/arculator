@@ -249,8 +249,6 @@ void arc_setspeed(int mhz)
 {
         rpclog("arc_setspeed : %i MHz\n", mhz);
         speed_mhz = mhz;
-	memc_refresh_time = ((32 << 10) * speed_mhz) / 8;
-        rpclog("memc_refresh_time=%i\n", memc_refresh_time);
 }
 
 static struct
@@ -296,6 +294,7 @@ void arc_set_cpu(int cpu, int memc)
                 arm_cpu_speed = arm_mem_speed;
         arm_has_swp   = arc_cpus[cpu].has_swp;
         arm_has_cp15  = arc_cpus[cpu].has_cp15;
+        ref8m_period = (arm_cpu_speed * 1024) / 8;
         arc_setspeed(arm_cpu_speed);
         mem_updatetimings();
 }

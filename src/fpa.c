@@ -481,21 +481,21 @@ int fpaopcode(uint32_t opcode)
                                 {
                                         case 1:
                                         temp[0]=readmeml(addr);
-                                        cache_read_timing(addr, 1);
+                                        cache_read_timing(addr, 1, 0);
                                         break;
                                         case 2:
                                         temp[1]=readmeml(addr);
                                         temp[0]=readmeml(addr+4);
-                                        cache_read_timing(addr, 1);
-                                        cache_read_timing(addr+4, !((addr + 4) & 0xc));
+                                        cache_read_timing(addr, 1, 0);
+                                        cache_read_timing(addr+4, !((addr + 4) & 0xc), 0);
                                         break;
                                         case 3:
                                         temp[0]=readmeml(addr);
                                         temp[1]=readmeml(addr+4);
                                         temp[2]=readmeml(addr+8);
-                                        cache_read_timing(addr, 1);
-                                        cache_read_timing(addr+4, !((addr + 4) & 0xc));
-                                        cache_read_timing(addr+8, !((addr + 8) & 0xc));
+                                        cache_read_timing(addr, 1, 0);
+                                        cache_read_timing(addr+4, !((addr + 4) & 0xc), 0);
+                                        cache_read_timing(addr+8, !((addr + 8) & 0xc), 0);
                                         break;
                                 }
                                 switch (opcode&0x408000)
@@ -580,18 +580,18 @@ int fpaopcode(uint32_t opcode)
                                 temp[2]=readmeml(addr+44);
                                 fparegs[(FD+3)&7]=convert80to64(&temp[0]);
                                 arm_clock_i(1);
-                                cache_read_timing(addr, 1);
-                                cache_read_timing(addr+4, !((addr + 4) & 0xc));
-                                cache_read_timing(addr+8, !((addr + 8) & 0xc));
-                                cache_read_timing(addr+12, !((addr + 12) & 0xc));
-                                cache_read_timing(addr+16, !((addr + 16) & 0xc));
-                                cache_read_timing(addr+20, !((addr + 20) & 0xc));
-                                cache_read_timing(addr+24, !((addr + 24) & 0xc));
-                                cache_read_timing(addr+28, !((addr + 28) & 0xc));
-                                cache_read_timing(addr+32, !((addr + 32) & 0xc));
-                                cache_read_timing(addr+36, !((addr + 36) & 0xc));
-                                cache_read_timing(addr+40, !((addr + 40) & 0xc));
-                                cache_read_timing(addr+44, !((addr + 44) & 0xc));
+                                cache_read_timing(addr, 1, 0);
+                                cache_read_timing(addr+4, !((addr + 4) & 0xc), 0);
+                                cache_read_timing(addr+8, !((addr + 8) & 0xc), 0);
+                                cache_read_timing(addr+12, !((addr + 12) & 0xc), 0);
+                                cache_read_timing(addr+16, !((addr + 16) & 0xc), 0);
+                                cache_read_timing(addr+20, !((addr + 20) & 0xc), 0);
+                                cache_read_timing(addr+24, !((addr + 24) & 0xc), 0);
+                                cache_read_timing(addr+28, !((addr + 28) & 0xc), 0);
+                                cache_read_timing(addr+32, !((addr + 32) & 0xc), 0);
+                                cache_read_timing(addr+36, !((addr + 36) & 0xc), 0);
+                                cache_read_timing(addr+40, !((addr + 40) & 0xc), 0);
+                                cache_read_timing(addr+44, !((addr + 44) & 0xc), 0);
                                 break;
                                 case 0x408000: /*3 registers*/
                                 temp[0]=readmeml(addr);
@@ -607,15 +607,15 @@ int fpaopcode(uint32_t opcode)
                                 temp[2]=readmeml(addr+32);
                                 fparegs[(FD+2)&7]=convert80to64(&temp[0]);
                                 arm_clock_i(1);
-                                cache_read_timing(addr, 1);
-                                cache_read_timing(addr+4, !((addr + 4) & 0xc));
-                                cache_read_timing(addr+8, !((addr + 8) & 0xc));
-                                cache_read_timing(addr+12, !((addr + 12) & 0xc));
-                                cache_read_timing(addr+16, !((addr + 16) & 0xc));
-                                cache_read_timing(addr+20, !((addr + 20) & 0xc));
-                                cache_read_timing(addr+24, !((addr + 24) & 0xc));
-                                cache_read_timing(addr+28, !((addr + 28) & 0xc));
-                                cache_read_timing(addr+32, !((addr + 32) & 0xc));
+                                cache_read_timing(addr, 1, 0);
+                                cache_read_timing(addr+4, !((addr + 4) & 0xc), 0);
+                                cache_read_timing(addr+8, !((addr + 8) & 0xc), 0);
+                                cache_read_timing(addr+12, !((addr + 12) & 0xc), 0);
+                                cache_read_timing(addr+16, !((addr + 16) & 0xc), 0);
+                                cache_read_timing(addr+20, !((addr + 20) & 0xc), 0);
+                                cache_read_timing(addr+24, !((addr + 24) & 0xc), 0);
+                                cache_read_timing(addr+28, !((addr + 28) & 0xc), 0);
+                                cache_read_timing(addr+32, !((addr + 32) & 0xc), 0);
                                 break;
                                 case 0x400000: /*2 registers*/
                                 temp[0]=readmeml(addr);
@@ -627,12 +627,12 @@ int fpaopcode(uint32_t opcode)
                                 temp[2]=readmeml(addr+20);
                                 fparegs[(FD+1)&7]=convert80to64(&temp[0]);
                                 arm_clock_i(1);
-                                cache_read_timing(addr, 1);
-                                cache_read_timing(addr+4, !((addr + 4) & 0xc));
-                                cache_read_timing(addr+8, !((addr + 8) & 0xc));
-                                cache_read_timing(addr+12, !((addr + 12) & 0xc));
-                                cache_read_timing(addr+16, !((addr + 16) & 0xc));
-                                cache_read_timing(addr+20, !((addr + 20) & 0xc));
+                                cache_read_timing(addr, 1, 0);
+                                cache_read_timing(addr+4, !((addr + 4) & 0xc), 0);
+                                cache_read_timing(addr+8, !((addr + 8) & 0xc), 0);
+                                cache_read_timing(addr+12, !((addr + 12) & 0xc), 0);
+                                cache_read_timing(addr+16, !((addr + 16) & 0xc), 0);
+                                cache_read_timing(addr+20, !((addr + 20) & 0xc), 0);
                                 break;
                                 case 0x008000: /*1 register*/
                                 temp[0]=readmeml(addr);
@@ -640,9 +640,9 @@ int fpaopcode(uint32_t opcode)
                                 temp[2]=readmeml(addr+8);
                                 fparegs[FD]=convert80to64(&temp[0]);
                                 arm_clock_i(1);
-                                cache_read_timing(addr, 1);
-                                cache_read_timing(addr+4, !((addr + 4) & 0xc));
-                                cache_read_timing(addr+8, !((addr + 8) & 0xc));
+                                cache_read_timing(addr, 1, 0);
+                                cache_read_timing(addr+4, !((addr + 4) & 0xc), 0);
+                                cache_read_timing(addr+8, !((addr + 8) & 0xc), 0);
                                 break;
 
                                 default:

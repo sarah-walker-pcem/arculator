@@ -74,3 +74,5 @@ enum
 void initjoy();
 void polljoy();
 uint8_t readjoy(int addr);
+
+extern int ref8m_period;

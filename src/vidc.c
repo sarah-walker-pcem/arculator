@@ -120,6 +120,22 @@ struct
         int hdstart2,hdend2;
         uint32_t cr;
         int sync,inter;
+        
+        int horiz_length;
+        int hsync_length;
+        int front_porch_length;
+        int display_length;
+        int back_porch_length;
+
+        int state;
+        
+        uint64_t pixel_time;
+        uint64_t fetch_time; /*Time for one fetch (four words) to be consumed*/
+        uint64_t initial_fetch_time;
+        
+        int cursor_lines;
+        int first_line;
+        
         /*Palette lookups - pal8 for 8bpp modes, pal for all others*/
         uint32_t pal[32],pal8[256];
         int cx,cys,cye,cxh;
@@ -141,6 +157,14 @@ struct
         
         timer_t timer;
 } vidc;
+
+enum
+{
+        VIDC_HSYNC = 0,
+        VIDC_FRONT_PORCH,
+        VIDC_DISPLAY,
+        VIDC_BACK_PORCH
+};
 
 int vidc_getline()
 {
@@ -200,30 +224,98 @@ void recalcse()
 {
         if (monitor_type == MONITOR_MONO)
         {
-                        vidc.hdstart=(vidc.hdstart2<<1)-14;
-                        vidc.hdend=(vidc.hdend2<<1)-14;
+                vidc.hdstart=(vidc.hdstart2<<1)-14;
+                vidc.hdend=(vidc.hdend2<<1)-14;
         }
         else
         {
+                int pixels_per_word;
+                
+                switch (vidcr[VIDC_CR] & 3)
+                {
+                        case 0: /*8MHz pixel rate*/
+                        vidc.pixel_time = (TIMER_USEC * 1000) / (vidc.clock / 3);
+                        break;
+                        case 1: /*12MHz pixel rate*/
+                        vidc.pixel_time = (TIMER_USEC * 1000) / (vidc.clock / 2);
+                        break;
+                        case 2: /*16MHz pixel rate*/
+                        vidc.pixel_time = (TIMER_USEC * 1000) / ((vidc.clock * 2) / 3);
+                        break;
+                        case 3: /*24MHz pixel rate*/
+                        vidc.pixel_time = (TIMER_USEC * 1000) / vidc.clock;
+                        break;
+                }
+/*                rpclog("pixel_time %016llx  %016llx %016llx\n", vidc.pixel_time,
+                        (TIMER_USEC * 1000) / vidc.clock,
+                        (TIMER_USEC * 1000) / ((vidc.clock * 2) / 3));*/
+
                 switch (vidcr[0xE0>>2]&0xC)
                 {
                         case 0xC: /*8bpp*/
                         vidc.hdstart=(vidc.hdstart2<<1)+5;
                         vidc.hdend=(vidc.hdend2<<1)+5;
+                        vidc.fetch_time = vidc.pixel_time * 4 * 4;
+                        pixels_per_word = 4;
                         break;
                         case 8: /*4bpp*/
                         vidc.hdstart=(vidc.hdstart2<<1)+7;
                         vidc.hdend=(vidc.hdend2<<1)+7;
+                        vidc.fetch_time = vidc.pixel_time * 8 * 4;
+                        pixels_per_word = 8;
                         break;
                         case 4: /*2bpp*/
                         vidc.hdstart=(vidc.hdstart2<<1)+11;
                         vidc.hdend=(vidc.hdend2<<1)+11;
+                        vidc.fetch_time = vidc.pixel_time * 16 * 4;
+                        pixels_per_word = 16;
                         break;
                         case 0: /*1bpp*/
                         vidc.hdstart=(vidc.hdstart2<<1)+19;
                         vidc.hdend=(vidc.hdend2<<1)+19;
+                        vidc.fetch_time = vidc.pixel_time * 32 * 4;
+                        pixels_per_word = 32;
                         break;
                 }
+                
+                switch (vidcr[VIDC_CR] & 0x30) /*DMA Request*/
+                {
+                        case 0x00: /*end of word 0, 4*/
+                        vidc.initial_fetch_time = (vidc.pixel_time * 4) * pixels_per_word;
+                        break;
+                        case 0x10: /*end of word 1, 5*/
+                        vidc.initial_fetch_time = (vidc.pixel_time * 5) * pixels_per_word;
+                        break;
+                        case 0x20: /*end of word 2, 6*/
+                        vidc.initial_fetch_time = (vidc.pixel_time * 6) * pixels_per_word;
+                        break;
+                        case 0x30: /*end of word 3, 7*/
+                        vidc.initial_fetch_time = (vidc.pixel_time * 7) * pixels_per_word;
+                        break;
+                }
+                
+                memc_dma_video_req_period = vidc.fetch_time;
+/*                rpclog("memc_dma_video_req_period=%016llx\n", memc_dma_video_req_period);*/
+
+                vidc.horiz_length = (vidc.htot * 2) + 2;
+                
+                vidc.hsync_length = (vidc.sync * 2) + 2;
+                vidc.front_porch_length = vidc.hdstart - vidc.hsync_length;
+                vidc.display_length = vidc.hdend - vidc.hdstart;
+                vidc.back_porch_length = vidc.horiz_length - vidc.hdend;
+                
+                if (vidc.hsync_length < 0)
+                        vidc.hsync_length = 0;
+                if (vidc.front_porch_length < 0)
+                        vidc.front_porch_length = 0;
+                if (vidc.display_length < 0)
+                        vidc.display_length = 0;
+                if (vidc.back_porch_length < 0)
+                        vidc.back_porch_length = 0;
+
+/*                rpclog("recalcse: horiz_length=%i  hsync_length=%i front_porch_length=%i display_length=%i back_port_length=%i\n",
+                        vidc.horiz_length,
+                        vidc.hsync_length, vidc.front_porch_length, vidc.display_length, vidc.back_porch_length);*/
         }
 }
 
@@ -444,74 +536,111 @@ static void vidc_poll(void *__p)
         uint32_t *p;
         uint8_t *bp;
 //        char s[256];
-        int l=(vidc.line-16);
+        int l = (vidc.line - 17);
         int xoffset,xoffset2;
         int old_display_on = vidc.displayon;
         int vidc_cycles;
-  
-        vidc_cycles = vidcgetcycs();
-        timer_advance_u64(&vidc.timer, (uint64_t)vidc_cycles << (32-10));
 
-        if (!vidc.in_display)
+        if (output)
+                rpclog("vidc_poll: state=%i line=%i\n", vidc.state, vidc.line);
+        switch (vidc.state)
         {
+                case VIDC_HSYNC:
+                vidc.state = VIDC_FRONT_PORCH;
+                timer_advance_u64(&vidc.timer, vidc.front_porch_length * vidc.pixel_time);
+                break;
+                
+                case VIDC_FRONT_PORCH:
+                vidc.state = VIDC_DISPLAY;
+                timer_advance_u64(&vidc.timer, vidc.display_length * vidc.pixel_time);
                 vidc.in_display = 1;
-                if (vidc.displayon)
+                break;
+                
+                case VIDC_DISPLAY:
+                vidc.state = VIDC_BACK_PORCH;
+                timer_advance_u64(&vidc.timer, vidc.back_porch_length * vidc.pixel_time);
+                /*Delay next fetch until display starts again*/
+                memc_dma_video_req_ts += ((vidc.back_porch_length + vidc.hsync_length + vidc.front_porch_length) * vidc.pixel_time);
+                vidc.in_display = 0;
+                break;
+                
+                case VIDC_BACK_PORCH:
+                vidc.state = VIDC_HSYNC;
+
+                /*Clock vertical count*/
+                if (vidc.line == vidc.vbstart && !vidc.border_was_disabled)
                 {
-                        /*arm_dmacount = vidc.fetch_count;
-                        arm_dmalatch = vidc.cycles_per_fetch;
-                        arm_dmalength = 5;*/
+                        vidc.borderon = 1;
+                        flyback = 0;
+                        if (vidc.disp_y_min > l && vidc.displayon)
+                                vidc.disp_y_min = l;
                 }
-                return;
+                if (vidc.line == vidc.vdstart && !vidc.display_was_disabled)
+                {
+//                        rpclog("VIDC addr %08X %08X\n",vinit,vidcr[VIDC_CR]);
+                        vidc.addr = vinit;
+                        vidc.caddr = cinit;
+                        
+                        /*First cursor DMA fetch at start of hsync before first display line*/
+                        memc_dma_cursor_req_ts = timer_get_ts(&vidc.timer);
+                        memc_dma_cursor_req = 1;
+                        /*First video DMA fetch at end of hsync before first display line.
+                          Note that first DMA fetch is double length!*/
+                        memc_dma_video_req_ts = memc_dma_cursor_req_ts + (vidc.hsync_length * vidc.pixel_time);
+                        memc_dma_video_req_start_ts = memc_dma_video_req_ts + (vidc.front_porch_length * vidc.pixel_time);
+                        memc_dma_video_req = 2;
+                        vidc.cursor_lines = 2;
+                        vidc.first_line = 1;
+                        
+                        vidc.displayon = vidc_displayon = 1;
+                        vidc.fetch_count = vidc.cycles_per_fetch;
+                        mem_dorefresh = memc_refresh_always;
+                        flyback = 0;
+                        if (vidc.disp_y_min > l && vidc.borderon)
+                                vidc.disp_y_min = l;
+                }
+                if (vidc.line == vidc.vdend)
+                {
+                        vidc.displayon = vidc_displayon = 0;
+                        memc_dma_video_req = 0;
+                        mem_dorefresh = (memc_refreshon && !vidc_displayon) || memc_refresh_always;
+                        ioc_irqa(IOC_IRQA_VBLANK);
+                        flyback = 0x80;
+                        if (vidc.disp_y_max == -1)
+                                vidc.disp_y_max = l;
+                        vidc.display_was_disabled = 1;
+                        LOG_VIDEO_FRAMES("Normal vsync; speed %d%%, ins=%d, inscount=%d, PC=%08X\n", inssec, ins, inscount, PC);
+                }
+                if (vidc.line == vidc.vbend)
+                {
+                        vidc.borderon = 0;
+                        if (vidc.disp_y_max == -1)
+                                vidc.disp_y_max = l;
+                        vidc.border_was_disabled = 1;
+                }
+                if (vidc.displayon && !vidc.cursor_lines)
+                {
+                        /*Fetched cursor data used, request next fetch*/
+                        memc_dma_cursor_req = 1;
+                        vidc.cursor_lines = 2;
+                }
+                vidc.line++;
+                LOG_VIDC_TIMING("++ vidc.line == %d\n", vidc.line);
+
+                timer_advance_u64(&vidc.timer, vidc.hsync_length * vidc.pixel_time);
+                break;
         }
-        vidc.in_display = 0;
+  
+        if (vidc.state != VIDC_BACK_PORCH)
+                return;
+
         if (!vidc.scanrate && !dblscan) l<<=1;
-        if (vidc.scanrate) l+=32;
-        if (vidc.scanrate && vidc.vtot>600) l-=40;
         if (palchange)
         {
                 redolookup();
                 palchange=0;
         }
 
-        if (vidc.line==vidc.vbstart && !vidc.border_was_disabled)
-        { 
-                vidc.borderon=1; 
-                flyback=0; 
-                if (vidc.disp_y_min > l && vidc.displayon)
-                        vidc.disp_y_min = l;
-        }
-        if (vidc.line==vidc.vdstart && !vidc.display_was_disabled)
-        {
-//                rpclog("VIDC addr %08X %08X\n",vinit,vidcr[VIDC_CR]);
-                vidc.addr=vinit;
-                vidc.caddr=cinit;
-                vidc.displayon = vidc_displayon = 1;
-                vidc.fetch_count = vidc.cycles_per_fetch;
-                mem_dorefresh = 0;
-                flyback=0; 
-                if (vidc.disp_y_min > l && vidc.borderon)
-                        vidc.disp_y_min = l;
-        }
-        if (vidc.line==vidc.vdend)
-        {
-                vidc.displayon = vidc_displayon = 0;
-                mem_dorefresh = memc_refreshon && !vidc_displayon;
-                ioc_irqa(IOC_IRQA_VBLANK);
-                flyback=0x80;
-                if (vidc.disp_y_max == -1)
-                        vidc.disp_y_max = l;
-                vidc.display_was_disabled = 1;
-                LOG_VIDEO_FRAMES("Normal vsync; speed %d%%, ins=%d, inscount=%d, PC=%08X\n", inssec, ins, inscount, PC);
-        }
-        if (vidc.line==vidc.vbend) 
-        { 
-                vidc.borderon=0; 
-                if (vidc.disp_y_max == -1)
-                        vidc.disp_y_max = l;
-                vidc.border_was_disabled = 1;
-        }
-        vidc.line++;
-        LOG_VIDC_TIMING("++ vidc.line == %d\n", vidc.line);
         videodma=vidc.addr;
         mode=(vidcr[VIDC_CR]&0xF);
         if (monitor_type == MONITOR_MONO)
@@ -900,7 +1029,7 @@ static void vidc_poll(void *__p)
                 if (vidc.displayon)
                 {
                         vidc.displayon = vidc_displayon = 0;
-                        mem_dorefresh = memc_refreshon && !vidc_displayon;
+                        mem_dorefresh = (memc_refreshon && !vidc_displayon) || memc_refresh_always;
                         ioc_irqa(IOC_IRQA_VBLANK);
                         flyback=0x80;
                         vidc.disp_y_max = l;
@@ -1038,180 +1167,11 @@ static void vidc_poll(void *__p)
                 vidc_fetches = 0;
                 vidc_framecount++;
         }
-        
-        if (!vidc.displayon && !old_display_on)
-        {
-                if (memc_refreshon)
-                {
-                        /*arm_dmacount  = 32 << 10;
-                        arm_dmalatch  = 32 << 10;
-                        arm_dmalength =  2;*/
-                }
-                else
-                {
-                        /*arm_dmacount = 0x7fffffff;
-                        arm_dmalatch = 0x7fffffff;
-                        arm_dmalength = 0;*/
-                }
-        }
-        else if (vidc.displayon)
-        {
-                vidc.fetch_count = arm_dmacount;
-                /*arm_dmacount = 0x7fffffff;
-                arm_dmalatch = 0x7fffffff;
-                arm_dmalength = 0;*/
-        }
 }
 
 void vidc_redovideotiming()
 {
         vidc.cyclesperline_display = vidc.cyclesperline_blanking = 0;
-}
-
-/*Return the number of clock ticks * 1024 in the next display line*/
-int vidcgetcycs()
-{
-        if (!vidc.cyclesperline_display)
-        {
-                int temp, temp2;
-                int displen = vidc.hdend2 - vidc.hdstart2;
-                int disp_rate;
-                
-                if (displen < 0)
-                        displen = 0;
-
-                temp  = displen * 4;
-                temp2 = ((vidc.htot - displen) + 1) * 4;
-                rpclog("displen %i, htot %d\n", displen, vidc.htot);
-                switch (vidcr[VIDC_CR]&3)
-                {
-                        case 0: /*8MHz pixel rate*/
-			disp_rate = displen / 64;
-                        break;
-                        case 1: /*12MHz pixel rate*/
-                        temp  = (temp * 2) / 3; 
-                        temp2 = (temp2 * 2) / 3;
-                        disp_rate = displen / 32;
-                        break;
-                        case 2: /*16MHz pixel rate*/
-                        temp  = temp / 2; 
-                        temp2 = temp2 / 2;
-                        disp_rate = displen / 16;
-                        break;
-                        case 3: /*24MHz pixel rate*/
-                        temp  = temp / 3; 
-                        temp2 = temp2 / 3;
-                        disp_rate = displen / 8;
-                        break;
-                }
-
-		switch (vidcr[VIDC_CR] & 0xc)
-                {
-                        case 0x0: /*1bpp*/
-			disp_rate = displen / 64;
-                        break;
-                        case 0x4: /*2bpp*/
-                        disp_rate = displen / 32;
-                        break;
-                        case 0x8: /*4bpp*/
-                        disp_rate = displen / 16;
-                        break;
-                        case 0xc: /*8bpp*/
-                        disp_rate = displen / 8;
-                        break;
-                }
-		if (disp_rate)
-			disp_rate = displen / disp_rate;
-		rpclog("disp_rate %i\n", disp_rate);
-		vidc.disp_len = displen;
-		vidc.disp_rate = disp_rate;
-		
-                vidc.cyclesperline_display  = (((temp * speed_mhz) / 8) / 2) << 10;
-                vidc.cyclesperline_blanking = (((temp2 * speed_mhz) / 8) / 2) << 10;
-                rpclog("set cyclesperline display=%d blanking=%d\n",
-                        vidc.cyclesperline_display, vidc.cyclesperline_blanking);
-        
-                if (!vidc.cyclesperline_display)
-                        vidc.cyclesperline_display = 512 << 10;
-                if (!vidc.cyclesperline_blanking)
-                        vidc.cyclesperline_blanking = 512 << 10;
-                rpclog("2 cyclesperline display=%d blanking=%d\n",
-                        vidc.cyclesperline_display, vidc.cyclesperline_blanking);
-        
-                vidc.cyclesperline_display  = (int32_t)(((int64_t)vidc.cyclesperline_display  * 24000) / vidc.clock);
-                vidc.cyclesperline_blanking = (int32_t)(((int64_t)vidc.cyclesperline_blanking * 24000) / vidc.clock);
-                // rpclog("cyclesperline = %i %i  %i %i %i  %i\n", vidc.cyclesperline_display, vidc.cyclesperline_blanking, vidc.htot, vidc.hdend2, vidc.hdstart2, speed_mhz);
-                rpclog("3 cyclesperline display=%d blanking=%d\n",
-                        vidc.cyclesperline_display, vidc.cyclesperline_blanking);
-
-                temp = (128 >> ((vidc.cr >> 2) & 3)) << 10; /*Pixel clocks per fetch*/
-                rpclog("pixel clocks per fetch %i %i\n", temp, temp >> 10);
-                switch (vidcr[VIDC_CR]&3)
-                {
-                        case 0: /*8MHz pixel rate*/
-                        break;
-                        case 1: /*12MHz pixel rate*/
-                        temp  = (temp * 2) / 3; 
-                        break;
-                        case 2: /*16MHz pixel rate*/
-                        temp  = temp / 2; 
-                        break;
-                        case 3: /*24MHz pixel rate*/
-                        temp  = temp / 3; 
-                        break;
-                }       /*Bus clocks per fetch*/
-
-                temp = (int32_t)(((int64_t)temp * 24000) / vidc.clock);
-                vidc.cycles_per_fetch = (temp * speed_mhz) / 8;
-                rpclog("cycles_per_fetch %i\n", vidc.cycles_per_fetch);
-        }
-
-        if (vidc.in_display)
-        {
-                if (vidc.cyclesperline_display < 0)
-                {
-                        rpclog("vidc.cyclesperline_display == %d, should be positive.  clock=%d\n",
-                                vidc.cyclesperline_display, vidc.clock);
-                        return 512 << 10;
-                }
-                return vidc.cyclesperline_display;
-        }
-
-        if (vidc.cyclesperline_blanking < 0)
-        {
-                rpclog("vidc.cyclesperline_blanking == %d, should be positive.  clock=%d\n",
-                        vidc.cyclesperline_blanking, vidc.clock);
-                return 512 << 10;
-        }
-
-        return vidc.cyclesperline_blanking;
-}
-
-int vidc_update_cycles()
-{
-//rpclog("Fetch at %i %i  %i,%i  %i %i %i,%i,%i\n", vidc.in_display, vidc_fetches, (vidc.cyclesperline_display-cycles) >> 10, vidc.line, time,cycles, vidc.disp_count, vidc.disp_rate, vidc.disp_len);
-	if (!vidc.displayon)
-	{
-		vidc_dma_length = memc_refreshon ? mem_speed[0][1] : 0;
-//		rpclog("!displayon %i %i\n", vidc.cyclesperline_display + vidc.cyclesperline_blanking, cycles);
-		return memc_refresh_time;
-	}
-	if (vidc.in_display && vidc.disp_count < vidc.disp_len)
-	{
-		if (memc_videodma_enable)
-			vidc_dma_length = mem_speed[0][1] + mem_speed[0][0]*3;
-		else
-			vidc_dma_length = 0;
-		vidc.disp_count += vidc.disp_rate;
-		return vidc.cycles_per_fetch;
-	}
-	else
-	{
-		vidc_dma_length = 0;
-		if (!vidc.in_display)
-			vidc.disp_count = 0;
-		return 10000;
-	}
 }
 
 void vidc_setclock(int clock)
@@ -1229,6 +1189,7 @@ void vidc_setclock(int clock)
                 break;
         }
         sound_set_clock((vidc.clock * 1000) / 24);
+        recalcse();
 }
 
 int vidc_getclock()
@@ -1247,4 +1208,5 @@ void vidc_reset()
         timer_add(&vidc.timer, vidc_poll, NULL, 1);
         vidc_setclock(0);
         sound_set_period(255);
+        recalcse();
 }

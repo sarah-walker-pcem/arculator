@@ -309,12 +309,12 @@ static void podule_run_timer(void *p)
 {
         int num = (int)p;
         podule_t *podule = &podules[num].podule;
-        uint64_t timeslice = (tsc - podules[num].last_callback_tsc) >> 10;
+        uint64_t timeslice = tsc - podules[num].last_callback_tsc;
         int ret = 0;
 
         podules[num].last_callback_tsc = tsc;
         if (podule_functions[num]->run)
-                ret = podule_functions[num]->run(podule, timeslice / (TIMER_USEC >> 32));
+                ret = podule_functions[num]->run(podule, timeslice / TIMER_USEC);
 
         if (ret)
                 timer_advance_u64(&podules[num].timer, ret * TIMER_USEC);

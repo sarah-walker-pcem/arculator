@@ -14,9 +14,18 @@ int flybacklines;
 
 int memc_videodma_enable;
 int memc_refreshon;
+int memc_refresh_always;
 int memc_is_memc1 = 1;
-int memc_refresh_time;
 int memc_type;
+
+int memc_dma_sound_req;
+uint64_t memc_dma_sound_req_ts;
+int memc_dma_video_req;
+uint64_t memc_dma_video_req_ts;
+uint64_t memc_dma_video_req_start_ts;
+uint64_t memc_dma_video_req_period;
+int memc_dma_cursor_req;
+uint64_t memc_dma_cursor_req_ts;
 
 uint32_t memctrl;
 
@@ -107,12 +116,9 @@ void writememc(uint32_t a)
                         break;
                 }
                 memc_refreshon = (((a >> 8) & 3) == 1);
-                mem_dorefresh = memc_refreshon && !vidc_displayon;
-                return;
-
-                rpclog("MEMC ctrl write %08X %i\n",a,sdmaena);
-//                rpclog("CTRL write pagesize %i %i\n",pagesize,ins);
-                memctrl=a;
+                memc_refresh_always = (((a >> 8) & 3) == 3);
+                mem_dorefresh = (memc_refreshon && !vidc_displayon) || memc_refresh_always;
+//                rpclog("MEMC ctrl write %08X %i  %i %i %i\n",a,sdmaena, memc_refreshon, memc_refresh_always, mem_dorefresh);
                 return;
         }
 }

@@ -51,6 +51,8 @@ extern uint64_t TIMER_USEC;
 #define TIMER_LESS_THAN_VAL(a, b) ((int32_t)((a)->ts_integer - (b)) <= 0)
 /*True if 32 bit integer timestamp a expires before 32 bit integer timestamp b*/
 #define TIMER_VAL_LESS_THAN_VAL(a, b) ((int32_t)((a) - (b)) <= 0)
+#define TIMER_VAL_LESS_THAN_VAL_64(a, b) ((int64_t)((a) - (b)) <= 0)
+#define TIMER_VAL_LESS_THAN_NE_VAL(a, b) ((int32_t)((a) - (b)) < 0)
 
 /*Advance timer by delay, specified in 32:32 format. This should be used to
   resume a recurring timer in a callback routine*/
@@ -75,9 +77,14 @@ static inline void timer_set_delay_u64(timer_t *timer, uint64_t delay)
 	uint32_t frac_delay = delay & 0xffffffff;
 
 	timer->ts_frac = frac_delay;
-	timer->ts_integer = int_delay + (uint32_t)(tsc >> 10);
+	timer->ts_integer = int_delay + (uint32_t)(tsc >> 32);
 
 	timer_enable(timer);
+}
+
+static inline uint64_t timer_get_ts(timer_t *timer)
+{
+        return ((uint64_t)timer->ts_integer << 32) | timer->ts_frac;
 }
 
 /*True if timer currently enabled*/
@@ -98,7 +105,7 @@ static inline uint32_t timer_get_remaining_us(timer_t *timer)
 {
 	if (timer->enabled)
 	{
-		int64_t remaining = (((uint64_t)timer->ts_integer << 32) | timer->ts_frac) - ((uint64_t)(tsc >> 10) << 32);
+		int64_t remaining = (((uint64_t)timer->ts_integer << 32) | timer->ts_frac) - tsc;
 
 		if (remaining < 0)
 			return 0;
@@ -114,7 +121,7 @@ static inline uint64_t timer_get_remaining_u64(timer_t *timer)
 {
 	if (timer->enabled)
 	{
-		int64_t remaining = (((uint64_t)timer->ts_integer << 32) | timer->ts_frac) - ((uint64_t)(tsc >> 10) << 32);
+		int64_t remaining = (((uint64_t)timer->ts_integer << 32) | timer->ts_frac) - tsc;
 
 		if (remaining < 0)
 			return 0;

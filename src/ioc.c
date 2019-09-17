@@ -11,6 +11,8 @@
 
 IOC_t ioc;
 
+int ref8m_period;
+
 extern int irq;
 int keyway=0;
 uint8_t tempkey,iockey,iockey2;

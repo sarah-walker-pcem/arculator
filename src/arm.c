@@ -45,7 +45,7 @@ static int arm3_slot = 1;
 
 static int cyc_s, cyc_n;
 
-#define cyc_i (1 << 10)
+#define cyc_i (1ull << 32)
 
 uint32_t opcode;
 static uint32_t opcode2,opcode3;
@@ -57,125 +57,347 @@ int vidc_fetches = 0;
 int databort;
 int prefabort, prefabort_next;
 
+/*Archimedes has three clock domains :
+        FCLK - fast CPU clock
+        MCLK - MEMC clock
+        IOCLK - IOC clock
+
+  IOCLK is always 8 MHz. MCLK is either 8 or 12 on unmodified machines.
+
+  Synchronising to MCLK costs 1F + 2L cycles - presumably 1F for cache lookup,
+  2L for sync.
+  
+  During a cache fetch, ARM3 will be clocked once the request word has been
+  fetched. It will continue to be clocked for successive S or I cycles.
+*/
+enum
+{
+        DOMAIN_FCLK,
+        DOMAIN_MCLK,
+        DOMAIN_IOCLK
+};
+static int clock_domain;
+
+/*Timestamp of when memory is next available*/
+static uint64_t mem_available_ts;
+
+static uint64_t refresh_ts;
+
+/*Remaining read cycles in the current line fill. If non-zero then I and S cycles
+  will be promoted to MCLK-based S cycles. N cycles will have to wait until
+  mem_available_ts*/
+static int pending_reads = 0;
+static uint32_t cache_fill_addr;
+
+/*DMA priorities :
+        Video/Cursor
+        Sound
+        Refresh*/
+/*Two cases :
+        On N-cycle - run until no pending DMA requests. TSC will need to be updated and
+                timers need to run
+        On I-cycle - run until TSC. TSC should not be updated, timers do not need to run*/
+
+enum
+{
+        DMA_REFRESH,
+        DMA_SOUND,
+        DMA_CURSOR,
+        DMA_VIDEO
+};
+static void run_dma(int update_tsc)
+{
+        while (1)
+        {
+                uint64_t min_timer = refresh_ts;
+                int dma_source = DMA_REFRESH;
+                
+                if (memc_dma_sound_req && TIMER_VAL_LESS_THAN_VAL_64(memc_dma_sound_req_ts, min_timer))
+                {
+                        min_timer = memc_dma_sound_req_ts;
+                        dma_source = DMA_SOUND;
+                }
+                if (memc_videodma_enable && memc_dma_cursor_req && TIMER_VAL_LESS_THAN_VAL_64(memc_dma_cursor_req_ts, min_timer))
+                {
+                        min_timer = memc_dma_cursor_req_ts;
+                        dma_source = DMA_CURSOR;
+                }
+                if (memc_videodma_enable && memc_dma_video_req && TIMER_VAL_LESS_THAN_VAL_64(memc_dma_video_req_ts, min_timer))
+                {
+                        min_timer = memc_dma_video_req_ts;
+                        dma_source = DMA_VIDEO;
+                }
+                if (TIMER_VAL_LESS_THAN_VAL_64(min_timer, tsc))
+                {
+                        switch (dma_source)
+                        {
+                                case DMA_REFRESH:
+//                                if (output) rpclog("Refresh DMA %i\n", mem_dorefresh);
+                                if (mem_dorefresh)
+                                {
+                                        if (TIMER_VAL_LESS_THAN_VAL_64(refresh_ts, mem_available_ts))
+                                                mem_available_ts += 2 * mem_spd_multi;
+                                        else
+                                                mem_available_ts = refresh_ts + 2 * mem_spd_multi;
+                                }
+                                refresh_ts += 32 * mem_spd_multi;
+                                break;
+                                case DMA_SOUND:
+//                                if (output) rpclog("Sound DMA\n");
+                                if (TIMER_VAL_LESS_THAN_VAL_64(memc_dma_sound_req_ts, mem_available_ts))
+                                        mem_available_ts += 5 * mem_spd_multi;
+                                else
+                                        mem_available_ts = memc_dma_sound_req_ts + 5 * mem_spd_multi;
+                                memc_dma_sound_req = 0;
+                                break;
+                                case DMA_CURSOR:
+//                                if (output) rpclog("Cursor DMA\n");
+                                if (TIMER_VAL_LESS_THAN_VAL_64(memc_dma_cursor_req_ts, mem_available_ts))
+                                        mem_available_ts += 5 * mem_spd_multi;
+                                else
+                                        mem_available_ts = memc_dma_cursor_req_ts + 5 * mem_spd_multi;
+                                memc_dma_cursor_req = 0;
+                                break;
+                                case DMA_VIDEO:
+//                                if (output) rpclog("Video fetch %i\n", memc_dma_video_req);
+                                if (TIMER_VAL_LESS_THAN_VAL_64(memc_dma_video_req_ts, mem_available_ts))
+                                        mem_available_ts += memc_dma_video_req * 5 * mem_spd_multi;
+                                else
+                                        mem_available_ts = memc_dma_video_req_ts + memc_dma_video_req * 5 * mem_spd_multi;
+                                if (memc_dma_video_req == 2)
+                                {
+                                        memc_dma_video_req_ts = memc_dma_video_req_start_ts;
+                                        memc_dma_video_req = 1;
+                                }
+                                else
+                                        memc_dma_video_req_ts += memc_dma_video_req_period;
+                                break;
+                        }
+                        if (update_tsc && TIMER_VAL_LESS_THAN_VAL_64(tsc, mem_available_ts))
+                        {
+                                tsc = mem_available_ts;
+                                if (TIMER_VAL_LESS_THAN_VAL(timer_target, tsc >> 32))
+                                	timer_process();
+                        }
+                }
+                else
+                        break;
+        }
+}
+
+static void sync_to_mclk(void)
+{
+        if (clock_domain != DOMAIN_MCLK)
+        {
+                uint64_t sync_cycles = mem_spd_multi - (tsc % mem_spd_multi);
+                tsc += sync_cycles; /*Now synchronised to MCLK*/
+                tsc += mem_spd_multi; /*Synchronising takes another L cycle according to the ARM3 datasheet*/
+        }
+        
+        if (TIMER_VAL_LESS_THAN_VAL(timer_target, tsc >> 32))
+        	timer_process();
+
+        clock_domain = DOMAIN_MCLK;
+        run_dma(1);
+}
+static void sync_to_fclk(void)
+{
+        if (clock_domain != DOMAIN_FCLK)
+        {
+                tsc = (tsc + 0x3ff) & ~0x3ff;
+
+                clock_domain = DOMAIN_FCLK;
+        }
+}
+
+static int last_cycle_length = 0;
+
 static void CLOCK_N(uint32_t addr)
 {
-//	rpclog("CLOCK_N %i %i %i\n", vidc_dma_pending, arm_dmacount, 0);
-	if (vidc_dma_pending)
-	{
-		tsc += vidc_dma_pending;
-		arm_dmacount -= vidc_dma_pending;
-		vidc_dma_pending = 0;
-	}
-	arm_dmacount -= mem_speed[(addr >> 12) & 0x3fff][1];
-	if (arm_dmacount <= 0)
-	{
-//		rpclog("arm_dmacount was %i ", arm_dmacount);
-		arm_dmacount += vidc_update_cycles();
-//		rpclog("now %i\n", arm_dmacount);
-		vidc_dma_pending = vidc_dma_length;
-		if (vidc_dma_pending)
-			vidc_fetches++;
-	}
+        tsc += mem_speed[(addr >> 12) & 0x3fff][1];
+        last_cycle_length = mem_speed[(addr >> 12) & 0x3fff][1];
 }
 
 static void CLOCK_S(uint32_t addr)
 {
-	arm_dmacount -= mem_speed[(addr >> 12) & 0x3fff][0];
-	if (arm_dmacount <= 0)
-	{
-//		rpclog("arm_dmacount was %i ", arm_dmacount);
-		arm_dmacount += vidc_update_cycles();
-//		rpclog("now %i\n", arm_dmacount);
-		vidc_dma_pending = vidc_dma_length;
-		if (vidc_dma_pending)
-			vidc_fetches++;
-	}
+        tsc += mem_speed[(addr >> 12) & 0x3fff][0];
+        last_cycle_length = mem_speed[(addr >> 12) & 0x3fff][0];
 }
 
 static void CLOCK_I()
 {
-//	rpclog("CLOCK_I %i %i %i\n", vidc_dma_pending, arm_dmacount, 0);
-	if (vidc_dma_pending)
-	{
-		vidc_dma_pending -= cyc_i;
-		if (vidc_dma_pending < 0)
-			vidc_dma_pending = 0;
-	}
-	arm_dmacount -= cyc_i;
-	if (arm_dmacount <= 0)
-	{
-//		rpclog("arm_dmacount was %i ", arm_dmacount);
-		arm_dmacount += vidc_update_cycles();
-//		rpclog("now %i\n", arm_dmacount);
-		vidc_dma_pending = vidc_dma_length;
-		if (vidc_dma_pending)
-			vidc_fetches++;
-	}
+        if (pending_reads)
+        {
+                /*Cache fill is in progress. As CPU is currently synced to MCLK,
+                  'promote' this cycle to an S-cycle*/
+                pending_reads--;
+                CLOCK_S(cache_fill_addr);
+        }
+        else
+        {
+//                if (output)
+//                        rpclog(" CLOCK_I run_dma\n");
+                run_dma(0);
+                if (memc_is_memc1)
+                        tsc += last_cycle_length;
+                else
+                        tsc += cyc_i;
+        }
 }
 
 void arm_clock_i(int i_cycles)
 {
         while (i_cycles--)
-        {
                 CLOCK_I();
-		tsc += cyc_i;
-        }
 }
 
-void cache_read_timing(uint32_t addr, int is_n_cycle)
+static void cache_line_fill(uint32_t addr, int byte_offset, int bit_offset)
+{
+        int set = (addr >> 4) & 3;
+
+        if (arm3_cache_tag[set][arm3_slot] != TAG_INVALID)
+        {
+        	int old_bit_offset = (arm3_cache_tag[set][arm3_slot] >> 4) & 7;
+        	int old_byte_offset = (arm3_cache_tag[set][arm3_slot] >> (4+3));
+
+        	arm3_cache[old_byte_offset] &= ~(1 << old_bit_offset);
+        }
+
+        arm3_cache_tag[set][arm3_slot] = addr & ~0xf;
+        arm3_cache[byte_offset] |= (1 << bit_offset);
+        sync_to_mclk();
+
+        mem_available_ts = tsc + mem_speed[(addr >> 12) & 0x3fff][1] + 3*mem_speed[(addr >> 12) & 0x3fff][0];
+        
+        /*ARM3 will start to clock the CPU again once the requested word has been
+          read. So only 'charge' the emulated CPU up to that point, and promote
+          subsequent cycles to memory cycles until the line fill has completed*/
+        CLOCK_N(addr);
+        if ((addr & 0xc) >= 4)
+        {
+                CLOCK_S(addr);
+                if ((addr & 0xc) >= 8)
+                {
+                        CLOCK_S(addr);
+                        if ((addr & 0xc) >= 0xc)
+                                CLOCK_S(addr);
+                }
+        }
+        pending_reads = 3 - ((addr & 0xc) >> 2);
+        cache_fill_addr = addr & ~0xf;
+        
+        if (!((arm3_slot ^ (arm3_slot >> 1)) & 1))
+        	arm3_slot |= 0x40;
+        arm3_slot >>= 1;
+
+//        rpclog("Cache line fill %08x. %i pending reads\n", addr, pending_reads);
+}
+enum
+{
+        PROMOTE_NONE = 0,
+        PROMOTE_MERGE,
+        PROMOTE_NOMERGE
+};
+
+static int promote_fetch_to_n = PROMOTE_NONE;
+void cache_read_timing(uint32_t addr, int is_n_cycle, int is_merged_fetch)
 {
 	int bit_offset = (addr >> 4) & 7;
 	int byte_offset = ((addr & 0x3ffffff) >> (4+3));
-	if (addr & 0xfc000000)
-	       return; /*Address exception*/
-	if (cp15_cacheon)
-	{
-		if (arm3_cache[byte_offset] & (1 << bit_offset))
-		{
-			CLOCK_I();
-			tsc += cyc_i;
-		}
-		else if (!(arm3cp.cache & (1 << (addr >> 21))))
-		{
-			if (is_n_cycle)
-				CLOCK_N(addr);
-			else
-				CLOCK_S(addr);
-			tsc += is_n_cycle ? mem_speed[(addr >> 12) & 0x3fff][1] : mem_speed[(addr >> 12) & 0x3fff][0];
-		}
-		else
-		{
-			int set = (addr >> 4) & 3;
-//			rpclog("cache fetch %08x\n", addr);
-			if (arm3_cache_tag[set][arm3_slot] != TAG_INVALID)
-			{
-				int old_bit_offset = (arm3_cache_tag[set][arm3_slot] >> 4) & 7;
-				int old_byte_offset = (arm3_cache_tag[set][arm3_slot] >> (4+3));
-//				rpclog(" clear %i,%i\n", 
-				arm3_cache[old_byte_offset] &= ~(1 << old_bit_offset);
-			}
-			
-			arm3_cache_tag[set][arm3_slot] = addr & ~0xf;
-			arm3_cache[byte_offset] |= (1 << bit_offset);
-			CLOCK_N(addr);
-			CLOCK_S(addr);
-			CLOCK_S(addr);
-			CLOCK_S(addr);
-			tsc += mem_speed[(addr >> 12) & 0x3fff][1] + mem_speed[(addr >> 12) & 0x3fff][0]*3;
-			if (!((arm3_slot ^ (arm3_slot >> 1)) & 1))
-				arm3_slot |= 0x40;
-			arm3_slot >>= 1;
-		}
-	}
-	else
-	{
-//		rpclog("cycle %08x %i %i\n", addr, is_n_cycle, is_n_cycle ? mem_speed[(addr >> 12) & 0x3fff][1] : mem_speed[(addr >> 12) & 0x3fff][0]);
-		if (is_n_cycle)
-			CLOCK_N(addr);
-		else
-			CLOCK_S(addr);
-		tsc += is_n_cycle ? mem_speed[(addr >> 12) & 0x3fff][1] : mem_speed[(addr >> 12) & 0x3fff][0];
-	}
+
+        addr &= 0x3ffffff;
+        
+  //      if (output) rpclog("Read %c-cycle %07x\n", is_n_cycle?'N':'S', addr);
+        if (is_n_cycle)
+        {
+                if (cp15_cacheon)
+                {
+//                        rpclog("N-cycle %08x %i %i\n", addr, clock_domain, pending_reads);
+                        if (pending_reads)
+                        {
+                                if (clock_domain != DOMAIN_MCLK)
+                                        fatal("N-cycle with pending reads - clock_domain != MCLK %07x\n", addr);
+                                if (TIMER_VAL_LESS_THAN_VAL_64(mem_available_ts, tsc))
+                                        fatal("N-cycle with pending reads - TS already expired? %016llx %016llx\n", mem_available_ts, tsc);
+                                /*Complete pending line fill*/
+                                pending_reads = 0;
+                                tsc = mem_available_ts;
+                        }
+
+                        /*Always start N-cycle synced to FCLK - this is required for
+                          cache lookup*/
+                        sync_to_fclk();
+                        
+        		if (arm3_cache[byte_offset] & (1 << bit_offset))
+                                CLOCK_I(); /*Data is in cache*/
+                        else if (!(arm3cp.cache & (1 << (addr >> 21))))
+        		{
+                                /*Data is uncacheable*/
+                                sync_to_mclk();
+                                CLOCK_N(addr);
+                        }
+	              	else
+        		{
+                                /*Data not in cache; perform cache fill*/
+                                cache_line_fill(addr, byte_offset, bit_offset);
+        		}
+                }
+                else
+                {
+                        sync_to_mclk();
+                        CLOCK_N(addr);
+                        mem_available_ts = tsc;
+                        /*Merged fetch doesn't cause extended I-cycle on MEMC1*/
+                        if (memc_is_memc1 && is_merged_fetch == PROMOTE_MERGE)
+                                last_cycle_length = mem_speed[(addr >> 12) & 0x3fff][0];
+                }
+        }
+        else
+        {
+                if (cp15_cacheon)
+                {
+//                        rpclog("S-cycle %08x %i %i\n", addr, clock_domain, pending_reads);
+                        if (pending_reads)
+                        {
+                                if (clock_domain != DOMAIN_MCLK)
+                                        fatal("S-cycle with pending reads - clock_domain != MCLK %07x\n", addr);
+                                if (TIMER_VAL_LESS_THAN_VAL_64(mem_available_ts, tsc))
+                                        fatal("S-cycle with pending reads - TS already expired? %016llx %016llx\n", mem_available_ts, tsc);
+                                /*Cache line fill is in progress. Since the CPU
+                                  being clocked and this is an S cycle, it must
+                                  be the next word to be read*/
+                                pending_reads--;
+                                if (clock_domain != DOMAIN_MCLK)
+                                        fatal("Data uncacheable - clock_domain != MCLK %07x\n", addr);
+                                CLOCK_S(addr);
+                        }
+        		else if (arm3_cache[byte_offset] & (1 << bit_offset))
+        		{
+                                if ((clock_domain != DOMAIN_FCLK) && ((addr & ~0xf) != cache_fill_addr))
+                                        fatal("Data in cache - clock_domain != FCLK %08x\n", addr);
+                                sync_to_fclk();
+                                CLOCK_I(); /*Data is in cache*/
+                        }
+                        else if (!(arm3cp.cache & (1 << (addr >> 21))))
+        		{
+                                /*Data is uncacheable*/
+                                if (clock_domain != DOMAIN_MCLK)
+                                        fatal("Data uncacheable - clock_domain != MCLK %07x\n", addr);
+                                CLOCK_S(addr);
+                        }
+                        else
+                        {
+                                cache_line_fill(addr, byte_offset, bit_offset);
+//                                sync_to_fclk();
+//                                fatal("Data not in cache for S cycle - should not be currently possible  %08x\n", addr);
+                        }
+                }
+                else
+                {
+                        CLOCK_S(addr);
+                        mem_available_ts = tsc;
+                }
+        }
 }
 
 void cache_flush()
@@ -206,21 +428,66 @@ void cache_flush()
 
 void cache_write_timing(uint32_t addr, int is_n_cycle)
 {
-	if (addr & 0xfc000000)
-	       return; /*Address exception*/
+        addr &= 0x3ffffff;
+
+//        if (output) rpclog("Write %c-cycle %08x\n", is_n_cycle ? 'N' : 'S', addr);
+        if (pending_reads)
+        {
+                if (clock_domain != DOMAIN_MCLK)
+                        fatal("Write cycle with pending reads - clock_domain != MCLK %07x\n", addr);
+                if (TIMER_VAL_LESS_THAN_VAL_64(mem_available_ts, tsc))
+                        fatal("Write cycle with pending reads - TS already expired? %016llx %016llx\n", mem_available_ts, tsc);
+                /*Complete pending line fill*/
+                /*Note that ARM3 can go straight from a line fill to memory write
+                  without resyncing to FCLK if the line fill is still incomplete
+                  when the write is requested*/
+                pending_reads = 0;
+                tsc = mem_available_ts;
+        }
+
 	if (arm3cp.disrupt & (1 << (addr >> 21)))
 		cache_flush();
+        
 	if (is_n_cycle)
+	{
+//                rpclog("Write N-cycle %08x\n", addr);
+                sync_to_mclk();
 		CLOCK_N(addr);
+		mem_available_ts = tsc;
+        }
 	else
+	{
+//                rpclog("Write S-cycle %08x\n", addr);
+                if (clock_domain != DOMAIN_MCLK)
+                        fatal("Write S-cycle - not in MCLK %08x\n", addr);
 		CLOCK_S(addr);
-	if (is_n_cycle)
- 		tsc += mem_speed[(addr >> 12) & 0x3fff][1];
-	else
-		tsc += mem_speed[(addr >> 12) & 0x3fff][0];
+		mem_available_ts = tsc;
+        }
 }
 
-int arm_dmacount = 0, arm_dmalatch = 0x7fffffff, arm_dmalength = 0;
+
+/*Handle timing for last cycle of LDR/LDM/MUL/MLA/data processing intrucstions
+  with register shift. On ARM2 machines this will be 'merged' with the following
+  instruction fetch. On ARM3 the final cycle is just an I-cycle.*/
+static void merge_timing(uint32_t addr)
+{
+        promote_fetch_to_n = PROMOTE_MERGE; /*Merge writeback with next fetch*/
+        if (memc_is_memc1)
+        {
+                if ((addr & 0xc) == 0xc)
+                {
+                        /*MEMC1 does _not_ merge if A[2:3]=11, so clock an extra
+                          I-cycle and push the next fetch to a non-merged N-cycle*/
+                        CLOCK_I();
+                        promote_fetch_to_n = PROMOTE_NOMERGE;
+                }
+                else
+                        tsc += (last_cycle_length - cyc_i);
+        }
+        else if (cp15_cacheon)
+                CLOCK_I();   /* + 1I*/
+}
+
 
 int arm_cpu_type;
 
@@ -532,19 +799,7 @@ static inline uint32_t shift_long(uint32_t opcode)
                 shiftamount=armregs[(opcode>>8)&15]&0xFF;
                 if (shiftmode==3)
                    shiftamount&=0x1F;
-                if (memc_is_memc1)
-		{
-			if (PC & 0xc)
-				CLOCK_S(PC);
-			else
-				CLOCK_N(PC);
-			tsc += (PC & 0xc) ? cyc_s : cyc_n;
-		}
-                else if ((PC + 4) & 0xc)
-		{
-			CLOCK_I();
-			tsc += cyc_i;
-		}
+                merge_timing(PC+4);
         }
         temp=armregs[RM];
 //        if (RM==15)        temp+=4;
@@ -641,19 +896,7 @@ static inline uint32_t shift_long_noflags(uint32_t opcode)
                 shiftamount=armregs[(opcode>>8)&15]&0xFF;
                 if (shiftmode==3)
                    shiftamount&=0x1F;
-                if (memc_is_memc1)
-		{
-			if (PC & 0xc)
-				CLOCK_S(PC);
-			else
-				CLOCK_N(PC);
-			tsc += (PC & 0xc) ? cyc_s : cyc_n;
-		}
-                else if ((PC + 4) & 0xc)
-		{
-			CLOCK_I();
-			tsc += cyc_i;
-		}
+                merge_timing(PC+4);
         }
         temp=armregs[RM];
 //        if (RM==15) temp+=4;
@@ -781,8 +1024,8 @@ void refillpipeline()
         prefabort = prefabort_next;
         readmemfff(addr,opcode3);
 
-        cache_read_timing(PC-4, 1);
-        cache_read_timing(PC, !(PC & 0xc));
+        cache_read_timing(PC-4, 1, 0);
+        cache_read_timing(PC, !(PC & 0xc), 0);
 }
 
 void refillpipeline2()
@@ -795,8 +1038,8 @@ void refillpipeline2()
         prefabort = prefabort_next;
         readmemfff(addr,opcode3);
 
-        cache_read_timing(PC-8, 1);
-        cache_read_timing(PC-4, !((PC-4) & 0xc));
+        cache_read_timing(PC-8, 1, 0);
+        cache_read_timing(PC-4, !((PC-4) & 0xc), 0);
 }
 
 int framecycs;
@@ -809,9 +1052,10 @@ static void opMUL(uint32_t rn)
         uint32_t rs = armregs[MULRS];
         int carry = 0;
         int shift = 0;
+        int cycle_nr = 0;
 
         armregs[MULRD] = rn;
-        while ((rs || carry) && shift < 32)
+        while (((rs || carry) && shift < 32) || !cycle_nr)
         {
                 int m = rs & 3;
                 
@@ -858,19 +1102,25 @@ static void opMUL(uint32_t rn)
                         }
                 }
                 
-                if (memc_is_memc1 && shift != 0)
-                {
-                        CLOCK_N(0);
-                        tsc += cyc_n;
-                }
-                else
-                {
-                        CLOCK_I();
-                        tsc += cyc_i;
-                }
-
                 rs >>= 2;
                 shift += 2;
+
+                cycle_nr++;
+        }
+        if (!memc_is_memc1)
+        {
+                /*cycle_nr-1 I-cycles, plus a merged fetch*/
+                arm_clock_i(cycle_nr-1);
+                merge_timing(PC+4);
+        }
+        else
+        {
+                int c;
+                
+                /*1 (early) merged fetch, cycle_nr-1 N-cycles*/
+                merge_timing(PC+4);
+                for (c = 0; c < cycle_nr-1; c++)
+                        CLOCK_N(PC+4);
         }
 }
 
@@ -918,7 +1168,7 @@ static void exception(uint32_t vector, int new_mode, int pc_offset)
 #define CHECK_ADDR_EXCEPTION(a) if ((a) & 0xfc000000) { databort = 2; break; }
 
 int refreshcount = 32;
-static int total_cycles;
+static int64_t total_cycles;
 
 /*Execute ARM instructions for `cycs` clock ticks, typically 10 ms
   (cycs=80k for an 8MHz ARM2).*/
@@ -927,19 +1177,18 @@ void execarm(int cycles_to_execute)
         uint32_t templ,templ2,mask,addr,addr2;
         int c;
         int cyc; /*Number of clock ticks executed in the last loop*/
-        int oldcyc;
 
         int clock_ticks_executed = 0;
         
         LOG_EVENT_LOOP("execarm(%d) total_cycles=%i\n", cycles_to_execute, total_cycles);
 
-        total_cycles+=cycles_to_execute << 10;
+        total_cycles += (uint64_t)cycles_to_execute << 32;
 
         while (total_cycles>0)
         {
 //                LOG_VIDC_TIMING("cycles (%d) += vidcgetcycs() (%d) --> %d (%d) to execute before pollline()\n",
 //                        oldcyc, vidc_cycles_to_execute, 0, 0);
-                oldcyc = (int)tsc;
+                uint64_t oldcyc = tsc;
 
                 opcode = opcode2;
                 opcode2 = opcode3;
@@ -963,10 +1212,13 @@ void execarm(int cycles_to_execute)
                                 pccache = 0xFFFFFFFF;
                         }
                 }
-                cache_read_timing(PC, (PC & 0xc) ? 0 : 1);
+                cache_read_timing(PC, ((PC & 0xc) && !promote_fetch_to_n) ? 0 : 1, promote_fetch_to_n);
+                promote_fetch_to_n = PROMOTE_NONE;
 
                 if (flaglookup[opcode >> 28][armregs[15] >> 28] && !prefabort)
                 {
+                        int first_access;
+                
                         switch ((opcode >> 20) & 0xFF)
                         {
                                 case 0x00: /*AND reg*/
@@ -1223,16 +1475,18 @@ void execarm(int cycles_to_execute)
                                         addr = GETADDR(RN);
                                         CHECK_ADDR_EXCEPTION(addr);
                                         templ = GETREG(RM);
-                                        LOADREG(RD, readmeml(addr));
-                                        cache_read_timing(PC, 1);
+                                        templ2 = readmeml(addr);
+                                        cache_read_timing(addr, 1, 0);
                                         if (!databort)
                                         {
                                                 writememl(addr, templ);
+                                                cache_write_timing(addr, 1);
+                                                if (!databort)
+                                                {
+                                                        LOADREG(RD, templ2);
+                                                }
                                         }
-                                        cache_write_timing(addr, 1);
-                                        CLOCK_N(addr);
-                                        CLOCK_N(addr);
-                                        tsc += cyc_n * 2;
+                                        promote_fetch_to_n = PROMOTE_NOMERGE;
                                 }
                                 else
                                         EXCEPTION_UNDEFINED();
@@ -1289,13 +1543,18 @@ void execarm(int cycles_to_execute)
                                         addr = armregs[RN];
                                         CHECK_ADDR_EXCEPTION(addr);
                                         templ = GETREG(RM);
-                                        LOADREG(RD, readmemb(addr));
-                                        cache_read_timing(addr, 1);
-                                        writememb(addr, templ);
-                                        cache_write_timing(addr, 1);
-                                        CLOCK_N(addr);
-                                        CLOCK_N(addr);
-                                        tsc += cyc_n * 2;
+                                        templ2 = readmemb(addr);
+                                        cache_read_timing(addr, 1, 0);
+                                        if (!databort)
+                                        {
+                                                writememb(addr, templ);
+                                                cache_write_timing(addr, 1);
+                                                if (!databort)
+                                                {
+                                                        LOADREG(RD, templ2);
+                                                }
+                                        }
+                                        promote_fetch_to_n = PROMOTE_NOMERGE;
                                 }
                                 else
                                         EXCEPTION_UNDEFINED();
@@ -1820,7 +2079,7 @@ void execarm(int cycles_to_execute)
                                 memmode = templ;
                                 if (databort)
                                         break;
-                                cache_read_timing(addr, 1);
+                                cache_read_timing(addr, 1, 0);
                                 LOADREG(RD, templ2);
                                 if (!(opcode & 0x1000000))
                                 {
@@ -1829,8 +2088,7 @@ void execarm(int cycles_to_execute)
                                 }
                                 else if (opcode&0x200000)
                                         armregs[RN]=addr;
-                                if (memc_is_memc1)                   { CLOCK_N(PC); tsc += cyc_n; }            /* + 1N*/
-                                else if (cp15_cacheon || (PC & 0xc)) { CLOCK_I();   tsc += cyc_i; }            /* + 1I*/
+                                merge_timing(PC+4);
                                 break;
 
                                 case 0x41: case 0x49: case 0x61: case 0x69: /*LDR Rd,[Rn],offset*/
@@ -1850,14 +2108,13 @@ void execarm(int cycles_to_execute)
                                 templ2 = ldrresult(readmeml(addr), addr);
                                 if (databort)
                                         break;
-                                cache_read_timing(addr, 1);
+                                cache_read_timing(addr, 1, 0);
                                 LOADREG(RD, templ2);
                                 if (opcode & 0x800000)
                                         armregs[RN] += addr2;
                                 else
                                         armregs[RN] -= addr2;
-                                if (memc_is_memc1)                   { CLOCK_N(PC); tsc += cyc_n; }            /* + 1N*/
-                                else if (cp15_cacheon || (PC & 0xc)) { CLOCK_I();   tsc += cyc_i; }            /* + 1I*/
+                                merge_timing(PC+4);
                                 break;
                                 case 0x43: case 0x4B: case 0x63: case 0x6B: /*LDRT Rd,[Rn],offset*/
                                 addr = GETADDR(RN);
@@ -1879,14 +2136,13 @@ void execarm(int cycles_to_execute)
                                 memmode = templ;
                                 if (databort)
                                         break;
-                                cache_read_timing(addr, 1);
+                                cache_read_timing(addr, 1, 0);
                                 LOADREG(RD, templ2);
                                 if (opcode & 0x800000)
                                         armregs[RN] += addr2;
                                 else
                                         armregs[RN] -= addr2;
-                                if (memc_is_memc1)                   { CLOCK_N(PC); tsc += cyc_n; }            /* + 1N*/
-                                else if (cp15_cacheon || (PC & 0xc)) { CLOCK_I();   tsc += cyc_i; }            /* + 1I*/
+                                merge_timing(PC+4);
                                 break;
 
                                 case 0x40: case 0x48: case 0x60: case 0x68: /*STR Rd,[Rn],offset*/
@@ -1912,7 +2168,7 @@ void execarm(int cycles_to_execute)
                                         armregs[RN] += addr2;
                                 else
                                         armregs[RN] -= addr2;
-                                if (!cp15_cacheon && (PC & 0xc)) { CLOCK_I(); tsc += cyc_i; }
+                                promote_fetch_to_n = PROMOTE_NOMERGE;
                                 break;
                                 case 0x42: case 0x4A: case 0x62: case 0x6A: /*STRT Rd,[Rn],offset*/
                                 addr = GETADDR(RN);
@@ -1940,7 +2196,7 @@ void execarm(int cycles_to_execute)
                                         armregs[RN] += addr2;
                                 else
                                         armregs[RN] -= addr2;
-                                if (!cp15_cacheon && (PC & 0xc)) { CLOCK_I(); tsc += cyc_i; }
+                                promote_fetch_to_n = PROMOTE_NOMERGE;
                                 break;
                                 case 0x50: case 0x58: case 0x70: case 0x78: /*STR Rd,[Rn,offset]*/
                                 case 0x52: case 0x5A: case 0x72: case 0x7A: /*STR Rd,[Rn,offset]!*/
@@ -1967,7 +2223,7 @@ void execarm(int cycles_to_execute)
                                 cache_write_timing(addr, 1);
                                 if (opcode & 0x200000)
                                         armregs[RN] = addr;
-                                if (!cp15_cacheon && (PC & 0xc)) { CLOCK_I(); tsc += cyc_i; }
+                                promote_fetch_to_n = PROMOTE_NOMERGE;
                                 break;
 
                                 case 0x64: case 0x6C: /*STRB Rd,[Rn],offset*/
@@ -1991,7 +2247,7 @@ void execarm(int cycles_to_execute)
                                         armregs[RN] += addr2;
                                 else
                                         armregs[RN] -= addr2;
-                                if (!cp15_cacheon && (PC & 0xc)) { CLOCK_I(); tsc += cyc_i; }
+                                promote_fetch_to_n = PROMOTE_NOMERGE;
                                 break;
 
                                 case 0x66: case 0x6E: /*STRBT Rd,[Rn],offset*/
@@ -2018,7 +2274,7 @@ void execarm(int cycles_to_execute)
                                         armregs[RN] += addr2;
                                 else
                                         armregs[RN] -= addr2;
-                                if (!cp15_cacheon && (PC & 0xc)) { CLOCK_I(); tsc += cyc_i; }
+                                promote_fetch_to_n = PROMOTE_NOMERGE;
                                 break;
                                 
                                 case 0x74: case 0x76: case 0x7c: case 0x7e: /*STRB Rd,[Rn,offset]*/
@@ -2043,7 +2299,7 @@ void execarm(int cycles_to_execute)
                                 cache_write_timing(addr, 1);
                                 if (opcode & 0x200000)
                                         armregs[RN] = addr;
-                                if (!cp15_cacheon && (PC & 0xc)) { CLOCK_I(); tsc += cyc_i; }
+                                promote_fetch_to_n = PROMOTE_NOMERGE;
                                 break;
 
 
@@ -2070,7 +2326,7 @@ void execarm(int cycles_to_execute)
                                 templ = ldrresult(templ, addr);
                                 if (databort)
                                         break;
-                                cache_read_timing(addr, 1);
+                                cache_read_timing(addr, 1, 0);
                                 if (!(opcode & 0x1000000))
                                 {
                                         addr += addr2;
@@ -2079,8 +2335,7 @@ void execarm(int cycles_to_execute)
                                 else if (opcode & 0x200000)
                                         armregs[RN] = addr;
                                 LOADREG(RD, templ);
-                                if (memc_is_memc1)                   { CLOCK_N(PC); tsc += cyc_n; }            /* + 1N*/
-                                else if (cp15_cacheon || (PC & 0xc)) { CLOCK_I();   tsc += cyc_i; }            /* + 1I*/
+                                merge_timing(PC+4);
                                 break;
 
                                 case 0x65: case 0x6D:
@@ -2105,7 +2360,7 @@ void execarm(int cycles_to_execute)
                                 templ = readmemb(addr);
                                 if (databort)
                                         break;
-                                cache_read_timing(addr, 1);
+                                cache_read_timing(addr, 1, 0);
                                 if (!(opcode & 0x1000000))
                                 {
                                         addr += addr2;
@@ -2114,13 +2369,12 @@ void execarm(int cycles_to_execute)
                                 else if (opcode & 0x200000)
                                         armregs[RN] = addr;
                                 armregs[RD] = templ;
-                                if (memc_is_memc1)                   { CLOCK_N(PC); tsc += cyc_n; }            /* + 1N*/
-                                else if (cp15_cacheon || (PC & 0xc)) { CLOCK_I();   tsc += cyc_i; }            /* + 1I*/
+                                merge_timing(PC+4);
                                 break;
 
 #define STMfirst()      mask=1; \
                         CHECK_ADDR_EXCEPTION(addr); \
-                        for (c = 0; c < 15; c++) \
+                        for (c = 0; c < 16; c++) \
                         { \
                                 if (opcode & mask) \
                                 { \
@@ -2134,25 +2388,21 @@ void execarm(int cycles_to_execute)
                         } \
                         mask <<= 1; c++;
                         
-#define STMall()        for (; c < 15; c++) \
+#define STMall()        for (; c < 16; c++) \
                         { \
                                 if (opcode & mask) \
                                 { \
-                                        writememl(addr, armregs[c]); \
+                                        if (c == 15) { writememl(addr, armregs[c] + 4); } \
+                                        else         { writememl(addr, armregs[c]); } \
                                         cache_write_timing(addr, !(addr & 0xc)); \
                                         addr += 4; \
                                 } \
                                 mask <<= 1; \
-                        } \
-                        if (opcode & 0x8000) \
-                        { \
-                                writememl(addr, armregs[15] + 4); \
-                                cache_write_timing(addr, !(addr & 0xc)); \
                         }
 
 #define STMfirstS()     mask = 1; \
                         CHECK_ADDR_EXCEPTION(addr); \
-                        for (c = 0; c < 15; c++) \
+                        for (c = 0; c < 16; c++) \
                         { \
                                 if (opcode & mask) \
                                 { \
@@ -2166,30 +2416,28 @@ void execarm(int cycles_to_execute)
                         } \
                         mask <<= 1; c++;
 
-#define STMallS()       for (; c < 15; c++) \
+#define STMallS()       for (; c < 16; c++) \
                         { \
                                 if (opcode & mask) \
                                 { \
-                                        writememl(addr, *usrregs[c]); \
+                                        if (c == 15) { writememl(addr, armregs[c] + 4); } \
+                                        else         { writememl(addr, *usrregs[c]); } \
                                         cache_write_timing(addr, !(addr & 0xc)); \
                                         addr += 4; \
                                 } \
                                 mask <<= 1; \
-                        } \
-                        if (opcode & 0x8000) \
-                        { \
-                                writememl(addr, armregs[15] + 4); \
-                                cache_write_timing(addr, !(addr & 0xc)); \
                         }
 
 #define LDMall()        mask = 1; \
                         CHECK_ADDR_EXCEPTION(addr); \
+                        first_access = 1; \
                         for (c = 0; c < 15; c++) \
                         { \
                                 if (opcode & mask) \
                                 { \
                                         templ = readmeml(addr); if (!databort) armregs[c] = templ; \
-                                        cache_read_timing(addr, !(opcode & (mask - 1)) || !(addr & 0xc)); \
+                                        cache_read_timing(addr, first_access || !(addr & 0xc), 0); \
+                                        first_access = 0; \
                                         addr+=4; \
                                 } \
                                 mask<<=1; \
@@ -2197,7 +2445,7 @@ void execarm(int cycles_to_execute)
                         if (opcode & 0x8000) \
                         { \
                                 templ = readmeml(addr); \
-                        	cache_read_timing(addr, !(addr & 0xc)); \
+                        	cache_read_timing(addr, first_access || !(addr & 0xc), 0); \
                                 addr += 4; \
                                 if (!databort) armregs[15] = (armregs[15] & 0xFC000003) | ((templ+4) & 0x3FFFFFC); \
                                 refillpipeline(); \
@@ -2205,6 +2453,7 @@ void execarm(int cycles_to_execute)
 
 #define LDMallS()       mask = 1; \
                         CHECK_ADDR_EXCEPTION(addr); \
+                        first_access = 1; \
                         if (opcode & 0x8000) \
                         { \
                                 for (c = 0; c < 15; c++) \
@@ -2212,13 +2461,14 @@ void execarm(int cycles_to_execute)
                                         if (opcode & mask) \
                                         { \
                                                 templ = readmeml(addr); if (!databort) armregs[c] = templ; \
-		                        	cache_read_timing(addr, !(opcode & (mask - 1)) || !(addr & 0xc)); \
+		                        	cache_read_timing(addr, first_access || !(addr & 0xc), 0); \
+                                                first_access = 0; \
                                                 addr += 4; \
                                         } \
                                         mask <<= 1; \
                                 } \
                                 templ = readmeml(addr); \
-                        	cache_read_timing(addr, !(opcode & (mask - 1)) || !(addr & 0xc)); \
+                        	cache_read_timing(addr, first_access || !(addr & 0xc), 0); \
                                 addr += 4; \
                                 if (!databort) \
                                 { \
@@ -2234,6 +2484,8 @@ void execarm(int cycles_to_execute)
                                         if (opcode & mask) \
                                         { \
                                                 templ = readmeml(addr); if (!databort) *usrregs[c] = templ; \
+		                        	cache_read_timing(addr, first_access || !(addr & 0xc), 0); \
+                                                first_access = 0; \
                                                 addr += 4; \
                                         } \
                                         mask <<= 1; \
@@ -2251,7 +2503,7 @@ void execarm(int cycles_to_execute)
                                 if ((opcode & 0x200000) && (RN != 15))
                                         armregs[RN] -= countbits(opcode & 0xFFFF);
                                 STMall()
-                                if (PC & 0xc) { CLOCK_I(); tsc += cyc_i; }
+                                promote_fetch_to_n = PROMOTE_NOMERGE;
                                 break;
                                 case 0x88: /*STMIA*/
                                 case 0x8A: /*STMIA !*/
@@ -2264,7 +2516,7 @@ void execarm(int cycles_to_execute)
                                 if ((opcode & 0x200000) && (RN != 15))
                                         armregs[RN] += countbits(opcode & 0xFFFF);
                                 STMall();
-                                if (PC & 0xc) { CLOCK_I(); tsc += cyc_i; }
+                                promote_fetch_to_n = PROMOTE_NOMERGE;
                                 break;
                                 case 0x84: /*STMDA ^*/
                                 case 0x86: /*STMDA ^!*/
@@ -2277,7 +2529,7 @@ void execarm(int cycles_to_execute)
                                 if ((opcode & 0x200000) && (RN != 15))
                                         armregs[RN] -= countbits(opcode & 0xFFFF);
                                 STMallS()
-                                if (PC & 0xc) { CLOCK_I(); tsc += cyc_i; }
+                                promote_fetch_to_n = PROMOTE_NOMERGE;
                                 break;
                                 case 0x8C: /*STMIA ^*/
                                 case 0x8E: /*STMIA ^!*/
@@ -2290,7 +2542,7 @@ void execarm(int cycles_to_execute)
                                 if ((opcode & 0x200000) && (RN != 15))
                                         armregs[RN]+=countbits(opcode&0xFFFF);
                                 STMallS();
-                                if (PC & 0xc) { CLOCK_I(); tsc += cyc_i; }
+                                promote_fetch_to_n = PROMOTE_NOMERGE;
                                 break;
                                 
                                 case 0x81: /*LDMDA*/
@@ -2298,30 +2550,12 @@ void execarm(int cycles_to_execute)
                                 case 0x91: /*LDMDB*/
                                 case 0x93: /*LDMDB !*/
                                 addr = armregs[RN] - countbits(opcode & 0xFFFF);
-//                                        rpclog("LDMDB %08X\n",addr);
                                 if (!(opcode & 0x1000000))
                                         addr += 4;
                                 if ((opcode & 0x200000) && (RN != 15))
                                         armregs[RN] -= countbits(opcode & 0xFFFF);
                                 LDMall();
-				if (memc_is_memc1)
-				{
-					/*MEMC1 - repeat last cycle. */
-					if (!((addr - 4) & 0xc))
-					{
-						CLOCK_N(PC);
-						tsc += cyc_n;
-					}
-					else
-					{
-						CLOCK_S(PC);
-						tsc += cyc_s;
-					}
-				}
-				else
-				{
-                                	if (PC & 0xc) { CLOCK_I(); tsc += cyc_i; }                        /* + 1I*/
-				}
+                                merge_timing(PC+4);
                                 break;
                                 case 0x89: /*LDMIA*/
                                 case 0x8B: /*LDMIA !*/
@@ -2333,24 +2567,7 @@ void execarm(int cycles_to_execute)
                                 if ((opcode & 0x200000) && (RN != 15))
                                         armregs[RN]+=countbits(opcode & 0xFFFF);
                                 LDMall();
-				if (memc_is_memc1)
-				{
-					/*MEMC1 - repeat last cycle. */
-					if (!((addr - 4) & 0xc))
-					{
-						CLOCK_N(PC);
-						tsc += cyc_n;
-					}
-					else
-					{
-						CLOCK_S(PC);
-						tsc += cyc_s;
-					}
-				}
-				else
-				{
-                                	if (PC & 0xc) { CLOCK_I(); tsc += cyc_i; }                        /* + 1I*/
-				}
+                                merge_timing(PC+4);
                                 break;
                                 case 0x85: /*LDMDA ^*/
                                 case 0x87: /*LDMDA ^!*/
@@ -2362,24 +2579,7 @@ void execarm(int cycles_to_execute)
                                 if ((opcode & 0x200000) && (RN != 15))
                                         armregs[RN] -= countbits(opcode & 0xFFFF);
                                 LDMallS();
-				if (memc_is_memc1)
-				{
-					/*MEMC1 - repeat last cycle. */
-					if (!((addr - 4) & 0xc))
-					{
-						CLOCK_N(PC);
-						tsc += cyc_n;
-					}
-					else
-					{
-						CLOCK_S(PC);
-						tsc += cyc_s;
-					}
-				}
-				else
-				{
-                                	if (PC & 0xc) { CLOCK_I(); tsc += cyc_i; }                        /* + 1I*/
-				}
+                                merge_timing(PC+4);
                                 break;
                                 case 0x8D: /*LDMIA ^*/
                                 case 0x8F: /*LDMIA ^!*/
@@ -2391,24 +2591,7 @@ void execarm(int cycles_to_execute)
                                 if ((opcode & 0x200000) && (RN != 15))
                                         armregs[RN]+=countbits(opcode&0xFFFF);
                                 LDMallS();
-				if (memc_is_memc1)
-				{
-					/*MEMC1 - repeat last cycle. */
-					if (!((addr - 4) & 0xc))
-					{
-						CLOCK_N(PC);
-						tsc += cyc_n;
-					}
-					else
-					{
-						CLOCK_S(PC);
-						tsc += cyc_s;
-					}
-				}
-				else
-				{
-                                	if (PC & 0xc) { CLOCK_I(); tsc += cyc_i; }                        /* + 1I*/
-				}
+                                merge_timing(PC+4);
                                 break;
 
                                 case 0xB0: case 0xB1: case 0xB2: case 0xB3: /*BL*/
@@ -2473,6 +2656,8 @@ void execarm(int cycles_to_execute)
                                 {
                                         if (fpaopcode(opcode))
                                                 EXCEPTION_UNDEFINED();
+                                        else
+                                                promote_fetch_to_n = PROMOTE_NOMERGE;
                                 }
                                 else
                                         EXCEPTION_UNDEFINED();
@@ -2529,11 +2714,6 @@ void execarm(int cycles_to_execute)
                                 EXCEPTION_UNDEFINED();
                         }
                 }
-                else if (!prefabort)
-                {
-			CLOCK_I();
-                	tsc += cyc_i;
-		}
                 if (databort|armirq|prefabort)
                 {
                         if (prefabort)       /*Prefetch abort*/
@@ -2572,7 +2752,6 @@ void execarm(int cycles_to_execute)
                 {
                         rpclog("%05i : %07X %08X %08X %08X %08X %08X %08X %08X %08X",ins,PC-8,armregs[0],armregs[1],armregs[2],armregs[3],armregs[4],armregs[5],armregs[6],armregs[7]);
                         rpclog("  %08X %08X %08X %08X %08X %08X %08X %08X  %08X  %02X %02X %02X  %02X %02X %02X  %i %i %i %X %i\n",armregs[8],armregs[9],armregs[10],armregs[11],armregs[12],armregs[13],armregs[14],armregs[15],opcode,ioc.mska,ioc.mskb,ioc.mskf,ioc.irqa,ioc.irqb,ioc.fiq,  fdc_indexcount, 0, motoron, fdc_indexpulse, motorspin);
-                        ins++;
 
                         if (timetolive)
                         {
@@ -2589,12 +2768,12 @@ void execarm(int cycles_to_execute)
                 inscount++;
                 ins++;
 
-		if (TIMER_VAL_LESS_THAN_VAL(timer_target, tsc >> 10))
+		if (TIMER_VAL_LESS_THAN_VAL(timer_target, tsc >> 32))
 			timer_process();
 
-                cyc=((int)tsc-oldcyc) >> 10; /*Number of clock ticks executed*/
+                cyc = (int)((tsc - oldcyc) >> 32); /*Number of clock ticks executed*/
                 clock_ticks_executed += cyc;
-                total_cycles -= ((int)tsc-oldcyc);
+                total_cycles -= (tsc - oldcyc);
 
         }
         LOG_EVENT_LOOP("execarm() finished; clock ticks=%d, and called pollline() %d times (should be ~160)\n",

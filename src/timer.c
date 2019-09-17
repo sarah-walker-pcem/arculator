@@ -106,7 +106,7 @@ void timer_process()
 	{
 		timer_t *timer = timer_head;
 
-		if (!TIMER_LESS_THAN_VAL(timer, (uint32_t)(tsc >> 10)))
+		if (!TIMER_LESS_THAN_VAL(timer, (uint32_t)(tsc >> 32)))
 			break;
 
 		timer_remove_head();

@@ -19,6 +19,8 @@ char machine[7];
 
 int monitor_type;
 
+uint32_t unique_id;
+
 char *get_filename(char *s)
 {
         int c = strlen(s) - 1;
@@ -654,6 +656,7 @@ void loadconfig()
         st506_present = config_get_int(CFG_MACHINE, NULL, "st506_present", 0);
         stereo = config_get_int(CFG_GLOBAL, NULL, "stereo", 1);
         sound_gain = config_get_int(CFG_GLOBAL, NULL, "sound_gain", 0);
+        unique_id = config_get_int(CFG_MACHINE, NULL, "unique_id", 0);
         memsize = config_get_int(CFG_MACHINE, NULL, "mem_size", 4096);
         p = (char *)config_get_string(CFG_MACHINE, NULL, "rom_set", "riscos311");
         romset = get_romset(p);
@@ -730,6 +733,7 @@ void saveconfig()
         config_set_string(CFG_MACHINE, NULL, "monitor_type", get_monitor_type_name(monitor_type));
         config_set_int(CFG_GLOBAL, NULL, "stereo", stereo);
         config_set_int(CFG_GLOBAL, NULL, "sound_gain", sound_gain);
+        config_set_int(CFG_MACHINE, NULL, "unique_id", unique_id);
         config_set_string(CFG_MACHINE, NULL, "hd4_fn", hd_fn[0]);
         config_set_int(CFG_MACHINE, NULL, "hd4_sectors", hd_spt[0]);
         config_set_int(CFG_MACHINE, NULL, "hd4_heads", hd_hpc[0]);

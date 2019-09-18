@@ -469,6 +469,51 @@
 												<content />
 											</object>
 										</object>
+										<object class="sizeritem">
+											<option>0</option>
+											<flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+											<border>5</border>
+											<object class="wxStaticText" name="m_staticText7">
+												<size>70,-1</size>
+												<label>Unique ID :</label>
+												<wrap>-1</wrap>
+											</object>
+										</object>
+										<object class="sizeritem">
+											<option>0</option>
+											<flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+											<border>5</border>
+											<object class="wxFlexGridSizer">
+												<rows>0</rows>
+												<cols>2</cols>
+												<vgap>0</vgap>
+												<hgap>0</hgap>
+												<growablecols></growablecols>
+												<growablerows></growablerows>
+												<object class="sizeritem">
+													<option>0</option>
+													<flag>wxALL</flag>
+													<border>5</border>
+													<object class="wxTextCtrl" name="IDC_EDIT_ID">
+														<style>wxTE_READONLY</style>
+														<size>40,-1</size>
+														<value>0000</value>
+														<content />
+													</object>
+												</object>
+												<object class="sizeritem">
+													<option>0</option>
+													<flag>wxALL</flag>
+													<border>5</border>
+													<object class="wxTextCtrl" name="IDC_EDIT_ID2">
+														<style></style>
+														<size>80,-1</size>
+														<value></value>
+														<content />
+													</object>
+												</object>
+											</object>
+										</object>
 									</object>
 								</object>
 							</object>

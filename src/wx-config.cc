@@ -279,6 +279,7 @@ private:
 	void OnHDSel(wxCommandEvent &event);
 	void OnHDNew(wxCommandEvent &event);
 	void OnHDEject(wxCommandEvent &event);
+	void OnIDEdit(wxCommandEvent &event);
 
         void CommonInit(wxWindow *parent, bool is_running);
 	void UpdateList(int cpu, int mem, int memc, int fpu, int io);
@@ -297,6 +298,7 @@ private:
 
 	int config_preset;
 	int config_cpu, config_mem, config_memc, config_fpu, config_io, config_rom, config_monitor;
+	uint32_t config_unique_id;
         wxString hd_fns[2];
         char config_podules[4][16];
 	
@@ -412,6 +414,7 @@ void ConfigDialog::CommonInit(wxWindow *parent, bool is_running)
         Bind(wxEVT_BUTTON, &ConfigDialog::OnHDNew, this, XRCID("IDC_NEW_HD5"));
         Bind(wxEVT_BUTTON, &ConfigDialog::OnHDEject, this, XRCID("IDC_EJECT_HD4"));
         Bind(wxEVT_BUTTON, &ConfigDialog::OnHDEject, this, XRCID("IDC_EJECT_HD5"));
+        Bind(wxEVT_TEXT, &ConfigDialog::OnIDEdit, this, XRCID("IDC_EDIT_ID2"));
         
         hd_fns[0] = wxString(hd_fn[0]);
         hd_fns[1] = wxString(hd_fn[1]);
@@ -464,6 +467,7 @@ ConfigDialog::ConfigDialog(wxWindow *parent, bool is_running)
         config_memc = memc_type;
         config_io = fdctype ? IO_NEW : (st506_present ? IO_OLD_ST506 : IO_OLD);
         config_monitor = monitor_type;
+        config_unique_id = unique_id;
 
         CommonInit(parent, is_running);
 
@@ -508,6 +512,12 @@ ConfigDialog::ConfigDialog(wxWindow *parent, bool is_running, int preset)
         config_fpu  = FPU_NONE;
         config_io   = presets[preset].io;
         config_monitor = MONITOR_MULTISYNC;
+        if (config_io == IO_NEW)
+        {
+                /*TODO - should replace with something better...*/
+                srand(time(NULL));
+                config_unique_id = rand() ^ (rand() << 16);
+        }
 
         CommonInit(parent, is_running);
         
@@ -601,6 +611,13 @@ void ConfigDialog::UpdateList(int cpu, int mem, int memc, int fpu, int io)
         cbox->SetValue(monitor_names[monitor_type]);
 
         ((wxStaticText *)this->FindWindow(XRCID("IDC_TEXT_MACHINE")))->SetLabelText(presets[config_preset].description);
+
+        wxTextCtrl *tctrl = (wxTextCtrl *)this->FindWindow(XRCID("IDC_EDIT_ID2"));
+        tctrl->SetMaxLength(8);
+        tctrl->Enable(io == IO_NEW);
+        char s[10];
+        sprintf(s, "%08x", config_unique_id);
+        tctrl->SetValue(s);
 }
 
 void ConfigDialog::PopulatePoduleList(int slot_nr, wxComboBox *cbox)
@@ -763,6 +780,8 @@ void ConfigDialog::OnOK(wxCommandEvent &event)
         for (c = 0; c < 4; c++)
                 strncpy(podule_names[c], config_podules[c], 15);
 
+        unique_id = config_unique_id;
+        
         strncpy(machine, presets[config_preset].config_name, sizeof(machine));
         
         saveconfig();
@@ -1054,6 +1073,48 @@ void ConfigDialog::OnConfigPodule(wxCommandEvent &event)
         ShowPoduleConfig(this, podule, podule->config, running, slot_nr);
 }
 
+void ConfigDialog::OnIDEdit(wxCommandEvent &event)
+{
+        static bool skip_processing = false;
+        
+        if (skip_processing)
+                return;
+                
+        wxTextCtrl *tctrl = (wxTextCtrl *)this->FindWindow(event.GetId());
+        wxString s = tctrl->GetValue();
+        unsigned long pos = tctrl->GetInsertionPoint();
+        wxString s2 = "";
+        config_unique_id = 0;
+        for (unsigned int c = 0; c < s.Len(); c++)
+        {
+                wxUniChar uch = s.at(c);
+
+                if (uch.IsAscii())
+                {
+                        char ch = uch;
+
+                        /*Is character a valid hex digit?*/
+                        if ((ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'f') || (ch >= 'A' && ch <= 'F'))
+                        {
+                                s2 << uch;
+                                config_unique_id <<= 4;
+                                if (ch >= '0' && ch <= '9')
+                                        config_unique_id |= (ch - '0');
+                                else if (ch >= 'A' && ch <= 'F')
+                                        config_unique_id |= ((ch - 'A') + 10);
+                                else if (ch >= 'a' && ch <= 'f')
+                                        config_unique_id |= ((ch - 'a') + 10);
+                        }
+                        else if (c < pos)
+                                pos--;
+                }
+        }
+
+        skip_processing = true;
+        tctrl->SetValue(s2);
+        tctrl->SetInsertionPoint(pos);
+        skip_processing = false;
+}
 
 int ShowConfig(bool running)
 {

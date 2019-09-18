@@ -4,6 +4,7 @@
 #include "arc.h"
 #include "cmos.h"
 #include "disc.h"
+#include "ds2401.h"
 #include "config.h"
 #include "ioc.h"
 #include "keyboard.h"
@@ -68,6 +69,8 @@ void ioc_write(uint32_t addr, uint32_t v)
         {
                 case 0x00: 
                 i2c_change(v & 2, v & 1);
+                if (fdctype == FDC_82C711)
+                        ds2401_write(v & 8);
                 ioc.ctrl = v & 0xFC; 
                 return;
                 case 0x04: 
@@ -155,7 +158,14 @@ uint8_t ioc_read(uint32_t addr)
         switch (addr & 0x7C)
         {
                 case 0x00: 
-                return ((i2c_clock) ? 2 : 0) | ((i2c_data) ? 1 : 0) | flyback | 4;
+                temp = ((i2c_clock) ? 2 : 0) | ((i2c_data) ? 1 : 0) | flyback | 4;
+                if (fdctype == FDC_82C711)
+                {
+                        if ((ioc.ctrl & 8) && ds2401_read())
+                                temp |= 8;
+                }
+//                rpclog("IOC read %07x %02x\n", PC, temp);
+                return temp;
                 case 0x04: 
                 ioc_irqbc(IOC_IRQB_KEYBOARD_RX);
                 temp = keyboard_read();

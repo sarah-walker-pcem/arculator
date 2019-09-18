@@ -18,6 +18,7 @@
 #include "disc_fdi.h"
 #include "disc_jfd.h"
 #include "disc_ssd.h"
+#include "ds2401.h"
 #include "ide.h"
 #include "ioc.h"
 #include "keyboard.h"
@@ -206,6 +207,7 @@ int arc_init()
                 st506_internal_init();
 
         cmos_init();
+        ds2401_init();
         podules_init();
         podules_reset();
         
@@ -240,6 +242,7 @@ void arc_reset()
                 st506_internal_init();
         sound_init();
         cmos_init();
+        ds2401_init();
         podules_close();
         podules_init();
         podules_reset();

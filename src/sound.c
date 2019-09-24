@@ -131,15 +131,13 @@ static void pollsound_100ms(void *p)
 {
         timer_advance_u64(&sound_timer_100ms, 100 * 1000 * TIMER_USEC);
 
-        if (!soundena)
-                return;
-
         update_sound(4800);
         if (sound_first_poll)
                 sound_first_poll = 0;
 
         sound_write_ptr = 0;
-        al_givebuffer(sound_out_buffer);
+        if (soundena)
+                al_givebuffer(sound_out_buffer);
 //        rpclog("          samp_fp=%i samp_wp=%i samp_rp=%i %08x %08x\n", samp_fp, samp_wp, (samp_rp >> 15) * 2, samp_rp, SAMP_INC);
 }
 
@@ -147,7 +145,7 @@ void sound_set_clock(int clock_mhz)
 {
         /*Write out samples up to this point*/
         uint64_t remaining = timer_get_remaining_u64(&sound_timer_100ms);
-        int remaining_samples = (4800 * remaining) / (100 * 1000 * TIMER_USEC);
+        int remaining_samples = (int)(((remaining / (100ull * 1000ull)) * 4800ull) / TIMER_USEC);
 
         update_sound(4800 - remaining_samples);
 
@@ -244,7 +242,7 @@ void sound_init(void)
         sound_first_poll = 1;
         SAMP_INC = ((int)((1000000.0 / 48000.0) * 16384.0));
         
-        samp_rp = 0;
+        samp_rp = 0xfff00000;
         samp_wp = 0;
         samp_fp = 0;
 }

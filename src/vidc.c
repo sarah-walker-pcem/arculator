@@ -1059,11 +1059,6 @@ static void vidc_poll(void *__p)
                         }
 
                         if (vidc.scanrate || !dblscan)
-                                updatewindowsize(hd_end - hd_start, height);
-                        else
-                                updatewindowsize(hd_end - hd_start, height * 2);
-
-                        if (vidc.scanrate || !dblscan)
                         {
                                 LOG_VIDEO_FRAMES("PRESENT: normal display\n");
                                 updatewindowsize(hd_end-hd_start, height);
@@ -1141,23 +1136,6 @@ static void vidc_poll(void *__p)
                 vidc.y_max = 0;
                 vidc.disp_y_min = 9999;
                 vidc.disp_y_max = -1;
-//                video_renderer_present();
-/*                if (fullborders|fullscreen)
-                {
-                        if (readflash[0]) rectfill(bout,780,4,796,8,makecol(255,160,32));
-                        if (readflash[1]) rectfill(bout,760,4,776,8,makecol(255,160,32));
-                        if (readflash[2]) rectfill(bout,740,4,756,8,makecol(255,160,32));
-                        if (readflash[3]) rectfill(bout,720,4,736,8,makecol(255,160,32));
-                }
-                else
-                {
-                        if (readflash[0]) rectfill(bout,652,4,668,8,makecol(255,160,32));
-                        if (readflash[1]) rectfill(bout,632,4,648,8,makecol(255,160,32));
-                        if (readflash[2]) rectfill(bout,612,4,628,8,makecol(255,160,32));
-                        if (readflash[3]) rectfill(bout,592,4,608,8,makecol(255,160,32));
-                }
-                readflash[0]=readflash[1]=readflash[2]=readflash[3]=0;*/
-//                LOG_VIDEO_FRAMES("Blit\n");
 
                 /*Clear the buffer now so we don't get a persistent ghost when changing
                   from a high vertical res mode to a line-doubled mode.*/

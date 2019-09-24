@@ -181,8 +181,8 @@ void apd_seek(int drive, int track)
         apd_trackindex[drive][0][1] = 0;
         apd_trackindex[drive][1][1] = 0;
 
-        rpclog("SD Track %i Len %i %i\n", track, apd_tracklen[drive][0][0], apd_tracklen[drive][1][0]);
-        rpclog("DD Track %i Len %i %i\n", track, apd_tracklen[drive][0][1], apd_tracklen[drive][1][1]);
+//        rpclog("SD Track %i Len %i %i\n", track, apd_tracklen[drive][0][0], apd_tracklen[drive][1][0]);
+//        rpclog("DD Track %i Len %i %i\n", track, apd_tracklen[drive][0][1], apd_tracklen[drive][1][1]);
 }
 
 void apd_writeback(int drive, int track)
@@ -198,9 +198,9 @@ void apd_readsector(int drive, int sector, int track, int side, int density)
         apd_side    = side;
         apd_drive   = drive;
         apd_density = density;
-        rpclog("apd Read sector %i %i %i %i %i\n",drive,side,track,sector, density);
-        if (pollbytesleft)
-                rpclog("In the middle of a sector!\n");
+//        rpclog("apd Read sector %i %i %i %i %i\n",drive,side,track,sector, density);
+//        if (pollbytesleft)
+//                rpclog("In the middle of a sector!\n");
 
 //        if (side == 0 && track == 54 && sector == 4 && density == 1)
 //                output = 1;
@@ -215,7 +215,7 @@ void apd_writesector(int drive, int sector, int track, int side, int density)
         apd_track  = track;
         apd_side   = side;
         apd_drive  = drive;
-        rpclog("Write sector %i %i %i %i\n",drive,side,track,sector);
+//        rpclog("Write sector %i %i %i %i\n",drive,side,track,sector);
 
         if (!apd_f[drive] || (side && !apd_ds[drive]) || density)
         {
@@ -233,7 +233,7 @@ void apd_readaddress(int drive, int track, int side, int density)
         apd_side    = side;
         apd_density = density;
         apd_drive   = drive;
-        rpclog("Read address %i %i %i\n",drive,side,track);
+//        rpclog("Read address %i %i %i\n",drive,side,track);
 
         apd_inreadaddr = 1;
         apd_readpos    = 0;
@@ -246,7 +246,7 @@ void apd_format(int drive, int track, int side, int density)
         apd_side    = side;
         apd_density = density;
         apd_drive   = drive;
-        rpclog("Format %i %i %i\n",drive,side,track);
+//        rpclog("Format %i %i %i\n",drive,side,track);
 
         apd_inwrite = 1;
         apd_readpos = 0;
@@ -301,13 +301,13 @@ void apd_poll()
                 int index = 0;
                 if (apd_pos >= apd_tracklen[apd_drive][apd_side][apd_density])
                 {
-                        if (apd_tracklen[apd_drive][apd_side][apd_density])
-                                rpclog("Looping! %i\n",apd_pos);
+//                        if (apd_tracklen[apd_drive][apd_side][apd_density])
+//                                rpclog("Looping! %i\n",apd_pos);
                         apd_pos = 0;
                         if (apd_tracklen[apd_drive][apd_side][apd_density])
                         {
                                 fdc_indexpulse();
-                                rpclog("Index pulse\n");
+//                                rpclog("Index pulse\n");
                         }
                         else
                         {
@@ -316,7 +316,7 @@ void apd_poll()
                                 {
                                         apd_indextime_blank = 6250 * 8;
                                         fdc_indexpulse();
-                                        rpclog("Index pulse\n");
+//                                        rpclog("Index pulse\n");
                                 }
                         }
                         index = 1;
@@ -363,7 +363,7 @@ void apd_poll()
                                         }
                                         if (!pollbytesleft)
                                         {
-                                                rpclog("Found sector : %02X %02X %02X %02X\n", apd_sectordat[0], apd_sectordat[1], apd_sectordat[2], apd_sectordat[3]);
+//                                                rpclog("Found sector : %02X %02X %02X %02X\n", apd_sectordat[0], apd_sectordat[1], apd_sectordat[2], apd_sectordat[3]);
                                                 if ((apd_sectordat[0] == apd_track && apd_sectordat[2] == apd_sector) || apd_inreadaddr)
                                                 {
                                                         crc = (apd_density) ? 0xcdb4 : 0xffff;
@@ -415,7 +415,7 @@ void apd_poll()
                                         }
                                         else
                                            sectorcrc[1 - pollbytesleft] = decodefm(apd_buffer);
-                                        rpclog("%04i : %02X\n", pollbytesleft, decodefm(lastapddat[1]));
+//                                        rpclog("%04i : %02X\n", pollbytesleft, decodefm(lastapddat[1]));
                                         if (!pollbytesleft)
                                         {
                                                 apd_inread = 0;

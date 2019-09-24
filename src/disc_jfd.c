@@ -288,11 +288,6 @@ void jfd_poll()
 {
         int c;
         int old_pos_us = jfd_pos_us;
-//        rpclog("jfd_poll %i\n", jfd_pos_us);
-        jfd_time++;
-        if (jfd_time < 8) 
-                return;
-        jfd_time = 0;
 
         /*32 us*/
         jfd_pos_us += 32;

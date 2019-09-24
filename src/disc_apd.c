@@ -293,205 +293,210 @@ static int apd_indextime_blank = 6250 * 8;
 
 void apd_poll()
 {
-        int tempi, c;
-        int index = 0;
-        if (apd_pos >= apd_tracklen[apd_drive][apd_side][apd_density])
+        int polls;
+        
+        for (polls = 0; polls < 16; polls++)
         {
-                if (apd_tracklen[apd_drive][apd_side][apd_density])
-                        rpclog("Looping! %i\n",apd_pos);
-                apd_pos = 0;
-                if (apd_tracklen[apd_drive][apd_side][apd_density]) 
+                int tempi, c;
+                int index = 0;
+                if (apd_pos >= apd_tracklen[apd_drive][apd_side][apd_density])
                 {
-                        fdc_indexpulse();
-                        rpclog("Index pulse\n");
-                }
-                else
-                {
-                        apd_indextime_blank--;
-                        if (!apd_indextime_blank)
+                        if (apd_tracklen[apd_drive][apd_side][apd_density])
+                                rpclog("Looping! %i\n",apd_pos);
+                        apd_pos = 0;
+                        if (apd_tracklen[apd_drive][apd_side][apd_density])
                         {
-                                apd_indextime_blank = 6250 * 8;
                                 fdc_indexpulse();
                                 rpclog("Index pulse\n");
                         }
+                        else
+                        {
+                                apd_indextime_blank--;
+                                if (!apd_indextime_blank)
+                                {
+                                        apd_indextime_blank = 6250 * 8;
+                                        fdc_indexpulse();
+                                        rpclog("Index pulse\n");
+                                }
+                        }
+                        index = 1;
                 }
-                index = 1;
-        }
-        tempi = apd_trackinfo[apd_drive][apd_side][apd_density][((apd_pos >> 3) & 0xFFFF)] & (1 << (7 - (apd_pos & 7)));
-        apd_pos++;
-        apd_buffer<<=1;
-        apd_buffer|=(tempi?1:0);
-//        if (apd_tracklen[apd_drive][apd_side][apd_density])
-//                rpclog("apd_buffer %04X %02X\n", apd_buffer, decodefm(apd_buffer));
-        if (apd_inwrite)
-        {
-                apd_inwrite=0;
-                fdc_writeprotect();
-                return;
-        }
-        if (!apd_inread && !apd_inreadaddr) return;
-        if (index)
-        {
-                apd_revs++;
-                if (apd_revs == 3)
+                tempi = apd_trackinfo[apd_drive][apd_side][apd_density][((apd_pos >> 3) & 0xFFFF)] & (1 << (7 - (apd_pos & 7)));
+                apd_pos++;
+                apd_buffer<<=1;
+                apd_buffer|=(tempi?1:0);
+//                if (apd_tracklen[apd_drive][apd_side][apd_density])
+//                        rpclog("apd_buffer %04X %02X\n", apd_buffer, decodefm(apd_buffer));
+                if (apd_inwrite)
                 {
-                        rpclog("Not found!\n");
-                        fdc_notfound();
-                        apd_inread = apd_inreadaddr = 0;
-                        output = 0;
+                        apd_inwrite=0;
+                        fdc_writeprotect();
                         return;
                 }
-        }
-        if (pollbitsleft)
-        {
-                pollbitsleft--;
-                if (!pollbitsleft)
+                if (!apd_inread && !apd_inreadaddr) return;
+                if (index)
                 {
-                        pollbytesleft--;
-                        if (pollbytesleft) pollbitsleft = 16; /*Set up another word if we need it*/
-                        if (readidpoll)
+                        apd_revs++;
+                        if (apd_revs == 3)
                         {
-                                apd_sectordat[5 - pollbytesleft] = decodefm(apd_buffer);
-                                if (apd_inreadaddr && !fdc_sectorid)// && pollbytesleft > 1) 
+                                rpclog("Not found!\n");
+                                fdc_notfound();
+                                apd_inread = apd_inreadaddr = 0;
+                                output = 0;
+                                return;
+                        }
+                }
+                if (pollbitsleft)
+                {
+                        pollbitsleft--;
+                        if (!pollbitsleft)
+                        {
+                                pollbytesleft--;
+                                if (pollbytesleft) pollbitsleft = 16; /*Set up another word if we need it*/
+                                if (readidpoll)
                                 {
-//                                        rpclog("inreadaddr - %02X\n", apd_sectordat[5 - pollbytesleft]);
-                                        fdc_data(apd_sectordat[5 - pollbytesleft]);
-                                }
-                                if (!pollbytesleft)
-                                {
-                                        rpclog("Found sector : %02X %02X %02X %02X\n", apd_sectordat[0], apd_sectordat[1], apd_sectordat[2], apd_sectordat[3]);
-                                        if ((apd_sectordat[0] == apd_track && apd_sectordat[2] == apd_sector) || apd_inreadaddr)
+                                        apd_sectordat[5 - pollbytesleft] = decodefm(apd_buffer);
+                                        if (apd_inreadaddr && !fdc_sectorid)// && pollbytesleft > 1)
                                         {
-                                                crc = (apd_density) ? 0xcdb4 : 0xffff;
-                                                calccrc(0xFE);
-                                                for (c = 0; c < 4; c++) calccrc(apd_sectordat[c]);
-                                                if ((crc >> 8) != apd_sectordat[4] || (crc & 0xFF) != apd_sectordat[5])
+//                                                rpclog("inreadaddr - %02X\n", apd_sectordat[5 - pollbytesleft]);
+                                                fdc_data(apd_sectordat[5 - pollbytesleft]);
+                                        }
+                                        if (!pollbytesleft)
+                                        {
+                                                rpclog("Found sector : %02X %02X %02X %02X\n", apd_sectordat[0], apd_sectordat[1], apd_sectordat[2], apd_sectordat[3]);
+                                                if ((apd_sectordat[0] == apd_track && apd_sectordat[2] == apd_sector) || apd_inreadaddr)
                                                 {
-                                                        rpclog("Header CRC error : %02X %02X %02X %02X\n",crc>>8,crc&0xFF,apd_sectordat[4],apd_sectordat[5]);
-//                                                        dumpregs();
-//                                                        exit(-1);
-                                                        inreadop = 0;
+                                                        crc = (apd_density) ? 0xcdb4 : 0xffff;
+                                                        calccrc(0xFE);
+                                                        for (c = 0; c < 4; c++) calccrc(apd_sectordat[c]);
+                                                        if ((crc >> 8) != apd_sectordat[4] || (crc & 0xFF) != apd_sectordat[5])
+                                                        {
+                                                                rpclog("Header CRC error : %02X %02X %02X %02X\n",crc>>8,crc&0xFF,apd_sectordat[4],apd_sectordat[5]);
+//                                                                dumpregs();
+//                                                                exit(-1);
+                                                                inreadop = 0;
+                                                                if (apd_inreadaddr)
+                                                                {
+//                                                                        rpclog("inreadaddr - %02X\n", apd_sector);
+//                                                                        fdc_data(apd_sector);
+                                                                        if (fdc_sectorid)
+                                                                           fdc_sectorid(apd_sectordat[0], apd_sectordat[1], apd_sectordat[2], apd_sectordat[3], apd_sectordat[4], apd_sectordat[5]);
+                                                                        else
+                                                                           fdc_finishread();
+                                                                }
+                                                                else             fdc_headercrcerror();
+                                                                output = 0;
+                                                                return;
+                                                        }
+                                                        if (apd_sectordat[0] == apd_track && apd_sectordat[2] == apd_sector && apd_inread && !apd_inreadaddr)
+                                                        {
+                                                                apd_nextsector = 1;
+                                                                readidpoll = 0;
+                                                                sectorsize = (1 << (apd_sectordat[3] + 7)) + 2;
+                                                                fdc_sectorsize = apd_sectordat[3];
+                                                        }
                                                         if (apd_inreadaddr)
                                                         {
-//                                                                rpclog("inreadaddr - %02X\n", apd_sector);
-//                                                                fdc_data(apd_sector);
+                                                                output = 0;
                                                                 if (fdc_sectorid)
                                                                    fdc_sectorid(apd_sectordat[0], apd_sectordat[1], apd_sectordat[2], apd_sectordat[3], apd_sectordat[4], apd_sectordat[5]);
                                                                 else
                                                                    fdc_finishread();
+                                                                apd_inreadaddr = 0;
                                                         }
-                                                        else             fdc_headercrcerror();
+                                                }
+                                        }
+                                }
+                                if (readdatapoll)
+                                {
+                                        if (pollbytesleft > 1)
+                                        {
+                                                calccrc(decodefm(apd_buffer));
+                                        }
+                                        else
+                                           sectorcrc[1 - pollbytesleft] = decodefm(apd_buffer);
+                                        rpclog("%04i : %02X\n", pollbytesleft, decodefm(lastapddat[1]));
+                                        if (!pollbytesleft)
+                                        {
+                                                apd_inread = 0;
+                                                if ((crc >> 8) != sectorcrc[0] || (crc & 0xFF) != sectorcrc[1])// || (apdtrack==79 && apdsect==4 && fdc_side&1))
+                                                {
+                                                        rpclog("Data CRC error\n");// : %02X %02X %02X %02X %i %04X %02X%02X %i\n",crc>>8,crc&0xFF,sectorcrc[0],sectorcrc[1],apdpos,crc,sectorcrc[0],sectorcrc[1],ftracklen[0][0][apddensity]);
+                                                        inreadop = 0;
+                                                        fdc_data(decodefm(lastapddat[1]));
+                                                        fdc_finishread();
+                                                        fdc_datacrcerror();
+                                                        readdatapoll = 0;
                                                         output = 0;
                                                         return;
                                                 }
-                                                if (apd_sectordat[0] == apd_track && apd_sectordat[2] == apd_sector && apd_inread && !apd_inreadaddr)
-                                                {
-                                                        apd_nextsector = 1;
-                                                        readidpoll = 0;
-                                                        sectorsize = (1 << (apd_sectordat[3] + 7)) + 2;
-                                                        fdc_sectorsize = apd_sectordat[3];
-                                                }
-                                                if (apd_inreadaddr)
-                                                {
-                                                        output = 0;
-                                                        if (fdc_sectorid)
-                                                           fdc_sectorid(apd_sectordat[0], apd_sectordat[1], apd_sectordat[2], apd_sectordat[3], apd_sectordat[4], apd_sectordat[5]);
-                                                        else
-                                                           fdc_finishread();
-                                                        apd_inreadaddr = 0;
-                                                }
-                                        }
-                                }
-                        }
-                        if (readdatapoll)
-                        {
-                                if (pollbytesleft > 1)
-                                {
-                                        calccrc(decodefm(apd_buffer));
-                                }
-                                else
-                                   sectorcrc[1 - pollbytesleft] = decodefm(apd_buffer);
-                                rpclog("%04i : %02X\n", pollbytesleft, decodefm(lastapddat[1]));
-                                if (!pollbytesleft)
-                                {
-                                        apd_inread = 0;
-                                        if ((crc >> 8) != sectorcrc[0] || (crc & 0xFF) != sectorcrc[1])// || (apdtrack==79 && apdsect==4 && fdc_side&1))
-                                        {
-                                                rpclog("Data CRC error\n");// : %02X %02X %02X %02X %i %04X %02X%02X %i\n",crc>>8,crc&0xFF,sectorcrc[0],sectorcrc[1],apdpos,crc,sectorcrc[0],sectorcrc[1],ftracklen[0][0][apddensity]);
-                                                inreadop = 0;
+//                                                rpclog("End of apd read %02X %02X %02X %02X\n",crc>>8,crc&0xFF,sectorcrc[0],sectorcrc[1]);
                                                 fdc_data(decodefm(lastapddat[1]));
                                                 fdc_finishread();
-                                                fdc_datacrcerror();
-                                                readdatapoll = 0;
                                                 output = 0;
-                                                return;
                                         }
-//                                        rpclog("End of apd read %02X %02X %02X %02X\n",crc>>8,crc&0xFF,sectorcrc[0],sectorcrc[1]);
-                                        fdc_data(decodefm(lastapddat[1]));
-                                        fdc_finishread();
-                                        output = 0;
+                                        else if (lastapddat[1] != 0)
+                                                fdc_data(decodefm(lastapddat[1]));
+                                        lastapddat[1] = lastapddat[0];
+                                        lastapddat[0] = apd_buffer;
+                                        if (!pollbytesleft)
+                                                readdatapoll = 0;
                                 }
-                                else if (lastapddat[1] != 0)
-                                   fdc_data(decodefm(lastapddat[1]));
-                                lastapddat[1] = lastapddat[0];
-                                lastapddat[0] = apd_buffer;
-                                if (!pollbytesleft)
-                                   readdatapoll = 0;
                         }
                 }
-        }
-        else if (apd_buffer == 0x4489 && apd_density)
-        {
-//                rpclog("Found sync\n");
-                ddidbitsleft = 17;
-        }
-        else if (apd_buffer == 0xF57E && !apd_density)
-        {
-                pollbytesleft = 6;
-                pollbitsleft  = 16;
-                readidpoll    = 1;
-        }
-        else if ((apd_buffer == 0xF56F || apd_buffer == 0xF56A) && !apd_density)
-        {
-                if (apd_nextsector)
+                else if (apd_buffer == 0x4489 && apd_density)
                 {
-                        pollbytesleft  = sectorsize;
-                        pollbitsleft   = 16;
-                        readdatapoll   = 1;
-                        apd_nextsector = 0;
-                        crc = 0xffff;
-                        if (apd_buffer == 0xF56A) calccrc(0xF8);
-                        else                      calccrc(0xFB);
-                        lastapddat[0] = lastapddat[1] = 0;
+//                        rpclog("Found sync\n");
+                        ddidbitsleft = 17;
                 }
-        }
-        if (ddidbitsleft)
-        {
-                ddidbitsleft--;
-                if (!ddidbitsleft)
+                else if (apd_buffer == 0xF57E && !apd_density)
                 {
-//                        rpclog("ID bits over %04X %02X %i\n", apd_buffer, decodefm(apd_buffer), apd_pos);
-                        if (decodefm(apd_buffer) == 0xFE)
+                        pollbytesleft = 6;
+                        pollbitsleft  = 16;
+                        readidpoll    = 1;
+                }
+                else if ((apd_buffer == 0xF56F || apd_buffer == 0xF56A) && !apd_density)
+                {
+                        if (apd_nextsector)
                         {
-//                                rpclog("Sector header\n");
-                                pollbytesleft = 6;
-                                pollbitsleft  = 16;
-                                readidpoll    = 1;
+                                pollbytesleft  = sectorsize;
+                                pollbitsleft   = 16;
+                                readdatapoll   = 1;
+                                apd_nextsector = 0;
+                                crc = 0xffff;
+                                if (apd_buffer == 0xF56A) calccrc(0xF8);
+                                else                      calccrc(0xFB);
+                                lastapddat[0] = lastapddat[1] = 0;
                         }
-                        else if (decodefm(apd_buffer) == 0xFB)
+                }
+                if (ddidbitsleft)
+                {
+                        ddidbitsleft--;
+                        if (!ddidbitsleft)
                         {
-//                                rpclog("Data header\n");
-                                if (apd_nextsector)
+//                                rpclog("ID bits over %04X %02X %i\n", apd_buffer, decodefm(apd_buffer), apd_pos);
+                                if (decodefm(apd_buffer) == 0xFE)
                                 {
-                                        pollbytesleft  = sectorsize;
-                                        pollbitsleft   = 16;
-                                        readdatapoll   = 1;
-                                        apd_nextsector = 0;
-                                        crc = 0xcdb4;
-                                        if (apd_buffer == 0xF56A) calccrc(0xF8);
-                                        else                      calccrc(0xFB);
-                                        lastapddat[0] = lastapddat[1] = 0;
-                                        //output = 1;
+//                                        rpclog("Sector header\n");
+                                        pollbytesleft = 6;
+                                        pollbitsleft  = 16;
+                                        readidpoll    = 1;
+                                }
+                                else if (decodefm(apd_buffer) == 0xFB)
+                                {
+//                                        rpclog("Data header\n");
+                                        if (apd_nextsector)
+                                        {
+                                                pollbytesleft  = sectorsize;
+                                                pollbitsleft   = 16;
+                                                readdatapoll   = 1;
+                                                apd_nextsector = 0;
+                                                crc = 0xcdb4;
+                                                if (apd_buffer == 0xF56A) calccrc(0xF8);
+                                                else                      calccrc(0xFB);
+                                                lastapddat[0] = lastapddat[1] = 0;
+                                                //output = 1;
+                                        }
                                 }
                         }
                 }

@@ -540,7 +540,11 @@ static void vidc_poll(void *__p)
         int xoffset,xoffset2;
         int old_display_on = vidc.displayon;
         int vidc_cycles;
+        int do_double_scan = (!vidc.scanrate && !dblscan);
 
+        if (do_double_scan)
+                l <<= 1;
+        
         if (output)
                 rpclog("vidc_poll: state=%i line=%i\n", vidc.state, vidc.line);
         switch (vidc.state)
@@ -573,7 +577,7 @@ static void vidc_poll(void *__p)
                         vidc.borderon = 1;
                         flyback = 0;
                         if (vidc.disp_y_min > l && vidc.displayon)
-                                vidc.disp_y_min = l;
+                                vidc.disp_y_min = l + (do_double_scan ? 2 : 1);
                 }
                 if (vidc.line == vidc.vdstart && !vidc.display_was_disabled)
                 {
@@ -597,7 +601,7 @@ static void vidc_poll(void *__p)
                         mem_dorefresh = memc_refresh_always;
                         flyback = 0;
                         if (vidc.disp_y_min > l && vidc.borderon)
-                                vidc.disp_y_min = l;
+                                vidc.disp_y_min = l + (do_double_scan ? 2 : 1);
                 }
                 if (vidc.line == vidc.vdend)
                 {
@@ -607,7 +611,7 @@ static void vidc_poll(void *__p)
                         ioc_irqa(IOC_IRQA_VBLANK);
                         flyback = 0x80;
                         if (vidc.disp_y_max == -1)
-                                vidc.disp_y_max = l;
+                                vidc.disp_y_max = l + (do_double_scan ? 2 : 1);
                         vidc.display_was_disabled = 1;
                         LOG_VIDEO_FRAMES("Normal vsync; speed %d%%, ins=%d, inscount=%d, PC=%08X\n", inssec, ins, inscount, PC);
                 }
@@ -615,7 +619,7 @@ static void vidc_poll(void *__p)
                 {
                         vidc.borderon = 0;
                         if (vidc.disp_y_max == -1)
-                                vidc.disp_y_max = l;
+                                vidc.disp_y_max = l + (do_double_scan ? 2 : 1);
                         vidc.border_was_disabled = 1;
                 }
                 if (vidc.displayon && !vidc.cursor_lines)
@@ -634,7 +638,6 @@ static void vidc_poll(void *__p)
         if (vidc.state != VIDC_BACK_PORCH)
                 return;
 
-        if (!vidc.scanrate && !dblscan) l<<=1;
         if (palchange)
         {
                 redolookup();

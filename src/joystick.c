@@ -7,12 +7,15 @@
 
 int joystick_type;
 int joystick_a3010_present;
+int joystick_rtfm_present;
 
 static const joystick_if_t joystick_a3010;
+static const joystick_if_t joystick_rtfm;
 
 static const joystick_if_t *joystick_list[] =
 {
         &joystick_a3010,
+        &joystick_rtfm,
         NULL
 };
 
@@ -69,6 +72,7 @@ const char *joystick_get_pov_name(int joystick, int id)
 void joystick_if_init()
 {
         joystick_a3010_present = !strcmp(joystick_if, "a3010");
+        joystick_rtfm_present = !strcmp(joystick_if, "rtfm");
 }
 
 static const joystick_if_t joystick_a3010 =
@@ -82,3 +86,51 @@ static const joystick_if_t joystick_a3010 =
         .axis_names = {"X axis", "Y axis"},
         .button_names = {"Fire button"}
 };
+
+static const joystick_if_t joystick_rtfm =
+{
+        .name = "RTFM Joystick Interface",
+        .config_name = "rtfm",
+        .max_joysticks = 2,
+        .axis_count = 2,
+        .button_count = 1,
+        .pov_count = 0,
+        .axis_names = {"X axis", "Y axis"},
+        .button_names = {"Fire button"}
+};
+
+uint8_t joystick_rtfm_read(uint32_t a)
+{
+        uint8_t temp = 0xff;
+        
+        switch (a & 0xc)
+        {
+                case 4:
+                temp = 0;
+                if (joystick_state[0].axis[0] > 16383)
+                        temp |= 0x01;
+                if (joystick_state[0].axis[0] < -16383)
+                        temp |= 0x02;
+                if (joystick_state[0].axis[1] > 16383)
+                        temp |= 0x04;
+                if (joystick_state[0].axis[1] < -16383)
+                        temp |= 0x08;
+                if (joystick_state[0].button[0])
+                        temp |= 0x10;
+                break;
+                case 8:
+                temp = 0;
+                if (joystick_state[1].axis[0] > 16383)
+                        temp |= 0x08;
+                if (joystick_state[1].axis[0] < -16383)
+                        temp |= 0x20;
+                if (joystick_state[1].axis[1] > 16383)
+                        temp |= 0x40;
+                if (joystick_state[1].axis[1] < -16383)
+                        temp |= 0x80;
+                if (joystick_state[1].button[0])
+                        temp |= 0x10;
+                break;
+        }
+        return temp;
+}

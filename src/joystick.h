@@ -27,3 +27,6 @@ const char *joystick_get_pov_name(int joystick, int id);
 #define AXIS_NOT_PRESENT -99999
 
 extern int joystick_a3010_present;
+extern int joystick_rtfm_present;
+
+uint8_t joystick_rtfm_read(uint32_t a);

@@ -13,6 +13,7 @@
 #include "ide.h"
 #include "ioc.h"
 #include "ioeb.h"
+#include "joystick.h"
 #include "memc.h"
 #include "podules.h"
 #include "st506.h"
@@ -253,6 +254,8 @@ uint8_t readmemfb(uint32_t a)
                                 return wd1770_read(a);
                         return c82c711_read(a);
                         case 2: /*Econet*/
+                        if (joystick_rtfm_present)
+                                return joystick_rtfm_read(a);
                         return 0xFF;
                         case 3: /*Serial*/
                         return 0xFF;
@@ -367,6 +370,8 @@ uint32_t readmemfl(uint32_t a)
                                 return readidew(&ide_internal);
                         return c82c711_read(a);
                         case 2: /*Econet*/
+                        if (joystick_rtfm_present)
+                                return joystick_rtfm_read(a);
                         return 0xFFFF;
                         case 3: /*Serial*/
                         return 0xFFFF;

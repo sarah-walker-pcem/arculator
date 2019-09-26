@@ -302,32 +302,3 @@ void keycallback2()
         iockey=tempkey;
         ioc_irqb(IOC_IRQB_KEYBOARD_RX);
 }
-
-void initjoy()
-{
-        #if 0
-        install_joystick(JOY_TYPE_AUTODETECT);
-        #endif
-}
-
-void polljoy()
-{
-        #if 0
-        poll_joystick();
-        #endif
-}
-
-uint8_t readjoy(int addr)
-{
-        return 0x7f;
-        #if 0
-        int c=(addr&4)?1:0;
-        uint8_t temp=0x60;
-        if (joy[c].stick[0].axis[1].d1) temp|=0x01;
-        if (joy[c].stick[0].axis[1].d2) temp|=0x02;
-        if (joy[c].stick[0].axis[0].d1) temp|=0x04;
-        if (joy[c].stick[0].axis[0].d2) temp|=0x08;
-        if (joy[c].button[0].b) temp|=0x10;
-        return temp^0x1F;
-        #endif
-}

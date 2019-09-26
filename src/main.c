@@ -21,10 +21,13 @@
 #include "ds2401.h"
 #include "ide.h"
 #include "ioc.h"
+#include "ioeb.h"
+#include "joystick.h"
 #include "keyboard.h"
 #include "mem.h"
 #include "memc.h"
 #include "plat_input.h"
+#include "plat_joystick.h"
 #include "plat_video.h"
 #include "podules.h"
 #include "sound.h"
@@ -176,7 +179,7 @@ int arc_init()
         reinitvideo();
         if (soundena) 
            al_init();
-        initjoy();
+//        joystick_init();
 
         c82c711_init();
         disc_init();
@@ -210,6 +213,8 @@ int arc_init()
         ds2401_init();
         podules_init();
         podules_reset();
+        joystick_if_init();
+        ioeb_init();
         
         return 0;
 }
@@ -246,6 +251,8 @@ void arc_reset()
         podules_close();
         podules_init();
         podules_reset();
+        joystick_if_init();
+        ioeb_init();
 }
 
 void arc_setspeed(int mhz)
@@ -307,7 +314,7 @@ void arc_run()
 {
         LOG_EVENT_LOOP("arc_run()\n");
         execarm((speed_mhz * 1000000) / 100);
-        polljoy();
+        joystick_poll_host();
         mouse_poll_host();
         keyboard_poll_host();
         if (mousehack) doosmouse();

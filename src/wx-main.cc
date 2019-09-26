@@ -5,6 +5,7 @@ extern "C"
 {
         #include "arc.h"
         #include "config.h"
+        #include "plat_joystick.h"
         #include "podules.h"
         #include "romload.h"
         #include "soundopenal.h"
@@ -20,6 +21,7 @@ int main(int argc, char **argv)
 
         podule_build_list();
         opendlls();
+        joystick_init();
         
         wxApp::SetInstance(new App());
         if (rom_establish_availability())

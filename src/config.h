@@ -68,3 +68,4 @@ extern char hd_fn[2][512];
 extern int hd_spt[2], hd_hpc[2], hd_cyl[2];
 extern char machine[7];
 extern uint32_t unique_id;
+extern char joystick_if[16];

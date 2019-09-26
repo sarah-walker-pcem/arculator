@@ -5,7 +5,9 @@
 #include "arm.h"
 #include "config.h"
 #include "fpa.h"
+#include "joystick.h"
 #include "memc.h"
+#include "plat_joystick.h"
 #include "plat_video.h"
 #include "podules.h"
 #include "sound.h"
@@ -20,6 +22,8 @@ char machine[7];
 int monitor_type;
 
 uint32_t unique_id;
+
+char joystick_if[16];
 
 char *get_filename(char *s)
 {
@@ -626,6 +630,7 @@ void loadconfig()
 {
         char config_file[512];
         char *p;
+        int c;
 
         append_filename(config_file, exname, "arc.cfg", 511);
         rpclog("config_file=%s\n", config_file);
@@ -662,6 +667,40 @@ void loadconfig()
         romset = get_romset(p);
         p = (char *)config_get_string(CFG_MACHINE, NULL, "monitor_type", "multisync");
         monitor_type = get_monitor_type(p);
+
+        p = (char *)config_get_string(CFG_MACHINE, NULL, "joystick_if", "");
+        strcpy(joystick_if, p);
+        for (c = 0; c < joystick_get_max_joysticks(joystick_type); c++)
+        {
+                char s[80];
+                
+                sprintf(s, "joystick_%i_nr", c);
+                joystick_state[c].plat_joystick_nr = config_get_int(CFG_MACHINE, "Joysticks", s, 0);
+
+                if (joystick_state[c].plat_joystick_nr)
+                {
+                        int d;
+                        
+                        for (d = 0; d < joystick_get_axis_count(joystick_type); d++)
+                        {
+                                sprintf(s, "joystick_%i_axis_%i", c, d);
+                                joystick_state[c].axis_mapping[d] = config_get_int(CFG_MACHINE, "Joysticks", s, d);
+                        }
+                        for (d = 0; d < joystick_get_button_count(joystick_type); d++)
+                        {
+                                sprintf(s, "joystick_%i_button_%i", c, d);
+                                joystick_state[c].button_mapping[d] = config_get_int(CFG_MACHINE, "Joysticks", s, d);
+                        }
+                        for (d = 0; d < joystick_get_pov_count(joystick_type); d++)
+                        {
+                                sprintf(s, "joystick_%i_pov_%i_x", c, d);
+                                joystick_state[c].pov_mapping[d][0] = config_get_int(CFG_MACHINE, "Joysticks", s, d);
+                                sprintf(s, "joystick_%i_pov_%i_y", c, d);
+                                joystick_state[c].pov_mapping[d][1] = config_get_int(CFG_MACHINE, "Joysticks", s, d);
+                        }
+                }
+        }
+
         p = (char *)config_get_string(CFG_MACHINE, NULL,"hd4_fn",NULL);
         if (p)
                 strcpy(hd_fn[0], p);
@@ -705,6 +744,7 @@ void loadconfig()
 void saveconfig()
 {
         char config_file[512];
+        int c;
 
         append_filename(config_file, exname, "arc.cfg", 511);
 
@@ -731,6 +771,39 @@ void saveconfig()
         config_set_int(CFG_MACHINE, NULL, "st506_present", st506_present);
         config_set_string(CFG_MACHINE, NULL, "rom_set", config_get_romset_name(romset));
         config_set_string(CFG_MACHINE, NULL, "monitor_type", get_monitor_type_name(monitor_type));
+
+        config_set_string(CFG_MACHINE, NULL, "joystick_if", joystick_if);
+        for (c = 0; c < joystick_get_max_joysticks(joystick_type); c++)
+        {
+                char s[80];
+
+                sprintf(s, "joystick_%i_nr", c);
+                config_set_int(CFG_MACHINE, "Joysticks", s, joystick_state[c].plat_joystick_nr);
+
+                if (joystick_state[c].plat_joystick_nr)
+                {
+                        int d;
+                        
+                        for (d = 0; d < joystick_get_axis_count(joystick_type); d++)
+                        {
+                                sprintf(s, "joystick_%i_axis_%i", c, d);
+                                config_set_int(CFG_MACHINE, "Joysticks", s, joystick_state[c].axis_mapping[d]);
+                        }
+                        for (d = 0; d < joystick_get_button_count(joystick_type); d++)
+                        {
+                                sprintf(s, "joystick_%i_button_%i", c, d);
+                                config_set_int(CFG_MACHINE, "Joysticks", s, joystick_state[c].button_mapping[d]);
+                        }
+                        for (d = 0; d < joystick_get_pov_count(joystick_type); d++)
+                        {
+                                sprintf(s, "joystick_%i_pov_%i_x", c, d);
+                                config_set_int(CFG_MACHINE, "Joysticks", s, joystick_state[c].pov_mapping[d][0]);
+                                sprintf(s, "joystick_%i_pov_%i_y", c, d);
+                                config_set_int(CFG_MACHINE, "Joysticks", s, joystick_state[c].pov_mapping[d][1]);
+                        }
+                }
+        }
+
         config_set_int(CFG_GLOBAL, NULL, "stereo", stereo);
         config_set_int(CFG_GLOBAL, NULL, "sound_gain", sound_gain);
         config_set_int(CFG_MACHINE, NULL, "unique_id", unique_id);

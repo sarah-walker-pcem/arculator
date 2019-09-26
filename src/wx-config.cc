@@ -8,6 +8,7 @@
 #include "wx-config.h"
 #include "wx-hd_conf.h"
 #include "wx-hd_new.h"
+#include "wx-joystick-config.h"
 #include "wx-podule-config.h"
 
 extern "C"
@@ -16,6 +17,7 @@ extern "C"
         #include "arm.h"
         #include "config.h"
         #include "fpa.h"
+        #include "joystick.h"
         #include "memc.h"
         #include "podules.h"
         #include "st506.h"
@@ -279,6 +281,7 @@ private:
 	void OnHDSel(wxCommandEvent &event);
 	void OnHDNew(wxCommandEvent &event);
 	void OnHDEject(wxCommandEvent &event);
+	void OnConfigJoystick(wxCommandEvent &event);
 	void OnIDEdit(wxCommandEvent &event);
 
         void CommonInit(wxWindow *parent, bool is_running);
@@ -303,6 +306,8 @@ private:
         char config_podules[4][16];
 	
 	bool running;
+
+        bool is_a3010;
 };
 
 int ConfigDialog::get_preset(char *machine)
@@ -414,6 +419,8 @@ void ConfigDialog::CommonInit(wxWindow *parent, bool is_running)
         Bind(wxEVT_BUTTON, &ConfigDialog::OnHDNew, this, XRCID("IDC_NEW_HD5"));
         Bind(wxEVT_BUTTON, &ConfigDialog::OnHDEject, this, XRCID("IDC_EJECT_HD4"));
         Bind(wxEVT_BUTTON, &ConfigDialog::OnHDEject, this, XRCID("IDC_EJECT_HD5"));
+        Bind(wxEVT_BUTTON, &ConfigDialog::OnConfigJoystick, this, XRCID("IDC_JOY1"));
+        Bind(wxEVT_BUTTON, &ConfigDialog::OnConfigJoystick, this, XRCID("IDC_JOY2"));
         Bind(wxEVT_TEXT, &ConfigDialog::OnIDEdit, this, XRCID("IDC_EDIT_ID2"));
         
         hd_fns[0] = wxString(hd_fn[0]);
@@ -618,6 +625,23 @@ void ConfigDialog::UpdateList(int cpu, int mem, int memc, int fpu, int io)
         char s[10];
         sprintf(s, "%08x", config_unique_id);
         tctrl->SetValue(s);
+
+        is_a3010 = !strcmp(presets[config_preset].config_name, "a3010");
+        cbox = (wxComboBox *)this->FindWindow(XRCID("IDC_COMBO_JOY"));
+        cbox->Clear();
+        cbox->Append("None");
+        cbox->SetValue("None");
+        c = 0;
+        while (joystick_get_name(c))
+        {
+                if (strcmp(joystick_get_config_name(c), "a3010") || is_a3010)
+                {
+                        cbox->Append(joystick_get_name(c));
+                        if (!strcmp(joystick_if, joystick_get_config_name(c)))
+                                cbox->SetValue(joystick_get_name(c));
+                }
+                c++;
+        }
 }
 
 void ConfigDialog::PopulatePoduleList(int slot_nr, wxComboBox *cbox)
@@ -782,6 +806,19 @@ void ConfigDialog::OnOK(wxCommandEvent &event)
 
         unique_id = config_unique_id;
         
+        char temp_s2[256];
+        wxComboBox *cbox = (wxComboBox *)this->FindWindow(XRCID("IDC_COMBO_JOY"));
+        strncpy(temp_s2, cbox->GetValue(), sizeof(temp_s2));
+        strcpy(joystick_if, "none");
+        
+        c = 0;
+        while (joystick_get_name(c))
+        {
+                if (!strcmp(temp_s2, joystick_get_name(c)))
+                        strcpy(joystick_if, joystick_get_config_name(c));
+                c++;
+        }
+
         strncpy(machine, presets[config_preset].config_name, sizeof(machine));
         
         saveconfig();
@@ -1071,6 +1108,31 @@ void ConfigDialog::OnConfigPodule(wxCommandEvent &event)
 
         const podule_header_t *podule = podule_find(config_podules[slot_nr]);
         ShowPoduleConfig(this, podule, podule->config, running, slot_nr);
+}
+
+void ConfigDialog::OnConfigJoystick(wxCommandEvent &event)
+{
+        int joy_nr;
+
+        if (event.GetId() == XRCID("IDC_JOY1"))
+                joy_nr = 0;
+        else if (event.GetId() == XRCID("IDC_JOY2"))
+                joy_nr = 1;
+                
+        char temp_s[256];
+        wxComboBox *cbox = (wxComboBox *)this->FindWindow(XRCID("IDC_COMBO_JOY"));
+        strncpy(temp_s, cbox->GetValue(), sizeof(temp_s));
+
+        int c = 0;
+        int joy_type = 0;
+        while (joystick_get_name(c))
+        {
+                if (!strcmp(temp_s, joystick_get_name(c)))
+                        joy_type = c;
+                c++;
+        }
+
+        ShowConfJoy(this, joy_nr, joy_type);
 }
 
 void ConfigDialog::OnIDEdit(wxCommandEvent &event)

@@ -1,7 +1,10 @@
+#include <string.h>
 #include "arc.h"
 #include "config.h"
 #include "ioc.h"
 #include "ioeb.h"
+#include "joystick.h"
+#include "plat_joystick.h"
 #include "vidc.h"
 
 static const struct
@@ -17,6 +20,33 @@ static const struct
 };
 
 static int hs_invert;
+static int has_joystick_ports;
+
+static uint8_t ioeb_joystick_read(int addr)
+{
+        if (joystick_a3010_present && has_joystick_ports)
+        {
+                int c = (addr & 4) ? 1 : 0;
+                uint8_t temp = 0x7f;
+
+                if (joystick_state[c].axis[1] < -16383)
+                        temp &= ~0x01;
+                if (joystick_state[c].axis[1] > 16383)
+                        temp &= ~0x02;
+                if (joystick_state[c].axis[0] < -16383)
+                        temp &= ~0x04;
+                if (joystick_state[c].axis[0] > 16383)
+                        temp &= ~0x08;
+                if (joystick_state[c].button[0])
+                        temp &= ~0x10;
+
+                return temp;
+        }
+        else if (has_joystick_ports)
+                return 0x7f;
+        else
+                return 0xff;
+}
 
 uint8_t ioeb_read(uint32_t addr)
 {
@@ -38,7 +68,7 @@ uint8_t ioeb_read(uint32_t addr)
                 return monitor_id[monitor_type].id;
                 
                 case 0x78: /*Joystick (A3010)*/
-                return readjoy(addr);
+                return ioeb_joystick_read(addr);
         }
         
         return 0xff;
@@ -53,4 +83,9 @@ void ioeb_write(uint32_t addr, uint8_t val)
                 hs_invert = val & 4;
                 break;
         }
+}
+
+void ioeb_init()
+{
+        has_joystick_ports = !strcmp(machine, "a3010");
 }

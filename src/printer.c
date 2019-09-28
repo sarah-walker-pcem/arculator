@@ -90,6 +90,59 @@ uint8_t gamespad_read(void)
         return temp;
 }
 
+static void serial_port_write(uint8_t val)
+{
+        int busy = 0, ack = 0;
+
+        if (!(val & 0x01))
+        {
+                if ((joystick_state[0].axis[1] < -16383))
+                        busy = 1;
+                if ((joystick_state[1].axis[1] < -16383))
+                        ack = 1;
+        }
+        if (!(val & 0x02))
+        {
+                if ((joystick_state[0].axis[1] > 16383))
+                        busy = 1;
+                if ((joystick_state[1].axis[1] > 16383))
+                        ack = 1;
+        }
+        if (!(val & 0x04))
+        {
+                if ((joystick_state[0].axis[0] < -16383))
+                        busy = 1;
+                if ((joystick_state[1].axis[0] < -16383))
+                        ack = 1;
+        }
+        if (!(val & 0x08))
+        {
+                if ((joystick_state[0].axis[0] > 16383))
+                        busy = 1;
+                if ((joystick_state[1].axis[0] > 16383))
+                        ack = 1;
+        }
+        if (!(val & 0x10))
+        {
+                if ((joystick_state[0].button[0]))
+                        busy = 1;
+                if ((joystick_state[1].button[0]))
+                        ack = 1;
+        }
+        if (!(val & 0x20))
+                busy = ack = 1;
+        if (!(val & 0x40))
+        {
+                if ((joystick_state[0].button[1]))
+                        busy = 1;
+                if ((joystick_state[1].button[1]))
+                        ack = 1;
+        }
+
+        printer_set_busy(busy);
+        printer_set_ack(!ack);
+}
+
 #define PRINTER_BUSY 0x80
 #define PRINTER_ACK  0x40
 #define PRINTER_IRQ  0x04
@@ -137,6 +190,8 @@ void printer_data_write(uint8_t val)
 //        rpclog("printer_data_write %02x\n", val);
         if (joystick_gamespad_present)
                 gamespad_write(val);
+        else if (joystick_serial_port_present)
+                serial_port_write(val);
 }
 
 uint8_t printer_status_read(void)

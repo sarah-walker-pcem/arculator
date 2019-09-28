@@ -9,16 +9,19 @@ int joystick_type;
 int joystick_a3010_present;
 int joystick_gamespad_present;
 int joystick_rtfm_present;
+int joystick_serial_port_present;
 
 static const joystick_if_t joystick_a3010;
 static const joystick_if_t joystick_gamespad;
 static const joystick_if_t joystick_rtfm;
+static const joystick_if_t joystick_serial_port;
 
 static const joystick_if_t *joystick_list[] =
 {
         &joystick_a3010,
         &joystick_gamespad,
         &joystick_rtfm,
+        &joystick_serial_port,
         NULL
 };
 
@@ -89,6 +92,7 @@ void joystick_if_init()
         joystick_a3010_present = !strcmp(joystick_if, "a3010");
         joystick_gamespad_present = !strcmp(joystick_if, "gamespad");
         joystick_rtfm_present = !strcmp(joystick_if, "rtfm");
+        joystick_serial_port_present = !strcmp(joystick_if, "serial_port");
 }
 
 static const joystick_if_t joystick_a3010 =
@@ -125,6 +129,18 @@ static const joystick_if_t joystick_rtfm =
         .pov_count = 0,
         .axis_names = {"X axis", "Y axis"},
         .button_names = {"Fire button"}
+};
+
+static const joystick_if_t joystick_serial_port =
+{
+        .name = "The Serial Port / Vertical Twist Interface",
+        .config_name = "serial_port",
+        .max_joysticks = 2,
+        .axis_count = 2,
+        .button_count = 2,
+        .pov_count = 0,
+        .axis_names = {"X axis", "Y axis"},
+        .button_names = {"Button 1", "Button 2"}
 };
 
 uint8_t joystick_rtfm_read(uint32_t a)

@@ -308,8 +308,7 @@ JoystickConfDialog::JoystickConfDialog(wxWindow *parent, int joy_nr, int type) :
 
         for (c = 0; c < joystick_get_axis_count(type); c++)
         {
-                sprintf(s, "Axis %i:", c);
-                sizer->Add(new wxStaticText(this, id++, s), 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
+                sizer->Add(new wxStaticText(this, id++, joystick_get_axis_name(type, c)), 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
                 wxBoxSizer* comboSizer = new wxBoxSizer(wxHORIZONTAL);
                 sizer->Add(comboSizer, 1, wxEXPAND, 5);
                 wxComboBox* cb = new wxComboBox(this, id++);
@@ -320,7 +319,7 @@ JoystickConfDialog::JoystickConfDialog(wxWindow *parent, int joy_nr, int type) :
         for (c = 0; c < joystick_get_button_count(type); c++)
         {
                 sprintf(s, "Button %i:", c);
-                sizer->Add(new wxStaticText(this, id++, s), 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
+                sizer->Add(new wxStaticText(this, id++, joystick_get_button_name(type, c)), 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
                 wxBoxSizer* comboSizer = new wxBoxSizer(wxHORIZONTAL);
                 sizer->Add(comboSizer, 1, wxEXPAND, 5);
                 wxComboBox* cb = new wxComboBox(this, id++);
@@ -331,7 +330,7 @@ JoystickConfDialog::JoystickConfDialog(wxWindow *parent, int joy_nr, int type) :
         for (c = 0; c < joystick_get_pov_count(type)*2; c++)
         {
                 sprintf(s, "POV %i:", c);
-                sizer->Add(new wxStaticText(this, id++, s), 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
+                sizer->Add(new wxStaticText(this, id++, joystick_get_pov_name(type, c)), 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
                 wxBoxSizer* comboSizer = new wxBoxSizer(wxHORIZONTAL);
                 sizer->Add(comboSizer, 1, wxEXPAND, 5);
                 wxComboBox* cb = new wxComboBox(this, id++);

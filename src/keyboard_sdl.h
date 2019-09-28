@@ -41,7 +41,7 @@
 #define KEY_L                 SDL_SCANCODE_L
 #define KEY_COLON             SDL_SCANCODE_SEMICOLON
 #define KEY_QUOTE             SDL_SCANCODE_APOSTROPHE
-#define KEY_TILDE             SDL_SCANCODE_NONUSHASH
+#define KEY_TILDE             SDL_SCANCODE_GRAVE
 #define KEY_LSHIFT            SDL_SCANCODE_LSHIFT
 #define KEY_BACKSLASH         SDL_SCANCODE_BACKSLASH
 #define KEY_Z                 SDL_SCANCODE_Z

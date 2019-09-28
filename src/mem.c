@@ -16,6 +16,7 @@
 #include "joystick.h"
 #include "memc.h"
 #include "podules.h"
+#include "printer.h"
 #include "st506.h"
 #include "vidc.h"
 #include "wd1770.h"
@@ -514,7 +515,9 @@ void writememfb(uint32_t a,uint8_t v)
                                         if (st506_present)
                                                 st506_internal_writeb(a, v);
                                         return;
-                                        case 0x0010: return; /*Printer*/
+                                        case 0x0010: /*Printer*/
+                                        printer_data_write(v);
+                                        return;
                                         case 0x0018:
                                         wd1770_writelatch_b(v);
                                         return; /*FDC Latch B*/
@@ -645,7 +648,9 @@ void writememfl(uint32_t a,uint32_t v)
                                         if (st506_present)
                                                 st506_internal_writel(a, v);
                                         return;
-                                        case 0x0010: return; /*Printer*/
+                                        case 0x0010: /*Printer*/
+                                        printer_data_write(v);
+                                        return;
                                         case 0x0018:
                                         wd1770_writelatch_b(v);
                                         return; /*FDC Latch B*/

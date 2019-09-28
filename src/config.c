@@ -670,6 +670,7 @@ void loadconfig()
 
         p = (char *)config_get_string(CFG_MACHINE, NULL, "joystick_if", "");
         strcpy(joystick_if, p);
+        joystick_type = joystick_get_type(joystick_if);
         for (c = 0; c < joystick_get_max_joysticks(joystick_type); c++)
         {
                 char s[80];

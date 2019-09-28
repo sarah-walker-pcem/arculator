@@ -7,14 +7,17 @@
 
 int joystick_type;
 int joystick_a3010_present;
+int joystick_gamespad_present;
 int joystick_rtfm_present;
 
 static const joystick_if_t joystick_a3010;
+static const joystick_if_t joystick_gamespad;
 static const joystick_if_t joystick_rtfm;
 
 static const joystick_if_t *joystick_list[] =
 {
         &joystick_a3010,
+        &joystick_gamespad,
         &joystick_rtfm,
         NULL
 };
@@ -68,10 +71,23 @@ const char *joystick_get_pov_name(int joystick, int id)
         return joystick_list[joystick]->pov_names[id];
 }
 
+int joystick_get_type(char *config_name)
+{
+        int c = 0;
+        
+        while (joystick_list[c])
+        {
+                if (!strcmp(config_name, joystick_list[c]->config_name))
+                        return c;
+                c++;
+        }
+        return 0;
+}
 
 void joystick_if_init()
 {
         joystick_a3010_present = !strcmp(joystick_if, "a3010");
+        joystick_gamespad_present = !strcmp(joystick_if, "gamespad");
         joystick_rtfm_present = !strcmp(joystick_if, "rtfm");
 }
 
@@ -85,6 +101,18 @@ static const joystick_if_t joystick_a3010 =
         .pov_count = 0,
         .axis_names = {"X axis", "Y axis"},
         .button_names = {"Fire button"}
+};
+
+static const joystick_if_t joystick_gamespad =
+{
+        .name = "GamesPad / GamesPad Pro",
+        .config_name = "gamespad",
+        .max_joysticks = 2,
+        .axis_count = 2,
+        .button_count = 8,
+        .pov_count = 0,
+        .axis_names = {"X axis", "Y axis"},
+        .button_names = {"A Button", "B Button", "X Button", "Y Button", "L button", "R button", "Start", "Select"}
 };
 
 static const joystick_if_t joystick_rtfm =

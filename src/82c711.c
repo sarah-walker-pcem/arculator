@@ -4,6 +4,7 @@
 #include "config.h"
 #include "ide.h"
 #include "ioc.h"
+#include "printer.h"
 
 static int configmode, configindex;
 static uint8_t configregs[16];
@@ -47,6 +48,9 @@ void c82c711_write(uint32_t addr, uint8_t val)
 
         if ((addr & ~7) == 0x3f0 && addr != 0x3f6)
            c82c711_fdc_write(addr & 7, val);
+
+        if ((addr & 0x3ff) == 0x278)
+                printer_data_write(val);
 }
 
 uint8_t c82c711_read(uint32_t addr)
@@ -69,6 +73,9 @@ uint8_t c82c711_read(uint32_t addr)
         if ((addr & ~7) == 0x3f0)
            return c82c711_fdc_read(addr & 7);
 
+        if ((addr & 0x3ff) == 0x279)
+                return printer_status_read();
+                
         return 0xff;
 }
 

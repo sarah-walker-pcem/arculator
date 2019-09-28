@@ -8,6 +8,7 @@
 #include "config.h"
 #include "ioc.h"
 #include "keyboard.h"
+#include "printer.h"
 #include "timer.h"
 
 IOC_t ioc;
@@ -164,7 +165,11 @@ uint8_t ioc_read(uint32_t addr)
                         if ((ioc.ctrl & 8) && ds2401_read())
                                 temp |= 8;
                 }
-//                rpclog("IOC read %07x %02x\n", PC, temp);
+                else
+                {
+                        if (printer_get_ack())
+                                temp |= 0x40;
+                }
                 return temp;
                 case 0x04: 
                 ioc_irqbc(IOC_IRQB_KEYBOARD_RX);

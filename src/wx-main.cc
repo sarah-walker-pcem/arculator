@@ -21,6 +21,9 @@ int main(int argc, char **argv)
 
         podule_build_list();
         opendlls();
+        SDL_SetHint(SDL_HINT_WINDOWS_DISABLE_THREAD_NAMING, "1");
+        SDL_Init(SDL_INIT_EVERYTHING);
+
         joystick_init();
         
         wxApp::SetInstance(new App());

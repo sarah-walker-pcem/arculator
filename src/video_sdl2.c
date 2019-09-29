@@ -97,8 +97,6 @@ int video_renderer_init(void *main_window)
         int c, d;
         
         rpclog("video_renderer_init()\n");
-        SDL_SetHint(SDL_HINT_WINDOWS_DISABLE_THREAD_NAMING, "1");
-        SDL_Init(SDL_INIT_EVERYTHING);
 
         for (c = 0; c < SDL_GetNumRenderDrivers(); c++)
         {

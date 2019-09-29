@@ -18,7 +18,6 @@ void joystick_init()
 {
         int c;
         
-        SDL_InitSubSystem(SDL_INIT_JOYSTICK);
         joysticks_present = SDL_NumJoysticks();
 
         memset(sdl_joy, 0, sizeof(sdl_joy));

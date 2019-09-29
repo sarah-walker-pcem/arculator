@@ -434,9 +434,6 @@ LRESULT CALLBACK WindowProcedure(HWND hwnd, UINT message, WPARAM wParam, LPARAM 
                 SetMenu(hwnd, 0);
                 PostMessage(hwnd, WM_QUIT, 0, 0);
                 break;
-
-                default:                      /* for messages that we don't deal with */
-                return DefWindowProc (hwnd, message, wParam, lParam);
         }
-        return 0;
+        return DefWindowProc (hwnd, message, wParam, lParam);
 }

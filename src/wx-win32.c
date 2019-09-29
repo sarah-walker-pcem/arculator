@@ -129,7 +129,11 @@ void mainthread(LPVOID param)
         int frames = 0;
         int draw_count = 0;
         DWORD old_time, new_time;
+        DWORD current_thread = GetCurrentThreadId();
+        DWORD window_thread = GetWindowThreadProcessId(ghwnd, NULL);
 
+        AttachThreadInput(window_thread, current_thread, TRUE);
+        
         if (!video_renderer_init(ghwnd))
         {
                 MessageBox(ghwnd, "Video renderer init failed", "Arculator error", MB_OK);
@@ -236,6 +240,7 @@ void mainthread(LPVOID param)
         }
 
         video_renderer_close();
+        AttachThreadInput(current_thread, window_thread, FALSE);
 }
 
 static void arc_main_thread(LPVOID wx_menu)

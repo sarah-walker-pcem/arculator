@@ -107,7 +107,7 @@ int dma_read(d71071l_t *dma, int channel)
         if (!(dma->channel[channel].mode & (1 << 3)))
                 return -1;
         val = aka31_read_ram(dma->podule, dma->channel[channel].addr_cur & 0xffff);
-aka31_log("dma_read: channel=%i addr=%04x count=%04x val=%02x\n", channel, dma->channel[channel].addr_cur, dma->channel[channel].count_cur, val);
+//aka31_log("dma_read: channel=%i addr=%04x count=%04x val=%02x\n", channel, dma->channel[channel].addr_cur, dma->channel[channel].count_cur, val);
         if (dma->channel[channel].mode & DMA_MODE_DIR)
                 dma->channel[channel].addr_cur--;
         else
@@ -126,7 +126,7 @@ aka31_log("dma_read: channel=%i addr=%04x count=%04x val=%02x\n", channel, dma->
                 {
                         aka31_tc_int(dma->podule);
                         dma->mask |= (1 << channel);
-                        aka31_log("dma_tc\n");
+//                        aka31_log("dma_tc\n");
                 }
         }
         
@@ -139,7 +139,7 @@ int dma_write(d71071l_t *dma, int channel, uint8_t val)
                 return -1;
         if (dma->channel[channel].mode & (1 << 3))
                 return -1;
-aka31_log("dma_write: channel=%i val=%02x addr=%04x count=%04x\n", channel, val, dma->channel[channel].addr_cur, dma->channel[channel].count_cur);
+//aka31_log("dma_write: channel=%i val=%02x addr=%04x count=%04x\n", channel, val, dma->channel[channel].addr_cur, dma->channel[channel].count_cur);
         aka31_write_ram(dma->podule, dma->channel[channel].addr_cur & 0xffff, val);
         if (dma->channel[channel].mode & DMA_MODE_DIR)
                 dma->channel[channel].addr_cur--;
@@ -159,7 +159,7 @@ aka31_log("dma_write: channel=%i val=%02x addr=%04x count=%04x\n", channel, val,
                 {
                         aka31_tc_int(dma->podule);
                         dma->mask |= (1 << channel);
-                        aka31_log("dma_tc\n");
+//                        aka31_log("dma_tc\n");
                 }
         }
         

@@ -1,6 +1,6 @@
 CPP  = g++
 CC   = gcc
-OBJ  = aka31.o d71071l.o hdd_file.o scsi.o scsi_hd.o wd33c93a.o
+OBJ  = aka31.o d71071l.o hdd_file.o scsi.o scsi_config.o scsi_hd.o wd33c93a.o
 LIBS = -shared
 CFLAGS = $(INCS) -DBUILDING_DLL=1 -I../../../src -fPIC -Wall -Werror
 

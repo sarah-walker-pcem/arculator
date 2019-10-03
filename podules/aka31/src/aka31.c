@@ -9,6 +9,7 @@
 #include "podule_api.h"
 #include "aka31.h"
 #include "d71071l.h"
+#include "scsi_config.h"
 #include "wd33c93a.h"
 
 #ifdef WIN32
@@ -405,7 +406,8 @@ static const podule_header_t aka31_podule_header =
                 .write_b = aka31_write_b,
                 .write_w = aka31_write_w,
                 .run = aka31_run
-        }
+        },
+        .config = &aka31_podule_config
 };
 
 const podule_header_t *podule_probe(const podule_callbacks_t *callbacks, char *path)

@@ -46,6 +46,8 @@ typedef struct scsi_hd_data
         
         int hd_id;
         
+        uint8_t *cdb;
+        
         scsi_bus_t *bus;
 } scsi_hd_data;
 
@@ -147,6 +149,8 @@ static int scsi_hd_command(uint8_t *cdb, void *p)
         int i = 0;
         int desc;
         int bus_state = 0;
+        
+        data->cdb = cdb;
 
         if (data->cmd_pos == CMD_POS_IDLE)
                 aka31_log("SCSI HD command %02x %i\n", cdb[0], data->cmd_pos);
@@ -517,7 +521,7 @@ static int scsi_hd_command(uint8_t *cdb, void *p)
                 break;
                 
                 case SCSI_READ_10:
-//                pclog("SCSI_READ_10 %i\n", data->cmd_pos);
+//                aka31_log("SCSI_READ_10 %i\n", data->cmd_pos);
                 if (data->cmd_pos == CMD_POS_WAIT)
                 {
                         bus_state = BUS_CD;
@@ -529,7 +533,7 @@ static int scsi_hd_command(uint8_t *cdb, void *p)
                         data->addr = cdb[5] | (cdb[4] << 8) | (cdb[3] << 16) | (cdb[2] << 24);
                         data->len = cdb[8] | (cdb[7] << 8);
                         aka31_log("SCSI_READ_10: addr=%08x len=%04x\n", data->addr, data->len);
-                        
+
                         data->cmd_pos = CMD_POS_WAIT;
                         scsi_bus_device_set_timer(data->bus, data->hd_id, RW_DELAY);
                         data->new_cmd_pos = CMD_POS_START_SECTOR;
@@ -538,9 +542,18 @@ static int scsi_hd_command(uint8_t *cdb, void *p)
                         bus_state = BUS_CD;
                         break;
                 }
-//                else
-//                        pclog("SCSI_READ_10 continue addr=%08x len=%04x sector_pos=%02x\n", data->addr, data->len, data->sector_pos);
-                while (data->len)
+
+                if (data->len > 0)
+                {
+                        if (data->len > (BUFFER_SIZE/512))
+                                data->len_pending = BUFFER_SIZE / 512;
+                        else
+                                data->len_pending = data->len;
+                        data->len -= data->len_pending;
+                }
+                else
+                        data->len_pending = 0;
+                while (data->len_pending)
                 {
                         if (data->cmd_pos == CMD_POS_START_SECTOR)
                                 hdd_read_sectors(&data->hdd, data->addr, 1, data->buf);
@@ -565,10 +578,11 @@ static int scsi_hd_command(uint8_t *cdb, void *p)
                         data->cmd_pos = CMD_POS_START_SECTOR;
 
                         data->sector_pos = 0;
-                        data->len--;
+                        data->len_pending--;
                         data->addr++;
                 }
-                data->cmd_pos = CMD_POS_IDLE;
+                if (!data->len)
+                        data->cmd_pos = CMD_POS_IDLE;
                 bus_state = BUS_IO;
                 break;
 
@@ -778,8 +792,17 @@ static int scsi_hd_command(uint8_t *cdb, void *p)
 static uint8_t scsi_hd_read(void *p)
 {
         scsi_hd_data *data = p;
-
-        return data->data_in[data->data_pos_read++];
+        uint8_t temp = data->data_in[data->data_pos_read++];
+        
+//        aka31_log("read %i %i %i\n", data->data_pos_read, data->data_pos_write, data->len);
+        if (data->data_pos_read == data->data_pos_write && data->len)
+        {
+                data->data_pos_read = 0;
+                data->data_pos_write = 0;
+                scsi_hd_command(data->cdb, data);
+        }
+        
+        return temp;
 }
 
 static void scsi_hd_write(uint8_t val, void *p)
@@ -814,6 +837,8 @@ static void scsi_hd_start_command(void *p)
         data->bytes_received = 0;
         data->bytes_required = 0;
         data->data_pos_read = data->data_pos_write = 0;
+        
+        data->len = 0;
 }
 
 static uint8_t scsi_hd_get_status(void *p)

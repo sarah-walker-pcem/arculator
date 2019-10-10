@@ -271,6 +271,7 @@ void recalcse()
                         pixels_per_word = 16;
                         break;
                         case 0: /*1bpp*/
+                        default:
                         vidc.hdstart=(vidc.hdstart2<<1)+19;
                         vidc.hdend=(vidc.hdend2<<1)+19;
                         vidc.fetch_time = vidc.pixel_time * 32 * 4;
@@ -290,6 +291,7 @@ void recalcse()
                         vidc.initial_fetch_time = (vidc.pixel_time * 6) * pixels_per_word;
                         break;
                         case 0x30: /*end of word 3, 7*/
+                        default:
                         vidc.initial_fetch_time = (vidc.pixel_time * 7) * pixels_per_word;
                         break;
                 }

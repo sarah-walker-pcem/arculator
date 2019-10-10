@@ -17,9 +17,9 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include "podule_api.h"
-#include "cdrom-ioctl.h"
+#include "cdrom.h"
 #include "mitsumi.h"
-#include "sound.h"
+#include "sound_out.h"
 #include "ultimatecdrom.h"
 
 #ifdef WIN32
@@ -70,6 +70,8 @@ typedef struct cdrom_t
         int audio_poll_count;
         
         mitsumi_t mitsumi;
+
+        void *sound_out;
 } cdrom_t;
 
 static uint8_t cdrom_read_b(struct podule_t *podule, podule_io_type type, uint32_t addr)
@@ -128,7 +130,7 @@ static int cdrom_run(struct podule_t *podule, int timeslice_us)
                 cdrom->audio_poll_count = 0;
                 memset(audio_buffer, 0, sizeof(audio_buffer));
                 ioctl_audio_callback(audio_buffer, (44100*2)/10);
-                sound_givebuffer(audio_buffer, 44100/10);
+                sound_out_buffer(cdrom->sound_out, audio_buffer, 44100/10);
         }
 
         return 1000; /*1ms*/
@@ -156,7 +158,7 @@ static int cdrom_init(struct podule_t *podule)
         drive_path = podule_callbacks->config_get_string(podule, "drive_path", "");
         mitsumi_reset(&cdrom->mitsumi, drive_path);
 
-        sound_init();
+        cdrom->sound_out = sound_out_init(cdrom, 44100, 4410, cdlog, podule_callbacks, podule);
         
         podule->p = cdrom;
         return 0;
@@ -166,9 +168,8 @@ static void cdrom_close(struct podule_t *podule)
 {
         cdrom_t *cdrom = podule->p;
         
+        sound_out_close(cdrom->sound_out);
         free(cdrom);
-        
-        sound_close();
 }
 
 static podule_config_t cdrom_config =

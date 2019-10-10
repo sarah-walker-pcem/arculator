@@ -1,8 +1,9 @@
+VPATH = . ..\..\common\cdrom ..\..\common\sound
 CPP  = g++.exe
 CC   = gcc.exe
-OBJ  = mitsumi.o ultimatecdrom.o cdrom-ioctl.o soundopenal.o
+OBJ  = mitsumi.o ultimatecdrom.o cdrom-windows-ioctl.o sound_openal.o
 LIBS = --no-export-all-symbols --add-stdcall-alias -lwinmm -lopenal32
-CFLAGS = $(INCS) -DBUILDING_DLL=1 -I..\..\..\src  
+CFLAGS = $(INCS) -DBUILDING_DLL=1 -I..\..\..\src -I..\..\common\cdrom -I..\..\common\sound -O3
 
 all: ultimatecdrom.dll
 

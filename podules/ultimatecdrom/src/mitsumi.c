@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include "mitsumi.h"
 #include "ultimatecdrom.h"
-#include "cdrom-ioctl.h"
+#include "cdrom.h"
 
 ATAPI *atapi;
 

@@ -61,11 +61,6 @@
 			<object class="wxMenuItem" name="IDM_DISC_EJECT_3">
 				<label>Eject drive 3:</label>
 			</object>
-			<object class="separator"/>
-			<object class="wxMenuItem" name="IDM_DISC_FAST">
-				<label>_Fast disc access</label>
-				<checkable>1</checkable>
-			</object>
 		</object>
 		<object class="wxMenu">
 			<label>Video</label>

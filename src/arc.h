@@ -156,7 +156,6 @@ extern char discname[4][512];
 extern int discchange[4];
 extern int fdctype;
 extern int readflash[4];
-extern int fastdisc;
 
 
 /*Causes a databort during RISC OS 3.11 startup*/
@@ -184,7 +183,6 @@ extern int arm3;
 
 extern int memsize;
 
-extern int fastdisc;
 extern int fdctype;
 
 

@@ -110,9 +110,7 @@ void Frame::OnStopEmulationEvent(wxCommandEvent &event)
 void Frame::UpdateMenu(wxMenu *menu)
 {
         char menuitem[80];
-        wxMenuItem *item = ((wxMenu*)menu)->FindItem(XRCID("IDM_DISC_FAST"));
-        item->Check(fastdisc);
-        item = ((wxMenu*)menu)->FindItem(XRCID("IDM_SOUND_ENABLE"));
+        wxMenuItem *item = ((wxMenu*)menu)->FindItem(XRCID("IDM_SOUND_ENABLE"));
         item->Check(soundena);
         item = ((wxMenu*)menu)->FindItem(XRCID("IDM_SOUND_STEREO"));
         item->Check(stereo);
@@ -234,13 +232,6 @@ void Frame::OnMenuCommand(wxCommandEvent &event)
         else if (event.GetId() == XRCID("IDM_DISC_EJECT_3"))
         {
                 arc_disc_eject(3);
-        }
-        else if (event.GetId() == XRCID("IDM_DISC_FAST"))
-        {
-                fastdisc ^= 1;
-
-                wxMenuItem *item = ((wxMenu*)menu)->FindItem(event.GetId());
-                item->Check(fastdisc);
         }
         else if (event.GetId() == XRCID("IDM_SOUND_ENABLE"))
         {

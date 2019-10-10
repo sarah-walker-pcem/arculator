@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include "podule_api.h"
 #include "aka31.h"
+#include "cdrom.h"
 
 enum
 {
@@ -16,7 +17,14 @@ enum
         ID_ID_3,
         ID_ID_4,
         ID_ID_5,
-        ID_ID_6
+        ID_ID_6,
+        ID_TYPE_0,
+        ID_TYPE_1,
+        ID_TYPE_2,
+        ID_TYPE_3,
+        ID_TYPE_4,
+        ID_TYPE_5,
+        ID_TYPE_6
 };
 
 static int MAX_BLOCKS = (1 << 24) - 1;
@@ -337,39 +345,129 @@ static podule_config_t scsi_drive_edit_config =
         }
 };
 
+static podule_config_t scsi_cdrom_config =
+{
+        .title = "CD-ROM drive configuration",
+        .items =
+        {
+                {
+                        .name = "fn",
+                        .description = "Host CD-ROM drive",
+                        .type = CONFIG_SELECTION_STRING,
+                        .flags = CONFIG_FLAGS_NAME_PREFIXED,
+                        .selection = NULL,
+                        .default_string = ""
+                },
+                {
+                        .type = -1
+                }
+        }
+};
+
+static podule_config_t scsi_invalid_config =
+{
+        .title = "No drive to configure",
+        .items =
+        {
+                {
+                        .type = -1
+                }
+        }
+};
+
 static int config_drive(void *window_p, const struct podule_config_item_t *item, void *new_data)
 {
+        char prefix[9];
+        const char *type;
+        
         switch (item->id)
         {
                 case ID_ID_0:
-                podule_callbacks->config_open(window_p, &scsi_drive_edit_config, "device0_");
+                sprintf(prefix, "device0_");
+                type = podule_callbacks->config_get_current(window_p, ID_TYPE_0);
                 break;
                 case ID_ID_1:
-                podule_callbacks->config_open(window_p, &scsi_drive_edit_config, "device1_");
+                sprintf(prefix, "device1_");
+                type = podule_callbacks->config_get_current(window_p, ID_TYPE_1);
                 break;
                 case ID_ID_2:
-                podule_callbacks->config_open(window_p, &scsi_drive_edit_config, "device2_");
+                sprintf(prefix, "device2_");
+                type = podule_callbacks->config_get_current(window_p, ID_TYPE_2);
                 break;
                 case ID_ID_3:
-                podule_callbacks->config_open(window_p, &scsi_drive_edit_config, "device3_");
+                sprintf(prefix, "device3_");
+                type = podule_callbacks->config_get_current(window_p, ID_TYPE_3);
                 break;
                 case ID_ID_4:
-                podule_callbacks->config_open(window_p, &scsi_drive_edit_config, "device4_");
+                sprintf(prefix, "device4_");
+                type = podule_callbacks->config_get_current(window_p, ID_TYPE_4);
                 break;
                 case ID_ID_5:
-                podule_callbacks->config_open(window_p, &scsi_drive_edit_config, "device5_");
+                sprintf(prefix, "device5_");
+                type = podule_callbacks->config_get_current(window_p, ID_TYPE_5);
                 break;
                 case ID_ID_6:
-                podule_callbacks->config_open(window_p, &scsi_drive_edit_config, "device6_");
+                sprintf(prefix, "device6_");
+                type = podule_callbacks->config_get_current(window_p, ID_TYPE_6);
                 break;
         }
 
+        if (!strcmp(type, "Hard drive"))
+                podule_callbacks->config_open(window_p, &scsi_drive_edit_config, prefix);
+        else if (!strcmp(type, "CD-ROM drive"))
+                podule_callbacks->config_open(window_p, &scsi_cdrom_config, prefix);
+        else
+                podule_callbacks->config_open(window_p, &scsi_invalid_config, NULL);
+                
+        return 0;
+}
+
+int change_type(void *window_p, const struct podule_config_item_t *item, void *new_data)
+{
+        if (!strcmp(new_data, "CD-ROM drive"))
+        {
+                /*Only one CD-ROM drive allowed currently, so remove any duplicates*/
+                int c;
+                
+                for (c = ID_TYPE_0; c <= ID_TYPE_6; c++)
+                {
+                        if (c != item->id)
+                        {
+                                const char *type = podule_callbacks->config_get_current(window_p, c);
+
+                                if (!strcmp(type, "CD-ROM drive"))
+                                        podule_callbacks->config_set_current(window_p, c, "None");
+                        }
+                }
+                
+        }
+        
         return 0;
 }
 
 static void aka31_podule_config_init(void *window_p)
 {
 }
+
+static podule_config_selection_t device_type_sel[] =
+{
+        {
+                .description = "None",
+                .value_string = "none"
+        },
+        {
+                .description = "Hard drive",
+                .value_string = "hd"
+        },
+        {
+                .description = "CD-ROM drive",
+                .value_string = "cd"
+        },
+        {
+                .description = "",
+                .value_string = ""
+        }
+};
 
 podule_config_t aka31_podule_config =
 {
@@ -378,10 +476,28 @@ podule_config_t aka31_podule_config =
         .items =
         {
                 {
+                        .name = "device0_type",
+                        .description = "ID 0 type",
+                        .type = CONFIG_SELECTION_STRING,
+                        .selection = device_type_sel,
+                        .default_string = "none",
+                        .function = change_type,
+                        .id = ID_TYPE_0
+                },
+                {
                         .description = "Configure ID 0...",
                         .type = CONFIG_BUTTON,
                         .function = config_drive,
                         .id = ID_ID_0
+                },
+                {
+                        .name = "device1_type",
+                        .description = "ID 1 type",
+                        .type = CONFIG_SELECTION_STRING,
+                        .selection = device_type_sel,
+                        .default_string = "none",
+                        .function = change_type,
+                        .id = ID_TYPE_1
                 },
                 {
                         .description = "Configure ID 1...",
@@ -390,10 +506,28 @@ podule_config_t aka31_podule_config =
                         .id = ID_ID_1
                 },
                 {
+                        .name = "device2_type",
+                        .description = "ID 2 type",
+                        .type = CONFIG_SELECTION_STRING,
+                        .selection = device_type_sel,
+                        .default_string = "none",
+                        .function = change_type,
+                        .id = ID_TYPE_2
+                },
+                {
                         .description = "Configure ID 2...",
                         .type = CONFIG_BUTTON,
                         .function = config_drive,
                         .id = ID_ID_2
+                },
+                {
+                        .name = "device3_type",
+                        .description = "ID 3 type",
+                        .type = CONFIG_SELECTION_STRING,
+                        .selection = device_type_sel,
+                        .default_string = "none",
+                        .function = change_type,
+                        .id = ID_TYPE_3
                 },
                 {
                         .description = "Configure ID 3...",
@@ -402,16 +536,43 @@ podule_config_t aka31_podule_config =
                         .id = ID_ID_3
                 },
                 {
+                        .name = "device4_type",
+                        .description = "ID 4 type",
+                        .type = CONFIG_SELECTION_STRING,
+                        .selection = device_type_sel,
+                        .default_string = "none",
+                        .function = change_type,
+                        .id = ID_TYPE_4
+                },
+                {
                         .description = "Configure ID 4...",
                         .type = CONFIG_BUTTON,
                         .function = config_drive,
                         .id = ID_ID_4
                 },
                 {
+                        .name = "device5_type",
+                        .description = "ID 5 type",
+                        .type = CONFIG_SELECTION_STRING,
+                        .selection = device_type_sel,
+                        .default_string = "none",
+                        .function = change_type,
+                        .id = ID_TYPE_5
+                },
+                {
                         .description = "Configure ID 5...",
                         .type = CONFIG_BUTTON,
                         .function = config_drive,
                         .id = ID_ID_5
+                },
+                {
+                        .name = "device6_type",
+                        .description = "ID 6 type",
+                        .type = CONFIG_SELECTION_STRING,
+                        .selection = device_type_sel,
+                        .default_string = "none",
+                        .function = change_type,
+                        .id = ID_TYPE_6
                 },
                 {
                         .description = "Configure ID 6...",
@@ -424,3 +585,8 @@ podule_config_t aka31_podule_config =
                 }
         }
 };
+
+void scsi_config_init(void)
+{
+        scsi_cdrom_config.items[0].selection = cdrom_devices_config();
+}

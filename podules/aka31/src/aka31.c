@@ -8,8 +8,10 @@
 #include <string.h>
 #include "podule_api.h"
 #include "aka31.h"
+#include "cdrom.h"
 #include "d71071l.h"
 #include "scsi_config.h"
+#include "sound_out.h"
 #include "wd33c93a.h"
 
 #ifdef WIN32
@@ -45,6 +47,9 @@ typedef struct aka31_t
         scsi_bus_t bus;
         
         int wd_poll_time;
+        int audio_poll_count;
+
+        void *sound_out;
 } aka31_t;
 
 static FILE *aka31_logf;
@@ -322,7 +327,10 @@ static int aka31_init(struct podule_t *podule)
         wd33c93a_init(&aka31->wd, podule, &aka31->dma, &aka31->bus);
 //        addpodule(NULL,icswritew,icswriteb,NULL,icsreadw,icsreadb,NULL);
         aka31_log("aka31 Initialised!\n");
-        
+
+        aka31->sound_out = sound_out_init(aka31, 44100, 4410, aka31_log, podule_callbacks, podule);
+        ioctl_reset();
+
         podule->p = aka31;
         return 0;
 }
@@ -331,6 +339,7 @@ static void aka31_close(struct podule_t *podule)
 {
         aka31_t *aka31 = podule->p;
         
+        sound_out_close(aka31->sound_out);
         free(aka31);
 }
 
@@ -340,14 +349,25 @@ static int aka31_run(struct podule_t *podule, int timeslice_us)
 
 //        aka31_log("callback\n");
         aka31->wd_poll_time++;
-        if (aka31->wd_poll_time >= 25)
+        if (aka31->wd_poll_time >= 5)
         {
                 aka31->wd_poll_time = 0;
                 wd33c93a_poll(&aka31->wd);
         }
         wd33c93a_process_scsi(&aka31->wd);
         scsi_bus_timer_run(&aka31->bus, 100);
-        
+
+        aka31->audio_poll_count++;
+        if (aka31->audio_poll_count >= 1000)
+        {
+                int16_t audio_buffer[(44100*2)/10];
+
+                aka31->audio_poll_count = 0;
+                memset(audio_buffer, 0, sizeof(audio_buffer));
+                ioctl_audio_callback(audio_buffer, (44100*2)/10);
+                sound_out_buffer(aka31->sound_out, audio_buffer, 44100/10);
+        }
+
         return 100;
 }
 
@@ -417,6 +437,8 @@ const podule_header_t *podule_probe(const podule_callbacks_t *callbacks, char *p
         podule_callbacks = callbacks;
         strcpy(podule_path, path);
 
+        scsi_config_init();
+        
         return &aka31_podule_header;
 }
 

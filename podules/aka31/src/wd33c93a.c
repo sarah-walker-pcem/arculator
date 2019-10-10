@@ -127,7 +127,7 @@ void scsi_set_irq(void *controller_p, uint8_t status)
 
 void wd33c93a_reset(wd33c93a_t *wd)
 {
-	aka31_log("wd33c93a_reset\n");
+//	aka31_log("wd33c93a_reset\n");
 	wd->aux_status = AUX_STATUS_INT;
         wd->status = 0x00; /*Reset*/
         aka31_sbic_int(wd->podule);
@@ -149,7 +149,7 @@ void wd33c93a_finish_command(wd33c93a_t *wd)
         }
         wd->aux_status = AUX_STATUS_INT;
         aka31_sbic_int(wd->podule);
-        wd->disconnect_pending = 15;
+        wd->disconnect_pending = 25;
 }
 
 void wd33c93a_poll(wd33c93a_t *wd)
@@ -200,11 +200,11 @@ void wd33c93a_poll(wd33c93a_t *wd)
                         case CMD_TRANSFER_INFO:
                         scsi_add_data(wd, wd->info);
                         wd->aux_status &= ~AUX_STATUS_CIP;
-                        wd->disconnect_pending = 15;
+                        wd->disconnect_pending = 5;
                         break;
                 }
         }
-        else if (wd->disconnect_pending)
+        else if (wd->disconnect_pending && !(wd->aux_status & AUX_STATUS_INT))
         {
                 wd->disconnect_pending--;
                 if (!wd->disconnect_pending)
@@ -421,7 +421,7 @@ void wd33c93a_process_scsi(wd33c93a_t *wd)
                 break;
 
                 case SCSI_STATE_SELECT:
-                wd->last_status = 0;
+                wd->target_status = 0;
 //                pclog("Select target ID %i\n", scsi->ccb.target_id);
                 scsi_bus_update(wd->bus, BUS_SEL | BUS_SETDATA(1 << target_id));
                 if (!(scsi_bus_read(wd->bus) & BUS_BSY) || target_id > 6)
@@ -469,7 +469,11 @@ void wd33c93a_process_scsi(wd33c93a_t *wd)
                                 if (!(bus_state & BUS_BSY))
                                         fatal("SEND_COMMAND - dropped BSY\n");
                                 if ((bus_state & (BUS_IO | BUS_CD | BUS_MSG)) != BUS_CD)
-                                        fatal("SEND_COMMAND - bus phase incorrect  %08x\n", bus_state);
+                                {
+//                                        aka31_log("SEND_COMMAND - bus phase incorrect  %08x\n", bus_state);
+                                        wd->scsi_state = SCSI_STATE_NEXT_PHASE;
+                                        break;
+                                }
                                 if (bus_state & BUS_REQ)
                                         break;
                         }
@@ -478,6 +482,8 @@ void wd33c93a_process_scsi(wd33c93a_t *wd)
 //                                aka31_log("SEND_COMMAND timed out\n");
                                 break;
                         }
+                        if (wd->scsi_state == SCSI_STATE_NEXT_PHASE)
+                                break;
 
                         bus_out = BUS_SETDATA(wd->cdb[wd->cdb_idx]);
 //                        aka31_log("  Command send %02x %i\n", wd->cdb[wd->cdb_idx], wd->cdb_len);
@@ -607,6 +613,7 @@ void wd33c93a_process_scsi(wd33c93a_t *wd)
 
                         bytes_transferred++;
                 }
+//                aka31_log("Transferred %i bytes\n", bytes_transferred);
                 if (wd->transfer_count == 0)
                         wd->scsi_state = SCSI_STATE_NEXT_PHASE;
                 break;
@@ -676,7 +683,7 @@ void wd33c93a_process_scsi(wd33c93a_t *wd)
                                 int bus_out = 0;
 
 //                                pclog("Read status %02x\n", status);
-                                wd->last_status = status;
+                                wd->target_status = status;
 
                                 scsi_bus_update(wd->bus, bus_out | BUS_ACK);
                                 scsi_bus_update(wd->bus, bus_out & ~BUS_ACK);

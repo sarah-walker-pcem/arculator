@@ -1,7 +1,9 @@
+#include <stdio.h>
 #include <stdint.h>
 #include <string.h>
 #include "aka31.h"
 #include "scsi.h"
+#include "scsi_cd.h"
 #include "scsi_hd.h"
 
 #define STATE_IDLE 0
@@ -15,7 +17,19 @@
 
 #define SET_BUS_STATE(bus, state) bus->bus_out = (bus->bus_out & ~(BUS_CD | BUS_IO | BUS_MSG)) | (state & (BUS_CD | BUS_IO | BUS_MSG))
 
-static int cmd_len[8] = {6, 10, 10, 6, 16, 12, 6, 6};
+static const int cmd_len[8] = {6, 10, 10, 6, 16, 12, 6, 6};
+/*Toshiba CD-ROM vendor commands are 10 bytes long*/
+static const int specific_cmd_len[256] =
+{
+        [0xc0] = 10,
+        [0xc1] = 10,
+        [0xc2] = 10,
+        [0xc3] = 10,
+        [0xc4] = 10,
+        [0xc6] = 10,
+        [0xc7] = 10,
+        [0xc8] = 10
+};
 
 static int get_dev_id(uint8_t data)
 {
@@ -96,13 +110,22 @@ int scsi_bus_update(scsi_bus_t *bus, int bus_assert)
                 case STATE_COMMAND:
                 if ((bus_assert & BUS_ACK) && !(bus->bus_in & BUS_ACK))
                 {
+                        int len;
+                        
 //                        aka31_log("  get data %02x\n", BUS_GETDATA(bus_assert));
                         bus->command[bus->command_pos++] = BUS_GETDATA(bus_assert);
                         bus->clear_req = 3;
                         bus->new_state = bus->bus_out & (BUS_IO | BUS_CD | BUS_MSG);
                         bus->bus_out &= ~BUS_REQ;
                         
-                        if (bus->command_pos == (bus->is_atapi ? 12 : cmd_len[bus->command[0] >> 5]))
+                        if (bus->is_atapi)
+                                len = 12;
+                        else if (specific_cmd_len[bus->command[0]])
+                                len = specific_cmd_len[bus->command[0]];
+                        else
+                                len = cmd_len[bus->command[0] >> 5];
+                        
+                        if (bus->command_pos == len)
                         {
                                 int new_state;
                                 
@@ -353,11 +376,25 @@ void scsi_bus_init(scsi_bus_t *bus, podule_t *podule)
 
 	for (c = 0; c < 7; c++)
 	{
-                bus->devices[c] = &scsi_hd;
-
-                bus->device_data[c] = bus->devices[c]->init(bus, c, podule);
-                if (!bus->device_data[c])
+                char config_name[20];
+                const char *type;
+                
+                sprintf(config_name, "device%i_type", c);
+                type = podule_callbacks->config_get_string(podule, config_name, "none");
+                
+                if (!strcmp(type, "hd"))
+                        bus->devices[c] = &scsi_hd;
+                else if (!strcmp(type, "cd"))
+                        bus->devices[c] = &scsi_cd;
+                else
                         bus->devices[c] = NULL;
+
+                if (bus->devices[c])
+                {
+                        bus->device_data[c] = bus->devices[c]->init(bus, c, podule);
+                        if (!bus->device_data[c])
+                                bus->devices[c] = NULL;
+                }
 	}
 
         bus->is_atapi = 0;

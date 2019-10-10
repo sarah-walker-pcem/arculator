@@ -46,6 +46,7 @@ public:
 private:
 	void OnCommand(wxCommandEvent &event);
 	void OnButton(wxCommandEvent &event);
+	void OnCombo(wxCommandEvent &event);
 	void OnText(wxCommandEvent &event);
         const char *get_item_name(const podule_config_item_t *item, const char *prefix);
         
@@ -87,6 +88,20 @@ void PoduleConfigDialog::OnCommand(wxCommandEvent &event)
 
                         if (!item->name)
                         {
+                                switch (item->type)
+                                {
+                                        case CONFIG_BINARY:
+                                        case CONFIG_BUTTON:
+                                        id++;
+                                        break;
+
+                                        case CONFIG_SELECTION:
+                                        case CONFIG_SELECTION_STRING:
+                                        case CONFIG_STRING:
+                                        id += 2;
+                                        break;
+                                }
+
                                 item++;
                                 continue;
                         }
@@ -153,6 +168,10 @@ void PoduleConfigDialog::OnCommand(wxCommandEvent &event)
                                 id += 2;
                                 }
                                 break;
+                                
+                                case CONFIG_BUTTON:
+                                id++;
+                                break;
                         }
                         item++;
                 }
@@ -184,6 +203,20 @@ void PoduleConfigDialog::OnCommand(wxCommandEvent &event)
 
                         if (!item->name)
                         {
+                                switch (item->type)
+                                {
+                                        case CONFIG_BINARY:
+                                        case CONFIG_BUTTON:
+                                        id++;
+                                        break;
+
+                                        case CONFIG_SELECTION:
+                                        case CONFIG_SELECTION_STRING:
+                                        case CONFIG_STRING:
+                                        id += 2;
+                                        break;
+                                }
+
                                 item++;
                                 continue;
                         }
@@ -236,6 +269,10 @@ void PoduleConfigDialog::OnCommand(wxCommandEvent &event)
                                 id += 2;
                                 }
                                 break;
+
+                                case CONFIG_BUTTON:
+                                id++;
+                                break;
                         }
                         item++;
                 }
@@ -258,6 +295,40 @@ void PoduleConfigDialog::OnText(wxCommandEvent &event)
 {
         wxObject *obj = dynamic_cast<wxObject *>(event.GetEventObject());
         wxPointer *userData = dynamic_cast<wxPointer *>(event.GetEventUserData());
+
+        if (userData && obj)
+        {
+                const podule_config_item_t *item = (const podule_config_item_t *)userData->p;
+
+                if (item->function)
+                {
+                        static bool in_callback = false;
+                        int update = 0;
+
+                        if (!in_callback)
+                        {
+                                in_callback = true;
+
+                                switch (item->type)
+                                {
+                                        case CONFIG_STRING:
+                                        update = item->function(this, item, (void *)(dynamic_cast<wxTextCtrl *>(obj)->GetValue().char_str()));
+                                        break;
+                                }
+
+                                in_callback = false;
+                        }
+
+                        if (update)
+                                Update();
+                }
+        }
+}
+
+void PoduleConfigDialog::OnCombo(wxCommandEvent &event)
+{
+        wxObject *obj = dynamic_cast<wxObject *>(event.GetEventObject());
+        wxPointer *userData = dynamic_cast<wxPointer *>(event.GetEventUserData());
         
         if (userData && obj)
         {
@@ -274,8 +345,8 @@ void PoduleConfigDialog::OnText(wxCommandEvent &event)
                                 
                                 switch (item->type)
                                 {
-                                        case CONFIG_STRING:
-                                        update = item->function(this, item, (void *)(dynamic_cast<wxTextCtrl *>(obj)->GetValue().char_str()));
+                                        case CONFIG_SELECTION_STRING:
+                                        update = item->function(this, item, (void *)(dynamic_cast<wxComboBox *>(obj)->GetValue().char_str()));
                                         break;
                                 }
                                 
@@ -415,6 +486,7 @@ PoduleConfigDialog::PoduleConfigDialog(wxWindow *parent, const podule_header_t *
                         if (item->flags & CONFIG_FLAGS_DISABLED)
                                 cbox->Enable(false);
 
+                        id_map.insert(std::pair<int, int>(item->id, id));
                         id++;
                         }
                         break;
@@ -437,6 +509,7 @@ PoduleConfigDialog::PoduleConfigDialog(wxWindow *parent, const podule_header_t *
                         if (item->flags & CONFIG_FLAGS_DISABLED)
                                 cbox->Enable(false);
 
+                        id_map.insert(std::pair<int, int>(item->id, id+1));
                         id += 2;
                         }
                         break;
@@ -458,7 +531,9 @@ PoduleConfigDialog::PoduleConfigDialog(wxWindow *parent, const podule_header_t *
                         }
                         if (item->flags & CONFIG_FLAGS_DISABLED)
                                 cbox->Enable(false);
-
+                        Bind(wxEVT_COMBOBOX, &PoduleConfigDialog::OnCombo, this, id+1, id+1, new wxPointer(item));
+                        
+                        id_map.insert(std::pair<int, int>(item->id, id+1));
                         id += 2;
                         }
                         break;
@@ -494,9 +569,18 @@ void *podule_config_get_current(void *window_p, int id)
         switch (type)
         {
                 case CONFIG_STRING:
-                wxTextCtrl *text = dynamic_cast<wxTextCtrl *>(window);
-                strcpy(temp_s, (const char *)text->GetValue().mb_str());
-                return temp_s;
+                {
+                        wxTextCtrl *text = dynamic_cast<wxTextCtrl *>(window);
+                        strcpy(temp_s, (const char *)text->GetValue().mb_str());
+                        return temp_s;
+                }
+
+                case CONFIG_SELECTION_STRING:
+                {
+                        wxComboBox *cbox = dynamic_cast<wxComboBox *>(window);
+                        strcpy(temp_s, (const char *)cbox->GetValue().mb_str());
+                        return temp_s;
+                }
         }
         
         return NULL;
@@ -510,9 +594,18 @@ void podule_config_set_current(void *window_p, int id, void *val)
         switch (type)
         {
                 case CONFIG_STRING:
-                wxTextCtrl *text = dynamic_cast<wxTextCtrl *>(window);
-                text->SetValue((char *)val);
-                break;
+                {
+                        wxTextCtrl *text = dynamic_cast<wxTextCtrl *>(window);
+                        text->SetValue((char *)val);
+                        break;
+                }
+
+                case CONFIG_SELECTION_STRING:
+                {
+                        wxComboBox *cbox = dynamic_cast<wxComboBox *>(window);
+                        cbox->SetValue((char *)val);
+                        break;
+                }
         }
 }
 

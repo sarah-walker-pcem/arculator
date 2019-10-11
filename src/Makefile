@@ -109,12 +109,15 @@ am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
 am__arculator_SOURCES_DIST = 82c711.c 82c711_fdc.c arcrom.c arm.c \
 	cmos.c config.c cp15.c ddnoise.c disc.c disc_adf.c disc_apd.c \
-	disc_fdi.c disc_jfd.c disc_ssd.c eterna.c fdi2raw.c fpa.c \
-	hostfs.c ide.c ide_idea.c ide_riscdev.c input_sdl2.c ioc.c \
-	keyboard.c main.c mem.c memc.c podules.c romload.c \
-	soundopenal.c st506.c vidc.c video_sdl2.c wd1770.c wx-app.cc \
-	wx-config.cc wx-config_sel.cc wx-main.cc wx-resources.cc \
-	wx-sdl2.c podules-linux.c
+	disc_fdi.c disc_jfd.c disc_ssd.c ds2401.c eterna.c fdi2raw.c \
+	fpa.c hostfs.c ide.c ide_config.c ide_idea.c ide_riscdev.c \
+	input_sdl2.c ioc.c ioeb.c joystick.c keyboard.c main.c mem.c \
+	memc.c podules.c printer.c romload.c sound.c soundopenal.c \
+	st506.c st506_akd52.c timer.c vidc.c video_sdl2.c wd1770.c \
+	wx-app.cc wx-config.cc wx-config_sel.cc wx-hd_conf.cc \
+	wx-hd_new.cc wx-joystick-config.cc wx-main.cc \
+	wx-podule-config.cc wx-resources.cc wx-sdl2.c \
+	wx-sdl2-joystick.c podules-linux.c
 am__objects_1 = arculator-podules-linux.$(OBJEXT)
 am_arculator_OBJECTS = arculator-82c711.$(OBJEXT) \
 	arculator-82c711_fdc.$(OBJEXT) arculator-arcrom.$(OBJEXT) \
@@ -123,21 +126,29 @@ am_arculator_OBJECTS = arculator-82c711.$(OBJEXT) \
 	arculator-ddnoise.$(OBJEXT) arculator-disc.$(OBJEXT) \
 	arculator-disc_adf.$(OBJEXT) arculator-disc_apd.$(OBJEXT) \
 	arculator-disc_fdi.$(OBJEXT) arculator-disc_jfd.$(OBJEXT) \
-	arculator-disc_ssd.$(OBJEXT) arculator-eterna.$(OBJEXT) \
-	arculator-fdi2raw.$(OBJEXT) arculator-fpa.$(OBJEXT) \
-	arculator-hostfs.$(OBJEXT) arculator-ide.$(OBJEXT) \
+	arculator-disc_ssd.$(OBJEXT) arculator-ds2401.$(OBJEXT) \
+	arculator-eterna.$(OBJEXT) arculator-fdi2raw.$(OBJEXT) \
+	arculator-fpa.$(OBJEXT) arculator-hostfs.$(OBJEXT) \
+	arculator-ide.$(OBJEXT) arculator-ide_config.$(OBJEXT) \
 	arculator-ide_idea.$(OBJEXT) arculator-ide_riscdev.$(OBJEXT) \
 	arculator-input_sdl2.$(OBJEXT) arculator-ioc.$(OBJEXT) \
+	arculator-ioeb.$(OBJEXT) arculator-joystick.$(OBJEXT) \
 	arculator-keyboard.$(OBJEXT) arculator-main.$(OBJEXT) \
 	arculator-mem.$(OBJEXT) arculator-memc.$(OBJEXT) \
-	arculator-podules.$(OBJEXT) arculator-romload.$(OBJEXT) \
+	arculator-podules.$(OBJEXT) arculator-printer.$(OBJEXT) \
+	arculator-romload.$(OBJEXT) arculator-sound.$(OBJEXT) \
 	arculator-soundopenal.$(OBJEXT) arculator-st506.$(OBJEXT) \
+	arculator-st506_akd52.$(OBJEXT) arculator-timer.$(OBJEXT) \
 	arculator-vidc.$(OBJEXT) arculator-video_sdl2.$(OBJEXT) \
 	arculator-wd1770.$(OBJEXT) arculator-wx-app.$(OBJEXT) \
 	arculator-wx-config.$(OBJEXT) \
-	arculator-wx-config_sel.$(OBJEXT) arculator-wx-main.$(OBJEXT) \
+	arculator-wx-config_sel.$(OBJEXT) \
+	arculator-wx-hd_conf.$(OBJEXT) arculator-wx-hd_new.$(OBJEXT) \
+	arculator-wx-joystick-config.$(OBJEXT) \
+	arculator-wx-main.$(OBJEXT) \
+	arculator-wx-podule-config.$(OBJEXT) \
 	arculator-wx-resources.$(OBJEXT) arculator-wx-sdl2.$(OBJEXT) \
-	$(am__objects_1)
+	arculator-wx-sdl2-joystick.$(OBJEXT) $(am__objects_1)
 arculator_OBJECTS = $(am_arculator_OBJECTS)
 am__DEPENDENCIES_1 =
 arculator_DEPENDENCIES = $(am__DEPENDENCIES_1)
@@ -226,11 +237,11 @@ AUTOMAKE = ${SHELL} /home/me/arculator/missing automake-1.15
 AWK = mawk
 CC = gcc
 CCDEPMODE = depmode=gcc3
-CFLAGS = -Wall -O0 -g -D_DEBUG
+CFLAGS = -O3
 CPPFLAGS = 
 CXX = g++
 CXXDEPMODE = depmode=gcc3
-CXXFLAGS = -Wall -O0 -g -D_DEBUG
+CXXFLAGS = -O3
 CYGPATH_W = echo
 DEFS = -DPACKAGE_NAME=\"Arculator\" -DPACKAGE_TARNAME=\"arculator\" -DPACKAGE_VERSION=\"v1.0\" -DPACKAGE_STRING=\"Arculator\ v1.0\" -DPACKAGE_BUGREPORT=\"Sarah\ Walker\ \<pcem@pcem-emulator.co.uk\>\" -DPACKAGE_URL=\"\" -DPACKAGE=\"arculator\" -DVERSION=\"v1.0\" -DHAVE_LIBZ=1 -DHAVE_LIBPTHREAD=1 -DHAVE_LIBOPENAL=1
 DEPDIR = .deps
@@ -344,12 +355,15 @@ WINDRES = $(shell $(WX_CONFIG_PATH) --rescomp)
 # Arculator
 arculator_SOURCES = 82c711.c 82c711_fdc.c arcrom.c arm.c cmos.c \
 	config.c cp15.c ddnoise.c disc.c disc_adf.c disc_apd.c \
-	disc_fdi.c disc_jfd.c disc_ssd.c eterna.c fdi2raw.c fpa.c \
-	hostfs.c ide.c ide_idea.c ide_riscdev.c input_sdl2.c ioc.c \
-	keyboard.c main.c mem.c memc.c podules.c romload.c \
-	soundopenal.c st506.c vidc.c video_sdl2.c wd1770.c wx-app.cc \
-	wx-config.cc wx-config_sel.cc wx-main.cc wx-resources.cc \
-	wx-sdl2.c $(am__append_3)
+	disc_fdi.c disc_jfd.c disc_ssd.c ds2401.c eterna.c fdi2raw.c \
+	fpa.c hostfs.c ide.c ide_config.c ide_idea.c ide_riscdev.c \
+	input_sdl2.c ioc.c ioeb.c joystick.c keyboard.c main.c mem.c \
+	memc.c podules.c printer.c romload.c sound.c soundopenal.c \
+	st506.c st506_akd52.c timer.c vidc.c video_sdl2.c wd1770.c \
+	wx-app.cc wx-config.cc wx-config_sel.cc wx-hd_conf.cc \
+	wx-hd_new.cc wx-joystick-config.cc wx-main.cc \
+	wx-podule-config.cc wx-resources.cc wx-sdl2.c \
+	wx-sdl2-joystick.c $(am__append_3)
 arculator_CFLAGS = $(subst -fpermissive,,$(shell $(WX_CONFIG_PATH) --cxxflags) $(shell sdl2-config --cflags))
 arculator_CXXFLAGS = $(shell $(WX_CONFIG_PATH) --cxxflags) $(shell sdl2-config --cflags)
 arculator_LDADD = -lopenal -lpthread -lz  -L/usr/lib/x86_64-linux-gnu -pthread   -lwx_gtk2u_xrc-3.0 -lwx_gtk2u_html-3.0 -lwx_gtk2u_qa-3.0 -lwx_gtk2u_adv-3.0 -lwx_gtk2u_core-3.0 -lwx_baseu_xml-3.0 -lwx_baseu_net-3.0 -lwx_baseu-3.0  -lSDL2 $(am__append_4)
@@ -453,32 +467,45 @@ include ./$(DEPDIR)/arculator-disc_apd.Po
 include ./$(DEPDIR)/arculator-disc_fdi.Po
 include ./$(DEPDIR)/arculator-disc_jfd.Po
 include ./$(DEPDIR)/arculator-disc_ssd.Po
+include ./$(DEPDIR)/arculator-ds2401.Po
 include ./$(DEPDIR)/arculator-eterna.Po
 include ./$(DEPDIR)/arculator-fdi2raw.Po
 include ./$(DEPDIR)/arculator-fpa.Po
 include ./$(DEPDIR)/arculator-hostfs.Po
 include ./$(DEPDIR)/arculator-ide.Po
+include ./$(DEPDIR)/arculator-ide_config.Po
 include ./$(DEPDIR)/arculator-ide_idea.Po
 include ./$(DEPDIR)/arculator-ide_riscdev.Po
 include ./$(DEPDIR)/arculator-input_sdl2.Po
 include ./$(DEPDIR)/arculator-ioc.Po
+include ./$(DEPDIR)/arculator-ioeb.Po
+include ./$(DEPDIR)/arculator-joystick.Po
 include ./$(DEPDIR)/arculator-keyboard.Po
 include ./$(DEPDIR)/arculator-main.Po
 include ./$(DEPDIR)/arculator-mem.Po
 include ./$(DEPDIR)/arculator-memc.Po
 include ./$(DEPDIR)/arculator-podules-linux.Po
 include ./$(DEPDIR)/arculator-podules.Po
+include ./$(DEPDIR)/arculator-printer.Po
 include ./$(DEPDIR)/arculator-romload.Po
+include ./$(DEPDIR)/arculator-sound.Po
 include ./$(DEPDIR)/arculator-soundopenal.Po
 include ./$(DEPDIR)/arculator-st506.Po
+include ./$(DEPDIR)/arculator-st506_akd52.Po
+include ./$(DEPDIR)/arculator-timer.Po
 include ./$(DEPDIR)/arculator-vidc.Po
 include ./$(DEPDIR)/arculator-video_sdl2.Po
 include ./$(DEPDIR)/arculator-wd1770.Po
 include ./$(DEPDIR)/arculator-wx-app.Po
 include ./$(DEPDIR)/arculator-wx-config.Po
 include ./$(DEPDIR)/arculator-wx-config_sel.Po
+include ./$(DEPDIR)/arculator-wx-hd_conf.Po
+include ./$(DEPDIR)/arculator-wx-hd_new.Po
+include ./$(DEPDIR)/arculator-wx-joystick-config.Po
 include ./$(DEPDIR)/arculator-wx-main.Po
+include ./$(DEPDIR)/arculator-wx-podule-config.Po
 include ./$(DEPDIR)/arculator-wx-resources.Po
+include ./$(DEPDIR)/arculator-wx-sdl2-joystick.Po
 include ./$(DEPDIR)/arculator-wx-sdl2.Po
 
 .c.o:
@@ -693,6 +720,20 @@ arculator-disc_ssd.obj: disc_ssd.c
 #	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
 #	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(arculator_CFLAGS) $(CFLAGS) -c -o arculator-disc_ssd.obj `if test -f 'disc_ssd.c'; then $(CYGPATH_W) 'disc_ssd.c'; else $(CYGPATH_W) '$(srcdir)/disc_ssd.c'; fi`
 
+arculator-ds2401.o: ds2401.c
+	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(arculator_CFLAGS) $(CFLAGS) -MT arculator-ds2401.o -MD -MP -MF $(DEPDIR)/arculator-ds2401.Tpo -c -o arculator-ds2401.o `test -f 'ds2401.c' || echo '$(srcdir)/'`ds2401.c
+	$(AM_V_at)$(am__mv) $(DEPDIR)/arculator-ds2401.Tpo $(DEPDIR)/arculator-ds2401.Po
+#	$(AM_V_CC)source='ds2401.c' object='arculator-ds2401.o' libtool=no \
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
+#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(arculator_CFLAGS) $(CFLAGS) -c -o arculator-ds2401.o `test -f 'ds2401.c' || echo '$(srcdir)/'`ds2401.c
+
+arculator-ds2401.obj: ds2401.c
+	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(arculator_CFLAGS) $(CFLAGS) -MT arculator-ds2401.obj -MD -MP -MF $(DEPDIR)/arculator-ds2401.Tpo -c -o arculator-ds2401.obj `if test -f 'ds2401.c'; then $(CYGPATH_W) 'ds2401.c'; else $(CYGPATH_W) '$(srcdir)/ds2401.c'; fi`
+	$(AM_V_at)$(am__mv) $(DEPDIR)/arculator-ds2401.Tpo $(DEPDIR)/arculator-ds2401.Po
+#	$(AM_V_CC)source='ds2401.c' object='arculator-ds2401.obj' libtool=no \
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
+#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(arculator_CFLAGS) $(CFLAGS) -c -o arculator-ds2401.obj `if test -f 'ds2401.c'; then $(CYGPATH_W) 'ds2401.c'; else $(CYGPATH_W) '$(srcdir)/ds2401.c'; fi`
+
 arculator-eterna.o: eterna.c
 	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(arculator_CFLAGS) $(CFLAGS) -MT arculator-eterna.o -MD -MP -MF $(DEPDIR)/arculator-eterna.Tpo -c -o arculator-eterna.o `test -f 'eterna.c' || echo '$(srcdir)/'`eterna.c
 	$(AM_V_at)$(am__mv) $(DEPDIR)/arculator-eterna.Tpo $(DEPDIR)/arculator-eterna.Po
@@ -763,6 +804,20 @@ arculator-ide.obj: ide.c
 #	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
 #	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(arculator_CFLAGS) $(CFLAGS) -c -o arculator-ide.obj `if test -f 'ide.c'; then $(CYGPATH_W) 'ide.c'; else $(CYGPATH_W) '$(srcdir)/ide.c'; fi`
 
+arculator-ide_config.o: ide_config.c
+	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(arculator_CFLAGS) $(CFLAGS) -MT arculator-ide_config.o -MD -MP -MF $(DEPDIR)/arculator-ide_config.Tpo -c -o arculator-ide_config.o `test -f 'ide_config.c' || echo '$(srcdir)/'`ide_config.c
+	$(AM_V_at)$(am__mv) $(DEPDIR)/arculator-ide_config.Tpo $(DEPDIR)/arculator-ide_config.Po
+#	$(AM_V_CC)source='ide_config.c' object='arculator-ide_config.o' libtool=no \
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
+#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(arculator_CFLAGS) $(CFLAGS) -c -o arculator-ide_config.o `test -f 'ide_config.c' || echo '$(srcdir)/'`ide_config.c
+
+arculator-ide_config.obj: ide_config.c
+	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(arculator_CFLAGS) $(CFLAGS) -MT arculator-ide_config.obj -MD -MP -MF $(DEPDIR)/arculator-ide_config.Tpo -c -o arculator-ide_config.obj `if test -f 'ide_config.c'; then $(CYGPATH_W) 'ide_config.c'; else $(CYGPATH_W) '$(srcdir)/ide_config.c'; fi`
+	$(AM_V_at)$(am__mv) $(DEPDIR)/arculator-ide_config.Tpo $(DEPDIR)/arculator-ide_config.Po
+#	$(AM_V_CC)source='ide_config.c' object='arculator-ide_config.obj' libtool=no \
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
+#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(arculator_CFLAGS) $(CFLAGS) -c -o arculator-ide_config.obj `if test -f 'ide_config.c'; then $(CYGPATH_W) 'ide_config.c'; else $(CYGPATH_W) '$(srcdir)/ide_config.c'; fi`
+
 arculator-ide_idea.o: ide_idea.c
 	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(arculator_CFLAGS) $(CFLAGS) -MT arculator-ide_idea.o -MD -MP -MF $(DEPDIR)/arculator-ide_idea.Tpo -c -o arculator-ide_idea.o `test -f 'ide_idea.c' || echo '$(srcdir)/'`ide_idea.c
 	$(AM_V_at)$(am__mv) $(DEPDIR)/arculator-ide_idea.Tpo $(DEPDIR)/arculator-ide_idea.Po
@@ -818,6 +873,34 @@ arculator-ioc.obj: ioc.c
 #	$(AM_V_CC)source='ioc.c' object='arculator-ioc.obj' libtool=no \
 #	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
 #	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(arculator_CFLAGS) $(CFLAGS) -c -o arculator-ioc.obj `if test -f 'ioc.c'; then $(CYGPATH_W) 'ioc.c'; else $(CYGPATH_W) '$(srcdir)/ioc.c'; fi`
+
+arculator-ioeb.o: ioeb.c
+	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(arculator_CFLAGS) $(CFLAGS) -MT arculator-ioeb.o -MD -MP -MF $(DEPDIR)/arculator-ioeb.Tpo -c -o arculator-ioeb.o `test -f 'ioeb.c' || echo '$(srcdir)/'`ioeb.c
+	$(AM_V_at)$(am__mv) $(DEPDIR)/arculator-ioeb.Tpo $(DEPDIR)/arculator-ioeb.Po
+#	$(AM_V_CC)source='ioeb.c' object='arculator-ioeb.o' libtool=no \
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
+#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(arculator_CFLAGS) $(CFLAGS) -c -o arculator-ioeb.o `test -f 'ioeb.c' || echo '$(srcdir)/'`ioeb.c
+
+arculator-ioeb.obj: ioeb.c
+	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(arculator_CFLAGS) $(CFLAGS) -MT arculator-ioeb.obj -MD -MP -MF $(DEPDIR)/arculator-ioeb.Tpo -c -o arculator-ioeb.obj `if test -f 'ioeb.c'; then $(CYGPATH_W) 'ioeb.c'; else $(CYGPATH_W) '$(srcdir)/ioeb.c'; fi`
+	$(AM_V_at)$(am__mv) $(DEPDIR)/arculator-ioeb.Tpo $(DEPDIR)/arculator-ioeb.Po
+#	$(AM_V_CC)source='ioeb.c' object='arculator-ioeb.obj' libtool=no \
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
+#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(arculator_CFLAGS) $(CFLAGS) -c -o arculator-ioeb.obj `if test -f 'ioeb.c'; then $(CYGPATH_W) 'ioeb.c'; else $(CYGPATH_W) '$(srcdir)/ioeb.c'; fi`
+
+arculator-joystick.o: joystick.c
+	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(arculator_CFLAGS) $(CFLAGS) -MT arculator-joystick.o -MD -MP -MF $(DEPDIR)/arculator-joystick.Tpo -c -o arculator-joystick.o `test -f 'joystick.c' || echo '$(srcdir)/'`joystick.c
+	$(AM_V_at)$(am__mv) $(DEPDIR)/arculator-joystick.Tpo $(DEPDIR)/arculator-joystick.Po
+#	$(AM_V_CC)source='joystick.c' object='arculator-joystick.o' libtool=no \
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
+#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(arculator_CFLAGS) $(CFLAGS) -c -o arculator-joystick.o `test -f 'joystick.c' || echo '$(srcdir)/'`joystick.c
+
+arculator-joystick.obj: joystick.c
+	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(arculator_CFLAGS) $(CFLAGS) -MT arculator-joystick.obj -MD -MP -MF $(DEPDIR)/arculator-joystick.Tpo -c -o arculator-joystick.obj `if test -f 'joystick.c'; then $(CYGPATH_W) 'joystick.c'; else $(CYGPATH_W) '$(srcdir)/joystick.c'; fi`
+	$(AM_V_at)$(am__mv) $(DEPDIR)/arculator-joystick.Tpo $(DEPDIR)/arculator-joystick.Po
+#	$(AM_V_CC)source='joystick.c' object='arculator-joystick.obj' libtool=no \
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
+#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(arculator_CFLAGS) $(CFLAGS) -c -o arculator-joystick.obj `if test -f 'joystick.c'; then $(CYGPATH_W) 'joystick.c'; else $(CYGPATH_W) '$(srcdir)/joystick.c'; fi`
 
 arculator-keyboard.o: keyboard.c
 	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(arculator_CFLAGS) $(CFLAGS) -MT arculator-keyboard.o -MD -MP -MF $(DEPDIR)/arculator-keyboard.Tpo -c -o arculator-keyboard.o `test -f 'keyboard.c' || echo '$(srcdir)/'`keyboard.c
@@ -889,6 +972,20 @@ arculator-podules.obj: podules.c
 #	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
 #	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(arculator_CFLAGS) $(CFLAGS) -c -o arculator-podules.obj `if test -f 'podules.c'; then $(CYGPATH_W) 'podules.c'; else $(CYGPATH_W) '$(srcdir)/podules.c'; fi`
 
+arculator-printer.o: printer.c
+	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(arculator_CFLAGS) $(CFLAGS) -MT arculator-printer.o -MD -MP -MF $(DEPDIR)/arculator-printer.Tpo -c -o arculator-printer.o `test -f 'printer.c' || echo '$(srcdir)/'`printer.c
+	$(AM_V_at)$(am__mv) $(DEPDIR)/arculator-printer.Tpo $(DEPDIR)/arculator-printer.Po
+#	$(AM_V_CC)source='printer.c' object='arculator-printer.o' libtool=no \
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
+#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(arculator_CFLAGS) $(CFLAGS) -c -o arculator-printer.o `test -f 'printer.c' || echo '$(srcdir)/'`printer.c
+
+arculator-printer.obj: printer.c
+	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(arculator_CFLAGS) $(CFLAGS) -MT arculator-printer.obj -MD -MP -MF $(DEPDIR)/arculator-printer.Tpo -c -o arculator-printer.obj `if test -f 'printer.c'; then $(CYGPATH_W) 'printer.c'; else $(CYGPATH_W) '$(srcdir)/printer.c'; fi`
+	$(AM_V_at)$(am__mv) $(DEPDIR)/arculator-printer.Tpo $(DEPDIR)/arculator-printer.Po
+#	$(AM_V_CC)source='printer.c' object='arculator-printer.obj' libtool=no \
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
+#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(arculator_CFLAGS) $(CFLAGS) -c -o arculator-printer.obj `if test -f 'printer.c'; then $(CYGPATH_W) 'printer.c'; else $(CYGPATH_W) '$(srcdir)/printer.c'; fi`
+
 arculator-romload.o: romload.c
 	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(arculator_CFLAGS) $(CFLAGS) -MT arculator-romload.o -MD -MP -MF $(DEPDIR)/arculator-romload.Tpo -c -o arculator-romload.o `test -f 'romload.c' || echo '$(srcdir)/'`romload.c
 	$(AM_V_at)$(am__mv) $(DEPDIR)/arculator-romload.Tpo $(DEPDIR)/arculator-romload.Po
@@ -902,6 +999,20 @@ arculator-romload.obj: romload.c
 #	$(AM_V_CC)source='romload.c' object='arculator-romload.obj' libtool=no \
 #	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
 #	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(arculator_CFLAGS) $(CFLAGS) -c -o arculator-romload.obj `if test -f 'romload.c'; then $(CYGPATH_W) 'romload.c'; else $(CYGPATH_W) '$(srcdir)/romload.c'; fi`
+
+arculator-sound.o: sound.c
+	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(arculator_CFLAGS) $(CFLAGS) -MT arculator-sound.o -MD -MP -MF $(DEPDIR)/arculator-sound.Tpo -c -o arculator-sound.o `test -f 'sound.c' || echo '$(srcdir)/'`sound.c
+	$(AM_V_at)$(am__mv) $(DEPDIR)/arculator-sound.Tpo $(DEPDIR)/arculator-sound.Po
+#	$(AM_V_CC)source='sound.c' object='arculator-sound.o' libtool=no \
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
+#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(arculator_CFLAGS) $(CFLAGS) -c -o arculator-sound.o `test -f 'sound.c' || echo '$(srcdir)/'`sound.c
+
+arculator-sound.obj: sound.c
+	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(arculator_CFLAGS) $(CFLAGS) -MT arculator-sound.obj -MD -MP -MF $(DEPDIR)/arculator-sound.Tpo -c -o arculator-sound.obj `if test -f 'sound.c'; then $(CYGPATH_W) 'sound.c'; else $(CYGPATH_W) '$(srcdir)/sound.c'; fi`
+	$(AM_V_at)$(am__mv) $(DEPDIR)/arculator-sound.Tpo $(DEPDIR)/arculator-sound.Po
+#	$(AM_V_CC)source='sound.c' object='arculator-sound.obj' libtool=no \
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
+#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(arculator_CFLAGS) $(CFLAGS) -c -o arculator-sound.obj `if test -f 'sound.c'; then $(CYGPATH_W) 'sound.c'; else $(CYGPATH_W) '$(srcdir)/sound.c'; fi`
 
 arculator-soundopenal.o: soundopenal.c
 	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(arculator_CFLAGS) $(CFLAGS) -MT arculator-soundopenal.o -MD -MP -MF $(DEPDIR)/arculator-soundopenal.Tpo -c -o arculator-soundopenal.o `test -f 'soundopenal.c' || echo '$(srcdir)/'`soundopenal.c
@@ -930,6 +1041,34 @@ arculator-st506.obj: st506.c
 #	$(AM_V_CC)source='st506.c' object='arculator-st506.obj' libtool=no \
 #	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
 #	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(arculator_CFLAGS) $(CFLAGS) -c -o arculator-st506.obj `if test -f 'st506.c'; then $(CYGPATH_W) 'st506.c'; else $(CYGPATH_W) '$(srcdir)/st506.c'; fi`
+
+arculator-st506_akd52.o: st506_akd52.c
+	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(arculator_CFLAGS) $(CFLAGS) -MT arculator-st506_akd52.o -MD -MP -MF $(DEPDIR)/arculator-st506_akd52.Tpo -c -o arculator-st506_akd52.o `test -f 'st506_akd52.c' || echo '$(srcdir)/'`st506_akd52.c
+	$(AM_V_at)$(am__mv) $(DEPDIR)/arculator-st506_akd52.Tpo $(DEPDIR)/arculator-st506_akd52.Po
+#	$(AM_V_CC)source='st506_akd52.c' object='arculator-st506_akd52.o' libtool=no \
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
+#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(arculator_CFLAGS) $(CFLAGS) -c -o arculator-st506_akd52.o `test -f 'st506_akd52.c' || echo '$(srcdir)/'`st506_akd52.c
+
+arculator-st506_akd52.obj: st506_akd52.c
+	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(arculator_CFLAGS) $(CFLAGS) -MT arculator-st506_akd52.obj -MD -MP -MF $(DEPDIR)/arculator-st506_akd52.Tpo -c -o arculator-st506_akd52.obj `if test -f 'st506_akd52.c'; then $(CYGPATH_W) 'st506_akd52.c'; else $(CYGPATH_W) '$(srcdir)/st506_akd52.c'; fi`
+	$(AM_V_at)$(am__mv) $(DEPDIR)/arculator-st506_akd52.Tpo $(DEPDIR)/arculator-st506_akd52.Po
+#	$(AM_V_CC)source='st506_akd52.c' object='arculator-st506_akd52.obj' libtool=no \
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
+#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(arculator_CFLAGS) $(CFLAGS) -c -o arculator-st506_akd52.obj `if test -f 'st506_akd52.c'; then $(CYGPATH_W) 'st506_akd52.c'; else $(CYGPATH_W) '$(srcdir)/st506_akd52.c'; fi`
+
+arculator-timer.o: timer.c
+	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(arculator_CFLAGS) $(CFLAGS) -MT arculator-timer.o -MD -MP -MF $(DEPDIR)/arculator-timer.Tpo -c -o arculator-timer.o `test -f 'timer.c' || echo '$(srcdir)/'`timer.c
+	$(AM_V_at)$(am__mv) $(DEPDIR)/arculator-timer.Tpo $(DEPDIR)/arculator-timer.Po
+#	$(AM_V_CC)source='timer.c' object='arculator-timer.o' libtool=no \
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
+#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(arculator_CFLAGS) $(CFLAGS) -c -o arculator-timer.o `test -f 'timer.c' || echo '$(srcdir)/'`timer.c
+
+arculator-timer.obj: timer.c
+	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(arculator_CFLAGS) $(CFLAGS) -MT arculator-timer.obj -MD -MP -MF $(DEPDIR)/arculator-timer.Tpo -c -o arculator-timer.obj `if test -f 'timer.c'; then $(CYGPATH_W) 'timer.c'; else $(CYGPATH_W) '$(srcdir)/timer.c'; fi`
+	$(AM_V_at)$(am__mv) $(DEPDIR)/arculator-timer.Tpo $(DEPDIR)/arculator-timer.Po
+#	$(AM_V_CC)source='timer.c' object='arculator-timer.obj' libtool=no \
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
+#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(arculator_CFLAGS) $(CFLAGS) -c -o arculator-timer.obj `if test -f 'timer.c'; then $(CYGPATH_W) 'timer.c'; else $(CYGPATH_W) '$(srcdir)/timer.c'; fi`
 
 arculator-vidc.o: vidc.c
 	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(arculator_CFLAGS) $(CFLAGS) -MT arculator-vidc.o -MD -MP -MF $(DEPDIR)/arculator-vidc.Tpo -c -o arculator-vidc.o `test -f 'vidc.c' || echo '$(srcdir)/'`vidc.c
@@ -986,6 +1125,20 @@ arculator-wx-sdl2.obj: wx-sdl2.c
 #	$(AM_V_CC)source='wx-sdl2.c' object='arculator-wx-sdl2.obj' libtool=no \
 #	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
 #	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(arculator_CFLAGS) $(CFLAGS) -c -o arculator-wx-sdl2.obj `if test -f 'wx-sdl2.c'; then $(CYGPATH_W) 'wx-sdl2.c'; else $(CYGPATH_W) '$(srcdir)/wx-sdl2.c'; fi`
+
+arculator-wx-sdl2-joystick.o: wx-sdl2-joystick.c
+	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(arculator_CFLAGS) $(CFLAGS) -MT arculator-wx-sdl2-joystick.o -MD -MP -MF $(DEPDIR)/arculator-wx-sdl2-joystick.Tpo -c -o arculator-wx-sdl2-joystick.o `test -f 'wx-sdl2-joystick.c' || echo '$(srcdir)/'`wx-sdl2-joystick.c
+	$(AM_V_at)$(am__mv) $(DEPDIR)/arculator-wx-sdl2-joystick.Tpo $(DEPDIR)/arculator-wx-sdl2-joystick.Po
+#	$(AM_V_CC)source='wx-sdl2-joystick.c' object='arculator-wx-sdl2-joystick.o' libtool=no \
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
+#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(arculator_CFLAGS) $(CFLAGS) -c -o arculator-wx-sdl2-joystick.o `test -f 'wx-sdl2-joystick.c' || echo '$(srcdir)/'`wx-sdl2-joystick.c
+
+arculator-wx-sdl2-joystick.obj: wx-sdl2-joystick.c
+	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(arculator_CFLAGS) $(CFLAGS) -MT arculator-wx-sdl2-joystick.obj -MD -MP -MF $(DEPDIR)/arculator-wx-sdl2-joystick.Tpo -c -o arculator-wx-sdl2-joystick.obj `if test -f 'wx-sdl2-joystick.c'; then $(CYGPATH_W) 'wx-sdl2-joystick.c'; else $(CYGPATH_W) '$(srcdir)/wx-sdl2-joystick.c'; fi`
+	$(AM_V_at)$(am__mv) $(DEPDIR)/arculator-wx-sdl2-joystick.Tpo $(DEPDIR)/arculator-wx-sdl2-joystick.Po
+#	$(AM_V_CC)source='wx-sdl2-joystick.c' object='arculator-wx-sdl2-joystick.obj' libtool=no \
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
+#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(arculator_CFLAGS) $(CFLAGS) -c -o arculator-wx-sdl2-joystick.obj `if test -f 'wx-sdl2-joystick.c'; then $(CYGPATH_W) 'wx-sdl2-joystick.c'; else $(CYGPATH_W) '$(srcdir)/wx-sdl2-joystick.c'; fi`
 
 arculator-podules-linux.o: podules-linux.c
 	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(arculator_CFLAGS) $(CFLAGS) -MT arculator-podules-linux.o -MD -MP -MF $(DEPDIR)/arculator-podules-linux.Tpo -c -o arculator-podules-linux.o `test -f 'podules-linux.c' || echo '$(srcdir)/'`podules-linux.c
@@ -1059,6 +1212,48 @@ arculator-wx-config_sel.obj: wx-config_sel.cc
 #	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) \
 #	$(AM_V_CXX_no)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(arculator_CXXFLAGS) $(CXXFLAGS) -c -o arculator-wx-config_sel.obj `if test -f 'wx-config_sel.cc'; then $(CYGPATH_W) 'wx-config_sel.cc'; else $(CYGPATH_W) '$(srcdir)/wx-config_sel.cc'; fi`
 
+arculator-wx-hd_conf.o: wx-hd_conf.cc
+	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(arculator_CXXFLAGS) $(CXXFLAGS) -MT arculator-wx-hd_conf.o -MD -MP -MF $(DEPDIR)/arculator-wx-hd_conf.Tpo -c -o arculator-wx-hd_conf.o `test -f 'wx-hd_conf.cc' || echo '$(srcdir)/'`wx-hd_conf.cc
+	$(AM_V_at)$(am__mv) $(DEPDIR)/arculator-wx-hd_conf.Tpo $(DEPDIR)/arculator-wx-hd_conf.Po
+#	$(AM_V_CXX)source='wx-hd_conf.cc' object='arculator-wx-hd_conf.o' libtool=no \
+#	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) \
+#	$(AM_V_CXX_no)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(arculator_CXXFLAGS) $(CXXFLAGS) -c -o arculator-wx-hd_conf.o `test -f 'wx-hd_conf.cc' || echo '$(srcdir)/'`wx-hd_conf.cc
+
+arculator-wx-hd_conf.obj: wx-hd_conf.cc
+	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(arculator_CXXFLAGS) $(CXXFLAGS) -MT arculator-wx-hd_conf.obj -MD -MP -MF $(DEPDIR)/arculator-wx-hd_conf.Tpo -c -o arculator-wx-hd_conf.obj `if test -f 'wx-hd_conf.cc'; then $(CYGPATH_W) 'wx-hd_conf.cc'; else $(CYGPATH_W) '$(srcdir)/wx-hd_conf.cc'; fi`
+	$(AM_V_at)$(am__mv) $(DEPDIR)/arculator-wx-hd_conf.Tpo $(DEPDIR)/arculator-wx-hd_conf.Po
+#	$(AM_V_CXX)source='wx-hd_conf.cc' object='arculator-wx-hd_conf.obj' libtool=no \
+#	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) \
+#	$(AM_V_CXX_no)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(arculator_CXXFLAGS) $(CXXFLAGS) -c -o arculator-wx-hd_conf.obj `if test -f 'wx-hd_conf.cc'; then $(CYGPATH_W) 'wx-hd_conf.cc'; else $(CYGPATH_W) '$(srcdir)/wx-hd_conf.cc'; fi`
+
+arculator-wx-hd_new.o: wx-hd_new.cc
+	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(arculator_CXXFLAGS) $(CXXFLAGS) -MT arculator-wx-hd_new.o -MD -MP -MF $(DEPDIR)/arculator-wx-hd_new.Tpo -c -o arculator-wx-hd_new.o `test -f 'wx-hd_new.cc' || echo '$(srcdir)/'`wx-hd_new.cc
+	$(AM_V_at)$(am__mv) $(DEPDIR)/arculator-wx-hd_new.Tpo $(DEPDIR)/arculator-wx-hd_new.Po
+#	$(AM_V_CXX)source='wx-hd_new.cc' object='arculator-wx-hd_new.o' libtool=no \
+#	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) \
+#	$(AM_V_CXX_no)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(arculator_CXXFLAGS) $(CXXFLAGS) -c -o arculator-wx-hd_new.o `test -f 'wx-hd_new.cc' || echo '$(srcdir)/'`wx-hd_new.cc
+
+arculator-wx-hd_new.obj: wx-hd_new.cc
+	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(arculator_CXXFLAGS) $(CXXFLAGS) -MT arculator-wx-hd_new.obj -MD -MP -MF $(DEPDIR)/arculator-wx-hd_new.Tpo -c -o arculator-wx-hd_new.obj `if test -f 'wx-hd_new.cc'; then $(CYGPATH_W) 'wx-hd_new.cc'; else $(CYGPATH_W) '$(srcdir)/wx-hd_new.cc'; fi`
+	$(AM_V_at)$(am__mv) $(DEPDIR)/arculator-wx-hd_new.Tpo $(DEPDIR)/arculator-wx-hd_new.Po
+#	$(AM_V_CXX)source='wx-hd_new.cc' object='arculator-wx-hd_new.obj' libtool=no \
+#	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) \
+#	$(AM_V_CXX_no)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(arculator_CXXFLAGS) $(CXXFLAGS) -c -o arculator-wx-hd_new.obj `if test -f 'wx-hd_new.cc'; then $(CYGPATH_W) 'wx-hd_new.cc'; else $(CYGPATH_W) '$(srcdir)/wx-hd_new.cc'; fi`
+
+arculator-wx-joystick-config.o: wx-joystick-config.cc
+	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(arculator_CXXFLAGS) $(CXXFLAGS) -MT arculator-wx-joystick-config.o -MD -MP -MF $(DEPDIR)/arculator-wx-joystick-config.Tpo -c -o arculator-wx-joystick-config.o `test -f 'wx-joystick-config.cc' || echo '$(srcdir)/'`wx-joystick-config.cc
+	$(AM_V_at)$(am__mv) $(DEPDIR)/arculator-wx-joystick-config.Tpo $(DEPDIR)/arculator-wx-joystick-config.Po
+#	$(AM_V_CXX)source='wx-joystick-config.cc' object='arculator-wx-joystick-config.o' libtool=no \
+#	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) \
+#	$(AM_V_CXX_no)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(arculator_CXXFLAGS) $(CXXFLAGS) -c -o arculator-wx-joystick-config.o `test -f 'wx-joystick-config.cc' || echo '$(srcdir)/'`wx-joystick-config.cc
+
+arculator-wx-joystick-config.obj: wx-joystick-config.cc
+	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(arculator_CXXFLAGS) $(CXXFLAGS) -MT arculator-wx-joystick-config.obj -MD -MP -MF $(DEPDIR)/arculator-wx-joystick-config.Tpo -c -o arculator-wx-joystick-config.obj `if test -f 'wx-joystick-config.cc'; then $(CYGPATH_W) 'wx-joystick-config.cc'; else $(CYGPATH_W) '$(srcdir)/wx-joystick-config.cc'; fi`
+	$(AM_V_at)$(am__mv) $(DEPDIR)/arculator-wx-joystick-config.Tpo $(DEPDIR)/arculator-wx-joystick-config.Po
+#	$(AM_V_CXX)source='wx-joystick-config.cc' object='arculator-wx-joystick-config.obj' libtool=no \
+#	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) \
+#	$(AM_V_CXX_no)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(arculator_CXXFLAGS) $(CXXFLAGS) -c -o arculator-wx-joystick-config.obj `if test -f 'wx-joystick-config.cc'; then $(CYGPATH_W) 'wx-joystick-config.cc'; else $(CYGPATH_W) '$(srcdir)/wx-joystick-config.cc'; fi`
+
 arculator-wx-main.o: wx-main.cc
 	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(arculator_CXXFLAGS) $(CXXFLAGS) -MT arculator-wx-main.o -MD -MP -MF $(DEPDIR)/arculator-wx-main.Tpo -c -o arculator-wx-main.o `test -f 'wx-main.cc' || echo '$(srcdir)/'`wx-main.cc
 	$(AM_V_at)$(am__mv) $(DEPDIR)/arculator-wx-main.Tpo $(DEPDIR)/arculator-wx-main.Po
@@ -1072,6 +1267,20 @@ arculator-wx-main.obj: wx-main.cc
 #	$(AM_V_CXX)source='wx-main.cc' object='arculator-wx-main.obj' libtool=no \
 #	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) \
 #	$(AM_V_CXX_no)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(arculator_CXXFLAGS) $(CXXFLAGS) -c -o arculator-wx-main.obj `if test -f 'wx-main.cc'; then $(CYGPATH_W) 'wx-main.cc'; else $(CYGPATH_W) '$(srcdir)/wx-main.cc'; fi`
+
+arculator-wx-podule-config.o: wx-podule-config.cc
+	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(arculator_CXXFLAGS) $(CXXFLAGS) -MT arculator-wx-podule-config.o -MD -MP -MF $(DEPDIR)/arculator-wx-podule-config.Tpo -c -o arculator-wx-podule-config.o `test -f 'wx-podule-config.cc' || echo '$(srcdir)/'`wx-podule-config.cc
+	$(AM_V_at)$(am__mv) $(DEPDIR)/arculator-wx-podule-config.Tpo $(DEPDIR)/arculator-wx-podule-config.Po
+#	$(AM_V_CXX)source='wx-podule-config.cc' object='arculator-wx-podule-config.o' libtool=no \
+#	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) \
+#	$(AM_V_CXX_no)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(arculator_CXXFLAGS) $(CXXFLAGS) -c -o arculator-wx-podule-config.o `test -f 'wx-podule-config.cc' || echo '$(srcdir)/'`wx-podule-config.cc
+
+arculator-wx-podule-config.obj: wx-podule-config.cc
+	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(arculator_CXXFLAGS) $(CXXFLAGS) -MT arculator-wx-podule-config.obj -MD -MP -MF $(DEPDIR)/arculator-wx-podule-config.Tpo -c -o arculator-wx-podule-config.obj `if test -f 'wx-podule-config.cc'; then $(CYGPATH_W) 'wx-podule-config.cc'; else $(CYGPATH_W) '$(srcdir)/wx-podule-config.cc'; fi`
+	$(AM_V_at)$(am__mv) $(DEPDIR)/arculator-wx-podule-config.Tpo $(DEPDIR)/arculator-wx-podule-config.Po
+#	$(AM_V_CXX)source='wx-podule-config.cc' object='arculator-wx-podule-config.obj' libtool=no \
+#	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) \
+#	$(AM_V_CXX_no)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(arculator_CXXFLAGS) $(CXXFLAGS) -c -o arculator-wx-podule-config.obj `if test -f 'wx-podule-config.cc'; then $(CYGPATH_W) 'wx-podule-config.cc'; else $(CYGPATH_W) '$(srcdir)/wx-podule-config.cc'; fi`
 
 arculator-wx-resources.o: wx-resources.cc
 	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(arculator_CXXFLAGS) $(CXXFLAGS) -MT arculator-wx-resources.o -MD -MP -MF $(DEPDIR)/arculator-wx-resources.Tpo -c -o arculator-wx-resources.o `test -f 'wx-resources.cc' || echo '$(srcdir)/'`wx-resources.cc

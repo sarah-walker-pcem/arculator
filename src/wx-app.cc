@@ -114,7 +114,14 @@ void Frame::UpdateMenu(wxMenu *menu)
         item->Check(soundena);
         item = ((wxMenu*)menu)->FindItem(XRCID("IDM_SOUND_STEREO"));
         item->Check(stereo);
-
+        if (sound_filter == 0)
+                item = ((wxMenu*)menu)->FindItem(XRCID("IDM_FILTER_ORIGINAL"));
+        else if (sound_filter == 1)
+                item = ((wxMenu*)menu)->FindItem(XRCID("IDM_FILTER_REDUCED"));
+        else if (sound_filter == 2)
+                item = ((wxMenu*)menu)->FindItem(XRCID("IDM_FILTER_MORE_REDUCED"));
+        item->Check(true);
+        
         if (dblscan)
                 item = ((wxMenu*)menu)->FindItem(XRCID("IDM_BLIT_SCALE"));
         else
@@ -253,6 +260,30 @@ void Frame::OnMenuCommand(wxCommandEvent &event)
                 item->Check(true);
 
                 sound_gain = 2 * (event.GetId() - XRCID("IDM_SOUND_GAIN[0]"));
+        }
+        else if (event.GetId() == XRCID("IDM_FILTER_ORIGINAL"))
+        {
+                wxMenuItem *item = ((wxMenu*)menu)->FindItem(event.GetId());
+                item->Check(true);
+
+                sound_filter = 0;
+                sound_update_filter();
+        }
+        else if (event.GetId() == XRCID("IDM_FILTER_REDUCED"))
+        {
+                wxMenuItem *item = ((wxMenu*)menu)->FindItem(event.GetId());
+                item->Check(true);
+
+                sound_filter = 1;
+                sound_update_filter();
+        }
+        else if (event.GetId() == XRCID("IDM_FILTER_MORE_REDUCED"))
+        {
+                wxMenuItem *item = ((wxMenu*)menu)->FindItem(event.GetId());
+                item->Check(true);
+                
+                sound_filter = 2;
+                sound_update_filter();
         }
         else if (event.GetId() == XRCID("IDM_SETTINGS_CONFIGURE"))
         {

@@ -193,6 +193,7 @@
 				<label>S_tereo sound</label>
 				<checkable>1</checkable>
 			</object>
+                        <object class="separator"/>
 			<object class="wxMenu">
 				<label>_Output level</label>
 				<object class="wxMenuItem" name="IDM_SOUND_GAIN[0]">
@@ -233,6 +234,21 @@
 				</object>
 				<object class="wxMenuItem" name="IDM_SOUND_GAIN[9]">
 					<label>+18 dB</label>
+					<radio>1</radio>
+				</object>
+			</object>
+			<object class="wxMenu">
+				<label>Output _filter</label>
+				<object class="wxMenuItem" name="IDM_FILTER_ORIGINAL">
+					<label>_Original</label>
+					<radio>1</radio>
+				</object>
+				<object class="wxMenuItem" name="IDM_FILTER_REDUCED">
+					<label>_Reduced</label>
+					<radio>1</radio>
+				</object>
+				<object class="wxMenuItem" name="IDM_FILTER_MORE_REDUCED">
+					<label>_More reduced</label>
 					<radio>1</radio>
 				</object>
 			</object>

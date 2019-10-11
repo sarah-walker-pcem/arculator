@@ -27,6 +27,16 @@ static uint64_t sample_16_time; /*Time for 16 bytes (1 fetch) to be consumed by 
 static int sound_first_poll = 1;
 static int sound_write_ptr;
 
+static int sound_clock_mhz;
+int sound_filter;
+
+static double filter_freqs[] =
+{
+        2200.0, /*Original filter*/
+        3200.0, /*Reduced*/
+        5000.0  /*More reduced*/
+};
+
 static int16_t log_to_lin[256];
 
 static int vollevels[2][2][8]=
@@ -156,7 +166,14 @@ void sound_set_clock(int clock_mhz)
         SAMP_INC = ((int)(((double)clock_mhz / 48000.0) * 16384.0));
 //        rpclog("  SAMP_INC=%08x  sample_16_time=%016llx  sound_timer_base_period=%016llx\n", SAMP_INC, sample_16_time, sound_timer_base_period);
 
-        iir_gen_coefficients(clock_mhz, 2200.0, ACoef, BCoef);
+        iir_gen_coefficients(clock_mhz, filter_freqs[sound_filter], ACoef, BCoef);
+        
+        sound_clock_mhz = clock_mhz;
+}
+
+void sound_update_filter(void)
+{
+        iir_gen_coefficients(sound_clock_mhz, filter_freqs[sound_filter], ACoef, BCoef);
 }
 
 void sound_set_period(int period)

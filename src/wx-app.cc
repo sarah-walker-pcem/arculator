@@ -21,6 +21,7 @@
 extern "C"
 {
         #include "arc.h"
+        #include "disc.h"
         #include "plat_video.h"
         #include "sound.h"
         #include "video.h"
@@ -120,6 +121,18 @@ void Frame::UpdateMenu(wxMenu *menu)
                 item = ((wxMenu*)menu)->FindItem(XRCID("IDM_FILTER_REDUCED"));
         else if (sound_filter == 2)
                 item = ((wxMenu*)menu)->FindItem(XRCID("IDM_FILTER_MORE_REDUCED"));
+        item->Check(true);
+
+        if (disc_noise_gain == 0)
+                item = ((wxMenu*)menu)->FindItem(XRCID("IDM_DISC_NOISE[1]"));
+        else if (disc_noise_gain == -2)
+                item = ((wxMenu*)menu)->FindItem(XRCID("IDM_DISC_NOISE[2]"));
+        else if (disc_noise_gain == -4)
+                item = ((wxMenu*)menu)->FindItem(XRCID("IDM_DISC_NOISE[3]"));
+        else if (disc_noise_gain == -6)
+                item = ((wxMenu*)menu)->FindItem(XRCID("IDM_DISC_NOISE[4]"));
+        else
+                item = ((wxMenu*)menu)->FindItem(XRCID("IDM_DISC_NOISE[0]"));
         item->Check(true);
         
         if (dblscan)
@@ -239,6 +252,16 @@ void Frame::OnMenuCommand(wxCommandEvent &event)
         else if (event.GetId() == XRCID("IDM_DISC_EJECT_3"))
         {
                 arc_disc_eject(3);
+        }
+        else if (event.GetId() >= XRCID("IDM_DISC_NOISE[0]") && event.GetId() <= XRCID("IDM_DISC_NOISE[4]"))
+        {
+                wxMenuItem *item = ((wxMenu*)menu)->FindItem(event.GetId());
+                item->Check(true);
+
+                if (event.GetId() == XRCID("IDM_DISC_NOISE[0]"))
+                        disc_noise_gain = DISC_NOISE_DISABLED;
+                else
+                        disc_noise_gain = -2 * (event.GetId() - XRCID("IDM_DISC_NOISE[1]"));
         }
         else if (event.GetId() == XRCID("IDM_SOUND_ENABLE"))
         {

@@ -61,6 +61,30 @@
 			<object class="wxMenuItem" name="IDM_DISC_EJECT_3">
 				<label>Eject drive 3:</label>
 			</object>
+			<object class="separator"/>
+			<object class="wxMenu">
+				<label>_Disc drive noise</label>
+				<object class="wxMenuItem" name="IDM_DISC_NOISE[0]">
+					<label>Disabled</label>
+					<radio>1</radio>
+				</object>
+				<object class="wxMenuItem" name="IDM_DISC_NOISE[1]">
+					<label>0 dB</label>
+					<radio>1</radio>
+				</object>
+				<object class="wxMenuItem" name="IDM_DISC_NOISE[2]">
+					<label>-2 dB</label>
+					<radio>1</radio>
+				</object>
+				<object class="wxMenuItem" name="IDM_DISC_NOISE[3]">
+					<label>-4 dB</label>
+					<radio>1</radio>
+				</object>
+				<object class="wxMenuItem" name="IDM_DISC_NOISE[4]">
+					<label>-6 dB</label>
+					<radio>1</radio>
+				</object>
+			</object>
 		</object>
 		<object class="wxMenu">
 			<label>Video</label>

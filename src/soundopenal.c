@@ -12,6 +12,7 @@
 #include <AL/alc.h>
 #endif
 #include "arc.h"
+#include "disc.h"
 #include "sound.h"
 #include "soundopenal.h"
 
@@ -189,6 +190,9 @@ void al_givebufferdd(int16_t *buf)
         int state;
         int c;
 
+        if (disc_noise_gain == DISC_NOISE_DISABLED)
+                return;
+                
         alGetSourcei(source[1], AL_SOURCE_STATE, &state);
 
         if (state == 0x1014)
@@ -203,12 +207,14 @@ void al_givebufferdd(int16_t *buf)
         if (processed>=1)
         {
                 ALuint buffer;
+                int gain = (int)(pow(10.0, (double)disc_noise_gain / 20.0) * 65536.0);
 
 //rpclog("Unqueue\n");
                 alSourceUnqueueBuffers(source[1], 1, &buffer);
                 check();
 
-                for (c = 0; c < (4410 * 2); c++) zbuf[c] = buf[c >> 1];//^0x8000;
+                for (c = 0; c < (4410 * 2); c++)
+                        zbuf[c] = (buf[c >> 1] * gain) >> 16;
 
 //rpclog("BufferData\n");
                 alBufferData(buffer, AL_FORMAT_STEREO16, zbuf, 4410*4, 44100);

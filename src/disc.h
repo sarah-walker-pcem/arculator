@@ -54,3 +54,6 @@ extern char discfns[4][260];
 extern int writeprot[4], fwriteprot[4];
 
 extern timer_t fdc_timer;
+
+extern int disc_noise_gain;
+#define DISC_NOISE_DISABLED 9999

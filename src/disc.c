@@ -23,6 +23,8 @@ static timer_t disc_timer;
 
 int disc_drivesel = 0;
 
+int disc_noise_gain;
+
 DRIVE drives[4];
 
 char discname[4][512];

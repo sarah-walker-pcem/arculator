@@ -329,16 +329,6 @@ void arc_set_dblscan(int new_dblscan)
         SDL_UnlockMutex(main_thread_mutex);
 }
 
-void arc_set_hires(int new_hires)
-{
-        SDL_LockMutex(main_thread_mutex);
-
-        hires = new_hires;
-        reinitvideo();
-
-        SDL_UnlockMutex(main_thread_mutex);
-}
-
 void arc_set_resizeable()
 {
         win_dosetresize = 1;

@@ -92,11 +92,11 @@
 				<label>_Fullscreen</label>
 			</object>
 			<object class="wxMenuItem" name="IDM_VIDEO_RESIZEABLE">
-				<label>_Resizeable Window</label>
+				<label>_Resizeable window</label>
 				<checkable>1</checkable>
 			</object>
 			<object class="wxMenu">
-				<label>_Display Mode</label>
+				<label>_Border size</label>
 				<object class="wxMenuItem" name="IDM_VIDEO_NO_BORDERS">
 					<label>_No borders</label>
 					<radio>1</radio>
@@ -106,12 +106,12 @@
 					<radio>1</radio>
 				</object>
 				<object class="wxMenuItem" name="IDM_VIDEO_TV">
-					<label>_TV mode</label>
+					<label>_Fixed (standard monitor) borders</label>
 					<radio>1</radio>
 				</object>
 			</object>
 			<object class="wxMenu">
-				<label>_Blit Method</label>
+				<label>_Blit method</label>
 				<object class="wxMenuItem" name="IDM_BLIT_SCAN">
 					<label>_Scanlines</label>
 					<radio>1</radio>

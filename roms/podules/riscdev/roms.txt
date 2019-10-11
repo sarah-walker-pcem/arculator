@@ -1,0 +1,2 @@
+This directory contains the ROM for the RISC Developments IDE Controller. It is
+called 'riscdev' and is 32kB long.

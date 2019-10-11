@@ -20,7 +20,7 @@ static int arcrom_init(struct podule_t *podule)
         arcrom_t *arcrom = malloc(sizeof(arcrom_t));
         memset(arcrom, 0, sizeof(arcrom_t));
 
-        append_filename(fn, exname, "arcrom", 511);
+        append_filename(fn, exname, "roms/podules/arcrom/arcrom", 511);
         f = fopen(fn, "rb");
         if (f)
         {

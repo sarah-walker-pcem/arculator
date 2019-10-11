@@ -1,0 +1,2 @@
+This directory contains the ROM for the Acorn AKD52 Hard Disc Podule. It is
+called 'akd52' and is 2kB long.

@@ -46,7 +46,7 @@ static int akd52_init(struct podule_t *podule)
         akd52_t *akd52 = malloc(sizeof(akd52_t));
         memset(akd52, 0, sizeof(akd52_t));
 
-        append_filename(fn, exname, "akd52", 511);
+        append_filename(fn, exname, "roms/podules/akd52/akd52", 511);
         f = fopen(fn, "rb");
         if (f)
         {

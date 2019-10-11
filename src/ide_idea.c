@@ -44,7 +44,7 @@ static int idea_ide_init(struct podule_t *podule)
         idea_ide_t *idea = malloc(sizeof(idea_ide_t));
         memset(idea, 0, sizeof(idea_ide_t));
 
-        append_filename(fn, exname, "idea", 511);
+        append_filename(fn, exname, "roms/podules/idea/idea", 511);
         f = fopen(fn, "rb");
         if (f)
         {

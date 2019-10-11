@@ -41,7 +41,7 @@ static int riscdev_ide_init(struct podule_t *podule)
         riscdev_ide_t *riscdev = malloc(sizeof(riscdev_ide_t));
         memset(riscdev, 0, sizeof(riscdev_ide_t));
 
-        append_filename(fn, exname, "idefs", 511);
+        append_filename(fn, exname, "roms/podules/riscdev/riscdev", 511);
         f = fopen(fn, "rb");
         if (f)
         {

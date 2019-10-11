@@ -1,0 +1,2 @@
+This directory contains the ROM for the ICS ideA Hard Disc Interface. It is
+called 'idea' and is 32kB long.

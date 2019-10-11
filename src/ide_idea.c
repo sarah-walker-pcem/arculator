@@ -239,8 +239,16 @@ static const podule_header_t idea_ide_podule_header =
 
 const podule_header_t *idea_ide_probe(const podule_callbacks_t *callbacks, char *path)
 {
+        FILE *f;
+        char fn[512];
+
         podule_callbacks = callbacks;
         ide_config_init(callbacks);
         
+        append_filename(fn, exname, "roms/podules/idea/idea", 511);
+        f = fopen(fn, "rb");
+        if (!f)
+                return NULL;
+        fclose(f);
         return &idea_ide_podule_header;
 }

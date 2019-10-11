@@ -217,8 +217,16 @@ static const podule_header_t akd52_podule_header =
 
 const podule_header_t *akd52_probe(const podule_callbacks_t *callbacks, char *path)
 {
+        FILE *f;
+        char fn[512];
+
         podule_callbacks = callbacks;
         st506_config_init(callbacks);
 
+        append_filename(fn, exname, "roms/podules/akd52/akd52", 511);
+        f = fopen(fn, "rb");
+        if (!f)
+                return NULL;
+        fclose(f);
         return &akd52_podule_header;
 }

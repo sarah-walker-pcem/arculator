@@ -208,8 +208,16 @@ static const podule_header_t riscdev_ide_podule_header =
 
 const podule_header_t *riscdev_ide_probe(const podule_callbacks_t *callbacks, char *path)
 {
+        FILE *f;
+        char fn[512];
+
         podule_callbacks = callbacks;
         ide_config_init(callbacks);
         
+        append_filename(fn, exname, "roms/podules/riscdev/riscdev", 511);
+        f = fopen(fn, "rb");
+        if (!f)
+                return NULL;
+        fclose(f);
         return &riscdev_ide_podule_header;
 }

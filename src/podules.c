@@ -70,7 +70,8 @@ void podule_build_list(void)
         {
                 const podule_header_t *header = internal_podules[c](&podule_callbacks_def, exname);
                 
-                podule_add(header);
+                if (header)
+                        podule_add(header);
         }
 }
 

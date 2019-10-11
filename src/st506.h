@@ -17,7 +17,7 @@ typedef struct st506_t
         
         int spt[2], hpc[2];
 
-        timer_t timer;
+        emu_timer_t timer;
         FILE *hdfile[2];
         uint8_t buffer[272];
         

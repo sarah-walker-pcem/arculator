@@ -19,7 +19,7 @@
 #include "ioc.h"
 #include "timer.h"
 
-static timer_t disc_timer;
+static emu_timer_t disc_timer;
 
 int disc_drivesel = 0;
 
@@ -67,7 +67,7 @@ int  (*fdc_getdata)(int last);
 void (*fdc_sectorid)(uint8_t track, uint8_t side, uint8_t sector, uint8_t size, uint8_t crc1, uint8_t crc2);
 void (*fdc_indexpulse)();
 
-timer_t fdc_timer;
+emu_timer_t fdc_timer;
 
 static struct
 {

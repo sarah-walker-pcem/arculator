@@ -6,7 +6,7 @@ typedef struct IOC_t
         uint8_t mska,mskb,mskf;
         uint8_t ctrl;
         int timerc[4],timerl[4],timerr[4];
-        timer_t timers[2];
+        emu_timer_t timers[2];
 } IOC_t;
 extern IOC_t ioc;
 

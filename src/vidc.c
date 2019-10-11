@@ -155,7 +155,7 @@ struct
         
         int border_was_disabled, display_was_disabled;
         
-        timer_t timer;
+        emu_timer_t timer;
 } vidc;
 
 enum

@@ -12,8 +12,8 @@ int stereo;
 int soundena;
 int sound_gain = 0;
 
-static timer_t sound_timer;
-static timer_t sound_timer_100ms;
+static emu_timer_t sound_timer;
+static emu_timer_t sound_timer_100ms;
 static uint64_t sound_timer_base_period; /*Time for 1 tick of sample base clock*/
 
 static int16_t sound_in_buffer[256*1024*2];

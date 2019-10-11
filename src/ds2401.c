@@ -33,7 +33,7 @@ static struct
         
         uint64_t id;
         
-        timer_t timer;
+        emu_timer_t timer;
 } ds2401;
 
 /*Taken from Maxim Application Note 27*/

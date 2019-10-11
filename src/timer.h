@@ -11,7 +11,7 @@ extern uint64_t tsc;
   
   When a timer callback is called, the timer has been disabled. If the timer is
   to repeat, the callback must call timer_advance_u64().*/
-typedef struct timer_t
+typedef struct emu_timer_t
 {
 	uint32_t ts_integer;
 	uint32_t ts_frac;
@@ -20,17 +20,17 @@ typedef struct timer_t
 	void (*callback)(void *p);
 	void *p;
 
-	struct timer_t *prev, *next;
-} timer_t;
+	struct emu_timer_t *prev, *next;
+} emu_timer_t;
 
 /*Timestamp of nearest enabled timer. CPU emulation must call timer_process()
   when TSC matches or exceeds this.*/
 extern uint32_t timer_target;
 
 /*Enable timer, without updating timestamp*/
-void timer_enable(timer_t *timer);
+void timer_enable(emu_timer_t *timer);
 /*Disable timer*/
-void timer_disable(timer_t *timer);
+void timer_disable(emu_timer_t *timer);
 
 /*Process any pending timers*/
 void timer_process();
@@ -40,7 +40,7 @@ void timer_reset();
 
 /*Add new timer. If start_timer is set, timer will be enabled with a zero
   timestamp - this is useful for permanently enabled timers*/
-void timer_add(timer_t *timer, void (*callback)(void *p), void *p, int start_timer);
+void timer_add(emu_timer_t *timer, void (*callback)(void *p), void *p, int start_timer);
 
 /*1us in 32:32 format*/
 extern uint64_t TIMER_USEC;
@@ -56,7 +56,7 @@ extern uint64_t TIMER_USEC;
 
 /*Advance timer by delay, specified in 32:32 format. This should be used to
   resume a recurring timer in a callback routine*/
-static inline void timer_advance_u64(timer_t *timer, uint64_t delay)
+static inline void timer_advance_u64(emu_timer_t *timer, uint64_t delay)
 {
 	uint32_t int_delay = delay >> 32;
 	uint32_t frac_delay = delay & 0xffffffff;
@@ -71,7 +71,7 @@ static inline void timer_advance_u64(timer_t *timer, uint64_t delay)
 
 /*Set a timer to the given delay, specified in 32:32 format. This should be used
   when starting a timer*/
-static inline void timer_set_delay_u64(timer_t *timer, uint64_t delay)
+static inline void timer_set_delay_u64(emu_timer_t *timer, uint64_t delay)
 {
 	uint32_t int_delay = delay >> 32;
 	uint32_t frac_delay = delay & 0xffffffff;
@@ -82,26 +82,26 @@ static inline void timer_set_delay_u64(timer_t *timer, uint64_t delay)
 	timer_enable(timer);
 }
 
-static inline uint64_t timer_get_ts(timer_t *timer)
+static inline uint64_t timer_get_ts(emu_timer_t *timer)
 {
         return ((uint64_t)timer->ts_integer << 32) | timer->ts_frac;
 }
 
 /*True if timer currently enabled*/
-static inline int timer_is_enabled(timer_t *timer)
+static inline int timer_is_enabled(emu_timer_t *timer)
 {
 	return timer->enabled;
 }
 
 /*Return integer timestamp of timer*/
-static inline uint32_t timer_get_ts_int(timer_t *timer)
+static inline uint32_t timer_get_ts_int(emu_timer_t *timer)
 {
 	return timer->ts_integer;
 }
 
 /*Return remaining time before timer expires, in us. If the timer has already
   expired then return 0*/
-static inline uint32_t timer_get_remaining_us(timer_t *timer)
+static inline uint32_t timer_get_remaining_us(emu_timer_t *timer)
 {
 	if (timer->enabled)
 	{
@@ -117,7 +117,7 @@ static inline uint32_t timer_get_remaining_us(timer_t *timer)
 
 /*Return remaining time before timer expires, in 32:32 timestamp format. If the
   timer has already expired then return 0*/
-static inline uint64_t timer_get_remaining_u64(timer_t *timer)
+static inline uint64_t timer_get_remaining_u64(emu_timer_t *timer)
 {
 	if (timer->enabled)
 	{
@@ -132,12 +132,12 @@ static inline uint64_t timer_get_remaining_u64(timer_t *timer)
 }
 
 /*Set timer callback function*/
-static inline void timer_set_callback(timer_t *timer, void (*callback)(void *p))
+static inline void timer_set_callback(emu_timer_t *timer, void (*callback)(void *p))
 {
         timer->callback = callback;
 }
 /*Set timer private data*/
-static inline void timer_set_p(timer_t *timer, void *p)
+static inline void timer_set_p(emu_timer_t *timer, void *p)
 {
         timer->p = p;
 }

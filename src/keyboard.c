@@ -8,9 +8,9 @@
 #include "keytable.h"
 #include "timer.h"
 
-static timer_t keyboard_timer;
-static timer_t keyboard_rx_timer;
-static timer_t keyboard_tx_timer;
+static emu_timer_t keyboard_timer;
+static emu_timer_t keyboard_rx_timer;
+static emu_timer_t keyboard_tx_timer;
 static int mouse_b, mouse_x, mouse_y;
 
 int mousecapture=0;

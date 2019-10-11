@@ -9,11 +9,11 @@ uint32_t timer_target;
 
 /*Enabled timers are stored in a linked list, with the first timer to expire at
   the head.*/
-static timer_t *timer_head = NULL;
+static emu_timer_t *timer_head = NULL;
 
-void timer_enable(timer_t *timer)
+void timer_enable(emu_timer_t *timer)
 {
-	timer_t *timer_node = timer_head;
+	emu_timer_t *timer_node = timer_head;
 
 //	rpclog("timer->enable %p %i\n", timer, timer->enabled);
 	if (timer->enabled)
@@ -64,7 +64,7 @@ void timer_enable(timer_t *timer)
 		timer_node = timer_node->next;
 	}
 }
-void timer_disable(timer_t *timer)
+void timer_disable(emu_timer_t *timer)
 {
 //	rpclog("timer->disable %p\n", timer);
 	if (!timer->enabled)
@@ -87,7 +87,7 @@ static void timer_remove_head()
 {
 	if (timer_head)
 	{
-		timer_t *timer = timer_head;
+		emu_timer_t *timer = timer_head;
 //		rpclog("timer_remove_head %p %p\n", timer_head, timer_head->next);
 		timer_head = timer->next;
 		if (timer_head)
@@ -104,7 +104,7 @@ void timer_process()
 
 	while (1)
 	{
-		timer_t *timer = timer_head;
+		emu_timer_t *timer = timer_head;
 
 		if (!TIMER_LESS_THAN_VAL(timer, (uint32_t)(tsc >> 32)))
 			break;
@@ -125,9 +125,9 @@ void timer_reset()
         TIMER_USEC = (uint64_t)speed_mhz << 32;
 }
 
-void timer_add(timer_t *timer, void (*callback)(void *p), void *p, int start_timer)
+void timer_add(emu_timer_t *timer, void (*callback)(void *p), void *p, int start_timer)
 {
-        memset(timer, 0, sizeof(timer_t));
+        memset(timer, 0, sizeof(emu_timer_t));
         
 	timer->callback = callback;
 	timer->p = p;

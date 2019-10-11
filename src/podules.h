@@ -34,7 +34,7 @@ typedef struct podule_internal_state_t
 {
         podule_t podule;
         int irq, fiq;
-        timer_t timer;
+        emu_timer_t timer;
         uint64_t last_callback_tsc;
 } podule_internal_state_t;
 

@@ -45,7 +45,7 @@ static struct
         
         uint8_t ram[256];
 
-        timer_t timer;
+        emu_timer_t timer;
 } cmos;
 
 static struct

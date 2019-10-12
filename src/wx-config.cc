@@ -525,6 +525,7 @@ ConfigDialog::ConfigDialog(wxWindow *parent, bool is_running, int preset)
                 srand(time(NULL));
                 config_unique_id = rand() ^ (rand() << 16);
         }
+        config_rom = ROM_RISCOS_311;
 
         CommonInit(parent, is_running);
         

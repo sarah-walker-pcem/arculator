@@ -110,8 +110,8 @@ static int16_t iir_r(int16_t NewSample)
 
 static void update_sound(int end_sample)
 {
-        if (end_sample > 4800)
-                end_sample = 4800;
+        if (end_sample > 2400)
+                end_sample = 2400;
 
         if (sound_first_poll)
                 return;
@@ -139,9 +139,9 @@ static void update_sound(int end_sample)
 
 static void pollsound_100ms(void *p)
 {
-        timer_advance_u64(&sound_timer_100ms, 100 * 1000 * TIMER_USEC);
+        timer_advance_u64(&sound_timer_100ms, 50 * 1000 * TIMER_USEC);
 
-        update_sound(4800);
+        update_sound(2400);
         if (sound_first_poll)
                 sound_first_poll = 0;
 
@@ -155,9 +155,9 @@ void sound_set_clock(int clock_mhz)
 {
         /*Write out samples up to this point*/
         uint64_t remaining = timer_get_remaining_u64(&sound_timer_100ms);
-        int remaining_samples = (int)(((remaining / (100ull * 1000ull)) * 4800ull) / TIMER_USEC);
+        int remaining_samples = (int)(((remaining / (50ull * 1000ull)) * 2400ull) / TIMER_USEC);
 
-        update_sound(4800 - remaining_samples);
+        update_sound(2400 - remaining_samples);
 
 //        rpclog("sound_set_clock: clock_mhz=%i\n", clock_mhz);
         /*Update constants for new clock frequency*/

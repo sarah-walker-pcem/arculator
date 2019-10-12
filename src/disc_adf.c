@@ -225,13 +225,13 @@ void adf_poll()
         }
         if (adf_inread && adf_f[adf_drive])
         {
-                rpclog("Read pos %i\n", adf_readpos);
+//                rpclog("Read pos %i\n", adf_readpos);
 //                if (!adfreadpos) rpclog("%i\n",adfsector*adfsize[adfdrive]);
                 fdc_data(trackinfoa[adf_drive][adf_side][(adf_sector * adf_size[adf_drive]) + adf_readpos]);
                 adf_readpos++;
                 if (adf_readpos == adf_size[adf_drive])
                 {
-                        rpclog("Read %i bytes\n",adf_readpos);
+//                        rpclog("Read %i bytes\n",adf_readpos);
                         adf_inread = 0;
                         fdc_finishread();
                 }
@@ -240,12 +240,12 @@ void adf_poll()
         {
                 if (writeprot[adf_drive])
                 {
-                        rpclog("writeprotect\n");
+//                        rpclog("writeprotect\n");
                         fdc_writeprotect();
                         adf_inwrite = 0;
                         return;
                 }
-                rpclog("Write data %i\n",adf_readpos);
+//                rpclog("Write data %i\n",adf_readpos);
                 c = fdc_getdata(adf_readpos == (adf_size[adf_drive] - 1));
                 if (c == -1)
                 {
@@ -258,7 +258,7 @@ void adf_poll()
                 adf_readpos++;
                 if (adf_readpos == adf_size[adf_drive])
                 {
-                        rpclog("write over\n");
+//                        rpclog("write over\n");
                         adf_inwrite = 0;
                         fdc_finishread();
                         adf_writeback(adf_drive, adf_track);
@@ -266,7 +266,7 @@ void adf_poll()
         }
         if (adf_inreadaddr && adf_f[adf_drive])
         {
-                rpclog("adf_inreadaddr %08X\n", fdc_sectorid);
+//                rpclog("adf_inreadaddr %08X\n", fdc_sectorid);
                 if (fdc_sectorid)
                 {
                         fdc_sectorid(adf_track, adf_side, adf_rsector + ((adf_size[adf_drive] == 512) ? 1 : 0), (adf_size[adf_drive] == 256) ? 1 : ((adf_size[adf_drive] == 512) ? 2 : 3), 0, 0);

@@ -1112,7 +1112,7 @@ void ConfigDialog::OnConfigPodule(wxCommandEvent &event)
 
 void ConfigDialog::OnConfigJoystick(wxCommandEvent &event)
 {
-        int joy_nr;
+        int joy_nr = 0;
 
         if (event.GetId() == XRCID("IDC_JOY1"))
                 joy_nr = 0;

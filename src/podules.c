@@ -45,19 +45,41 @@ void podule_add(const podule_header_t *header)
 {
         podule_list *current = malloc(sizeof(podule_list));
         podule_list *last_entry = podule_list_head;
-        
-        while (last_entry && last_entry->next)
-                last_entry = last_entry->next;
+        podule_list *prev_entry = NULL;
         
         current->header = header;
         current->next = NULL;
 
-        if (last_entry)
-                last_entry->next = current;
-        last_entry = current;
-
-        if (!podule_list_head)
+        if (!last_entry)
                 podule_list_head = current;
+        else while (last_entry)
+        {
+                if (stricmp(header->name, last_entry->header->name) < 0)
+                {
+                        current->next = last_entry;
+                        if (prev_entry)
+                        {
+                                /*Insert before last_entry*/
+                                prev_entry->next = current;
+                        }
+                        else
+                        {
+                                /*Insert as head of list*/
+                                podule_list_head = current;
+                        }
+                        break;
+                }
+
+                if (!last_entry->next)
+                {
+                        /*Insert at end of list*/
+                        last_entry->next = current;
+                        break;
+                }
+                
+                prev_entry = last_entry;
+                last_entry = last_entry->next;
+        }
 
         nr_podules++;
 }

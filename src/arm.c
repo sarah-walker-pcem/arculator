@@ -496,19 +496,12 @@ int arm_has_swp;
 int arm_has_cp15;
 
 int fpaena=0;
-int swioutput=0;
 
-int keyscount=100;
-int fdci=200;
-int fdccallback;
-int fdicount=16;
 int irq;
 uint8_t flaglookup[16][16];
 static uint32_t rotatelookup[4096];
-int disccint=0;
 int timetolive=0;
 int inscount;
-int soundtime;
 int armirq=0;
 int output=0;
 
@@ -1049,8 +1042,6 @@ void refillpipeline2()
         cache_read_timing(PC-4, !((PC-4) & 0xc), 0);
 }
 
-int framecycs;
-
 /*Booth's algorithm implementation taken from Steve Furber's ARM System-On-Chip
   Architecture. This should replicate all the chaos caused by invalid register
   combinations, and is good enough to pass !SICK's 'not Virtual A5000' test.*/
@@ -1174,7 +1165,6 @@ static void exception(uint32_t vector, int new_mode, int pc_offset)
 
 #define CHECK_ADDR_EXCEPTION(a) if ((a) & 0xfc000000) { databort = 2; break; }
 
-int refreshcount = 32;
 static int64_t total_cycles;
 
 /*Execute ARM instructions for `cycs` clock ticks, typically 10 ms

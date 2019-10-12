@@ -120,7 +120,6 @@ void timer_reset()
 {
 	rpclog("timer_reset\n");
 	timer_target = 0;
-	tsc = 0;
 	timer_head = NULL;
         TIMER_USEC = (uint64_t)speed_mhz << 32;
 }

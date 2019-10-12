@@ -697,6 +697,13 @@ void resetarm()
 
         memset(arm3_cache, 0, sizeof(arm3_cache));
         memset(arm3_cache_tag, TAG_INVALID, sizeof(arm3_cache_tag));
+        
+        ins = 0;
+	tsc = 0;
+	mem_available_ts = 0;
+	clock_domain = DOMAIN_MCLK;
+	pending_reads = 0;
+	promote_fetch_to_n = PROMOTE_NONE;
 }
 
 int indumpregs=0;

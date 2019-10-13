@@ -1,0 +1,18 @@
+VPATH = . ../../common/midi ../../common/sound ../../common/uart
+CPP  = g++
+CC   = gcc
+OBJ  = 16550.o ad1848.o am7202a.o lark.o midi_alsa.o sound_openal.o sound_alsain.o
+LIBS = -shared -lopenal
+CFLAGS = $(INCS) -DBUILDING_DLL=1 -I../../../src -I../../common/midi -I../../common/sound -I../../common/uart -fPIC
+
+all: lark
+
+clean:
+	rm *.o
+	rm *.so
+
+lark: $(OBJ)
+	$(CC) $(OBJ) $(LIBS) -o lark.so
+
+%.o: %.c
+	$(CC) $(CFLAGS) -c $<

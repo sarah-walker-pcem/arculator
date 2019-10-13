@@ -54,7 +54,7 @@ void podule_add(const podule_header_t *header)
                 podule_list_head = current;
         else while (last_entry)
         {
-                if (stricmp(header->name, last_entry->header->name) < 0)
+                if (strcasecmp(header->name, last_entry->header->name) < 0)
                 {
                         current->next = last_entry;
                         if (prev_entry)

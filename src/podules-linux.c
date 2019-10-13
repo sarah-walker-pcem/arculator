@@ -8,33 +8,40 @@
 #include "config.h"
 #include "podules.h"
 
-void *hinstLib[8];
+typedef struct dll_t
+{
+        void *lib;
+        struct dll_t *next;
+} dll_t;
+
+static dll_t *dll_head = NULL;
 
 static void closedlls(void)
 {
-        int c;
-
-        for (c = 0; c < 8; c++)
+        dll_t *dll = dll_head;
+        
+        while (dll)
         {
-                if (hinstLib[c])
-			dlclose(hinstLib[c]);
+                dll_t *dll_next = dll->next;
+                
+                if (dll->lib)
+                        dlclose(dll->lib);
+                free(dll);
+                
+                dll = dll_next;
         }
 }
 
 void opendlls(void)
 {
         char podule_path[512];
-        int dllnum=0;
-        int i;
         DIR *dirp;
         struct dirent *dp;
 
         atexit(closedlls);
-        for (dllnum = 0; dllnum < 8; dllnum++)
-		hinstLib[dllnum] = NULL;
-        dllnum = 0;
         
         append_filename(podule_path, exname, "podules/", sizeof(podule_path));
+        rpclog("Looking for podules in %s\n", podule_path);
         dirp = opendir(podule_path);
         if (!dirp)
         {
@@ -42,45 +49,55 @@ void opendlls(void)
                 fatal("Can't open rom dir %s\n", podule_path);
         }
 
-        while (((dp = readdir(dirp)) != NULL) && dllnum < 6)
+        while (((dp = readdir(dirp)) != NULL))
         {
                 const podule_header_t *(*podule_probe)(const podule_callbacks_t *callbacks, char *path);
                 const podule_header_t *header;
-                char *ext;
-		char so_fn[512];
+		char so_fn[512], so_name[512];
+                dll_t *dll = malloc(sizeof(dll_t));
+                memset(dll, 0, sizeof(dll_t));
 
-                if (dp->d_type != DT_REG && dp->d_type != DT_LNK)
+                if (dp->d_type != DT_DIR)
+                {
+                        free(dll);
                         continue;
-                ext = get_extension(dp->d_name);
-                if (strcasecmp(ext, "so"))
-			continue;
+                }
 
-		sprintf(so_fn, "%s%s", podule_path, dp->d_name);
-                hinstLib[dllnum] = dlopen(so_fn, RTLD_NOW);
-                if (hinstLib[dllnum] == NULL)
+                sprintf(so_name, "/%s.so", dp->d_name);
+                append_filename(so_fn, podule_path, dp->d_name, sizeof(so_fn));
+                append_filename(so_fn, so_fn, so_name, sizeof(so_fn));
+		
+                dll->lib = dlopen(so_fn, RTLD_NOW);
+                if (dll->lib == NULL)
                 {
                         char *lasterror = dlerror();
                         rpclog("Failed to open SO %s %s\n", dp->d_name, lasterror);
+                        free(dll);
                         continue;
                 }
-                podule_probe = (const void *)dlsym(hinstLib[dllnum], "podule_probe");
+                podule_probe = (const void *)dlsym(dll->lib, "podule_probe");
                 if (podule_probe == NULL)
                 {
                         rpclog("Couldn't find podule_probe in %s\n", dp->d_name);
+                        dlclose(dll->lib);
+                        free(dll);
                         continue;
                 }
-                header = podule_probe(&podule_callbacks_def, podule_path);
+                append_filename(so_fn, podule_path, dp->d_name, sizeof(so_fn));
+                append_filename(so_fn, so_fn, "/", sizeof(so_fn));
+                header = podule_probe(&podule_callbacks_def, so_fn);
                 if (!header)
                 {
                         rpclog("podule_probe failed %s\n", dp->d_name);
-                        dlclose(hinstLib[dllnum]);
+                        dlclose(dll->lib);
+                        free(dll);
                         continue;
                 }
                 rpclog("podule_probe returned %p\n", header);
                 podule_add(header);
-                dllnum++;
+                dll->next = dll_head;
+                dll_head = dll;
         }
 
 	(void)closedir(dirp);
 }
-

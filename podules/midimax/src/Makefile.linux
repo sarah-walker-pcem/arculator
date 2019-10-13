@@ -1,0 +1,18 @@
+VPATH = . ../../common/midi ../../common/uart
+CPP  = g++
+CC   = gcc
+OBJ  = 16550.o midimax.o midi_alsa.o
+LIBS = -shared
+CFLAGS = $(INCS) -DBUILDING_DLL=1 -I../../../src -I../../common/midi  -I../../common/uart -fPIC
+
+all: midimax
+
+clean:
+	rm *.o
+	rm *.so
+
+midimax: $(OBJ)
+	$(CC) $(OBJ) $(LIBS) -o midimax.so
+
+%.o: %.c
+	$(CC) $(CFLAGS) -c $<

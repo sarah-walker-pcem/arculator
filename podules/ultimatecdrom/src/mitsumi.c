@@ -616,4 +616,5 @@ void mitsumi_reset(mitsumi_t *mitsumi, const char *drive_path)
         
         ioctl_set_drive(drive_path);
         ioctl_reset();
+        ioctl_open(0);
 }

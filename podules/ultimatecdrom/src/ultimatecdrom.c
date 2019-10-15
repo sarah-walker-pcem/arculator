@@ -16,6 +16,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <stdarg.h>
+#include <string.h>
 #include "podule_api.h"
 #include "cdrom.h"
 #include "mitsumi.h"
@@ -219,6 +221,7 @@ const podule_header_t *podule_probe(const podule_callbacks_t *callbacks, char *p
         return &cdrom_podule_header;
 }
 
+#ifdef WIN32
 BOOL APIENTRY DllMain (HINSTANCE hInst     /* Library instance handle. */ ,
                        DWORD reason        /* Reason this function is being called. */ ,
                        LPVOID reserved     /* Not used. */ )
@@ -241,3 +244,4 @@ BOOL APIENTRY DllMain (HINSTANCE hInst     /* Library instance handle. */ ,
     /* Returns TRUE on success, FALSE on failure */
     return TRUE;
 }
+#endif

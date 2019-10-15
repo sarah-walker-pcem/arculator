@@ -435,6 +435,7 @@ static void *scsi_cd_init(scsi_bus_t *bus, int id, podule_t *podule)
         sprintf(config_name, "device%i_fn", id);
         fn = podule_callbacks->config_get_string(podule, config_name, "");
         ioctl_set_drive(fn);
+        ioctl_open(0);
 
 	page_flags[GPMODE_CDROM_AUDIO_PAGE] &= 0xFD;		/* Clear changed flag for CDROM AUDIO mode page. */
 	memset(mode_pages_in[GPMODE_CDROM_AUDIO_PAGE], 0, 256);	/* Clear the page itself. */

@@ -1,8 +1,9 @@
+VPATH = . ../../common/cdrom ../../common/sound
 CPP  = g++
 CC   = gcc
-OBJ  = aka31.o d71071l.o hdd_file.o scsi.o scsi_config.o scsi_hd.o wd33c93a.o
-LIBS = -shared
-CFLAGS = $(INCS) -DBUILDING_DLL=1 -I../../../src -fPIC -Wall -Werror
+OBJ  = aka31.o cdrom-linux-ioctl.o d71071l.o hdd_file.o scsi.o scsi_config.o scsi_cd.o scsi_hd.o sound_openal.o wd33c93a.o
+LIBS = -shared -lopenal
+CFLAGS = $(INCS) -DBUILDING_DLL=1 -I../../../src -I../../common/cdrom -I../../common/sound -g3 -fPIC
 
 all: aka31
 

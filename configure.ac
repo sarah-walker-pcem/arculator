@@ -10,6 +10,7 @@ AM_INIT_AUTOMAKE
 AC_PROG_CC
 AC_PROG_CXX
 AM_PROG_CC_C_O
+LT_INIT([disable-static], [shared])
 
 
 AC_MSG_CHECKING([whether to enable debugging])
@@ -22,6 +23,19 @@ if test "$enable_debug" = "yes"; then
 else
    CFLAGS="-O3"
    CXXFLAGS="-O3"
+   AC_MSG_RESULT([no])
+fi
+
+AC_MSG_CHECKING([whether to build podules])
+AC_ARG_ENABLE(podules,
+          AC_HELP_STRING([--disable-podules], [don't build podules]))
+if test "$enable_podules" != "no"; then
+   AC_MSG_RESULT([yes])
+   AC_CHECK_LIB(asound, snd_pcm_open,
+        [],
+        [echo "You need to install the ALSA library."
+        exit -1])
+else
    AC_MSG_RESULT([no])
 fi
 
@@ -91,4 +105,8 @@ AM_CONDITIONAL(OS_WINDOWS, [test "$build_win" = "yes"])
 AM_CONDITIONAL(OS_OTHER, [test "$build_other" = "yes"])
 AM_CONDITIONAL(OS_MACOSX, [test "$build_macosx" = "yes"])
 
+AM_CONDITIONAL(BUILD_PODULES, [test "$enable_podules" != "no"])
+
 AC_OUTPUT([Makefile src/Makefile])
+
+AC_OUTPUT([podules/aka31/src/Makefile podules/lark/src/Makefile podules/midimax/src/Makefile podules/ultimatecdrom/src/Makefile])

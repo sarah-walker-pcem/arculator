@@ -230,6 +230,7 @@ void recalcse()
         else
         {
                 int pixels_per_word;
+                int disp_start, disp_end;
                 
                 switch (vidcr[VIDC_CR] & 3)
                 {
@@ -303,8 +304,17 @@ void recalcse()
                 
                 vidc.hsync_length = (vidc.sync * 2) + 2;
                 vidc.front_porch_length = vidc.hdstart - vidc.hsync_length;
-                vidc.display_length = vidc.hdend - vidc.hdstart;
-                vidc.back_porch_length = vidc.horiz_length - vidc.hdend;
+
+                if (vidc.hdstart < vidc.horiz_length)
+                        disp_start = vidc.hdstart;
+                else
+                        disp_start = vidc.horiz_length;
+                if (vidc.hdend < vidc.horiz_length)
+                        disp_end = vidc.hdend;
+                else
+                        disp_end = vidc.horiz_length;
+                vidc.display_length = disp_end - disp_start;
+                vidc.back_porch_length = vidc.horiz_length - disp_end;
                 
                 if (vidc.hsync_length < 0)
                         vidc.hsync_length = 0;
@@ -697,6 +707,8 @@ static void vidc_poll(void *__p)
                 }
                 else
                 {
+                        int xstart, xend;
+                        
                         x=vidc.hbstart;
                         if (vidc.hdstart>x) x=vidc.hdstart;
                         xx=vidc.hbend;
@@ -710,6 +722,13 @@ static void vidc_poll(void *__p)
                                 else                           xoffset2=xoffset;
                                 xoffset<<=1;
                                 xoffset2<<=1;
+
+                                xstart = vidc.hdstart*2;
+                                if (xstart > (vidc.htot+1)*4)
+                                        xstart = (vidc.htot+1)*4;
+                                xend = vidc.hdend*2;
+                                if (xend > (vidc.htot+1)*4)
+                                        xend = (vidc.htot+1)*4;
                         }
                         else
                         {
@@ -717,6 +736,13 @@ static void vidc_poll(void *__p)
                                 xoffset=400-(xoffset>>1);
                                 if (vidc.hdstart<vidc.hbstart) xoffset2=xoffset+(vidc.hdstart-vidc.hbstart);
                                 else                           xoffset2=xoffset;
+
+                                xstart = vidc.hdstart;
+                                if (xstart > (vidc.htot+1)*2)
+                                        xstart = (vidc.htot+1)*2;
+                                xend = vidc.hdend;
+                                if (xend > (vidc.htot+1)*2)
+                                        xend = (vidc.htot+1)*2;
                         }
                         if (monitor_type == MONITOR_MONO)
                                 xoffset2 = 0;
@@ -726,7 +752,7 @@ static void vidc_poll(void *__p)
                                 {
                                         case 0: /*Mode 4: 320x256 8MHz 1bpp*/
                                         case 1: /*12MHz 1bpp*/
-                                        for (x = vidc.hdstart*2; x < vidc.hdend*2; x += 32)
+                                        for (x = xstart; x < xend; x += 32)
                                         {
                                                 temp = ram[vidc.addr++];
                                                 if (x < 2048)
@@ -740,7 +766,7 @@ static void vidc_poll(void *__p)
                                         break;
                                         case 2: /*Mode 0: 640x256 16MHz 1bpp*/
                                         case 3: /*Mode 25: 640x480 24MHz 1bpp*/
-                                        for (x = ((monitor_type == MONITOR_MONO) ? vidc.hdstart*4 : vidc.hdstart); x < ((monitor_type == MONITOR_MONO) ? vidc.hdend*4 : vidc.hdend); x += 32)
+                                        for (x = ((monitor_type == MONITOR_MONO) ? xstart*4 : xstart); x < ((monitor_type == MONITOR_MONO) ? xend*4 : xend); x += 32)
                                         {
                                                 temp = ram[vidc.addr++];
                                                 if (x < 2048)
@@ -769,7 +795,7 @@ static void vidc_poll(void *__p)
                                         break;
                                         case 4: /*Mode 1: 320x256 8MHz 2bpp*/
                                         case 5: /*12MHz 2bpp*/
-                                        for (x = vidc.hdstart*2; x < vidc.hdend*2; x += 32)
+                                        for (x = xstart; x < xend; x += 32)
                                         {
                                                 temp = ram[vidc.addr++];
                                                 if (x < 2048)
@@ -783,7 +809,7 @@ static void vidc_poll(void *__p)
                                         break;
                                         case 6: /*Mode 8: 640x256 16MHz 2bpp*/
                                         case 7: /*Mode 26: 640x480 24MHz 2bpp*/
-                                        for (x = vidc.hdstart; x < vidc.hdend; x += 16)
+                                        for (x = xstart; x < xend; x += 16)
                                         {
                                                 temp = ram[vidc.addr++];
                                                 if (x < 2048)
@@ -798,7 +824,7 @@ static void vidc_poll(void *__p)
                                         break;
                                         case 8: /*Mode 9: 320x256 8MHz 4bpp*/
                                         case 9: /*12MHz 4bpp*/
-                                        for (x = vidc.hdstart*2; x < vidc.hdend*2; x += 16)
+                                        for (x = xstart; x < xend; x += 16)
                                         {
                                                 temp = ram[vidc.addr++];
                                                 if (x < 2048)
@@ -812,7 +838,7 @@ static void vidc_poll(void *__p)
                                         break;
                                         case 10: /*Mode 12: 640x256 16MHz 4bpp*/
                                         case 11: /*Mode 27: 640x480 24MHz 4bpp*/
-                                        for (x = vidc.hdstart; x < vidc.hdend; x += 8)
+                                        for (x = xstart; x < xend; x += 8)
                                         {
                                                 temp = ram[vidc.addr++];
                                                 if (x < 2048)
@@ -826,7 +852,7 @@ static void vidc_poll(void *__p)
                                         break;
                                         case 12: /*Mode 13: 320x256 8bpp*/
                                         case 13: /*12MHz 8bpp*/
-                                        for (x = vidc.hdstart*2; x < vidc.hdend*2; x += 8)
+                                        for (x = xstart; x < xend/*vidc.hdend*2*/; x += 8)
                                         {
                                                 temp=ram[vidc.addr++];
                                                 if (x < 2048)
@@ -841,7 +867,7 @@ static void vidc_poll(void *__p)
                                         break;
                                         case 14: /*Mode 15: 640x256 16MHz 8bpp*/
                                         case 15: /*Mode 28: 640x480 24MHz 8bpp*/
-                                        for (x = vidc.hdstart; x < vidc.hdend; x += 4)
+                                        for (x = xstart; x < xend; x += 4)
                                         {
                                                 temp = ram[vidc.addr++];
                                                 if (x < 2048)

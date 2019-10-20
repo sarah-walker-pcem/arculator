@@ -39,3 +39,7 @@ arculator_SOURCES += podules-linux.c
 arculator_LDADD += -ldl
 endif
 
+if OS_MACOSX
+arculator_SOURCES += podules-macosx.c
+endif
+

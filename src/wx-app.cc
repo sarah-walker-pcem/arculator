@@ -25,6 +25,7 @@ extern "C"
         #include "disc.h"
         #include "plat_joystick.h"
         #include "plat_video.h"
+        #include "romload.h"
         #include "sound.h"
         #include "video.h"
 }
@@ -53,6 +54,12 @@ bool App::OnInit()
         wxImage::AddHandler( new wxPNGHandler );
         wxXmlResource::Get()->InitAllHandlers();
         InitXmlResource();
+
+        if (rom_establish_availability())
+        {
+                wxMessageBox("No ROMs available\nArculator needs at least one ROM set present to run", "Arculator", wxOK | wxCENTRE | wxSTAY_ON_TOP);
+                exit(-1);
+        }
 
         SDL_Init(SDL_INIT_EVERYTHING);
         joystick_init();

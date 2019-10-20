@@ -6,7 +6,6 @@ extern "C"
         #include "arc.h"
         #include "config.h"
         #include "podules.h"
-        #include "romload.h"
         #include "soundopenal.h"
 }
 
@@ -23,11 +22,6 @@ int main(int argc, char **argv)
         SDL_SetHint(SDL_HINT_WINDOWS_DISABLE_THREAD_NAMING, "1");
 
         wxApp::SetInstance(new App());
-        if (rom_establish_availability())
-        {
-                wxMessageBox("No ROMs available\nArculator needs at least one ROM set present to run", "Arculator", wxOK | wxCENTRE | wxSTAY_ON_TOP);
-                return -1;
-        }
         wxEntry(argc, argv);
         return 0;
 }

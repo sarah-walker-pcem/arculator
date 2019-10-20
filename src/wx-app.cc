@@ -1,4 +1,5 @@
 #include <sstream>
+#include <SDL2/SDL.h>
 
 #ifdef _WIN32
 #define BITMAP WINDOWS_BITMAP
@@ -22,6 +23,7 @@ extern "C"
 {
         #include "arc.h"
         #include "disc.h"
+        #include "plat_joystick.h"
         #include "plat_video.h"
         #include "sound.h"
         #include "video.h"
@@ -52,6 +54,9 @@ bool App::OnInit()
         wxXmlResource::Get()->InitAllHandlers();
         InitXmlResource();
 
+        SDL_Init(SDL_INIT_EVERYTHING);
+        joystick_init();
+        
         frame = new Frame(this, "null frame", wxPoint(500, 500),
                         wxSize(100, 100));
         frame->Start();

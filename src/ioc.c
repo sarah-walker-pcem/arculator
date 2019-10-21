@@ -159,7 +159,7 @@ uint8_t ioc_read(uint32_t addr)
         switch (addr & 0x7C)
         {
                 case 0x00: 
-                temp = ((i2c_clock) ? 2 : 0) | ((i2c_data) ? 1 : 0) | flyback | 4;
+                temp = ((i2c_clock) ? 2 : 0) | ((i2c_data) ? 1 : 0) | flyback;
                 if (fdctype == FDC_82C711)
                 {
                         if ((ioc.ctrl & 8) && ds2401_read())
@@ -167,6 +167,8 @@ uint8_t ioc_read(uint32_t addr)
                 }
                 else
                 {
+                        if (!fdc_ready)
+                                temp |= 4;
                         if (printer_get_ack())
                                 temp |= 0x40;
                 }

@@ -125,6 +125,12 @@ void disc_load(int drive, char *fn)
         /*No extension match, so guess based on image size*/
         rpclog("Size %i\n", size);
         drive_empty[drive] = 0;
+        if (size == (1440*1024)) /*1440k DOS - 80*2*18*512*/
+        {
+                driveloaders[drive] = 3;
+                adf_loadex(drive, fn, 18, 512, 1, 0, 2);
+                return;
+        }
         if (size == (800*1024)) /*800k ADFS/DOS - 80*2*5*1024*/
         {
                 driveloaders[drive] = 2;

@@ -37,7 +37,6 @@ static int apd_revs;
 
 static int apd_sector, apd_track,   apd_side,    apd_drive, apd_density;
 static int apd_inread, apd_inwrite, apd_readpos, apd_inreadaddr;
-static int apd_notfound;
 
 static uint16_t CRCTable[256];
 
@@ -74,7 +73,6 @@ void apd_init()
 //        rpclog("apd reset\n");
         apd_f[0]  = apd_f[1]  = 0;
         apd_ds[0] = apd_ds[1] = 0;
-        apd_notfound = 0;
         apd_setupcrc(0x1021, 0xcdb4);
 }
 
@@ -217,11 +215,6 @@ void apd_writesector(int drive, int sector, int track, int side, int density)
         apd_drive  = drive;
 //        rpclog("Write sector %i %i %i %i\n",drive,side,track,sector);
 
-        if (!apd_f[drive] || (side && !apd_ds[drive]) || density)
-        {
-                apd_notfound = 500;
-                return;
-        }
         apd_inwrite = 1;
         apd_readpos = 0;
 }

@@ -1219,7 +1219,7 @@ void execarm(int cycles_to_execute)
                         switch ((opcode >> 20) & 0xFF)
                         {
                                 case 0x00: /*AND reg*/
-                                if ((opcode&0xF0) == 0x90) /*MUL*/
+                                if ((opcode&0x90) == 0x90) /*MUL*/
                                 {
                                         opMUL(0);
                                 }
@@ -1238,7 +1238,7 @@ void execarm(int cycles_to_execute)
                                 }
                                 break;
                                 case 0x01: /*ANDS reg*/
-                                if ((opcode & 0xF0) == 0x90) /*MULS*/
+                                if ((opcode & 0x90) == 0x90) /*MULS*/
                                 {
                                         opMUL(0);
                                         setzn(armregs[MULRD]);
@@ -1260,7 +1260,7 @@ void execarm(int cycles_to_execute)
                                 break;
 
                                 case 0x02: /*EOR reg*/
-                                if ((opcode & 0xF0) == 0x90) /*MLA*/
+                                if ((opcode & 0x90) == 0x90) /*MLA*/
                                 {
                                         opMUL(armregs[MULRN]);
                                 }
@@ -1279,7 +1279,7 @@ void execarm(int cycles_to_execute)
                                 }
                                 break;
                                 case 0x03: /*EORS reg*/
-                                if ((opcode & 0xF0) == 0x90) /*MLAS*/
+                                if ((opcode & 0x90) == 0x90) /*MLAS*/
                                 {
                                         opMUL(armregs[MULRN]);
                                         setzn(armregs[MULRD]);

@@ -1052,7 +1052,8 @@ static void opMUL(uint32_t rn)
         int shift = 0;
         int cycle_nr = 0;
 
-        armregs[MULRD] = rn;
+        if (MULRD != 15)
+                armregs[MULRD] = rn;
         while (((rs || carry) && shift < 32) || !cycle_nr)
         {
                 int m = rs & 3;
@@ -1065,15 +1066,18 @@ static void opMUL(uint32_t rn)
                                 carry = 0;
                                 break;
                                 case 1:
-                                armregs[MULRD] += (armregs[MULRM] << shift);
+                                if (MULRD != 15)
+                                        armregs[MULRD] += (armregs[MULRM] << shift);
                                 carry = 0;
                                 break;
                                 case 2:
-                                armregs[MULRD] -= (armregs[MULRM] << (shift+1));
+                                if (MULRD != 15)
+                                        armregs[MULRD] -= (armregs[MULRM] << (shift+1));
                                 carry = 1;
                                 break;
                                 case 3:
-                                armregs[MULRD] -= (armregs[MULRM] << shift);
+                                if (MULRD != 15)
+                                        armregs[MULRD] -= (armregs[MULRM] << shift);
                                 carry = 1;
                                 break;
                         }
@@ -1083,15 +1087,18 @@ static void opMUL(uint32_t rn)
                         switch (m)
                         {
                                 case 0:
-                                armregs[MULRD] += (armregs[MULRM] << shift);
+                                if (MULRD != 15)
+                                        armregs[MULRD] += (armregs[MULRM] << shift);
                                 carry = 0;
                                 break;
                                 case 1:
-                                armregs[MULRD] += (armregs[MULRM] << (shift+1));
+                                if (MULRD != 15)
+                                        armregs[MULRD] += (armregs[MULRM] << (shift+1));
                                 carry = 0;
                                 break;
                                 case 2:
-                                armregs[MULRD] -= (armregs[MULRM] << shift);
+                                if (MULRD != 15)
+                                        armregs[MULRD] -= (armregs[MULRM] << shift);
                                 carry = 1;
                                 break;
                                 case 3:

@@ -677,10 +677,10 @@ static void fdc_overrun()
         fdc.res[4]=0x40|(fdc.head?4:0)|curdrive;
         fdc.res[5]=0x10; /*Overrun*/
         fdc.res[6]=0;
-        fdc.res[7]=0;
-        fdc.res[8]=0;
-        fdc.res[9]=0;
-        fdc.res[10]=0;
+        fdc.res[7]=fdc.track[curdrive];
+        fdc.res[8]=fdc.head;
+        fdc.res[9]=fdc.sector;
+        fdc.res[10]=fdc.params[4];
         paramstogo=7;
 }
 

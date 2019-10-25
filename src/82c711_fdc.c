@@ -765,6 +765,18 @@ void c82c711_fdc_headercrcerror()
 
 void c82c711_fdc_writeprotect()
 {
+        timer_disable(&fdc_timer);
+
+        ioc_irqb(IOC_IRQB_DISC_IRQ);
+        fdc.stat = 0xD0;
+        fdc.res[4] = 0x40 | (fdc.head ? 4 : 0) | curdrive;
+        fdc.res[5] = 0x02; /*Not writeable*/
+        fdc.res[6] = 0;
+        fdc.res[7] = 0;
+        fdc.res[8] = 0;
+        fdc.res[9] = 0;
+        fdc.res[10] = 0;
+        paramstogo = 7;
 }
 
 int c82c711_fdc_getdata(int last)

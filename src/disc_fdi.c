@@ -24,7 +24,6 @@ static int fdi_revs;
 
 static int fdi_sector, fdi_track,   fdi_side,    fdi_drive, fdi_density;
 static int fdi_inread, fdi_inwrite, fdi_readpos, fdi_inreadaddr;
-static int fdi_notfound;
 
 static uint16_t CRCTable[256];
 
@@ -61,7 +60,6 @@ void fdi_init()
 //        printf("FDI reset\n");
         fdi_f[0]  = fdi_f[1]  = 0;
         fdi_ds[0] = fdi_ds[1] = 0;
-        fdi_notfound = 0;
         fdi_setupcrc(0x1021, 0xcdb4);
 }
 
@@ -151,11 +149,6 @@ void fdi_writesector(int drive, int sector, int track, int side, int density)
         fdi_drive  = drive;
 //        printf("Write sector %i %i %i %i\n",drive,side,track,sector);
 
-        if (!fdi_f[drive] || (side && !fdi_ds[drive]) || density)
-        {
-                fdi_notfound = 500;
-                return;
-        }
         fdi_inwrite = 1;
         fdi_readpos = 0;
 }

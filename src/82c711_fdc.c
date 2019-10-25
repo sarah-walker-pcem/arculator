@@ -442,24 +442,24 @@ void c82c711_fdc_callback(void *p)
                 case 5: /*Write data*/
                 readflash[curdrive] = 1;
                 fdc.sector++;
-                if (fdc.command & 0x80)
+                if (fdc.sector > fdc.params[5])
                 {
-                        if (fdc.sector > fdc.params[5])
+                        fdc.sector = 1;
+                        if (fdc.command & 0x80)
                         {
-                                fdc.sector=1;
-                                fdc.head ^= 1;
-                                if (!fdc.head)
+                                if (fdc.head)
                                 {
+                                        fdc.tc = 1;
                                         fdc.track[curdrive]++;
-                                        if (fdc.track[curdrive] >= 79)
-                                        {
-                                                fdc.track[curdrive] = 79;
-                                                fdc.pos = 512;
-                                        }
                                 }
+                                else
+                                        fdc.head ^= 1;
                         }
                         else
-                           fdc.pos = 512;
+                        {
+                                fdc.tc = 1;
+                                fdc.track[curdrive]++;
+                        }
                 }
                 if (fdc.tc)
                 {
@@ -482,20 +482,23 @@ void c82c711_fdc_callback(void *p)
 //                rpclog("Read data %i\n", fdc.tc);
                 readflash[curdrive] = 1;
                 fdc.sector++;
-                if (fdc.command & 0x80)
+                if (fdc.sector > fdc.params[5])
                 {
-                        if (fdc.sector > fdc.params[5])
+                        fdc.sector = 1;
+                        if (fdc.command & 0x80)
                         {
-                                fdc.sector=1;
-                                fdc.head ^= 1;
-                                if (!fdc.head)
+                                if (fdc.head)
                                 {
+                                        fdc.tc = 1;
                                         fdc.track[curdrive]++;
-                                        if (fdc.track[curdrive] >= 79)
-                                        {
-                                                fdc.track[curdrive] = 79;
-                                        }
                                 }
+                                else
+                                        fdc.head ^= 1;
+                        }
+                        else
+                        {
+                                fdc.tc = 1;
+                                fdc.track[curdrive]++;
                         }
                 }
                 if (fdc.tc)

@@ -340,7 +340,8 @@ void apd_poll()
                         fdc_writeprotect();
                         return;
                 }
-                if (!apd_inread && !apd_inreadaddr) return;
+                if (!apd_inread && !apd_inreadaddr)
+                        continue;
                 if (index)
                 {
                         apd_revs++;

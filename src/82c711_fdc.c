@@ -738,10 +738,10 @@ void c82c711_fdc_datacrcerror()
         fdc.res[4]=0x40|(fdc.head?4:0)|curdrive;
         fdc.res[5]=0x20; /*Data error*/
         fdc.res[6]=0x20; /*Data error in data field*/
-        fdc.res[7]=0;
-        fdc.res[8]=0;
-        fdc.res[9]=0;
-        fdc.res[10]=0;
+        fdc.res[7]=fdc.track[curdrive];
+        fdc.res[8]=fdc.head;
+        fdc.res[9]=fdc.sector;
+        fdc.res[10]=fdc.params[4];
         paramstogo=7;
 //        rpclog("c82c711_fdc_datacrcerror\n");
 }
@@ -755,10 +755,10 @@ void c82c711_fdc_headercrcerror()
         fdc.res[4]=0x40|(fdc.head?4:0)|curdrive;
         fdc.res[5]=0x20; /*Data error*/
         fdc.res[6]=0;
-        fdc.res[7]=0;
-        fdc.res[8]=0;
-        fdc.res[9]=0;
-        fdc.res[10]=0;
+        fdc.res[7]=fdc.track[curdrive];
+        fdc.res[8]=fdc.head;
+        fdc.res[9]=fdc.sector;
+        fdc.res[10]=fdc.params[4];
         paramstogo=7;
 //        rpclog("c82c711_fdc_headercrcerror\n");
 }

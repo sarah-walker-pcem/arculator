@@ -288,6 +288,20 @@ void apd_poll()
 {
         int polls;
         
+        if (!apd_tracklen[apd_drive][apd_side][apd_density])
+        {
+                int fake_track_len = 50000 << apd_density;
+                
+                /*No track data for this density, fake index pulse*/
+                apd_pos += 16;
+                if (apd_pos >= fake_track_len)
+                {
+                        fdc_indexpulse();
+                        apd_pos = 0;
+                }
+                return;
+        }
+        
         for (polls = 0; polls < 16; polls++)
         {
                 int tempi, c;

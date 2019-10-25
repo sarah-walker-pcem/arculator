@@ -40,8 +40,9 @@ int defaultwriteprot = 0;
 
 
 static uint64_t disc_poll_time;
-static const int disc_poll_times[3] =
+static const int disc_poll_times[4] =
 {
+        32, /*Double density*/
         32, /*Double density*/
         16, /*High density*/
         8   /*Extended density - supported by SuperIO but never used on the Arc*/

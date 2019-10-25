@@ -318,8 +318,8 @@ void c82c711_fdc_write(uint16_t addr, uint8_t val)
                 switch (val & 3)
                 {
                         case 0: fdc.density = 2; break;
-                        case 2: fdc.density = 1; break;
-                        case 3: fdc.density = 0; break;
+                        case 1: case 2: fdc.density = 1; break;
+                        case 3: fdc.density = 3; break;
                 }
                 disc_set_density(fdc.density);
 //                rpclog("FDC rate = %i\n", val & 3);

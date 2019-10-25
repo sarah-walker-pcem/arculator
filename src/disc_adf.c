@@ -47,6 +47,7 @@ void adf_loadex(int drive, char *fn, int sectors, int size, int sides, int dblst
         drives[drive].readaddress = adf_readaddress;
         drives[drive].poll        = adf_poll;
         drives[drive].format      = adf_format;
+        drives[drive].stop        = adf_stop;
         adf_sectors[drive] = sectors;
         adf_size[drive] = size;
         adf_dblside[drive] = sides;        

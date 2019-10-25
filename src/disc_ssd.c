@@ -44,6 +44,7 @@ void ssd_load(int drive, char *fn)
         drives[drive].readaddress = ssd_readaddress;
         drives[drive].poll        = ssd_poll;
         drives[drive].format      = ssd_format;
+        drives[drive].stop        = ssd_stop;
 }
 
 void dsd_load(int drive, char *fn)
@@ -64,6 +65,7 @@ void dsd_load(int drive, char *fn)
         drives[drive].readaddress = ssd_readaddress;
         drives[drive].poll        = ssd_poll;
         drives[drive].format      = ssd_format;
+        drives[drive].stop        = ssd_stop;
 }
 
 void ssd_close(int drive)

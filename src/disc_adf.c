@@ -12,6 +12,7 @@ static int adf_dblside[4];
 static int adf_sectors[4], adf_size[4], adf_trackc[4];
 static int adf_dblstep[4];
 static int adf_density[4];
+static int adf_maxsector[4], adf_maxtrack[4];
 
 static int adf_sector,   adf_track,   adf_side,    adf_drive;
 static int adf_inread,   adf_readpos, adf_inwrite, adf_inreadaddr;
@@ -53,6 +54,7 @@ void adf_loadex(int drive, char *fn, int sectors, int size, int sides, int dblst
         adf_dblside[drive] = sides;        
         adf_dblstep[drive] = dblstep;
         adf_density[drive] = density;
+        adf_maxsector[drive] = (ftell(adf_f[drive])+1 ) / size;
 }
 
 void adf_load(int drive, char *fn)
@@ -120,6 +122,8 @@ void adf_writeback(int drive, int track)
 
 void adf_readsector(int drive, int sector, int track, int side, int density)
 {
+        int sector_nr = sector + adf_sectors[drive] * (track * (adf_dblside[drive] ? 2 : 1) + (side ? 1 : 0));
+        
         adf_sector = sector;
         adf_track  = track;
         adf_side   = side;
@@ -127,7 +131,9 @@ void adf_readsector(int drive, int sector, int track, int side, int density)
         if (adf_size[drive] == 512) adf_sector--;
         rpclog("ADFS Read sector %i %i %i %i\n",drive,side,track,sector);
 
-        if (!adf_f[drive] || (side && !adf_dblside[drive]) || (density != adf_density[drive]) || (track != adf_trackc[drive]))
+        if (!adf_f[drive] || (side && !adf_dblside[drive]) || (density != adf_density[drive]) ||
+                (track != adf_trackc[drive]) || (sector_nr >= adf_maxsector[drive]) ||
+                (adf_sector > adf_sectors[drive]))
         {
 //                printf("Not found! %08X (%i %i) %i (%i %i)\n",adff[drive],side,adl[drive],density,track,adftrackc[drive]);
                 adf_notfound=500;
@@ -140,6 +146,8 @@ void adf_readsector(int drive, int sector, int track, int side, int density)
 
 void adf_writesector(int drive, int sector, int track, int side, int density)
 {
+        int sector_nr = sector + adf_sectors[drive] * (track * (adf_dblside[drive] ? 2 : 1) + (side ? 1 : 0));
+
 //        if (adfdblstep[drive]) track/=2;
         adf_sector = sector;
         adf_track  = track;
@@ -148,7 +156,9 @@ void adf_writesector(int drive, int sector, int track, int side, int density)
         if (adf_size[drive] == 512) adf_sector--;
 //        printf("ADFS Write sector %i %i %i %i\n",drive,side,track,sector);
 
-        if (!adf_f[drive] || (side && !adf_dblside[drive]) || (density != adf_density[drive]) || (track != adf_trackc[drive]))
+        if (!adf_f[drive] || (side && !adf_dblside[drive]) || (density != adf_density[drive]) ||
+                (track != adf_trackc[drive]) || (sector_nr >= adf_maxsector[drive]) ||
+                (adf_sector > adf_sectors[drive]))
         {
                 adf_notfound = 500;
                 return;

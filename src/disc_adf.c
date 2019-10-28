@@ -2,17 +2,22 @@
   ADFS disc support (really all double-density formats)*/
 
 #include <stdio.h>
+#include <string.h>
 #include "arc.h"
 #include "disc.h"
 #include "disc_adf.h"
 
-static FILE *adf_f[4];
-static uint8_t trackinfoa[4][2][20*1024];
-static int adf_dblside[4];
-static int adf_sectors[4], adf_size[4], adf_trackc[4];
-static int adf_dblstep[4];
-static int adf_density[4];
-static int adf_maxsector[4], adf_maxtrack[4];
+static struct
+{
+        FILE *f;
+        uint8_t track_data[2][20*1024];
+        
+        int dblside;
+        int sectors, size, track;
+        int dblstep;
+        int density;
+        int maxsector;
+} adf[4];
 
 static int adf_sector,   adf_track,   adf_side,    adf_drive;
 static int adf_inread,   adf_readpos, adf_inwrite, adf_inreadaddr;
@@ -25,7 +30,7 @@ static int adf_index = 6250;
 
 void adf_init()
 {
-        adf_f[0] = adf_f[1] = 0;
+        memset(adf, 0, sizeof(adf));
 //        adl[0] = adl[1] = 0;
         adf_notfound = 0;
 }
@@ -33,15 +38,15 @@ void adf_init()
 void adf_loadex(int drive, char *fn, int sectors, int size, int sides, int dblstep, int density)
 {
         writeprot[drive] = 0;
-        adf_f[drive] = fopen(fn, "rb+");
-        if (!adf_f[drive])
+        adf[drive].f = fopen(fn, "rb+");
+        if (!adf[drive].f)
         {
-                adf_f[drive] = fopen(fn, "rb");
-                if (!adf_f[drive]) return;
+                adf[drive].f = fopen(fn, "rb");
+                if (!adf[drive].f) return;
                 writeprot[drive] = 1;
         }
         fwriteprot[drive] = writeprot[drive];
-        fseek(adf_f[drive], -1, SEEK_END);
+        fseek(adf[drive].f, -1, SEEK_END);
         drives[drive].seek        = adf_seek;
         drives[drive].readsector  = adf_readsector;
         drives[drive].writesector = adf_writesector;
@@ -49,12 +54,12 @@ void adf_loadex(int drive, char *fn, int sectors, int size, int sides, int dblst
         drives[drive].poll        = adf_poll;
         drives[drive].format      = adf_format;
         drives[drive].stop        = adf_stop;
-        adf_sectors[drive] = sectors;
-        adf_size[drive] = size;
-        adf_dblside[drive] = sides;        
-        adf_dblstep[drive] = dblstep;
-        adf_density[drive] = density;
-        adf_maxsector[drive] = (ftell(adf_f[drive])+1 ) / size;
+        adf[drive].sectors = sectors;
+        adf[drive].size = size;
+        adf[drive].dblside = sides;
+        adf[drive].dblstep = dblstep;
+        adf[drive].density = density;
+        adf[drive].maxsector = (ftell(adf[drive].f)+1 ) / size;
 }
 
 void adf_load(int drive, char *fn)
@@ -81,59 +86,66 @@ void adl_load(int drive, char *fn)
 
 void adf_close(int drive)
 {
-        if (adf_f[drive]) fclose(adf_f[drive]);
-        adf_f[drive] = NULL;
+        if (adf[drive].f) fclose(adf[drive].f);
+        adf[drive].f = NULL;
 }
 
 void adf_seek(int drive, int track)
 {
-        if (!adf_f[drive]) return;
+        if (!adf[drive].f)
+                return;
 //        rpclog("Seek %i %i %i %i %i %i\n",drive,track,adfsectors[drive],adfsize[drive],adl[drive],adfsectors[drive]*adfsize[drive]);
-        if (adf_dblstep[drive]) track /= 2;
-        adf_trackc[drive] = track;
-        if (adf_dblside[drive])
+        if (adf[drive].dblstep)
+                track /= 2;
+        adf[drive].track = track;
+        if (adf[drive].dblside)
         {
-                fseek(adf_f[drive], track * adf_sectors[drive] * adf_size[drive] * 2, SEEK_SET);
-                fread(trackinfoa[drive][0], adf_sectors[drive] * adf_size[drive], 1, adf_f[drive]);
-                fread(trackinfoa[drive][1], adf_sectors[drive] * adf_size[drive], 1, adf_f[drive]);
+                fseek(adf[drive].f, track * adf[drive].sectors * adf[drive].size * 2, SEEK_SET);
+                fread(adf[drive].track_data[0], adf[drive].sectors * adf[drive].size, 1, adf[drive].f);
+                fread(adf[drive].track_data[1], adf[drive].sectors * adf[drive].size, 1, adf[drive].f);
         }
         else
         {
-                fseek(adf_f[drive], track * adf_sectors[drive] * adf_size[drive], SEEK_SET);
-                fread(trackinfoa[drive][0], adf_sectors[drive] * adf_size[drive], 1, adf_f[drive]);
+                fseek(adf[drive].f, track * adf[drive].sectors * adf[drive].size, SEEK_SET);
+                fread(adf[drive].track_data[0], adf[drive].sectors * adf[drive].size, 1, adf[drive].f);
         }
 }
 void adf_writeback(int drive, int track)
 {
-        if (!adf_f[drive]) return;
-        if (adf_dblstep[drive]) track /= 2;
-        if (adf_dblside[drive])
+        if (!adf[drive].f)
+                return;
+                
+        if (adf[drive].dblstep)
+                track /= 2;
+                
+        if (adf[drive].dblside)
         {
-                fseek(adf_f[drive], track * adf_sectors[drive] * adf_size[drive] * 2, SEEK_SET);
-                fwrite(trackinfoa[drive][0], adf_sectors[drive] * adf_size[drive], 1, adf_f[drive]);
-                fwrite(trackinfoa[drive][1], adf_sectors[drive] * adf_size[drive], 1, adf_f[drive]);
+                fseek(adf[drive].f, track * adf[drive].sectors * adf[drive].size * 2, SEEK_SET);
+                fwrite(adf[drive].track_data[0], adf[drive].sectors * adf[drive].size, 1, adf[drive].f);
+                fwrite(adf[drive].track_data[1], adf[drive].sectors * adf[drive].size, 1, adf[drive].f);
         }
         else
         {
-                fseek(adf_f[drive], track *  adf_sectors[drive] * adf_size[drive], SEEK_SET);
-                fwrite(trackinfoa[drive][0], adf_sectors[drive] * adf_size[drive], 1, adf_f[drive]);
+                fseek(adf[drive].f, track *  adf[drive].sectors * adf[drive].size, SEEK_SET);
+                fwrite(adf[drive].track_data[0], adf[drive].sectors * adf[drive].size, 1, adf[drive].f);
         }
 }
 
 void adf_readsector(int drive, int sector, int track, int side, int density)
 {
-        int sector_nr = sector + adf_sectors[drive] * (track * (adf_dblside[drive] ? 2 : 1) + (side ? 1 : 0));
+        int sector_nr = sector + adf[drive].sectors * (track * (adf[drive].dblside ? 2 : 1) + (side ? 1 : 0));
         
         adf_sector = sector;
         adf_track  = track;
         adf_side   = side;
         adf_drive  = drive;
-        if (adf_size[drive] == 512) adf_sector--;
+        if (adf[drive].size == 512)
+                adf_sector--;
         rpclog("ADFS Read sector %i %i %i %i\n",drive,side,track,sector);
 
-        if (!adf_f[drive] || (side && !adf_dblside[drive]) || (density != adf_density[drive]) ||
-                (track != adf_trackc[drive]) || (sector_nr >= adf_maxsector[drive]) ||
-                (adf_sector > adf_sectors[drive]))
+        if (!adf[drive].f || (side && !adf[drive].dblside) || (density != adf[drive].density) ||
+                (track != adf[drive].track) || (sector_nr >= adf[drive].maxsector) ||
+                (adf_sector > adf[drive].sectors))
         {
 //                printf("Not found! %08X (%i %i) %i (%i %i)\n",adff[drive],side,adl[drive],density,track,adftrackc[drive]);
                 adf_notfound=500;
@@ -146,19 +158,20 @@ void adf_readsector(int drive, int sector, int track, int side, int density)
 
 void adf_writesector(int drive, int sector, int track, int side, int density)
 {
-        int sector_nr = sector + adf_sectors[drive] * (track * (adf_dblside[drive] ? 2 : 1) + (side ? 1 : 0));
+        int sector_nr = sector + adf[drive].sectors * (track * (adf[drive].dblside ? 2 : 1) + (side ? 1 : 0));
 
 //        if (adfdblstep[drive]) track/=2;
         adf_sector = sector;
         adf_track  = track;
         adf_side   = side;
         adf_drive  = drive;
-        if (adf_size[drive] == 512) adf_sector--;
+        if (adf[drive].size == 512)
+                adf_sector--;
 //        printf("ADFS Write sector %i %i %i %i\n",drive,side,track,sector);
 
-        if (!adf_f[drive] || (side && !adf_dblside[drive]) || (density != adf_density[drive]) ||
-                (track != adf_trackc[drive]) || (sector_nr >= adf_maxsector[drive]) ||
-                (adf_sector > adf_sectors[drive]))
+        if (!adf[drive].f || (side && !adf[drive].dblside) || (density != adf[drive].density) ||
+                (track != adf[drive].track) || (sector_nr >= adf[drive].maxsector) ||
+                (adf_sector > adf[drive].sectors))
         {
                 adf_notfound = 500;
                 return;
@@ -169,13 +182,16 @@ void adf_writesector(int drive, int sector, int track, int side, int density)
 
 void adf_readaddress(int drive, int track, int side, int density)
 {
-        if (adf_dblstep[drive]) track /= 2;
+        if (adf[drive].dblstep)
+                track /= 2;
+
         adf_drive = drive;
         adf_track = track;
         adf_side  = side;
         rpclog("Read address %i %i %i  %i\n",drive,side,track, ins);
 
-        if (!adf_f[drive] || (side && !adf_dblside[drive]) || (density != adf_density[drive]) || (track != adf_trackc[drive]))
+        if (!adf[drive].f || (side && !adf[drive].dblside) ||
+                (density != adf[drive].density) || (track != adf[drive].track))
         {
                 adf_notfound=500;
                 return;
@@ -187,12 +203,15 @@ void adf_readaddress(int drive, int track, int side, int density)
 
 void adf_format(int drive, int track, int side, int density)
 {
-        if (adf_dblstep[drive]) track /= 2;
+        if (adf[drive].dblstep)
+                track /= 2;
+                
         adf_drive = drive;
         adf_track = track;
         adf_side  = side;
 
-        if (!adf_f[drive] || (side && !adf_dblside[drive]) || (density != adf_density[drive]) || track != adf_trackc[drive])
+        if (!adf[drive].f || (side && !adf[drive].dblside) || (density != adf[drive].density) ||
+                track != adf[drive].track)
         {
                 adf_notfound = 500;
                 return;
@@ -234,20 +253,20 @@ void adf_poll()
                         fdc_notfound();
                 }
         }
-        if (adf_inread && adf_f[adf_drive])
+        if (adf_inread && adf[adf_drive].f)
         {
 //                rpclog("Read pos %i\n", adf_readpos);
 //                if (!adfreadpos) rpclog("%i\n",adfsector*adfsize[adfdrive]);
-                fdc_data(trackinfoa[adf_drive][adf_side][(adf_sector * adf_size[adf_drive]) + adf_readpos]);
+                fdc_data(adf[adf_drive].track_data[adf_side][(adf_sector * adf[adf_drive].size) + adf_readpos]);
                 adf_readpos++;
-                if (adf_readpos == adf_size[adf_drive])
+                if (adf_readpos == adf[adf_drive].size)
                 {
 //                        rpclog("Read %i bytes\n",adf_readpos);
                         adf_inread = 0;
                         fdc_finishread();
                 }
         }
-        if (adf_inwrite && adf_f[adf_drive])
+        if (adf_inwrite && adf[adf_drive].f)
         {
                 if (writeprot[adf_drive])
                 {
@@ -257,7 +276,7 @@ void adf_poll()
                         return;
                 }
 //                rpclog("Write data %i\n",adf_readpos);
-                c = fdc_getdata(adf_readpos == (adf_size[adf_drive] - 1));
+                c = fdc_getdata(adf_readpos == (adf[adf_drive].size - 1));
                 if (c == -1)
                 {
 //Carlo Concari: do not write if data not ready yet
@@ -265,9 +284,9 @@ void adf_poll()
 //                        printf("Data overflow!\n");
 //                        exit(-1);
                 }
-                trackinfoa[adf_drive][adf_side][(adf_sector * adf_size[adf_drive]) + adf_readpos] = c;
+                adf[adf_drive].track_data[adf_side][(adf_sector * adf[adf_drive].size) + adf_readpos] = c;
                 adf_readpos++;
-                if (adf_readpos == adf_size[adf_drive])
+                if (adf_readpos == adf[adf_drive].size)
                 {
 //                        rpclog("write over\n");
                         adf_inwrite = 0;
@@ -275,15 +294,15 @@ void adf_poll()
                         adf_writeback(adf_drive, adf_track);
                 }
         }
-        if (adf_inreadaddr && adf_f[adf_drive])
+        if (adf_inreadaddr && adf[adf_drive].f)
         {
 //                rpclog("adf_inreadaddr %08X\n", fdc_sectorid);
                 if (fdc_sectorid)
                 {
-                        fdc_sectorid(adf_track, adf_side, adf_rsector + ((adf_size[adf_drive] == 512) ? 1 : 0), (adf_size[adf_drive] == 256) ? 1 : ((adf_size[adf_drive] == 512) ? 2 : 3), 0, 0);
+                        fdc_sectorid(adf_track, adf_side, adf_rsector + ((adf[adf_drive].size == 512) ? 1 : 0), (adf[adf_drive].size == 256) ? 1 : ((adf[adf_drive].size == 512) ? 2 : 3), 0, 0);
                         adf_inreadaddr = 0;
                         adf_rsector++;
-                        if (adf_rsector == adf_sectors[adf_drive]) 
+                        if (adf_rsector == adf[adf_drive].sectors)
                         {
                                 adf_rsector=0;
                                 rpclog("adf_rsector reset\n");
@@ -295,16 +314,16 @@ void adf_poll()
                         {
                                 case 0: fdc_data(adf_track); break;
                                 case 1: fdc_data(adf_side); break;
-                                case 2: fdc_data(adf_rsector + ((adf_size[adf_drive] == 512) ? 1 : 0)); break;
-                                case 3: fdc_data((adf_size[adf_drive] == 256) ? 1 : ((adf_size[adf_drive] == 512) ? 2 : 3)); break;
+                                case 2: fdc_data(adf_rsector + ((adf[adf_drive].size == 512) ? 1 : 0)); break;
+                                case 3: fdc_data((adf[adf_drive].size == 256) ? 1 : ((adf[adf_drive].size == 512) ? 2 : 3)); break;
                                 case 4: fdc_data(0); break;
                                 case 5: fdc_data(0); break;
                                 case 6:
                                 adf_inreadaddr = 0;
                                 fdc_finishread();
-                                rpclog("Read addr - %i %i %i %i 0 0 (%i %i %i)\n", adf_track, adf_side, adf_rsector + ((adf_size[adf_drive] == 512) ? 1 : 0), (adf_size[adf_drive] == 256) ? 1 : ((adf_size[adf_drive] == 512) ? 2 : 3), adf_sectors[adf_drive], adf_drive, adf_rsector);
+                                rpclog("Read addr - %i %i %i %i 0 0 (%i %i %i)\n", adf_track, adf_side, adf_rsector + ((adf[adf_drive].size == 512) ? 1 : 0), (adf[adf_drive].size == 256) ? 1 : ((adf[adf_drive].size == 512) ? 2 : 3), adf[adf_drive].sectors, adf_drive, adf_rsector);
                                 adf_rsector++;
-                                if (adf_rsector == adf_sectors[adf_drive]) 
+                                if (adf_rsector == adf[adf_drive].sectors)
                                 {
                                         adf_rsector=0;
                                         rpclog("adf_rsector reset\n");
@@ -314,7 +333,7 @@ void adf_poll()
                 }
                 adf_readpos++;
         }
-        if (adf_informat && adf_f[adf_drive])
+        if (adf_informat && adf[adf_drive].f)
         {
                 if (writeprot[adf_drive])
                 {
@@ -322,13 +341,13 @@ void adf_poll()
                         adf_informat = 0;
                         return;
                 }
-                trackinfoa[adf_drive][adf_side][(adf_sector * adf_size[adf_drive]) + adf_readpos] = 0;
+                adf[adf_drive].track_data[adf_side][(adf_sector * adf[adf_drive].size) + adf_readpos] = 0;
                 adf_readpos++;
-                if (adf_readpos == adf_size[adf_drive])
+                if (adf_readpos == adf[adf_drive].size)
                 {
                         adf_readpos = 0;
                         adf_sector++;
-                        if (adf_sector == adf_sectors[adf_drive])
+                        if (adf_sector == adf[adf_drive].sectors)
                         {
                                 adf_informat = 0;
                                 fdc_finishread();

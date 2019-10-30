@@ -222,113 +222,114 @@ void redolookup()
 
 void recalcse()
 {
-        if (monitor_type == MONITOR_MONO)
+        int pixels_per_word;
+        int disp_start, disp_end;
+
+        switch (vidcr[VIDC_CR] & 3)
         {
-                vidc.hdstart=(vidc.hdstart2<<1)-14;
-                vidc.hdend=(vidc.hdend2<<1)-14;
+                case 0: /*8MHz pixel rate*/
+                vidc.pixel_time = (TIMER_USEC * 1000) / (vidc.clock / 3);
+                break;
+                case 1: /*12MHz pixel rate*/
+                vidc.pixel_time = (TIMER_USEC * 1000) / (vidc.clock / 2);
+                break;
+                case 2: /*16MHz pixel rate*/
+                vidc.pixel_time = (TIMER_USEC * 1000) / ((vidc.clock * 2) / 3);
+                break;
+                case 3: /*24MHz pixel rate*/
+                vidc.pixel_time = (TIMER_USEC * 1000) / vidc.clock;
+                break;
         }
-        else
-        {
-                int pixels_per_word;
-                int disp_start, disp_end;
-                
-                switch (vidcr[VIDC_CR] & 3)
-                {
-                        case 0: /*8MHz pixel rate*/
-                        vidc.pixel_time = (TIMER_USEC * 1000) / (vidc.clock / 3);
-                        break;
-                        case 1: /*12MHz pixel rate*/
-                        vidc.pixel_time = (TIMER_USEC * 1000) / (vidc.clock / 2);
-                        break;
-                        case 2: /*16MHz pixel rate*/
-                        vidc.pixel_time = (TIMER_USEC * 1000) / ((vidc.clock * 2) / 3);
-                        break;
-                        case 3: /*24MHz pixel rate*/
-                        vidc.pixel_time = (TIMER_USEC * 1000) / vidc.clock;
-                        break;
-                }
+
 /*                rpclog("pixel_time %016llx  %016llx %016llx\n", vidc.pixel_time,
                         (TIMER_USEC * 1000) / vidc.clock,
                         (TIMER_USEC * 1000) / ((vidc.clock * 2) / 3));*/
 
-                switch (vidcr[0xE0>>2]&0xC)
+        switch (vidcr[VIDC_CR] & 0xC)
+        {
+                case 0xC: /*8bpp*/
+                vidc.hdstart=(vidc.hdstart2<<1)+5;
+                vidc.hdend=(vidc.hdend2<<1)+5;
+                vidc.fetch_time = vidc.pixel_time * 4 * 4;
+                pixels_per_word = 4;
+                break;
+                case 8: /*4bpp*/
+                if (monitor_type == MONITOR_MONO)
                 {
-                        case 0xC: /*8bpp*/
-                        vidc.hdstart=(vidc.hdstart2<<1)+5;
-                        vidc.hdend=(vidc.hdend2<<1)+5;
-                        vidc.fetch_time = vidc.pixel_time * 4 * 4;
-                        pixels_per_word = 4;
-                        break;
-                        case 8: /*4bpp*/
+                        vidc.hdstart=(vidc.hdstart2<<1)-14;
+                        vidc.hdend=(vidc.hdend2<<1)-14;
+                }
+                else
+                {
                         vidc.hdstart=(vidc.hdstart2<<1)+7;
                         vidc.hdend=(vidc.hdend2<<1)+7;
-                        vidc.fetch_time = vidc.pixel_time * 8 * 4;
-                        pixels_per_word = 8;
-                        break;
-                        case 4: /*2bpp*/
-                        vidc.hdstart=(vidc.hdstart2<<1)+11;
-                        vidc.hdend=(vidc.hdend2<<1)+11;
-                        vidc.fetch_time = vidc.pixel_time * 16 * 4;
-                        pixels_per_word = 16;
-                        break;
-                        case 0: /*1bpp*/
-                        default:
-                        vidc.hdstart=(vidc.hdstart2<<1)+19;
-                        vidc.hdend=(vidc.hdend2<<1)+19;
-                        vidc.fetch_time = vidc.pixel_time * 32 * 4;
-                        pixels_per_word = 32;
-                        break;
                 }
-                
-                switch (vidcr[VIDC_CR] & 0x30) /*DMA Request*/
-                {
-                        case 0x00: /*end of word 0, 4*/
-                        vidc.initial_fetch_time = (vidc.pixel_time * 4) * pixels_per_word;
-                        break;
-                        case 0x10: /*end of word 1, 5*/
-                        vidc.initial_fetch_time = (vidc.pixel_time * 5) * pixels_per_word;
-                        break;
-                        case 0x20: /*end of word 2, 6*/
-                        vidc.initial_fetch_time = (vidc.pixel_time * 6) * pixels_per_word;
-                        break;
-                        case 0x30: /*end of word 3, 7*/
-                        default:
-                        vidc.initial_fetch_time = (vidc.pixel_time * 7) * pixels_per_word;
-                        break;
-                }
-                
-                memc_dma_video_req_period = vidc.fetch_time;
-/*                rpclog("memc_dma_video_req_period=%016llx\n", memc_dma_video_req_period);*/
-
-                vidc.horiz_length = (vidc.htot * 2) + 2;
-                
-                vidc.hsync_length = (vidc.sync * 2) + 2;
-                vidc.front_porch_length = vidc.hdstart - vidc.hsync_length;
-
-                if (vidc.hdstart < vidc.horiz_length)
-                        disp_start = vidc.hdstart;
-                else
-                        disp_start = vidc.horiz_length;
-                if (vidc.hdend < vidc.horiz_length)
-                        disp_end = vidc.hdend;
-                else
-                        disp_end = vidc.horiz_length;
-                vidc.display_length = disp_end - disp_start;
-                vidc.back_porch_length = vidc.horiz_length - disp_end;
-                
-                if (vidc.hsync_length < 0)
-                        vidc.hsync_length = 0;
-                if (vidc.front_porch_length < 0)
-                        vidc.front_porch_length = 0;
-                if (vidc.display_length < 0)
-                        vidc.display_length = 0;
-                if (vidc.back_porch_length < 0)
-                        vidc.back_porch_length = 0;
-
-/*                rpclog("recalcse: horiz_length=%i  hsync_length=%i front_porch_length=%i display_length=%i back_port_length=%i\n",
-                        vidc.horiz_length,
-                        vidc.hsync_length, vidc.front_porch_length, vidc.display_length, vidc.back_porch_length);*/
+                vidc.fetch_time = vidc.pixel_time * 8 * 4;
+                pixels_per_word = 8;
+                break;
+                case 4: /*2bpp*/
+                vidc.hdstart=(vidc.hdstart2<<1)+11;
+                vidc.hdend=(vidc.hdend2<<1)+11;
+                vidc.fetch_time = vidc.pixel_time * 16 * 4;
+                pixels_per_word = 16;
+                break;
+                case 0: /*1bpp*/
+                default:
+                vidc.hdstart=(vidc.hdstart2<<1)+19;
+                vidc.hdend=(vidc.hdend2<<1)+19;
+                vidc.fetch_time = vidc.pixel_time * 32 * 4;
+                pixels_per_word = 32;
+                break;
         }
+                
+        switch (vidcr[VIDC_CR] & 0x30) /*DMA Request*/
+        {
+                case 0x00: /*end of word 0, 4*/
+                vidc.initial_fetch_time = (vidc.pixel_time * 4) * pixels_per_word;
+                break;
+                case 0x10: /*end of word 1, 5*/
+                vidc.initial_fetch_time = (vidc.pixel_time * 5) * pixels_per_word;
+                break;
+                case 0x20: /*end of word 2, 6*/
+                vidc.initial_fetch_time = (vidc.pixel_time * 6) * pixels_per_word;
+                break;
+                case 0x30: /*end of word 3, 7*/
+                default:
+                vidc.initial_fetch_time = (vidc.pixel_time * 7) * pixels_per_word;
+                break;
+        }
+
+        memc_dma_video_req_period = vidc.fetch_time;
+/*        rpclog("memc_dma_video_req_period=%016llx\n", memc_dma_video_req_period);*/
+
+        vidc.horiz_length = (vidc.htot * 2) + 2;
+                
+        vidc.hsync_length = (vidc.sync * 2) + 2;
+        vidc.front_porch_length = vidc.hdstart - vidc.hsync_length;
+
+        if (vidc.hdstart < vidc.horiz_length)
+                disp_start = vidc.hdstart;
+        else
+                disp_start = vidc.horiz_length;
+        if (vidc.hdend < vidc.horiz_length)
+                disp_end = vidc.hdend;
+        else
+                disp_end = vidc.horiz_length;
+        vidc.display_length = disp_end - disp_start;
+        vidc.back_porch_length = vidc.horiz_length - disp_end;
+                
+        if (vidc.hsync_length < 0)
+                vidc.hsync_length = 0;
+        if (vidc.front_porch_length < 0)
+                vidc.front_porch_length = 0;
+        if (vidc.display_length < 0)
+                vidc.display_length = 0;
+        if (vidc.back_porch_length < 0)
+                vidc.back_porch_length = 0;
+
+/*        rpclog("recalcse: horiz_length=%i  hsync_length=%i front_porch_length=%i display_length=%i back_port_length=%i\n",
+                vidc.horiz_length,
+                vidc.hsync_length, vidc.front_porch_length, vidc.display_length, vidc.back_porch_length);*/
 }
 
 void writevidc(uint32_t v)

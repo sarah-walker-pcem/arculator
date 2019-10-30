@@ -259,7 +259,7 @@ void sound_init(void)
         sound_first_poll = 1;
         SAMP_INC = ((int)((1000000.0 / 48000.0) * 16384.0));
         
-        samp_rp = 0xfff00000;
+        samp_rp = 0xff000000;
         samp_wp = 0;
         samp_fp = 0;
 }

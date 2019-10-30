@@ -53,6 +53,7 @@ extern uint64_t TIMER_USEC;
 #define TIMER_VAL_LESS_THAN_VAL(a, b) ((int32_t)((a) - (b)) <= 0)
 #define TIMER_VAL_LESS_THAN_VAL_64(a, b) ((int64_t)((a) - (b)) <= 0)
 #define TIMER_VAL_LESS_THAN_NE_VAL(a, b) ((int32_t)((a) - (b)) < 0)
+#define TIMER_VAL_LESS_THAN_NE_VAL_64(a, b) ((int64_t)((a) - (b)) < 0)
 
 /*Advance timer by delay, specified in 32:32 format. This should be used to
   resume a recurring timer in a callback routine*/

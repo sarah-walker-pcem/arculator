@@ -435,7 +435,7 @@ void cache_write_timing(uint32_t addr, int is_n_cycle)
         {
                 if (clock_domain != DOMAIN_MCLK)
                         fatal("Write cycle with pending reads - clock_domain != MCLK %07x\n", addr);
-                if (TIMER_VAL_LESS_THAN_VAL_64(mem_available_ts, tsc))
+                if (TIMER_VAL_LESS_THAN_NE_VAL_64(mem_available_ts, tsc))
                         fatal("Write cycle with pending reads - TS already expired? %016llx %016llx\n", mem_available_ts, tsc);
                 /*Complete pending line fill*/
                 /*Note that ARM3 can go straight from a line fill to memory write

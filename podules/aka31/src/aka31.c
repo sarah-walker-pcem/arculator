@@ -340,6 +340,7 @@ static void aka31_close(struct podule_t *podule)
         aka31_t *aka31 = podule->p;
         
         sound_out_close(aka31->sound_out);
+        wd33c93a_close(&aka31->wd);
         free(aka31);
 }
 

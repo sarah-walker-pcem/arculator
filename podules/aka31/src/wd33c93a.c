@@ -57,6 +57,11 @@ void wd33c93a_init(wd33c93a_t *wd, podule_t *podule, d71071l_t *dma, struct scsi
         scsi_bus_init(wd->bus, podule);
 }
 
+void wd33c93a_close(wd33c93a_t *wd)
+{
+        scsi_bus_close(wd->bus);
+}
+
 int scsi_add_data(wd33c93a_t *wd, uint8_t val)
 {
         if (wd->command & CMD_SBT)

@@ -404,14 +404,14 @@ void scsi_bus_close(scsi_bus_t *bus)
 {
         int c;
         
-	memset(bus->devices, 0, sizeof(bus->devices));
-	memset(bus->device_data, 0, sizeof(bus->device_data));
-
 	for (c = 0; c < 8; c++)
 	{
                 if (bus->device_data[c])
                         bus->devices[c]->close(bus->device_data[c]);
         }
+
+	memset(bus->devices, 0, sizeof(bus->devices));
+	memset(bus->device_data, 0, sizeof(bus->device_data));
 }
 
 void scsi_bus_reset(scsi_bus_t *bus)

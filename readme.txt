@@ -107,7 +107,227 @@ Video - Full screen - Goes to a full screen. Use CTRL+END to return to windowed 
 Compatibility
 ~~~~~~~~~~~~~
 
+Arthur 0.30
+Arthur 1.20
+RISC OS 2.00
+RISC OS 2.01
+RISC OS 3.00
+RISC OS 3.10
+RISC OS 3.11
+RISC OS 3.19
+RISC iX 1.2.1c
 
+1st Word Plus (v2.01)
+Acorn Advance (v1.01)
+Acorn C/C++
+ArtWorks (v1.7)
+ClearView (v1.06)
+Coconizer (v1.31)
+EasiWriter Professional (v4.08)
+FasterPC (v3.005)
+Impression Publisher (v4.09)
+Impression Style (v3.10)
+Miracle (v0.10)
+Music Studio 32 (v1.01)
+Notate
+Ovation (v1.42S)
+PC Emulator (v1.82)
+PenDown (v1.72)
+ProArtisan
+ProSound (v1.11b)
+Rhapsody (v1.20)
+Rhapsody 3 (v3.03)
+SparkFS (v1.28)
+Speculator (v1.03)
+Studio24 (v1.10)
+TechWriter Professional (v4.10)
+
+3D Tanks
+Aggressor
+Air Supremacy
+Aldebaran
+Alerion (FDI)
+Alien Invasion (FDI)
+Aliped
+Alone in the Dark
+All In Boxing
+Ankh
+Apocalypse
+Arcade Soccer
+ArcElite
+ARCticulate (FDI)
+Asylum
+Axis (FDI)
+Bambuzle (FDI)
+Battle Chess (FDI)
+Battle Tanks (FDI)
+Big Bang (FDI)
+Black Angel (FDI)
+Blaston
+Blitz (FDI)
+Blowpipe
+Bloxed
+Bobbie Blockhead vs The Dark Planet
+Boogie Buggy (FDI)
+Botkiller
+Botkiller 2
+Break 147
+Brian Clough's Football Fortunes (FDI)
+Bubble Fair
+Bug Hunter
+Bug Hunter II
+Burn 'Out (FDI)
+Cannon Fodder
+Cataclysm (FDI)
+Chess (FDI)
+Chess 3D
+Chocks Away
+Chopper Force (FDI)
+Chuck Rock
+Conqueror
+Creepie Crawlie
+Cyber Chess (FDI)
+Cycloids (APD)
+Darkwood (APD)
+Days of Steam (FDI)
+Demons Lair (FDI)
+Diggers
+DinoSaw
+Doom+
+Drifter
+Dune II (floppy & CD v1.30b)
+Empire Soccer
+Enigma
+Enter the Realm (FDI)
+E-Type (FDI)
+E-Type 2 (FDI)
+Fireball II
+Flashback
+FTT (APD)
+Galactic Dan
+Gods (FDI)
+Grievous Bodily 'ARM (FDI)
+Gyrinus II 
+Hamsters
+Heimdall
+Hero Quest
+Holed Out (FDI)
+Hostages
+Inertia (FDI)
+Inferno
+Iron Lord
+Ixion
+Jahangir Khan World Championship Squash (FDI)
+James Pond
+Leeds United Champions
+Lemings
+Lemmings
+Lemmings 2 : The Tribes
+Lotus 2 (FDI)
+Mad Professor Mariati
+Magic Pockets (FDI)
+Man At Arms (FDI)
+Manchester United (FDI)
+Manchester United Europe (FDI)
+Master Break (FDI)
+MicroDrive (FDI)
+MiG-29 Fulcrum
+Moonquake
+Mr Doo
+Nebulus
+Nevryon (APD)
+No Excuses (FDI)
+Oddball
+Oh No! More Lemmings
+Overload (Clares - FDI)
+Overload (Paradise)
+Pacmania
+Pandora's Box (APD)
+Paradroid 2000
+Phaethon
+Pipe Mania
+Poizone
+Populous (APD)
+Premier Manager (APD)
+Pysakki
+Quest For Gold
+RedShift (FDI)
+Repton 3
+Revelation
+Revolver (FDI)
+Saloon Cars (FDI)
+Saloon Cars Deluxe (FDI)
+Sensible Soccer (APD)
+Silverball (APD)
+SimCity
+SimCity 2000
+Simon the Sorcerer (CD)
+Speedball II
+Spheres of Chaos
+Spy Snatcher (FDI)
+Star Fighter 3000 (APD)
+Starch
+Stunt Racer 2000 (APD)
+Super Foul Egg
+Super Snail
+SWIV
+Talisman
+Technodream (FDI)
+Terramex
+The Adventures of Sylvia Lane (FDI)
+The Dungeon (APD)
+The Last Ninja (APD)
+The Olympics (FDI)
+The Wimp Game (APD)
+Time Zone
+Top Banana
+Tower of Babel
+Trivial Pursuit
+Twin World
+Virtual Golf (FDI)
+White Magic 2 (FDI)
+Wolfenstein 3D (APD)
+Wonderland
+World Championship Boxing Manager
+World Class Leaderboard (APD)
+X-Fire (FDI)
+Zarch (FDI)
+Zool (FDI)
+
+Address Exception - Demo6399
+Arc Angels - Arc Angels
+Arc Angels - Megademo
+Arc Sailor - Adramort
+Arc Sailor - ARMATAS
+Arc Sailor - Fantasy Demo
+ArcEmpire - Transmortal
+Archiologics - Jojo
+Archiologics/Icebird/Slompt - Ostern95
+ARM's Tech - CakeHead 2
+ARM's Tech - Damn!
+ARMageddon - Demo Collection III
+Armaxess - Risc Dream
+Armie and Bert - Everybody
+BASS et al - Xtreme (v1.02)
+Brothers in ARM - BIATetris
+Brothers in ARM - Bounce
+Brothers in ARM - DEMO^2
+Brothers in ARM - Rotate
+Brothers in ARM - Sister
+Bytepool - Nirvana
+Daydream Software - Adept
+Expression - Insanity
+Expression - Signum
+Network 23 - Grafitti Street
+Quantum - Liquid Dreams
+Shifty - Sinedemo
+SICK - Ba
+SquoQuo - Black Zone
+TCD - Power Scroll
+The Master - Horizon
+The Obsessed Maniacs - Zerblast
+The Xperience - Xcentric
+Zarquon - Metamorphosis
 
 Sarah
 b-em@bbcmicro.com

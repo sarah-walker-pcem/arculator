@@ -299,6 +299,7 @@ enum
         PROMOTE_NOMERGE
 };
 
+static int cache_was_on = 0;
 static int promote_fetch_to_n = PROMOTE_NONE;
 void cache_read_timing(uint32_t addr, int is_n_cycle, int is_merged_fetch)
 {
@@ -310,6 +311,7 @@ void cache_read_timing(uint32_t addr, int is_n_cycle, int is_merged_fetch)
   //      if (output) rpclog("Read %c-cycle %07x\n", is_n_cycle?'N':'S', addr);
         if (is_n_cycle)
         {
+                cache_was_on = 0;
                 if (cp15_cacheon)
                 {
 //                        rpclog("N-cycle %08x %i %i\n", addr, clock_domain, pending_reads);
@@ -329,7 +331,10 @@ void cache_read_timing(uint32_t addr, int is_n_cycle, int is_merged_fetch)
                         sync_to_fclk();
                         
         		if (arm3_cache[byte_offset] & (1 << bit_offset))
+        		{
+                                cache_was_on = 1;
                                 CLOCK_I(); /*Data is in cache*/
+                        }
                         else if (!(arm3cp.cache & (1 << (addr >> 21))))
         		{
                                 /*Data is uncacheable*/
@@ -371,7 +376,7 @@ void cache_read_timing(uint32_t addr, int is_n_cycle, int is_merged_fetch)
                                         fatal("Data uncacheable - clock_domain != MCLK %07x\n", addr);
                                 CLOCK_S(addr);
                         }
-        		else if (arm3_cache[byte_offset] & (1 << bit_offset))
+        		else if (cache_was_on && (arm3_cache[byte_offset] & (1 << bit_offset)))
         		{
                                 if ((clock_domain != DOMAIN_FCLK) && ((addr & ~0xf) != cache_fill_addr))
                                         fatal("Data in cache - clock_domain != FCLK %08x\n", addr);

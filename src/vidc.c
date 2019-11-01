@@ -146,6 +146,8 @@ struct
         int cycles_per_fetch;
         int fetch_count;
         
+        int clear_pending;
+        
         int clock;
         
         int disp_len, disp_rate, disp_count;
@@ -401,12 +403,17 @@ void writevidc(uint32_t v)
         {
                 if (vidc.vtot != ((v >> 14) & 0x3FF) + 1)
                 {
+                        int old_scanrate = vidc.scanrate;
+                        
                         vidc.vtot = ((v >> 14) & 0x3FF) + 1;
 
                         if (vidc.vtot >= 350)
                                 vidc.scanrate=1;
                         else
                                 vidc.scanrate=0;
+
+                        if (old_scanrate != vidc.scanrate)
+                                vidc.clear_pending = 1;
                 }
                 LOG_VIDC_REGISTERS("VIDC write vtot = %d\n", vidc.vtot);
         }
@@ -1168,7 +1175,11 @@ static void vidc_poll(void *__p)
 
                 /*Clear the buffer now so we don't get a persistent ghost when changing
                   from a high vertical res mode to a line-doubled mode.*/
-                //clear(buffer);
+                if (vidc.clear_pending)
+                {
+                        vidc.clear_pending = 0;
+                        clear(buffer);
+                }
 
                 vidc.line=0;
                 vidc.border_was_disabled = 0;

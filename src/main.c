@@ -222,6 +222,7 @@ int speed_mhz;
 
 void arc_reset()
 {
+        arc_set_cpu(arm_cpu_type, memc_type);
         timer_reset();
         st506_internal_close();
         if (cmos_changed)
@@ -232,7 +233,6 @@ void arc_reset()
         loadrom();
         cmos_load();
         resizemem(memsize);
-        arc_set_cpu(arm_cpu_type, memc_type);
         resetarm();
         memset(ram,0,memsize*1024);
         resetmouse();
@@ -252,12 +252,6 @@ void arc_reset()
         podules_reset();
         joystick_if_init();
         ioeb_init();
-}
-
-void arc_setspeed(int mhz)
-{
-        rpclog("arc_setspeed : %i MHz\n", mhz);
-        speed_mhz = mhz;
 }
 
 static struct
@@ -304,7 +298,7 @@ void arc_set_cpu(int cpu, int memc)
         arm_has_swp   = arc_cpus[cpu].has_swp;
         arm_has_cp15  = arc_cpus[cpu].has_cp15;
         ref8m_period = (arm_cpu_speed * 1024) / 8;
-        arc_setspeed(arm_cpu_speed);
+        speed_mhz = arm_cpu_speed;
         mem_updatetimings();
 }
 

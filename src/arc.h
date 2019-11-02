@@ -69,7 +69,6 @@ extern void fatal(const char *format, ...);
 #define nr_elems(array) (int)(sizeof(array) / sizeof(array[0]))
 
 extern void arc_set_cpu(int cpu, int memc);
-extern void arc_setspeed(int mhz);
 extern void updatewindowsize(int x, int y);
 
 extern int updatemips,inssec;
@@ -195,7 +194,6 @@ extern int mousecapture;
 void updateins();
 
 void get_executable_name(char *s, int size);
-void arc_setspeed(int mhz);
 
 
 void updatewindowsize(int x, int y);

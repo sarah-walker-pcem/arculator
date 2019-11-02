@@ -70,8 +70,8 @@ static void window_create(void *wx_menu)
         wincl.cbSize = sizeof(WNDCLASSEX);
 
         /* Use default icon and mouse-pointer */
-        wincl.hIcon = LoadIcon(NULL, IDI_APPLICATION);
-        wincl.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
+        wincl.hIcon = LoadIcon(hinstance, "ArculatorIconName");
+        wincl.hIconSm = LoadIcon(hinstance, "ArculatorIconName");
         wincl.hCursor = NULL;//LoadCursor (NULL, IDC_ARROW);
         wincl.lpszMenuName = NULL;                 /* No menu */
         wincl.cbClsExtra = 0;                      /* No extra bytes after the window class */

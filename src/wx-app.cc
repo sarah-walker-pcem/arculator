@@ -66,6 +66,7 @@ bool App::OnInit()
         
         frame = new Frame(this, "null frame", wxPoint(500, 500),
                         wxSize(100, 100));
+        frame->SetIcon(wxICON(ICON_ACORN));
         frame->Start();
         return true;
 }

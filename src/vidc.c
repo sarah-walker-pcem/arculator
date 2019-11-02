@@ -558,8 +558,6 @@ static void vidc_poll(void *__p)
 //        char s[256];
         int l = (vidc.line - 17);
         int xoffset,xoffset2;
-        int old_display_on = vidc.displayon;
-        int vidc_cycles;
         int do_double_scan = (!vidc.scanrate && !dblscan);
 
         if (do_double_scan)

@@ -229,8 +229,7 @@ int romset_available_mask = 0;
 int rom_establish_availability()
 {
         int old_romset = romset;
-        int c;
-        
+
         rom = malloc(4 * 1024 * 1024);
 
         for (romset = 0; romset < ROM_MAX; romset++)

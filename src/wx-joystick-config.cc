@@ -44,7 +44,6 @@ static const char *axis_strings[AXIS_STRINGS_MAX] = {"X Axis", "Y Axis", "Z Axis
 void JoystickConfDialog::rebuild_axis_button_selections()
 {
         int id = IDC_CONFIG_BASE + 3;
-        void *h;
         int c, d;
 
         for (c = 0; c < joystick_get_axis_count(joystick_config_type); c++)

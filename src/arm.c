@@ -51,7 +51,6 @@ uint32_t opcode;
 static uint32_t opcode2,opcode3;
 static uint32_t *usrregs[16],userregs[16],superregs[16],fiqregs[16],irqregs[16];
 
-static int vidc_dma_pending = 0;
 int vidc_fetches = 0;
 
 int databort;

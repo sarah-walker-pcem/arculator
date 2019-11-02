@@ -37,8 +37,7 @@ HDConfDialog::HDConfDialog(wxWindow *parent, int new_sectors, int new_heads, int
                 new_cylinders(new_cylinders)
 {
         char temp_s[80];
-        int new_size;
-        
+
         wxXmlResource::Get()->LoadDialog(this, parent, "HdConfDlg");
 
         Bind(wxEVT_BUTTON, &HDConfDialog::OnOK, this, wxID_OK);

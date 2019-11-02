@@ -282,7 +282,6 @@ void jfd_stop()
 }
 
 static int jfd_pos_us = 0;
-static int jfd_time = 0;
 
 void jfd_poll()
 {

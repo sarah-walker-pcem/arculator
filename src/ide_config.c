@@ -36,7 +36,6 @@ void st506_config_init(const podule_callbacks_t *callbacks)
 
 static int changed_chs(void *window_p, const struct podule_config_item_t *item, void *new_data)
 {
-        char *new_s = new_data;
         char *temp_s;
         char size_s[80];
         int cylinders, heads, sectors;
@@ -84,7 +83,6 @@ static int changed_chs(void *window_p, const struct podule_config_item_t *item, 
 
 static int changed_size(void *window_p, const struct podule_config_item_t *item, void *new_data)
 {
-        char *new_s = new_data;
         char *temp_s;
         char size_s[80];
         int cylinders, heads, sectors;

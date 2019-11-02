@@ -31,10 +31,6 @@ AC_ARG_ENABLE(podules,
           AC_HELP_STRING([--disable-podules], [don't build podules]))
 if test "$enable_podules" != "no"; then
    AC_MSG_RESULT([yes])
-   AC_CHECK_LIB(asound, snd_pcm_open,
-        [],
-        [echo "You need to install the ALSA library."
-        exit -1])
 else
    AC_MSG_RESULT([no])
 fi
@@ -88,6 +84,12 @@ case "$host" in
        AC_CHECK_LIB([openal], [alGetError], [], \
            [echo "You need to install the OpenAL library."
            exit -1])
+       if test "$enable_podules" != "no"; then
+          AC_CHECK_LIB(asound, snd_pcm_open,
+               [],
+               [echo "You need to install the ALSA library."
+                exit -1])
+       fi
        build_linux="yes"
        ;;
     *)

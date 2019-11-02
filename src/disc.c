@@ -87,7 +87,7 @@ loaders[]=
         {"ADL", adl_load,       adf_close, 2*80*16* 256},
         {"FDI", fdi_load,       fdi_close, -1},
         {"APD", apd_load,       apd_close, -1},
-        {"JFD", jfd_load,       jfd_close, -1},        
+//        {"JFD", jfd_load,       jfd_close, -1},
         {0,0,0}
 };
 

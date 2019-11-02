@@ -8,6 +8,12 @@
 #include "aka31.h"
 #include "hdd_file.h"
 
+#ifdef __APPLE__
+#define fopen64 fopen
+#define fseeko64 fseek
+#define off64_t off_t
+#endif
+
 void hdd_load(hdd_file_t *hdd, const char *fn, int sectors)
 {
 	if (hdd->f == NULL)

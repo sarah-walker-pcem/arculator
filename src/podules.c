@@ -6,6 +6,7 @@
 #include "config.h"
 #include "ide_idea.h"
 #include "ide_riscdev.h"
+#include "ide_zidefs.h"
 #include "ioc.h"
 #include "podules.h"
 #include "st506_akd52.h"
@@ -27,7 +28,8 @@ static const podule_header_t *(*internal_podules[])(const podule_callbacks_t *ca
         akd52_probe,
         arcrom_probe,
         idea_ide_probe,
-        riscdev_ide_probe
+        riscdev_ide_probe,
+        zidefs_ide_probe
 };
 
 #define NR_INTERNAL_PODULES (sizeof(internal_podules) / sizeof(internal_podules[0]))

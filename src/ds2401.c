@@ -120,8 +120,10 @@ void ds2401_write(int val)
                                         ds2401.state = STATE_READ_ROM;
                                         ds2401.state_pos = 0;
                                 }
+#ifndef RELEASE_BUILD
                                 else
                                         fatal("DS2401 command %02x\n", ds2401.command);
+#endif
                         }
                         break;
                         

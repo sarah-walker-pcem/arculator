@@ -254,7 +254,10 @@ void cmos_write(uint8_t byte)
                 break;
 
                 case CMOS_SENDDATA:
+#ifndef RELEASE_BUILD
                 fatal("Send data %02X\n", cmos.addr);
+#endif
+                break;
         }
 }
 

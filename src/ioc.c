@@ -149,7 +149,9 @@ void ioc_write(uint32_t addr, uint32_t v)
                 ioc.timerr[3] = ioc.timerc[3]; 
                 return;
         }
+#ifndef RELEASE_BUILD
         fatal("Bad IOC write %07X %04X %08X\n",addr,v,PC);
+#endif
 }
 
 uint8_t ioc_read(uint32_t addr)

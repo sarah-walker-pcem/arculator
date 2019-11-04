@@ -162,26 +162,31 @@ int loadrom()
         if (!dirp)
         {
                 perror("opendir: ");
+#ifndef RELEASE_BUILD
                 fatal("Can't open rom dir %s\n", fn);
+#endif
         }
-        while (((dp = readdir(dirp)) != NULL) && file<16)
+        else
         {
-                if (dp->d_type != DT_REG && dp->d_type != DT_LNK)
-                        continue;
-                if (strcasecmp(dp->d_name, ".DS_Store"))
+                while (((dp = readdir(dirp)) != NULL) && file<16)
                 {
-                        ext=get_extension(dp->d_name);
-                        if (strcasecmp(ext,"txt"))
+                        if (dp->d_type != DT_REG && dp->d_type != DT_LNK)
+                                continue;
+                        if (strcasecmp(dp->d_name, ".DS_Store"))
                         {
-                                rpclog("Found %s\n", dp->d_name);
-                                strcpy(romfns[file], dp->d_name);
-                                file++;
+                                ext=get_extension(dp->d_name);
+                                if (strcasecmp(ext,"txt"))
+                                {
+                                        rpclog("Found %s\n", dp->d_name);
+                                        strcpy(romfns[file], dp->d_name);
+                                        file++;
+                                }
                         }
+//                        else
+//                                rpclog("Skipping %s\n",ff.name);
                 }
-//                else
-//                   rpclog("Skipping %s\n",ff.name);
+                (void)closedir(dirp);
         }
-        (void)closedir(dirp);
 #endif
         if (file==0)
         {

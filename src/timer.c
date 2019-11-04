@@ -19,8 +19,10 @@ void timer_enable(emu_timer_t *timer)
 	if (timer->enabled)
 		timer_disable(timer);
 
+#ifndef RELEASE_BUILD
 	if (timer->next || timer->prev)
 		fatal("timer_enable - timer->next\n");
+#endif
 
 	timer->enabled = 1;
 
@@ -70,8 +72,10 @@ void timer_disable(emu_timer_t *timer)
 	if (!timer->enabled)
 		return;
 
+#ifndef RELEASE_BUILD
 	if (!timer->next && !timer->prev && timer != timer_head)
 		fatal("timer_disable - !timer->next\n");
+#endif
 
 	timer->enabled = 0;
 

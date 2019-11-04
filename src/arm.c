@@ -316,10 +316,12 @@ void cache_read_timing(uint32_t addr, int is_n_cycle, int is_merged_fetch)
 //                        rpclog("N-cycle %08x %i %i\n", addr, clock_domain, pending_reads);
                         if (pending_reads)
                         {
+#ifndef RELEASE_BUILD
                                 if (clock_domain != DOMAIN_MCLK)
                                         fatal("N-cycle with pending reads - clock_domain != MCLK %07x\n", addr);
                                 if (TIMER_VAL_LESS_THAN_VAL_64(mem_available_ts, tsc))
                                         fatal("N-cycle with pending reads - TS already expired? %016llx %016llx\n", mem_available_ts, tsc);
+#endif
                                 /*Complete pending line fill*/
                                 pending_reads = 0;
                                 tsc = mem_available_ts;
@@ -363,30 +365,38 @@ void cache_read_timing(uint32_t addr, int is_n_cycle, int is_merged_fetch)
 //                        rpclog("S-cycle %08x %i %i\n", addr, clock_domain, pending_reads);
                         if (pending_reads)
                         {
+#ifndef RELEASE_BUILD
                                 if (clock_domain != DOMAIN_MCLK)
                                         fatal("S-cycle with pending reads - clock_domain != MCLK %07x\n", addr);
                                 if (TIMER_VAL_LESS_THAN_VAL_64(mem_available_ts, tsc))
                                         fatal("S-cycle with pending reads - TS already expired? %016llx %016llx\n", mem_available_ts, tsc);
+#endif
                                 /*Cache line fill is in progress. Since the CPU
                                   being clocked and this is an S cycle, it must
                                   be the next word to be read*/
                                 pending_reads--;
+#ifndef RELEASE_BUILD
                                 if (clock_domain != DOMAIN_MCLK)
                                         fatal("Data uncacheable - clock_domain != MCLK %07x\n", addr);
+#endif
                                 CLOCK_S(addr);
                         }
         		else if (cache_was_on && (arm3_cache[byte_offset] & (1 << bit_offset)))
         		{
+#ifndef RELEASE_BUILD
                                 if ((clock_domain != DOMAIN_FCLK) && ((addr & ~0xf) != cache_fill_addr))
                                         fatal("Data in cache - clock_domain != FCLK %08x\n", addr);
+#endif
                                 sync_to_fclk();
                                 CLOCK_I(); /*Data is in cache*/
                         }
                         else if (!(arm3cp.cache & (1 << (addr >> 21))))
         		{
                                 /*Data is uncacheable*/
+#ifndef RELEASE_BUILD
                                 if (clock_domain != DOMAIN_MCLK)
                                         fatal("Data uncacheable - clock_domain != MCLK %07x\n", addr);
+#endif
                                 CLOCK_S(addr);
                         }
                         else
@@ -437,10 +447,12 @@ void cache_write_timing(uint32_t addr, int is_n_cycle)
 //        if (output) rpclog("Write %c-cycle %08x\n", is_n_cycle ? 'N' : 'S', addr);
         if (pending_reads)
         {
+#ifndef RELEASE_BUILD
                 if (clock_domain != DOMAIN_MCLK)
                         fatal("Write cycle with pending reads - clock_domain != MCLK %07x\n", addr);
                 if (TIMER_VAL_LESS_THAN_NE_VAL_64(mem_available_ts, tsc))
                         fatal("Write cycle with pending reads - TS already expired? %016llx %016llx\n", mem_available_ts, tsc);
+#endif
                 /*Complete pending line fill*/
                 /*Note that ARM3 can go straight from a line fill to memory write
                   without resyncing to FCLK if the line fill is still incomplete
@@ -462,8 +474,10 @@ void cache_write_timing(uint32_t addr, int is_n_cycle)
 	else
 	{
 //                rpclog("Write S-cycle %08x\n", addr);
+#ifndef RELEASE_BUILD
                 if (clock_domain != DOMAIN_MCLK)
                         fatal("Write S-cycle - not in MCLK %08x\n", addr);
+#endif
 		CLOCK_S(addr);
 		mem_available_ts = tsc;
         }

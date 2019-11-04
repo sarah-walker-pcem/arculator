@@ -9,6 +9,18 @@
 #include "ioc.h"
 #include "timer.h"
 
+/* Bits of 'atastat' */
+#define ERR_STAT		0x01
+#define DRQ_STAT		0x08 /* Data request */
+#define DSC_STAT                0x10
+#define SERVICE_STAT            0x10
+#define READY_STAT		0x40
+#define BUSY_STAT		0x80
+
+/* Bits of 'error' */
+#define ABRT_ERR		0x04 /* Command aborted */
+#define MCR_ERR			0x08 /* Media change request */
+
 ide_t ide_internal;
 
 static void ide_raise_irq(ide_t *ide)
@@ -196,9 +208,13 @@ void writeide(ide_t *ide, uint32_t addr, uint8_t val)
                         ide->atastat=0x80;
                         timer_set_delay_u64(&ide->timer, 1000 * TIMER_USEC);
                         return;
+
+                        default:
+                	ide->atastat = READY_STAT | ERR_STAT | DSC_STAT;
+                	ide->error = ABRT_ERR;
+                        ide_raise_irq(ide);
+                        return;
                 }
-                error("Bad IDE command %02X\n",val);
-                exit(-1);
                 return;
                 case 0x3F6:
                 if ((ide->fdisk&4) && !(val&4))

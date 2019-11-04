@@ -107,8 +107,9 @@ void st506_writeb(st506_t *st506, uint32_t a, uint8_t v)
 {
 //        return;
         rpclog("Write HDC %08X %08X\n",a,v);
-        error("ST506 write %08X %02X %02X at %07X\n",a,a&0x3C,v,PC);
-        exit(-1);
+#ifndef RELEASE_BUILD
+        fatal("ST506 write %08X %02X %02X at %07X\n",a,a&0x3C,v,PC);
+#endif
 }
 
 uint8_t st506_readb(st506_t *st506, uint32_t a)
@@ -151,8 +152,10 @@ uint8_t st506_readb(st506_t *st506, uint32_t a)
                 }
                 break;
         }
-        error("ST506 read %08X %02X at %07X\n",a,a&0x3C,PC);
-        exit(-1);
+#ifndef RELEASE_BUILD
+        fatal("ST506 read %08X %02X at %07X\n",a,a&0x3C,PC);
+#endif
+        return 0xff;
 }
 
 void st506_writel(st506_t *st506, uint32_t a, uint32_t v)
@@ -357,9 +360,10 @@ void st506_writel(st506_t *st506, uint32_t a, uint32_t v)
                         case 0xFF:
                         break;
                         
+#ifndef RELEASE_BUILD
                         default:
-                        error("Bad ST506 command %02X\n",v);
-                        exit(-1);
+                        fatal("Bad ST506 command %02X\n",v);
+#endif
                 }
                 return;
                 
@@ -398,8 +402,9 @@ void st506_writel(st506_t *st506, uint32_t a, uint32_t v)
                 }
                 return;
         }
-        error("ST506 writel %08X %02X %08X at %07X\n",a,a&0x3C,v,PC);
-        exit(-1);
+#ifndef RELEASE_BUILD
+        fatal("ST506 writel %08X %02X %08X at %07X\n",a,a&0x3C,v,PC);
+#endif
 }
 
 uint32_t st506_readl(st506_t *st506, uint32_t a)
@@ -451,8 +456,10 @@ uint32_t st506_readl(st506_t *st506, uint32_t a)
                 }
                 return 0xFF;
         }
-        error("ST506 readl %08X %02X at %07X\n",a,a&0x3C,PC);
-        exit(-1);
+#ifndef RELEASE_BUILD
+        fatal("ST506 readl %08X %02X at %07X\n",a,a&0x3C,PC);
+#endif
+        return 0xffff;
 }
 
 static void st506_callback(void *p)
@@ -477,11 +484,10 @@ static void st506_callback(void *p)
                                 {
                                         st506->lhead = 0;
                                         st506->lcyl++;
+#ifndef RELEASE_BUILD
                                         if (st506->lcyl > 1023)
-                                        {
-                                                error("Hit limit\n");
-                                                exit(-1);
-                                        }
+                                                fatal("Hit limit\n");
+#endif
                                 }
                         }
 //                        rpclog("Reading from pos %08X - %i sectors left\n",ftell(st506->hdfile[st506->drive]),st506->oplen);
@@ -529,11 +535,10 @@ static void st506_callback(void *p)
                                 {
                                         st506->lhead = 0;
                                         st506->lcyl++;
+#ifndef RELEASE_BUILD
                                         if (st506->lcyl > 1023)
-                                        {
-                                                error("Hit limit\n");
-                                                exit(-1);
-                                        }
+                                                fatal("Hit limit\n");
+#endif
                                 }
                         }
                         st506->oplen--;
@@ -576,11 +581,10 @@ static void st506_callback(void *p)
                                 {
                                         st506->lhead = 0;
                                         st506->lcyl++;
+#ifndef RELEASE_BUILD
                                         if (st506->lcyl > 1023)
-                                        {
-                                                error("Hit limit\n");
-                                                exit(-1);
-                                        }
+                                                fatal("Hit limit\n");
+#endif
                                 }
                         }
                         st506->oplen--;

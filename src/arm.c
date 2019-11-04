@@ -972,11 +972,10 @@ static inline uint32_t shift_mem(uint32_t opcode)
         int cflag=CFSET;
         
         if (!(opcode&0xFF0)) return armregs[RM];
+#ifndef RELEASE_BUILD
         if (opcode&0x10)
-        {
-                rpclog("Shift by register on memory shift!!! %08X\n",PC);
-                exit(-1);
-        }
+                fatal("Shift by register on memory shift!!! %08X\n",PC);
+#endif
         temp=armregs[RM];
         switch (shiftmode)
         {

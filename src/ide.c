@@ -227,9 +227,9 @@ void writeide(ide_t *ide, uint32_t addr, uint8_t val)
                 ide->fdisk=val;
                 return;
         }
-        error("Bad IDE write %04X %02X\n",addr,val);
-        dumpregs();
-        exit(-1);
+#ifndef RELEASE_BUILD
+        fatal("Bad IDE write %04X %02X\n",addr,val);
+#endif
 }
 
 uint8_t readide(ide_t *ide, uint32_t addr)
@@ -270,9 +270,10 @@ uint8_t readide(ide_t *ide, uint32_t addr)
 //                rpclog("Read ATAstat %02X\n",ide->atastat);
                 return ide->atastat;
         }
-        error("Bad IDE read %04X\n",addr);
-        dumpregs();
-        exit(-1);
+#ifndef RELEASE_BUILD
+        fatal("Bad IDE read %04X\n",addr);
+#endif
+        return 0xff;
 }
 
 uint16_t readidew(ide_t *ide)

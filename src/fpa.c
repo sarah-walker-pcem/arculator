@@ -468,9 +468,6 @@ int fpaopcode(uint32_t opcode)
                                 fpcr|=0x800;
 //                                undefined();
                                 return 1;
-                                error("Bad LDF/STF size %08X %08X\n",opcode&0x408000,opcode);
-                                dumpregs();
-                                exit(-1);
                         }
 //                        if (opcode&0x100000) rpclog("LDF %i,%i %i %08X %08X %08X\n",RN,FD,len,temp[0],temp[1],temp[2]);
 //                        else                 rpclog("STF %i,%i %i %08X %08X %08X\n",RN,FD,len,temp[0],temp[1],temp[2]);
@@ -644,11 +641,6 @@ int fpaopcode(uint32_t opcode)
                                 cache_read_timing(addr+4, !((addr + 4) & 0xc), 0);
                                 cache_read_timing(addr+8, !((addr + 8) & 0xc), 0);
                                 break;
-
-                                default:
-                                rpclog("Bad number of registers to load %06X\n",opcode&0x408000);
-                                dumpregs();
-                                exit(-1);
                         }
 //                        rpclog("Loaded %08X  %i  %f %f %f %f\n",opcode&0x408000,FD,fparegs[FD],fparegs[(FD+1)&7],fparegs[(FD+2)&7],fparegs[(FD+3)&7]);
                         if (!(opcode&0x1000000))
@@ -756,11 +748,6 @@ int fpaopcode(uint32_t opcode)
                                 cache_write_timing(addr+4, !((addr + 4) & 0xc));
                                 cache_write_timing(addr+8, !((addr + 8) & 0xc));
                                 break;
-                                
-                                default:
-                                rpclog("Bad number of registers to store %06X\n",opcode&0x408000);
-                                dumpregs();
-                                exit(-1);
                         }
                         if (!(opcode&0x1000000))
                         {
@@ -771,9 +758,9 @@ int fpaopcode(uint32_t opcode)
                         return 0;
                 }
                 /*LFM/SFM*/
-                error("SFM opcode %08X\n",opcode);
-                dumpregs();
-                exit(-1);
+#ifndef RELEASE_BUILD
+                fatal("SFM opcode %08X\n",opcode);
+#endif
                 return 1;
                 case 0xE:
                 if (opcode & 0x10)

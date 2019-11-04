@@ -239,9 +239,9 @@ void c82c711_fdc_write(uint16_t addr, uint8_t val)
                                 break;
 
                                 default:
-                                rpclog("Bad FDC command %02X\n",val);
-                                dumpregs();
-                                exit(-1);
+#ifndef RELEASE_BUILD
+                                fatal("Bad FDC command %02X\n",val);
+#endif
                                 fdc.stat=0x10;
                                 discint=0xfc;
                                 timer_set_delay_u64(&fdc_timer, 25 * TIMER_USEC);

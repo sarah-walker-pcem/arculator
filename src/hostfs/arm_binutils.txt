@@ -1,0 +1,82 @@
+Building GNU binutils to cross-assemble ARM assembler
+=====================================================
+
+Introduction
+------------
+
+These instructions explain how to use GNU binutils to cross-assemble ARM
+assembler on a Unix-like platform.
+
+Most of the steps are the standard steps for building software that uses
+autoconf.
+
+The default install location for the tools is under /usr/local
+(i.e. /usr/local/bin, /usr/local/lib etc.) Root privileges will be required to
+install software to this location.
+
+The install location can be changed by passing an additional option to the
+configure script (--prefix=/alternative/install/root).
+
+1. Obtain GNU binutils
+----------------------
+
+Read the GNU binutils home page (http://www.gnu.org/software/binutils/) to
+find out the version number of the latest release. At the time of writing the
+latest version was 2.16.1
+
+Download the latest release, from one of:
+
+* http://www.mirrorservice.org/sites/ftp.gnu.org/gnu/binutils/ (UK mirror)
+* http://ftp.gnu.org/gnu/binutils/ (original site)
+
+
+2. Build
+--------
+
+Extract binutils to a working directory. Change into this directory.
+
+Execute the following command (use the --prefix option to change the install
+location if desired):
+
+        ./configure --target=arm-elf --program-prefix=arm
+
+Then:
+
+        make
+
+3. Install
+----------
+
+After successful compilation the software will need to be installed with root
+privileges (if using the default install location). The sequence of commands is:
+
+        su
+        <enter root password at this point>
+        make install
+
+Alternatively if using a system that uses sudo (e.g. Ubuntu) use these commands:
+
+        sudo make install
+        <enter your own password at this point>
+
+4. Use
+------
+
+Ensure that the directory containing the binaries is in your PATH. This is
+normally the case if using the default location of /usr/local.
+
+If the install location is not in your PATH, enter the following command:
+
+        PATH=$PATH:/install/root/bin
+
+        (where /install/root should be substituted with the install location)
+
+The tools use the standard GNU names, but with the selected prefix ("arm").
+
+5. Further information
+----------------------
+
+Documentation on these tools can be found at
+http://sourceware.org/binutils/docs-2.16/. The most useful document here is
+for "gas", the default name for the GNU assembler. These instructions install
+the arm version as "armas".

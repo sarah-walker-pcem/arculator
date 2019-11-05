@@ -172,7 +172,7 @@ int loadrom()
                 {
                         if (dp->d_type != DT_REG && dp->d_type != DT_LNK)
                                 continue;
-                        if (strcasecmp(dp->d_name, ".DS_Store"))
+                        if (dp->d_name[0] != '.')
                         {
                                 ext=get_extension(dp->d_name);
                                 if (strcasecmp(ext,"txt"))

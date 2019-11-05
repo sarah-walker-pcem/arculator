@@ -231,9 +231,9 @@ static int arc_main_thread(void *p)
 
         input_close();
 
-        SDL_DestroyWindow(sdl_main_window);
-
         video_renderer_close();
+
+        SDL_DestroyWindow(sdl_main_window);
 
         return 0;
 }

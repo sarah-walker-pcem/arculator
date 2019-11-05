@@ -31,36 +31,30 @@
 #else
 #include <unistd.h>
 #endif
-#if defined __unix || defined __MACH__
-#include <utime.h>
-#else
-#include <sys/utime.h>
-#endif
 #include <sys/stat.h>
 #include <limits.h>
 #include <stdint.h>
 
 #include "arc.h"
 #include "config.h"
-//#include "arm.h"
-//#include "mem.h"
 #include "hostfs.h"
+#include "hostfs_internal.h"
 
-#define HOSTFS_PROTOCOL_VERSION	1
+#define HOSTFS_PROTOCOL_VERSION	3
 
 /* Windows mkdir() function only takes one argument name, and
    name clashes with Posix mkdir() function taking two. This
    macro allows us to use one API to work with both variants */
 #if (defined _WIN32 || defined __WIN32__) && ! defined __CYGWIN__
+# include <direct.h>
+
 # define mkdir(name, mode) _mkdir(name)
 #endif
 
-#if !defined(bool) && !defined(__cplusplus)
 typedef int bool;
 
 #define true  ((bool) 1)
 #define false ((bool) 0)
-#endif
 
 /** Registration states of HostFS module with backend code */
 typedef enum {
@@ -68,12 +62,6 @@ typedef enum {
   HOSTFS_STATE_REGISTERED,	/**< Module successfully registered */
   HOSTFS_STATE_IGNORE,		/**< Ignoring activity after failing to register */
 } HostFSState;
-
-enum OBJECT_TYPE {
-  OBJECT_TYPE_NOT_FOUND = 0,
-  OBJECT_TYPE_FILE      = 1,
-  OBJECT_TYPE_DIRECTORY = 2,
-};
 
 enum OPEN_MODE {
   OPEN_MODE_READ               = 0,
@@ -97,6 +85,8 @@ enum FILECORE_ERROR {
   FILECORE_ERROR_LOCKED      = 0xc3,
   FILECORE_ERROR_EXISTS      = 0xc4, /* Already exists */
   FILECORE_ERROR_DISCFULL    = 0xc6,
+  FILECORE_ERROR_DISCNOTFOUND	= 0xd4, /* Disc not found */
+  FILECORE_ERROR_NOTFOUND	= 0xd6,
 };
 
 enum RISC_OS_FILE_TYPE {
@@ -104,14 +94,6 @@ enum RISC_OS_FILE_TYPE {
   RISC_OS_FILE_TYPE_DATA = 0xffd,
   RISC_OS_FILE_TYPE_TEXT = 0xfff,
 };
-
-typedef struct {
-  ARMword type;
-  ARMword load;
-  ARMword exec;
-  ARMword length;
-  ARMword attribs;
-} risc_os_object_info;
 
 /**
  * Type used to cache information about a directory entry.
@@ -138,6 +120,9 @@ typedef struct {
 #define DEFAULT_FILE_TYPE   RISC_OS_FILE_TYPE_TEXT
 #define MINIMUM_BUFFER_SIZE 32768
 
+/** Disc name of default disc or if no disc name is present */
+static const char *disc_name_default = "HostFS";
+
 static char HOSTFS_ROOT[512];
 
 static FILE *open_file[MAX_OPEN_FILES + 1]; /* array subscript 0 is never used */
@@ -152,7 +137,35 @@ static char *cache_names = NULL;
 /** Current registration state of HostFS module with backend code */
 static HostFSState hostfs_state = HOSTFS_STATE_UNREGISTERED;
 
-#define dbug_hostfs rpclog
+#ifdef NDEBUG
+static inline void dbug_hostfs(const char *format, ...) { NOT_USED(format); }
+#else
+static void
+dbug_hostfs(const char *format, ...)
+{
+  va_list ap;
+
+  va_start(ap, format);
+  vfprintf(stderr, format, ap);
+  va_end(ap);
+}
+#endif
+
+/**
+ * Verify that the disc name is valid - currently match with the
+ * default name only.
+ *
+ * @param disc_name Disc name
+ * @return 1 if disc name is valid, 0 otherwise
+ */
+static int
+hostfs_disc_name_valid(const char *disc_name)
+{
+  if (!STRCASEEQ(disc_name, disc_name_default)) {
+    return 0;
+  }
+  return 1;
+}
 
 /**
  * @param buffer_size_needed Required buffer
@@ -161,7 +174,7 @@ static void
 hostfs_ensure_buffer_size(size_t buffer_size_needed)
 {
   if (buffer_size_needed > buffer_size) {
-    buffer = (unsigned char *)realloc(buffer, buffer_size_needed);
+    buffer = realloc(buffer, buffer_size_needed);
     if (!buffer) {
       fprintf(stderr, "HostFS could not increase buffer size to %lu bytes\n",
               (unsigned long) buffer_size_needed);
@@ -217,35 +230,6 @@ put_string(ARMul_State *state, ARMword address, const char *str)
 }
 
 /**
-  * @param load RISC OS load address (assumed to be time-stamped)
-  * @param exec RISC OS exec address (assumed to be time-stamped)
-  * @return Time converted to time_t format
-  *
-  * Code adapted from fs/adfs/inode.c from Linux licensed under GPL2.
-  * Copyright (C) 1997-1999 Russell King
-  */
-static time_t
-hostfs_adfs2host_time(ARMword load, ARMword exec)
-{
-  ARMword high = load << 24;
-  ARMword low  = exec;
-
-  high |= low >> 8;
-  low &= 0xff;
-
-  if (high < 0x3363996a) {
-    /* Too early */
-    return 0;
-  } else if (high >= 0x656e9969) {
-    /* Too late */
-    return 0x7ffffffd;
-  }
-
-  high -= 0x336e996a;
-  return (((high % 100) << 8) + low) / 100 + (high / 100 << 8);
-}
-
-/**
  * If the supplied Load and Exec addreses are time-stamped,
  * apply the timestamp to the supplied host object
  *
@@ -258,11 +242,7 @@ hostfs_object_set_timestamp(const char *host_path, ARMword load, ARMword exec)
 {
   /* Test if Load and Exec contain time-stamp */
   if ((load & 0xfff00000u) == 0xfff00000u) {
-    struct utimbuf t;
-
-    t.actime = t.modtime = hostfs_adfs2host_time(load, exec);
-    utime(host_path, &t);
-    /* TODO handle error in utime() */
+    hostfs_object_set_timestamp_platform(host_path, load, exec);
   }
 }
 
@@ -283,6 +263,15 @@ riscos_path_to_host(const char *path, char *host_path)
       break;
     case '/':
       *host_path++ = '.';
+      break;
+    case '?':
+      *host_path++ = '#';
+      break;
+    case '<':
+      *host_path++ = '$';
+      break;
+    case '>':
+      *host_path++ = '^';
       break;
     default:
       *host_path++ = *path;
@@ -315,6 +304,15 @@ name_host_to_riscos(const char *object_name, size_t len, char *riscos_name)
       break;
     case 32:
       *riscos_name++ = 160;
+      break;
+    case '#':
+      *riscos_name++ = '?';
+      break;
+    case '$':
+      *riscos_name++ = '<';
+      break;
+    case '^':
+      *riscos_name++ = '>';
       break;
     default:
       *riscos_name++ = *object_name;
@@ -414,7 +412,6 @@ hostfs_read_object_info(const char *host_pathname,
                         char *ro_leaf,
                         risc_os_object_info *object_info)
 {
-  struct stat info;
   ARMword file_type;
   bool is_timestamped = true; /* Assume initially it has timestamp/filetype */
   bool truncate_name = false; /* Whether to truncate for leaf
@@ -424,35 +421,9 @@ hostfs_read_object_info(const char *host_pathname,
   assert(host_pathname);
   assert(object_info);
 
-  if (stat(host_pathname, &info)) {
-    /* Error reading info about the object */
+  hostfs_read_object_info_platform(host_pathname, object_info);
 
-    switch (errno) {
-    case ENOENT: /* Object not found */
-    case ENOTDIR: /* A path component is not a directory */
-      object_info->type = OBJECT_TYPE_NOT_FOUND;
-      break;
-
-    default:
-      /* Other error */
-      fprintf(stderr,
-              "hostfs_read_object_info() could not stat() \'%s\': %s %d\n",
-              host_pathname, strerror(errno), errno);
-      object_info->type = OBJECT_TYPE_NOT_FOUND;
-      break;
-    }
-
-    return;
-  }
-
-  /* We were able to read about the object */
-  if (S_ISREG(info.st_mode)) {
-    object_info->type = OBJECT_TYPE_FILE;
-  } else if (S_ISDIR(info.st_mode)) {
-    object_info->type = OBJECT_TYPE_DIRECTORY;
-  } else {
-    /* Treat types other than file or directory as not found */
-    object_info->type = OBJECT_TYPE_NOT_FOUND;
+  if (object_info->type == OBJECT_TYPE_NOT_FOUND) {
     return;
   }
 
@@ -487,6 +458,7 @@ hostfs_read_object_info(const char *host_pathname,
           ARMword load, exec;
 
           if (sscanf(comma + 1, "%8x-%8x", &load, &exec) == 2) {
+            /* Replace timestamp information with load-exec addresses */
             object_info->load = load;
             object_info->exec = exec;
             is_timestamped = false;
@@ -504,14 +476,10 @@ hostfs_read_object_info(const char *host_pathname,
 
   /* If the file has timestamp/filetype, instead of load-exec, then fill in */
   if (is_timestamped) {
-    ARMword low  = (ARMword) ((info.st_mtime & 255) * 100);
-    ARMword high = (ARMword) ((info.st_mtime / 256) * 100 + (low >> 8) + 0x336e996a);
-
-    object_info->load = 0xfff00000 | (file_type << 8) | (high >> 24);
-    object_info->exec = (low & 255) | (high << 8);
+    /* Merge in the file_type */
+    object_info->load |= 0xfff00000 | (file_type << 8);
   }
 
-  object_info->length  = info.st_size;
   object_info->attribs = DEFAULT_ATTRIBUTES;
 
   if (ro_leaf) {
@@ -615,8 +583,9 @@ hostfs_path_scan(const char *host_dir_path,
  * @param ro_path       Full RISC OS path to object
  * @param host_pathname Return full Host path to object (filled-in)
  * @param object_info   Return object info (filled-in)
+ * @return Detail on the error reason if path invalid
  */
-static void
+static enum FILECORE_ERROR
 hostfs_path_process(const char *ro_path,
                     char *host_pathname,
                     risc_os_object_info *object_info)
@@ -628,7 +597,7 @@ hostfs_path_process(const char *ro_path,
   assert(host_pathname);
   assert(object_info);
 
-  assert(ro_path[0] == '$');
+  assert(ro_path[0] == '$' || ro_path[0] == ':');
 
   /* Initialise Host pathname */
   host_pathname[0] = '\0';
@@ -637,6 +606,46 @@ hostfs_path_process(const char *ro_path,
   component = &component_name[0];
   *component = '\0';
 
+  /* If path starts with ':', extract and validate disc name.
+     The format is :<discname>.$ ... */
+  if (ro_path[0] == ':') {
+    const char *c;
+    char disc_name[80];
+    size_t disc_name_len;
+
+    /* Locate the '$' */
+    c = strchr(ro_path, '$');
+    if (c == NULL) {
+      object_info->type = OBJECT_TYPE_NOT_FOUND;
+      return FILECORE_ERROR_DISCNOTFOUND;
+    }
+
+    /* Ensure that '$' is preceded by '.' */
+    c--;
+    if (*c != '.') {
+      object_info->type = OBJECT_TYPE_NOT_FOUND;
+      return FILECORE_ERROR_DISCNOTFOUND;
+    }
+
+    /* The string from after the ':' to before the '.' is the disc name */
+    disc_name_len = (size_t) (c - &ro_path[1]);
+    if (disc_name_len >= sizeof(disc_name)) {
+      object_info->type = OBJECT_TYPE_NOT_FOUND;
+      return FILECORE_ERROR_DISCNOTFOUND;
+    }
+    memcpy(disc_name, ro_path + 1, disc_name_len);
+    disc_name[disc_name_len] = '\0';
+
+    /* Identify the disc from the disc name */
+    if (!hostfs_disc_name_valid(disc_name)) {
+      object_info->type = OBJECT_TYPE_NOT_FOUND;
+      return FILECORE_ERROR_DISCNOTFOUND;
+    }
+
+    /* Now process the path from '$' onwards */
+    ro_path = c + 1;
+  }
+
   while (*ro_path) {
     switch (*ro_path) {
     case '$':
@@ -644,7 +653,7 @@ hostfs_path_process(const char *ro_path,
 
       hostfs_read_object_info(host_pathname, NULL, object_info);
       if (object_info->type == OBJECT_TYPE_NOT_FOUND) {
-        return;
+        return FILECORE_ERROR_NOTFOUND;
       }
 
       break;
@@ -663,7 +672,7 @@ hostfs_path_process(const char *ro_path,
           /* This component of the path is invalid */
           /* Return what we have of the host_pathname */
 
-          return;
+          return FILECORE_ERROR_NOTFOUND;
         }
 
         /* Append Host's name for this component to the working Host path */
@@ -701,13 +710,15 @@ hostfs_path_process(const char *ro_path,
       /* This component of the path is invalid */
       /* Return what we have of the host_pathname */
 
-      return;
+      return 0;
     }
 
     /* Append Host's name for this component to the working Host path */
     strcat(host_pathname, "/");
     strcat(host_pathname, host_name);
   }
+
+  return 0;
 }
 
 /* Search through the open_file[] array, and allocate an index.
@@ -992,6 +1003,9 @@ hostfs_args(ARMul_State *state)
   case 9:
     hostfs_args_9_read_file_datestamp(state);
     break;
+  default:
+    UNIMPLEMENTED("HostFS", "Args %u", state->Reg[0]);
+    break;
   }
 }
 
@@ -1042,6 +1056,7 @@ hostfs_write_file(ARMul_State *state, bool with_data)
   ARMword length, ptr;
   risc_os_object_info object_info;
   FILE *f;
+  enum FILECORE_ERROR error_detail;
 
   assert(state);
 
@@ -1059,11 +1074,16 @@ hostfs_write_file(ARMul_State *state, bool with_data)
   get_string(state, state->Reg[1], ro_path, sizeof(ro_path));
   dbug_hostfs("\tPATH = %s\n", ro_path);
 
-  hostfs_path_process(ro_path, host_pathname, &object_info);
+  error_detail = hostfs_path_process(ro_path, host_pathname, &object_info);
   dbug_hostfs("\tHOST_PATHNAME = %s\n", host_pathname);
 
   switch (object_info.type) {
   case OBJECT_TYPE_NOT_FOUND:
+    if (error_detail != 0) {
+      // Invalid disk name or path, rather than merely not found
+      state->Reg[9] = (uint32_t) error_detail;
+      return;
+    }
     strcat(host_pathname, "/");
     path_construct(host_pathname, ro_path,
                    new_pathname, sizeof(new_pathname),
@@ -1307,6 +1327,7 @@ hostfs_file_8_create_dir(ARMul_State *state)
   char ro_path[PATH_MAX];
   char host_pathname[PATH_MAX];
   risc_os_object_info object_info;
+  enum FILECORE_ERROR error_detail;
 
   assert(state);
 
@@ -1326,11 +1347,15 @@ hostfs_file_8_create_dir(ARMul_State *state)
     return;
   }
 
-  hostfs_path_process(ro_path, host_pathname, &object_info);
+  error_detail = hostfs_path_process(ro_path, host_pathname, &object_info);
 
   if (object_info.type != OBJECT_TYPE_NOT_FOUND) {
     /* The object already exists (not necessarily as a directory).
        Return with no error */
+    return;
+  } else if (error_detail != 0) {
+    // Invalid disk name or path
+    state->Reg[9] = (uint32_t) error_detail;
     return;
   }
 
@@ -1459,6 +1484,9 @@ hostfs_file(ARMul_State *state)
   case 255:
     hostfs_file_255_load_file(state);
     break;
+  default:
+    UNIMPLEMENTED("HostFS", "File %u", state->Reg[0]);
+    break;
   }
 }
 
@@ -1486,6 +1514,7 @@ hostfs_func_8_rename(ARMul_State *state)
   char ro_path2[PATH_MAX], host_pathname2[PATH_MAX];
   risc_os_object_info object_info1, object_info2;
   char new_pathname[PATH_MAX];
+  enum FILECORE_ERROR error_detail;
 
   assert(state);
 
@@ -1512,7 +1541,7 @@ hostfs_func_8_rename(ARMul_State *state)
   get_string(state, state->Reg[2], ro_path2, sizeof(ro_path2));
   dbug_hostfs("\tPATH_NEW = %s\n", ro_path2);
 
-  hostfs_path_process(ro_path2, host_pathname2, &object_info2);
+  error_detail = hostfs_path_process(ro_path2, host_pathname2, &object_info2);
 
   dbug_hostfs("\tHOST_PATH_NEW = %s\n", host_pathname2);
 
@@ -1531,6 +1560,12 @@ hostfs_func_8_rename(ARMul_State *state)
       return;
     }
   } else {
+    if (error_detail != 0) {
+      // Invalid disk name or path
+      state->Reg[9] = (uint32_t) error_detail;
+      return;
+    }
+
     strcat(host_pathname2, "/");
   }
 
@@ -1565,8 +1600,8 @@ hostfs_func_8_rename(ARMul_State *state)
 static int
 hostfs_directory_entry_compare(const void *e1, const void *e2)
 {
-  const cache_directory_entry *entry1 = (const cache_directory_entry *)e1;
-  const cache_directory_entry *entry2 = (const cache_directory_entry *)e2;
+  const cache_directory_entry *entry1 = e1;
+  const cache_directory_entry *entry2 = e2;
   const char *name1 = cache_names + entry1->name_offset;
   const char *name2 = cache_names + entry2->name_offset;
 
@@ -1594,10 +1629,10 @@ hostfs_cache_dir(const char *directory_name)
 
   /* Allocate memory initially */
   if (!cache_entries) {
-    cache_entries = (cache_directory_entry *)malloc(cache_entries_capacity * sizeof(cache_directory_entry));
+    cache_entries = malloc(cache_entries_capacity * sizeof(cache_directory_entry));
   }
   if (!cache_names) {
-    cache_names = (char *)malloc(cache_names_capacity);
+    cache_names = malloc(cache_names_capacity);
   }
   if ((!cache_entries) || (!cache_names)) {
     fprintf(stderr, "hostfs_cache_dir(): Out of memory\n");
@@ -1639,7 +1674,7 @@ hostfs_cache_dir(const char *directory_name)
     /* Check whether cache_names[] is large enough; increase if required */
     if (string_space > (cache_names_capacity - name_ptr)) {
       cache_names_capacity *= 2;
-      cache_names = (char *)realloc(cache_names, cache_names_capacity);
+      cache_names = realloc(cache_names, cache_names_capacity);
       if (!cache_names) {
         fprintf(stderr, "hostfs_cache_dir(): Out of memory\n");
         exit(1);
@@ -1657,7 +1692,7 @@ hostfs_cache_dir(const char *directory_name)
     entry_ptr++;
     if (entry_ptr == cache_entries_capacity) {
       cache_entries_capacity *= 2;
-      cache_entries = (cache_directory_entry *)realloc(cache_entries, cache_entries_capacity * sizeof(cache_directory_entry));
+      cache_entries = realloc(cache_entries, cache_entries_capacity * sizeof(cache_directory_entry));
       if (!cache_entries) {
         fprintf(stderr, "hostfs_cache_dir(): Out of memory\n");
         exit(1);
@@ -1833,6 +1868,140 @@ hostfs_func_19_read_dir_info_timestamp(ARMul_State *state)
   hostfs_read_dir(state, true, true);
 }
 
+/**
+ * FSEntry_Func 23 - Canonicalise special field and disc name.
+ *
+ * Canonicalise the disc name by returning the default disc name.
+ *
+ * @param state Emulator state
+ */
+static void
+hostfs_func_23_canonicalise_disc_name(ARMul_State *state)
+{
+  char disc_name[1024];
+
+  dbug_hostfs("\tCanonicalise special field and disc name\n");
+  dbug_hostfs("\tr2 = 0x%08x (ptr to disc name if present)\n", state->Reg[2]);
+  if (state->Reg[2] != 0) {
+    get_string(state, state->Reg[2], disc_name, sizeof(disc_name));
+    dbug_hostfs("\t   = \'%s\'\n", disc_name);
+  }
+  dbug_hostfs("\tr4 = 0x%08x (ptr to canonical disc name to fill in)\n", state->Reg[4]);
+  if (state->Reg[4] != 0) {
+    dbug_hostfs("\tr6 = %10u (length of buffer for canonical disc name)\n", state->Reg[6]);
+  }
+
+  /* Check disc name if provided */
+  if (state->Reg[2] != 0) {
+    if (!hostfs_disc_name_valid(disc_name)) {
+      state->Reg[9] = FILECORE_ERROR_DISCNOTFOUND;
+      state->Reg[2] = state->Reg[4];
+      state->Reg[4] = 0;
+      return;
+    }
+  }
+
+  if (state->Reg[4] == 0) {
+    /* Request for buffer size needed for canonical disc name */
+    state->Reg[2] = state->Reg[4];
+    state->Reg[4] = (uint32_t) strlen(disc_name_default);
+  } else {
+    /* Request for canonical disc name */
+    put_string(state, state->Reg[4], disc_name_default);
+    state->Reg[2] = state->Reg[4];
+    state->Reg[4] = 0;
+  }
+}
+
+/**
+ * FSEntry_Func 24 - Resolve wildcard
+ *
+ * This entry point can be used to resolve wildcards if there is a more
+ * efficient method than for RISC OS to query the files in the directory.
+ * For now we fall back on the default method by returning -1 which instructs
+ * FileSwitch to resolve the wildcard itself.
+ *
+ * @param state Emulator state
+ */
+static void
+hostfs_func_24_resolve_wildcard(ARMul_State *state)
+{
+  dbug_hostfs("\tResolve wildcard\n");
+  dbug_hostfs("\tr1 = 0x%08x (ptr to directory pathname)\n", state->Reg[1]);
+
+  state->Reg[4] = (uint32_t) -1;
+}
+
+/**
+ * FSEntry_Func 27 - Read boot option.
+ *
+ * HostFS only supports a boot option (i.e *Opt 4,n setting) of 2, so that is
+ * returned.
+ *
+ * @param state Emulator state
+ */
+static void
+hostfs_func_27_read_boot_option(ARMul_State *state)
+{
+  dbug_hostfs("\tRead boot option\n");
+  dbug_hostfs("\tr1 = 0x%08x (ptr to pathname of object on image)\n", state->Reg[1]);
+  dbug_hostfs("\tr6 = 0x%08x (pointer to special field if present)\n", state->Reg[6]);
+
+  state->Reg[2] = 2; /* Return boot option of 2 */
+}
+
+/**
+ * FSEntry_Func 30 - Read free space (32-bit)
+ *
+ * @param state Emulator state
+ */
+static void
+hostfs_func_30_read_free_space32(ARMul_State *state)
+{
+  disk_info d;
+
+  dbug_hostfs("\tRead free space 32\n");
+  dbug_hostfs("\tr1 = 0x%08x (ptr to pathname of object on image)\n", state->Reg[1]);
+
+  (void) path_disk_info(HOSTFS_ROOT, &d);
+
+  /* If the disk size is >= 2GB, return it as 2GB-1 */
+  if (d.size >= 0x80000000) {
+    d.size = 0x7fffffff;
+  }
+
+  /* If the free space is >= 2GB, return it as 2GB-1 */
+  if (d.free >= 0x80000000) {
+    d.free = 0x7fffffff;
+  }
+
+  state->Reg[0] = (uint32_t) d.free;
+  state->Reg[1] = 0x7fffffff;
+  state->Reg[2] = (uint32_t) d.size;
+}
+
+/**
+ * FSEntry_Func 35 - Read free space (64-bit)
+ *
+ * @param state Emulator state
+ */
+static void
+hostfs_func_35_read_free_space64(ARMul_State *state)
+{
+  disk_info d;
+
+  dbug_hostfs("\tRead free space 64\n");
+  dbug_hostfs("\tr1 = 0x%08x (ptr to pathname of object on image)\n", state->Reg[1]);
+
+  (void) path_disk_info(HOSTFS_ROOT, &d);
+
+  state->Reg[0] = (uint32_t) d.free;
+  state->Reg[1] = (uint32_t) (d.free >> 32);
+  state->Reg[2] = 0x7fffffff;
+  state->Reg[3] = (uint32_t) d.size;
+  state->Reg[4] = (uint32_t) (d.size >> 32);
+}
+
 static void
 hostfs_func(ARMul_State *state)
 {
@@ -1843,26 +2012,39 @@ hostfs_func(ARMul_State *state)
   case 0:
     hostfs_func_0_chdir(state);
     break;
-
   case 8:
     hostfs_func_8_rename(state);
     break;
-
   case 11:
     dbug_hostfs("\tRead disc name and boot option\n");
     state->Reg[9] = NOT_IMPLEMENTED;
     break;
-
   case 14:
     hostfs_func_14_read_dir(state);
     break;
-
   case 15:
     hostfs_func_15_read_dir_info(state);
     break;
-
   case 19:
     hostfs_func_19_read_dir_info_timestamp(state);
+    break;
+  case 23:
+    hostfs_func_23_canonicalise_disc_name(state);
+    break;
+  case 24:
+    hostfs_func_24_resolve_wildcard(state);
+    break;
+  case 27:
+    hostfs_func_27_read_boot_option(state);
+    break;
+  case 30:
+    hostfs_func_30_read_free_space32(state);
+    break;
+  case 35:
+    hostfs_func_35_read_free_space64(state);
+    break;
+  default:
+    UNIMPLEMENTED("HostFS", "Func %u", state->Reg[0]);
     break;
   }
 }
@@ -1911,7 +2093,7 @@ hostfs_init(void)
 {
   int c;
 
-  append_filename(HOSTFS_ROOT, exname, "hostfs", 511);
+  append_filename(HOSTFS_ROOT, exname, "hostfs", sizeof(HOSTFS_ROOT));
   for (c = 0; c < 511; c++) {
     if (HOSTFS_ROOT[c] == '\\') {
       HOSTFS_ROOT[c] = '/';
@@ -1925,7 +2107,17 @@ hostfs_init(void)
 void
 hostfs_reset(void)
 {
+  unsigned i;
+
   hostfs_state = HOSTFS_STATE_UNREGISTERED;
+
+  /* Close any open files */
+  for (i = 1; i < (MAX_OPEN_FILES + 1); i++) {
+    if (open_file[i] != NULL) {
+      fclose(open_file[i]);
+      open_file[i] = NULL;
+    }
+  }
 }
 
 /**

@@ -43,4 +43,13 @@ static inline void ARMul_StoreByte(ARMul_State *state, ARMword address, uint8_t 
         writememb(address, data);
 }
 
+#define UNIMPLEMENTED(section, format, args...) do { } while (0)
+
+typedef struct {
+	uint64_t	size;		/**< Size of disk */
+	uint64_t	free;		/**< Free space on disk */
+} disk_info;
+
+extern int path_disk_info(const char *path, disk_info *d);
+
 #endif

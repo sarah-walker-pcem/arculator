@@ -35,11 +35,11 @@ arculator_CXXFLAGS = $(shell $(WX_CONFIG_PATH) --cxxflags) $(shell sdl2-config -
 arculator_LDADD = @LIBS@
 
 if OS_LINUX
-arculator_SOURCES += podules-linux.c
+arculator_SOURCES += hostfs-unix.c podules-linux.c
 arculator_LDADD += -ldl
 endif
 
 if OS_MACOSX
-arculator_SOURCES += podules-macosx.c
+arculator_SOURCES += hostfs-unix.c podules-macosx.c
 endif
 

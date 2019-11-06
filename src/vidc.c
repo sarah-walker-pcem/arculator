@@ -37,7 +37,6 @@ int display_mode;
 int video_scale;
 int video_fullscreen_scale;
 int video_linear_filtering;
-int video_window_resizeable;
 
 static uint32_t vidcr[64];
 

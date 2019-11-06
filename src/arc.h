@@ -216,7 +216,6 @@ void arc_enter_fullscreen();
 void arc_renderer_reset();
 void arc_set_display_mode(int new_display_mode);
 void arc_set_dblscan(int new_dblscan);
-void arc_set_resizeable();
 
 
 void arc_stop_emulation();

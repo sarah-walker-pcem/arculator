@@ -155,8 +155,6 @@ void Frame::UpdateMenu(wxMenu *menu)
         else
                 item = ((wxMenu*)menu)->FindItem(XRCID("IDM_BLIT_SCAN"));
         item->Check(true);
-        item = ((wxMenu*)menu)->FindItem(XRCID("IDM_VIDEO_RESIZEABLE"));
-        item->Check(video_window_resizeable);
         if (display_mode == DISPLAY_MODE_NO_BORDERS)
                 item = ((wxMenu*)menu)->FindItem(XRCID("IDM_VIDEO_NO_BORDERS"));
         else if (display_mode == DISPLAY_MODE_NATIVE_BORDERS)
@@ -178,8 +176,6 @@ void Frame::UpdateMenu(wxMenu *menu)
         else
                 item = ((wxMenu*)menu)->FindItem(XRCID("IDM_VIDEO_SCALE_NEAREST"));
         item->Check(true);
-        item = ((wxMenu*)menu)->FindItem(XRCID("IDM_VIDEO_SCALE_MENU"));
-        item->Enable(!video_window_resizeable);
         sprintf(menuitem, "IDM_VIDEO_SCALE[%d]", video_scale);
         item = ((wxMenu*)menu)->FindItem(XRCID(menuitem));
         item->Check(true);
@@ -340,16 +336,6 @@ void Frame::OnMenuCommand(wxCommandEvent &event)
                         arc_resume_main_thread();
                 }
                 arc_enter_fullscreen();
-        }
-        else if (event.GetId() == XRCID("IDM_VIDEO_RESIZEABLE"))
-        {
-                video_window_resizeable ^= 1;
-                arc_set_resizeable();
-
-                wxMenuItem *item = ((wxMenu*)menu)->FindItem(event.GetId());
-                item->Check(video_window_resizeable);
-                item = ((wxMenu*)menu)->FindItem(XRCID("IDM_VIDEO_SCALE_MENU"));
-                item->Enable(!video_window_resizeable);
         }
         else if (event.GetId() == XRCID("IDM_VIDEO_NO_BORDERS"))
         {

@@ -92,10 +92,6 @@
 			<object class="wxMenuItem" name="IDM_VIDEO_FULLSCR">
 				<label>_Fullscreen</label>
 			</object>
-			<object class="wxMenuItem" name="IDM_VIDEO_RESIZEABLE">
-				<label>_Resizeable window</label>
-				<checkable>1</checkable>
-			</object>
 			<object class="wxMenu">
 				<label>_Border size</label>
 				<object class="wxMenuItem" name="IDM_VIDEO_NO_BORDERS">

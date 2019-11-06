@@ -142,7 +142,6 @@ void mainthread(LPVOID param)
         input_init();
         
         arc_update_menu();
-        SDL_SetWindowResizable(sdl_main_window, video_window_resizeable);
 
         old_time = GetTickCount();
         while (!quited)
@@ -169,7 +168,7 @@ void mainthread(LPVOID param)
                         Sleep(1);
                 }
 
-                if (!fullscreen && win_doresize && !video_window_resizeable)
+                if (!fullscreen && win_doresize)
                 {
                         SDL_Rect rect;
 
@@ -207,17 +206,6 @@ void mainthread(LPVOID param)
                         }
                 }
                 
-                if (win_dosetresize)
-                {
-                        SDL_Rect rect;
-                        
-                        win_dosetresize = 0;
-
-                        SDL_GetWindowSize(sdl_main_window, &rect.w, &rect.h);
-                        SDL_SetWindowResizable(sdl_main_window, video_window_resizeable);
-                        SDL_SetWindowSize(sdl_main_window, rect.w, rect.h);
-                }
-
                 if ((key[KEY_LCONTROL] || key[KEY_RCONTROL]) && key[KEY_END] && fullscreen)
                 {
                         mouse_capture_disable();
@@ -380,11 +368,6 @@ void arc_set_dblscan(int new_dblscan)
         clearbitmap();
 
         SDL_UnlockMutex(main_thread_mutex);
-}
-
-void arc_set_resizeable()
-{
-        win_dosetresize = 1;
 }
 
 #define TIMER_1SEC 1

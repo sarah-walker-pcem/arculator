@@ -1,8 +1,21 @@
-Arculator 0.99
-~~~~~~~~~~~~~~
+Arculator 2.0
+~~~~~~~~~~~~~
 
 
 Changes since last release :
+- FPA10 emulation
+- Podule emulation. Current included podules : AKA31 SCSI Podule, AKD52 Hard Disc Podule,
+  Computer Concepts Lark, HCCS Ultimate CD-ROM, ICS ideA, RISC Developments IDE Podule,
+  Wild Vision MIDI Max, ZIDEFS
+- Much better CPU/memory timing. Now emulates ARM3 cache and MEMC1/MEMC1a timings
+- Added emulation of GamesPad, RTFM and Serial Port/Vertical Twist joysticks
+- Improved sound filter emulation
+- Re-implemented FDI support
+- Added HostFS (ported from RPCemu)
+- Disc drive noise
+- Linux port
+- Numerous bug fixes
+- Many other changes
 
 
 
@@ -12,9 +25,6 @@ Usage
 Arculator requires at least one RISC OS or Arthur ROM set. These should be placed
 in the appropriate directory in the 'roms' directory. For most users RISC OS 3.11
 will be the most useful.
-
-
-
 
 
 Dumping ROMs
@@ -28,14 +38,120 @@ command line :
 *SAVE ic26 3900000+80000
 *SAVE ic27 3980000+80000
 
-Alternatively you could use
+for four 512 kB files. Alternatively you could use
 
 *SAVE rom 3800000+200000
+
+for a single 2 MB file.
 
 For RISC OS 2 and Arthur you only need
 
 *SAVE rom 3800000+80000
 
+for a single 512 kB file.
+
+
+Configuration
+~~~~~~~~~~~~~
+
+Arculator requires you to create a machine configuration to emulate. Initially select a base
+machine type, then configure the following options :
+
+CPU - ARM2, ARM250, ARM3 of varying speeds
+      Note that ARM2 and ARM250 run at the same speed as memory/MEMC. ARM3 has it's own CPU clock.
+      ARM3 requires a MEMC1a
+
+FPU - None or FPA10
+      FPA10 requires an ARM3
+
+Memory - Varies depending on machine
+         Archimedes 305 & 310 support 512kB - 16MB
+	 Archimedes 410/1, A3000 and A5000 support 1MB - 16MB
+	 Archimedes 420/2 supports 2MB - 16MB
+	 Archimedes 440, 440/1, 540 and A5000a support 4MB - 16MB
+	 A3010 supports 1MB to 4MB
+	 A3020 and A4000 support 2MB to 4MB
+
+MEMC - MEMC1 at 8 MHz, MEMC1a at 8 MHz, 12 MHz, or 16 MHz
+       MEMC1 is ~10% slower than MEMC1a, and does not support ARM3
+       16 MHz is an overclock and not a standard speed
+
+OS - Arthur 0.30 - RISC OS 3.19
+     Archimedes 305, 310 and 440 can run all OS versions
+     Archimedes 4x0/1 and A3000 can run RISC OS 2.00 and later
+     Archimedes 540 can run RISC OS 2.01 and later
+     A5000 can run RISC OS 3.00 and later
+     A3010, A3020, A4000 and A5000a can run RISC OS 3.10 and later
+
+Monitor - Standard, Multisync, VGA or Mono
+          Standard supports lower resolution modes (288 lines and lower)
+	  Multisync supports all modes except high res mono
+	  VGA supports high resolution modes only (350 lines and up). Games will mostly run
+            letterboxed
+          Mono only supports high res mono (1152x896)
+
+Unique ID - Unique machine ID implemented on A3010, A3020, A4000, A5000 and A5000a systems
+            This is used by some copy protected software. Most users won't need to change this
+
+
+Hard discs - Configures hard discs on internal interface (if present)
+	Archimedes A440 and A4x0/1 have an internal ST-506 interface
+	A3020, A4000, A5000 and A5000a have an internal IDE interface
+	Other machines have no internal hard disc interface and need to use a podule
+
+Joystick - Select emulated joystick interface. Available options :
+	   A3010 - built in joystick ports. Supports 1 button per joystick
+	   GamesPad - SNES controllers connected via printer port. Supports 8 buttons per joystick
+	   RTFM - joystick interface installed into Econect socket. Supports 1 button per joystick
+	   The Serial Port / Vertical Twist - joystick interface plugged into printer port.
+	          Supports 2 buttons per joystick
+
+Podules - Select and configure up to 4 podules per machine
+
+
+Podules
+~~~~~~~
+
+Arculator supports add-on podules installed into the podules directory. It also has several
+podules built in.
+
+The podules supplied are :
+
+- Acorn AKA31 SCSI Controller
+	Supports hard discs and CD-ROM drives. SCSIFS only supports four hard discs, starting 
+	from ID 0. The current podule emulates a single Toshiba XM-3301 drive, which can be at
+	any ID, and is mapped to a physical or virtual drive.
+
+	There are several versions of the ROM for this podule. I've seen an older version that
+	works on RISC OS 2 and later, and a newer version that requires RISC OS 3 and includes the
+	CDFS modules. There may be other versions.
+
+- Acorn AKD52 Hard Disc Controller
+	ST-506 podule, for use with Archimedes 305, 310 and 540 machines. Supports two hard drives.
+	This will most likely not work on other machines.
+
+- Arculator support modules
+	Contains HostFS support modules, support module implementing MODE 99 (800x600x256), and 
+	FPE v4.00 for use with FPA emulation.
+
+- Computer Concepts Lark
+	MIDI in/out, 16-bit sample playback/recording. Sample recording has a few issues, the
+	other functions appear to work okay.
+
+- HCCS Ultimate CD-ROM Podule
+	Emulates a single Mitsumi CD-ROM drive, mapped to a physical or virtual drive.
+
+- ICS ideA Hard Disc Interface
+	Supports two hard drives, using IDEFS v3.10.
+
+- RISC Developments IDE Controller
+	Supports two hard drives, using IDEFS v1.15.
+
+- Wild Vision MIDI Max
+	MIDI in/out.
+
+- ZIDEFS IDE Controller
+	Supports two hard drives, using ZIDEFS.
 
 
 Menus
@@ -50,16 +166,17 @@ Disc :
 	Disc drive noise - Enable/disable and control volume of 3.5" disc drive noise
 Video :
 	Fullscreen - Switch to fullscreen mode. Use CTRL+END to exit back to windowed mode
-	Resizeable window - Allow window to be resized. When disabled the window size will automatically adjust to the emulated resolution
 	Border size :
 		No borders     - Don't draw video borders
 		Native borders - Draw borders as programmed by RISC OS
-		Fixed (standard monitor) borders - Draw borders to the fixed size of a 'standard' TV-resolution monitor
+		Fixed (standard monitor) borders - Draw borders to the fixed size of a 'standard'
+						   TV-resolution monitor.
 	Blit method :
 		Scanlines - Scale low resolution mode using blank scanlines
 		Line doubling - Scale low resolution mode using line doubling
 	Render driver - Select between Auto, Direct3D, OpenGL and Software rendering
-	Scale filtering - Select between nearest sampling (blocky) and linear sampling (blurry) when scaling up video
+	Scale filtering - Select between nearest sampling (blocky) and linear sampling (blurry)
+			  when scaling up video
 	Output stretch-mode :
 		None          - No limits on scaling
 		4:3           - Force 4:3 aspect ratio when scaling
@@ -70,42 +187,17 @@ Sound :
 	Sound enable  - Enable/disable sound
 	Stereo sound  - Enable/disable stereo
 	Output level  - Control optional sound amplification from 0 to 18 dB
-	Output filter - Control strength of sound low-pass filter. Reduced filtering sounds less muffled but may introduce aliasing noise
+	Output filter - Control strength of sound low-pass filter. Reduced filtering sounds less
+			muffled but may introduce aliasing noise
 Settings :
 	Configure machine - Configuration of emulated machine
 
 	
-Machine - CPU Type - Select between :
-		     ARM2   - 8mhz, used on A3xx, A4xx, A3000
-		     ARM250 - 12mhz, used on A3010, A3020 and A4000
-		     ARM3   - 25mhz (ish) used on A4 and A5000
-          RAM Size - Select between 512k, 1, 2, 4, 8 and 16 megs of RAM.
-          Operating System - Select between :
-                     Arthur    - WD1772 FDC, max 4 megs RAM. Tested with Arthur 1.2
-                     RISC OS 2 - WD1772 FDC, max 4 megs RAM. Tested with RISC OS 2.01
-                     RISC OS 3 (old fdc) - WD1772 FDC. Tested with RISC OS 3.11
-                     RISC OS 3 (new fdc) - 82c711 FDC. IDE hard disc supported.
-                                           Tested with RISC OS 3.11. Limited FDI support.
-		     Ertictac/Tactic - MAME ROM set 'ertictac'
-                     Poizone         - MAME ROM set 'poizone'
-Options - Sound enable - Enables/disables sound
-          Stereo sound - Selects stereo or mono sound. Many music players sound quite odd
-                         in stereo, especially on headphones, due to the Amiga-style panning.
-	  Limit speed - Limit speed to what should be about 8/12/25mhz. Sound has to be disabled
-                        as well as this for any speedup to happen.
-Video - Full screen - Goes to a full screen. Use CTRL+END to return to windowed mode.
-        Full borders - Toggles expansion of borders - useful for programs that overscan.
-        Blit method - Selects between :
-          Scanlines - Skip every other line to create a TV-style effect
-          Software scale - Double each line in software. Reliable, but slow
-          Hardware scale - Double each line in hardware. Fast, but some graphics cards 
-    			   apply a filter effect.
-
-
-
 
 Compatibility
 ~~~~~~~~~~~~~
+
+The below OSes/applications/games demos are known to work on this version :
 
 Arthur 0.30
 Arthur 1.20
@@ -133,6 +225,7 @@ Notate
 Ovation (v1.42S)
 PC Emulator (v1.82)
 PenDown (v1.72)
+POVRay (v2.2)
 ProArtisan
 ProSound (v1.11b)
 Rhapsody (v1.20)
@@ -329,9 +422,6 @@ The Obsessed Maniacs - Zerblast
 The Xperience - Xcentric
 Zarquon - Metamorphosis
 
+
 Sarah
 b-em@bbcmicro.com
-
-If you email me can you please state which emulator you are emailing about. Since Arculator
-and RPCemu emulate similar machines it can be very difficult to tell which one you are
-talking about.

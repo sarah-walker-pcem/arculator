@@ -1,3 +1,5 @@
+/*Arculator 2.0 by Sarah Walker
+  Win32-specific main window handling*/
 #define BITMAP __win_bitmap
 #include <windows.h>
 #undef BITMAP

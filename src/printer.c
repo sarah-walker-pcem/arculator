@@ -1,3 +1,5 @@
+/*Arculator 2.0 by Sarah Walker
+  Printer port subsystem*/
 #include "arc.h"
 #include "config.h"
 #include "ioc.h"

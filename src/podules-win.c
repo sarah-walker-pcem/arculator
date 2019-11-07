@@ -1,3 +1,5 @@
+/*Arculator 2.0 by Sarah Walker
+  Windows podule loader*/
 #if defined WIN32 || defined _WIN32 || defined _WIN32
 #include <io.h>
 #include <windows.h>

@@ -1,3 +1,6 @@
+/*Arculator 2.0 by Sarah Walker
+  JFD disc image support
+  Incomplete, and disabled by default*/
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>

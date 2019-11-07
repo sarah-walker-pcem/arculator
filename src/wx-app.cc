@@ -1,3 +1,6 @@
+/*Arculator 2.0 by Sarah Walker
+  wxApp implementation
+  Menus are also handled here*/
 #include <sstream>
 #include <SDL2/SDL.h>
 

@@ -1,3 +1,5 @@
+/*Arculator 2.0 by Sarah Walker
+  SDL2 input handling*/
 #include <SDL2/SDL.h>
 #include <string.h>
 #include "arc.h"

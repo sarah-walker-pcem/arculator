@@ -1,3 +1,5 @@
+/*Arculator 2.0 by Sarah Walker
+  Joystick subsystem*/
 #include <stdlib.h>
 #include <string.h>
 #include "arc.h"

@@ -1,4 +1,4 @@
-/*B-em v2.2 by Tom Walker
+/*Arculator 2.0 by Sarah Walker
   1770 FDC emulation*/
 #include <stdio.h>
 #include <stdlib.h>

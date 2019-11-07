@@ -1,3 +1,5 @@
+/*Arculator 2.0 by Sarah Walker
+  Main init/close/run functions*/
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>

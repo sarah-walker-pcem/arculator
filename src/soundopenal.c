@@ -1,6 +1,5 @@
-/*B-em v2.2 by Tom Walker
+/*Arculator 2.0 by Sarah Walker
   OpenAL interface*/
-
 #include <string.h>  
 #include <stdio.h>
 #include <math.h>

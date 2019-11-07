@@ -1,4 +1,4 @@
-/*Arculator v0.8 by Tom Walker
+/*Arculator 2.0 by Sarah Walker
   'Flexible' ROM loader*/
 #ifdef WIN32
 #include <io.h>

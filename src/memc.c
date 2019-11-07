@@ -1,5 +1,5 @@
-/*Arculator 0.8 by Tom Walker
-  MEMC1a emulation*/
+/*Arculator 2.0 by Sarah Walker
+  MEMC1/MEMC1a emulation*/
 
 int flybacklines;
 #include <stdio.h>

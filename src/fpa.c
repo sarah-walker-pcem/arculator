@@ -1,6 +1,5 @@
-/*RPCemu v0.6 by Tom Walker
-  FPA emulation
-  Not enabled by default due to bugs*/
+/*Arculator 2.0 by Sarah Walker
+  FPA emulation*/
 
 #include <math.h>
 #include <stdio.h>

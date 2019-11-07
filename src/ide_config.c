@@ -1,3 +1,5 @@
+/*Arculator 2.0 by Sarah Walker
+  IDE/ST-506 configuration dialogues*/
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>

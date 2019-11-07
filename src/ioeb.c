@@ -1,3 +1,5 @@
+/*Arculator 2.0 by Sarah Walker
+  IOEB emulation*/
 #include <string.h>
 #include "arc.h"
 #include "config.h"

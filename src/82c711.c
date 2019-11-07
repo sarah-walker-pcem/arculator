@@ -1,3 +1,5 @@
+/*Arculator 2.0 by Sarah Walker
+  82c711 SuperIO emulation*/
 #include "arc.h"
 #include "82c711.h"
 #include "82c711_fdc.h"

@@ -1,3 +1,5 @@
+/*Arculator 2.0 by Sarah Walker*/
+
 /*Acorn AKD52 Hard Disc Controller (ST-506)
 
   IOC Address map :

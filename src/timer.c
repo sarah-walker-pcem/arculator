@@ -1,3 +1,5 @@
+/*Arculator 2.0 by Sarah Walker
+  Timer system*/
 #include <string.h>
 #include "arc.h"
 #include "timer.h"

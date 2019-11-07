@@ -1,3 +1,6 @@
+/*Arculator 2.0 by Sarah Walker
+  ST-506 hard disc controller emulation
+  This is used by both the built-in 4x0 interface, and the AKD52 podule*/
 #include <stdio.h>
 #include <stdlib.h>
 #include "arc.h"

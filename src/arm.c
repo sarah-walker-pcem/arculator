@@ -1,17 +1,4 @@
-int podule_time=8000;
-
-/*Pandora's Box -
-  Reset routine at &1800FEC
-  Jumps to reset routine from &1800EA4
-  Calls ADFS_DiscOp with R1=1 (read), disc address &C7C00
-   buffer in module space, length 1024 bytes
-   Expects it to fail, but on Arculator it passes
-   possible failures - ID CRC, Data CRC, Sector not found,
-   none of which seem to be true
-  Protection check is in utility TheEarths, which decrypts & loads
-  a module from it's own memory into RMA*/
-
-/*Arculator 0.8 by Tom Walker
+/*Arculator 2.0 by Sarah Walker
   ARM2 & ARM3 emulation*/
 #include <stdio.h>
 #include <stdlib.h>

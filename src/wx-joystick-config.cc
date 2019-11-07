@@ -1,3 +1,6 @@
+/*Arculator 2.0 by Sarah Walker
+  Joystick configuration dialogue
+  This handles configuration of host joystick -> emulated joystick mappings*/
 #include <wx/wxprec.h>
 
 #ifndef WX_PRECOMP

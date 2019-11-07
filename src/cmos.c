@@ -1,4 +1,4 @@
-/*Arculator 0.8 by Tom Walker
+/*Arculator 2.0 by Sarah Walker
   I2C + CMOS RAM emulation*/
 #include <stdio.h>
 #include <stdlib.h>

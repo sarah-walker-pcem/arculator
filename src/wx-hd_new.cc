@@ -1,3 +1,5 @@
+/*Arculator 2.0 by Sarah Walker
+  New hard disc dialogue*/
 #include <wx/wxprec.h>
 
 #ifndef WX_PRECOMP

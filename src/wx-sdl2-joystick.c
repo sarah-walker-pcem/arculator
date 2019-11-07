@@ -1,3 +1,5 @@
+/*Arculator 2.0 by Sarah Walker
+  SDL2 joystick handling*/
 #include <string.h>
 #include <stdlib.h>
 #include <math.h>

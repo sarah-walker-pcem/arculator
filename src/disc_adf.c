@@ -1,6 +1,5 @@
-/*B-em v2.2 by Tom Walker
+/*Arculator 2.0 by Sarah Walker
   ADFS disc support (really all double-density formats)*/
-
 #include <stdio.h>
 #include <string.h>
 #include "arc.h"

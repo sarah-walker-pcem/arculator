@@ -1,4 +1,4 @@
-/*Arculator 0.8 by Tom Walker
+/*Arculator 2.0 by Sarah Walker
   Keyboard/mouse emulation*/
 #include <stdio.h>
 #include "arc.h"

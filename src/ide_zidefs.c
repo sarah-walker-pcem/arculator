@@ -1,3 +1,5 @@
+/*Arculator 2.0 by Sarah Walker*/
+
 /*ZIDEFS compatible IDE podule
 
   ZIDEFS claims to be compatible with 'ICS compatible' IDE interfaces, but it

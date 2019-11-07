@@ -1,3 +1,5 @@
+/*Arculator 2.0 by Sarah Walker
+  Generic SDL-based main window handling*/
 #include <sys/time.h>
 #include <stdio.h>
 #include <stdlib.h>

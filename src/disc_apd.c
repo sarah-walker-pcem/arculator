@@ -1,3 +1,5 @@
+/*Arculator 2.0 by Sarah Walker
+  APD disc image support*/
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>

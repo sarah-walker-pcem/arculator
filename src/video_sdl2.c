@@ -1,3 +1,5 @@
+/*Arculator 2.0 by Sarah Walker
+  SDL2 video handling*/
 #include <SDL2/SDL.h>
 
 #if WIN32

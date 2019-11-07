@@ -1,5 +1,5 @@
-/*B-em v2.2 by Tom Walker
-  FDI disc support
+/*Arculator 2.0 by Sarah Walker
+  FDI disc image support
   Interfaces with fdi2raw.c*/
   
 #include <stdio.h>

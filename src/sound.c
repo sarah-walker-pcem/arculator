@@ -1,3 +1,5 @@
+/*Arculator 2.0 by Sarah Walker
+  Sound emulation*/
 #include <math.h>
 #include <string.h>
 #include "arc.h"

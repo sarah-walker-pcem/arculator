@@ -1,5 +1,6 @@
-/*Arculator v0.8 by Tom Walker
-  Eterna arcade emulation*/
+/*Arculator 2.0 by Sarah Walker
+  Eterna arcade emulation
+  Not currently used*/
 
 #include "arc.h"
 #include "ioc.h"

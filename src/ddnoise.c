@@ -1,6 +1,5 @@
-/*B-em v2.2 by Tom Walker
+/*Arculator 2.0 by Sarah Walker
   Disc drive noise*/
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

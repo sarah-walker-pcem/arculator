@@ -1,3 +1,5 @@
+/*Arculator 2.0 by Sarah Walker
+  Support modules podule emulation*/
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>

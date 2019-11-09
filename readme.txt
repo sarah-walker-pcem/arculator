@@ -213,6 +213,7 @@ RISC iX 1.2.1c
 Acorn Advance (v1.01)
 Acorn C/C++
 ArtWorks (v1.7)
+AudioWorks (v1.53)
 ClearView (v1.06)
 Coconizer (v1.31)
 EasiWriter Professional (v4.08)
@@ -378,6 +379,7 @@ Tower of Babel
 Trivial Pursuit
 Twin World
 Virtual Golf (FDI)
+Warlocks
 White Magic 2 (FDI)
 Wolfenstein 3D (APD)
 Wonderland

@@ -1,3 +1,16 @@
+Version 0.99 (15/08/09) :
+- ICS IDE interface emulated, when new FDC is not in use
+- Improved IOC mapping, improvements on !PCem, NetBSD etc
+- ArculFS now read/write, and now ROM based
+- Sound improved a little
+- Can now disable all video borders
+- SWPB now works, also corrected SWP and MUL encoding - Fire & Ice now works
+- Return of FDI support
+- ADP protected disc image support
+- FDC improvements
+- High-res mono monitor emulation (1152x896)
+- A3010 joystick emulation 
+    
 Version 0.9 (06/02/07) :
 - Fixed ARM bugs - Bug Hunter now works, Phaethon no longer crashes on level 3 
 - Fixed bug in 82c711 - Nebulus now works on new FDC 

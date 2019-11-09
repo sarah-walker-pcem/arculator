@@ -220,7 +220,7 @@ static int arc_main_thread(void *p)
                 {
                         char s[80];
 
-                        sprintf(s, "Arculator %s - %i%% - %s", __DATE__, inssec, mousecapture ? "Press CTRL-END to release mouse" : "Click to capture mouse");
+                        sprintf(s, "Arculator %s - %i%% - %s", VERSION_STRING, inssec, mousecapture ? "Press CTRL-END to release mouse" : "Click to capture mouse");
                         vidc_framecount = 0;
                         if (!fullscreen)
 				SDL_SetWindowTitle(sdl_main_window, s);

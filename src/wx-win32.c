@@ -108,7 +108,7 @@ static void window_create(void *wx_menu)
         ghwnd = CreateWindowEx (
            0,                   /* Extended possibilites for variation */
            szClassName,         /* Classname */
-           "Arculator v1.0",    /* Title Text */
+           "Arculator " VERSION_STRING,    /* Title Text */
            WS_OVERLAPPEDWINDOW&~(WS_MAXIMIZEBOX|WS_SIZEBOX), /* default window */
            CW_USEDEFAULT,       /* Windows decides the position */
            CW_USEDEFAULT,       /* where the window ends up on the screen */
@@ -222,7 +222,7 @@ void mainthread(LPVOID param)
                 if (updatemips)
                 {
                         char s[80];
-                        sprintf(s, "Arculator %s - %i%% - %s", __DATE__, inssec, mousecapture ? "Press CTRL-END to release mouse" : "Click to capture mouse");
+                        sprintf(s, "Arculator %s - %i%% - %s", VERSION_STRING, inssec, mousecapture ? "Press CTRL-END to release mouse" : "Click to capture mouse");
                         vidc_framecount = 0;
                         if (!fullscreen) SetWindowText(ghwnd, s);
                         updatemips=0;

@@ -3,6 +3,8 @@
 
 //#define printf rpclog
 
+#define VERSION_STRING "v2.0"
+
 #include <stdio.h>
 #include <stdint.h>
 #include <stddef.h>

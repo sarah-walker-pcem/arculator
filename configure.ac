@@ -26,6 +26,17 @@ else
    AC_MSG_RESULT([no])
 fi
 
+AC_MSG_CHECKING([whether to build for release])
+AC_ARG_ENABLE(release_build,
+          AC_HELP_STRING([--enable-release-build], [build for release]))
+if test "$enable_release_build" = "yes"; then
+   AC_MSG_RESULT([yes])
+   CFLAGS += " -DRELEASE_BUILD"
+else
+   AC_MSG_RESULT([no])
+fi
+AM_CONDITIONAL(RELEASE_BUILD, [test "$enable_release_build" = "yes"])
+
 AC_MSG_CHECKING([whether to build podules])
 AC_ARG_ENABLE(podules,
           AC_HELP_STRING([--disable-podules], [don't build podules]))

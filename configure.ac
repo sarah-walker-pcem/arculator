@@ -2,7 +2,7 @@
 #
 
 AC_PREREQ([2.61])
-AC_INIT(Arculator, v1.0, Sarah Walker <pcem@pcem-emulator.co.uk>, arculator)
+AC_INIT(Arculator, v2.0, Sarah Walker <b-em@bbcmicro.com>, arculator)
 
 AC_CANONICAL_HOST
 

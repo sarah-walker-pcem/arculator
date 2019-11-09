@@ -56,10 +56,9 @@ static FILE *aka31_logf;
 
 void aka31_log(const char *format, ...)
 {
+#ifdef DEBUG_LOG
    	char buf[1024];
    	va_list ap;
-   	
-	return;
    	
 	if (!aka31_logf)
 		aka31_logf = fopen("aka31_log.txt", "wt");
@@ -69,6 +68,7 @@ void aka31_log(const char *format, ...)
    	va_end(ap);
    	fputs(buf, aka31_logf);
    	fflush(aka31_logf);
+#endif
 }
 
 void fatal(const char *format, ...)

@@ -38,8 +38,9 @@ static FILE *cdlogf;
 
 void cdlog(const char *format, ...)
 {
+#ifdef DEBUG_LOG
    char buf[1024];
-return;
+
    if (!cdlogf)
         cdlogf = fopen("cdlog.txt","wt");
    va_list ap;
@@ -48,6 +49,7 @@ return;
    va_end(ap);
    fputs(buf, cdlogf);
    fflush(cdlogf);
+#endif
 }
 void cdfatal(const char *format, ...)
 {

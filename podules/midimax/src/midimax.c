@@ -24,10 +24,13 @@ char podule_path[512];
 
 #define MIDI_UART_CLOCK 2000000 //(31250Hz * 4 * 16)
 
+#ifdef DEBUG_LOG
 static FILE *midimax_logf;
+#endif
 
 void midimax_log(const char *format, ...)
 {
+#ifdef DEBUG_LOG
    char buf[1024];
 //return;
    if (!midimax_logf) midimax_logf=fopen("midimax_log.txt","wt");
@@ -37,6 +40,7 @@ void midimax_log(const char *format, ...)
    va_end(ap);
    fputs(buf,midimax_logf);
    fflush(midimax_logf);
+#endif
 }
 
 typedef struct midimax_t

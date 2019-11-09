@@ -24,7 +24,7 @@
 
   MEMC:
   0000 : Write to output FIFO
-  0000 : Read from input FIFO?
+  0000 : Read from input FIFO
   
 
   Basic design :
@@ -100,9 +100,12 @@ typedef struct lark_t
         podule_t *podule;
 } lark_t;
 
+#ifdef DEBUG_LOG
 static FILE *lark_logf;
+#endif
 void lark_log(const char *format, ...)
 {
+#ifdef DEBUG_LOG
    char buf[1024];
 
    if (!lark_logf)
@@ -113,6 +116,7 @@ void lark_log(const char *format, ...)
    va_end(ap);
    fputs(buf, lark_logf);
    fflush(lark_logf);
+#endif
 }
 
 static void lark_update_irqs(lark_t *lark)

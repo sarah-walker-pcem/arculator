@@ -10,8 +10,8 @@ typedef struct midi_t
         int pos, len;
         uint32_t command;
         int insysex;
-        uint8_t sysex_data[1024+2];
-        
+        uint8_t buffer[1024+2];
+
         HMIDIOUT out_device;
         HMIDIIN in_device;
 
@@ -172,11 +172,11 @@ static void CALLBACK midi_in_callback(HMIDIIN hMidiIn, UINT wMsg, DWORD dwInstan
         }
 }
 
-static void midi_send_sysex(midi_t *midi)
+static void midi_send(midi_t *midi)
 {
         MIDIHDR hdr;
-        
-        hdr.lpData = (LPSTR)midi->sysex_data;
+
+        hdr.lpData = (LPSTR)midi->buffer;
         hdr.dwBufferLength = midi->pos;
         hdr.dwFlags = 0;
         
@@ -205,23 +205,19 @@ void midi_write(void *p, uint8_t val)
                         midi->insysex = 1;
         }
 
+        midi->buffer[midi->pos++] = val;
+
         if (midi->insysex)
         {
-                midi->sysex_data[midi->pos++] = val;
-                
                 if (val == 0xf7 || midi->pos >= 1024+2)
-                        midi_send_sysex(midi);
+                        midi_send(midi);
                 return;
         }
                         
         if (midi->len)
-        {                
-                midi->command |= (val << (midi->pos * 8));
-                
-                midi->pos++;
-                
+        {
                 if (midi->pos == midi->len)
-                        midiOutShortMsg(midi->out_device, midi->command);
+                        midi_send(midi);
         }
 }
 

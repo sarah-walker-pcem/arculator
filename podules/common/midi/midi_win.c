@@ -20,8 +20,6 @@ typedef struct midi_t
         void *p;
 } midi_t;
 
-static int midi_id;
-
 void midi_close();
 
 void midi_get_dev_name(int num, char *s);
@@ -53,7 +51,6 @@ void *midi_init(void *p, void (*receive)(void *p, uint8_t val), void (*log)(cons
         midi->p = p;
         midi->receive = receive;
         
-        midi_id = 0;//config_get_int(CFG_MACHINE, NULL, "midi", 0);
         if (log)
                 log("num_out_devs=%i\n", midiOutGetNumDevs());
         for (c = 0; c < midiOutGetNumDevs(); c++)
@@ -72,13 +69,13 @@ void *midi_init(void *p, void (*receive)(void *p, uint8_t val), void (*log)(cons
                         log("name%i = %s\n", c, name);
         }
 
-        hr = midiOutOpen(&midi->out_device, midi_id, 0,
-		   0, CALLBACK_NULL);
+        hr = midiOutOpen(&midi->out_device, midi_out_dev_nr, 0,
+           0, CALLBACK_NULL);
         if (hr != MMSYSERR_NOERROR) {
 //                lark_log("midiOutOpen error - %08X\n",hr);
-                midi_id = 0;
-                hr = midiOutOpen(&midi->out_device, midi_id, 0,
-        		   0, CALLBACK_NULL);
+                midi_out_dev_nr = 0;
+                hr = midiOutOpen(&midi->out_device, midi_out_dev_nr, 0,
+                   0, CALLBACK_NULL);
                 if (hr != MMSYSERR_NOERROR) {
 //                        lark_log("midiOutOpen error - %08X\n",hr);
                         return midi;
@@ -86,14 +83,13 @@ void *midi_init(void *p, void (*receive)(void *p, uint8_t val), void (*log)(cons
         }
         midiOutReset(midi->out_device);
 
-        midi_id = 0;
-        hr = midiInOpen(&midi->in_device, midi_id, (DWORD)(void *)midi_in_callback,
-		   (DWORD)midi, CALLBACK_FUNCTION);
+        hr = midiInOpen(&midi->in_device, midi_in_dev_nr, (DWORD)(void *)midi_in_callback,
+           (DWORD)midi, CALLBACK_FUNCTION);
         if (hr != MMSYSERR_NOERROR) {
 //                lark_log("midiInOpen error - %08X\n",hr);
-                midi_id = 0;
-                hr = midiInOpen(&midi->in_device, midi_id, (DWORD)(void *)midi_in_callback,
-        		   (DWORD)midi, CALLBACK_FUNCTION);
+                midi_in_dev_nr = 0;
+                hr = midiInOpen(&midi->in_device, midi_in_dev_nr, (DWORD)(void *)midi_in_callback,
+                   (DWORD)midi, CALLBACK_FUNCTION);
                 if (hr != MMSYSERR_NOERROR) {
 //                        lark_log("midiInOpen error - %08X\n",hr);
                         return midi;

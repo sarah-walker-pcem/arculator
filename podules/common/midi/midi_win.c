@@ -216,6 +216,13 @@ void midi_write(void *p, uint8_t val)
                         
         if (midi->len)
         {
+                if (midi->pos > midi->len)
+                {
+                    /* It's a repeated command */
+                    midi->pos = 2;
+                    midi->buffer[1] = val;
+                }
+            
                 if (midi->pos == midi->len)
                         midi_send(midi);
         }

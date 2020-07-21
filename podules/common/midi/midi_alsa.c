@@ -256,6 +256,13 @@ void midi_write(void *p, uint8_t val)
                         
         if (midi->len)
         {                
+                if (midi->pos > midi->len)
+                {
+                    /* It's a repeated command */
+                    midi->pos = 1;
+                    midi->command &= 0xff;
+                }
+            
                 midi->command |= (val << (midi->pos * 8));
                 
                 midi->pos++;

@@ -10,8 +10,8 @@ typedef struct midi_t
         int pos, len;
         uint32_t command;
         int insysex;
-        uint8_t sysex_data[1024+2];
-        
+        uint8_t buffer[1024+2];
+
         HMIDIOUT out_device;
         HMIDIIN in_device;
 
@@ -19,8 +19,6 @@ typedef struct midi_t
         
         void *p;
 } midi_t;
-
-static int midi_id;
 
 void midi_close();
 
@@ -53,7 +51,6 @@ void *midi_init(void *p, void (*receive)(void *p, uint8_t val), void (*log)(cons
         midi->p = p;
         midi->receive = receive;
         
-        midi_id = 0;//config_get_int(CFG_MACHINE, NULL, "midi", 0);
         if (log)
                 log("num_out_devs=%i\n", midiOutGetNumDevs());
         for (c = 0; c < midiOutGetNumDevs(); c++)
@@ -72,13 +69,13 @@ void *midi_init(void *p, void (*receive)(void *p, uint8_t val), void (*log)(cons
                         log("name%i = %s\n", c, name);
         }
 
-        hr = midiOutOpen(&midi->out_device, midi_id, 0,
-		   0, CALLBACK_NULL);
+        hr = midiOutOpen(&midi->out_device, midi_out_dev_nr, 0,
+           0, CALLBACK_NULL);
         if (hr != MMSYSERR_NOERROR) {
 //                lark_log("midiOutOpen error - %08X\n",hr);
-                midi_id = 0;
-                hr = midiOutOpen(&midi->out_device, midi_id, 0,
-        		   0, CALLBACK_NULL);
+                midi_out_dev_nr = 0;
+                hr = midiOutOpen(&midi->out_device, midi_out_dev_nr, 0,
+                   0, CALLBACK_NULL);
                 if (hr != MMSYSERR_NOERROR) {
 //                        lark_log("midiOutOpen error - %08X\n",hr);
                         return midi;
@@ -86,14 +83,13 @@ void *midi_init(void *p, void (*receive)(void *p, uint8_t val), void (*log)(cons
         }
         midiOutReset(midi->out_device);
 
-        midi_id = 0;
-        hr = midiInOpen(&midi->in_device, midi_id, (DWORD)(void *)midi_in_callback,
-		   (DWORD)midi, CALLBACK_FUNCTION);
+        hr = midiInOpen(&midi->in_device, midi_in_dev_nr, (DWORD)(void *)midi_in_callback,
+           (DWORD)midi, CALLBACK_FUNCTION);
         if (hr != MMSYSERR_NOERROR) {
 //                lark_log("midiInOpen error - %08X\n",hr);
-                midi_id = 0;
-                hr = midiInOpen(&midi->in_device, midi_id, (DWORD)(void *)midi_in_callback,
-        		   (DWORD)midi, CALLBACK_FUNCTION);
+                midi_in_dev_nr = 0;
+                hr = midiInOpen(&midi->in_device, midi_in_dev_nr, (DWORD)(void *)midi_in_callback,
+                   (DWORD)midi, CALLBACK_FUNCTION);
                 if (hr != MMSYSERR_NOERROR) {
 //                        lark_log("midiInOpen error - %08X\n",hr);
                         return midi;
@@ -176,11 +172,11 @@ static void CALLBACK midi_in_callback(HMIDIIN hMidiIn, UINT wMsg, DWORD dwInstan
         }
 }
 
-static void midi_send_sysex(midi_t *midi)
+static void midi_send(midi_t *midi)
 {
         MIDIHDR hdr;
-        
-        hdr.lpData = (LPSTR)midi->sysex_data;
+
+        hdr.lpData = (LPSTR)midi->buffer;
         hdr.dwBufferLength = midi->pos;
         hdr.dwFlags = 0;
         
@@ -209,23 +205,26 @@ void midi_write(void *p, uint8_t val)
                         midi->insysex = 1;
         }
 
+        midi->buffer[midi->pos++] = val;
+
         if (midi->insysex)
         {
-                midi->sysex_data[midi->pos++] = val;
-                
                 if (val == 0xf7 || midi->pos >= 1024+2)
-                        midi_send_sysex(midi);
+                        midi_send(midi);
                 return;
         }
                         
         if (midi->len)
-        {                
-                midi->command |= (val << (midi->pos * 8));
-                
-                midi->pos++;
-                
+        {
+                if (midi->pos > midi->len)
+                {
+                    /* It's a repeated command */
+                    midi->pos = 2;
+                    midi->buffer[1] = val;
+                }
+            
                 if (midi->pos == midi->len)
-                        midiOutShortMsg(midi->out_device, midi->command);
+                        midi_send(midi);
         }
 }
 

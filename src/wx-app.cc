@@ -25,6 +25,7 @@
 extern "C"
 {
         #include "arc.h"
+        #include "config.h"
         #include "disc.h"
         #include "plat_joystick.h"
         #include "plat_video.h"
@@ -101,7 +102,7 @@ Frame::Frame(App* app, const wxString& title, const wxPoint& pos,
 
 void Frame::Start()
 {
-        if (!ShowConfigSelection())
+        if (strlen(machine_config_name) != 0 || !ShowConfigSelection())
                 arc_start_main_thread(this, this->menu);
         else
                 Quit(0);

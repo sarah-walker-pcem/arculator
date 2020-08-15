@@ -31,7 +31,6 @@ private:
 	void OnConfig(wxCommandEvent &event);
 
         void BuildConfigList();
-        wxString GetConfigPath(wxString config_name);
 };
 
 ConfigSelDialog::ConfigSelDialog(wxWindow* parent)
@@ -64,10 +63,6 @@ void ConfigSelDialog::BuildConfigList()
         }
         items.Sort();
         list->Set(items);
-}
-wxString ConfigSelDialog::GetConfigPath(wxString config_name)
-{
-        return wxString(exname) + "configs/" + config_name + ".cfg";
 }
 
 void ConfigSelDialog::OnOK(wxCommandEvent &event)
@@ -185,4 +180,9 @@ int ShowConfigSelection()
         ConfigSelDialog dlg(NULL);
         
         return dlg.ShowModal();
+}
+
+wxString GetConfigPath(wxString config_name)
+{
+        return wxString(exname) + "configs/" + config_name + ".cfg";
 }

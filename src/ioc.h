@@ -53,6 +53,7 @@ enum
         IOC_IRQB_SERIAL_CONTROL = 1 << 2,
         IOC_IRQB_ST506          = 1 << 3,       /*Old*/
         IOC_IRQB_IDE            = 1 << 3,       /*New*/
+        IOC_IRQB_ST506_DATA     = 1 << 4,       /*A500*/
         IOC_IRQB_DISC_CHANGED   = 1 << 4,       /*Old*/
         IOC_IRQB_DISC_IRQ       = 1 << 4,       /*New*/
         IOC_IRQB_PODULE_IRQ     = 1 << 5,

@@ -3,6 +3,7 @@
 #include <math.h>
 #include <string.h>
 #include "arc.h"
+#include "config.h"
 #include "ioc.h"
 #include "memc.h"
 #include "sound.h"
@@ -243,10 +244,21 @@ static void pollsound(void *p)
 static signed short convbyte(uint8_t v)
 {
         //                         7C       chord = 3     p = E/14
-        signed short temp=1<<((v>>5)+4);
-        temp+=(((v>>1)&0xF)<<(v>>5));
-        if (v&1) temp=-temp;
-        return temp;
+        if (fdctype == FDC_WD1793_A500)
+        {
+                signed short temp = 1 << (((v >> 4) & 7) + 4);
+                temp += ((v & 0xF) << ((v >> 4) & 7));
+                if (v & 0x80)
+                        temp = -temp;
+                return temp;
+        }
+        else
+        {
+                signed short temp=1<<((v>>5)+4);
+                temp+=(((v>>1)&0xF)<<(v>>5));
+                if (v&1) temp=-temp;
+                return temp;
+        }
 }
 
 void sound_init(void)

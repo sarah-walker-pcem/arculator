@@ -538,7 +538,9 @@ static struct
         {ROM_RISCOS_300, "riscos300", "riscos3"},
         {ROM_RISCOS_310, "riscos310", "riscos3"},
         {ROM_RISCOS_311, "riscos311", "riscos3"},
-        {ROM_RISCOS_319, "riscos319", "riscos3"}
+        {ROM_RISCOS_319, "riscos319", "riscos3"},
+        {ROM_ARTHUR_120_A500, "arthur120_a500", "arthur"},
+        {ROM_RISCOS_200_A500, "riscos200_a500", "riscos2"},
 };
 
 static int get_romset(char *name)
@@ -579,7 +581,7 @@ char *config_get_cmos_name(int romset, int fdctype)
                         if (romset >= ROM_RISCOS_300 && romset <= ROM_RISCOS_319)
                         {
                                 snprintf(cmos_name, sizeof(cmos_name), "%s_%s",
-                                                romset_lookup[c].cmos_name, (fdctype == FDC_WD1770) ? "old" : "new");
+                                                romset_lookup[c].cmos_name, (fdctype == FDC_82C711) ? "new" : "old");
                                                 
                                 return cmos_name;
                         }
@@ -743,6 +745,10 @@ void loadconfig()
                 strncpy(podule_names[3], p, 15);
         else
                 strcpy(podule_names[3], "");
+
+        if (romset == ROM_ARTHUR_120_A500 || romset == ROM_RISCOS_200_A500)
+                fdctype = FDC_WD1793_A500;
+
 }
 
 void saveconfig()
@@ -769,7 +775,7 @@ void saveconfig()
         config_set_int(CFG_MACHINE, NULL, "video_scale", video_scale);
         config_set_int(CFG_MACHINE, NULL, "video_fullscreen_scale", video_fullscreen_scale);
         config_set_int(CFG_MACHINE, NULL, "video_linear_filtering", video_linear_filtering);
-        config_set_int(CFG_MACHINE, NULL, "fdc_type", fdctype);
+        config_set_int(CFG_MACHINE, NULL, "fdc_type", (fdctype == FDC_82C711) ? 1 : 0);
         config_set_int(CFG_MACHINE, NULL, "st506_present", st506_present);
         config_set_string(CFG_MACHINE, NULL, "rom_set", config_get_romset_name(romset));
         config_set_string(CFG_MACHINE, NULL, "monitor_type", get_monitor_type_name(monitor_type));

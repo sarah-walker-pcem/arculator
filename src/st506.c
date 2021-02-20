@@ -53,10 +53,17 @@ void st506_close(st506_t *st506)
 
 static void st506_updateinterrupts(st506_t *st506)
 {
-        if ((st506->status & ~st506->OM1 & 0x38) || st506->drq)
+        if ((st506->status & ~st506->OM1 & 0x38) || (fdctype == FDC_WD1770 && st506->drq))
                 st506->irq_raise(st506);
         else
                 st506->irq_clear(st506);
+        if (fdctype == FDC_WD1793_A500)
+        {
+                if (st506->drq)
+                        ioc_irqb(IOC_IRQB_ST506_DATA);
+                else
+                        ioc_irqbc(IOC_IRQB_ST506_DATA);
+        }
 //        rpclog("ST506 status %i  %02X %02X %i\n", (st506->status & ~st506->OM1 & 0x38) || st506->drq, st506->status, st506->OM1, st506->drq);
 //        if (ioc.irqb&8 && !oldirq) rpclog("HDC IRQ\n");
 }
@@ -106,13 +113,10 @@ static int check_chs_params(st506_t *st506, int drive)
 
 
 int st506writes=0;
+void st506_writel(st506_t *st506, uint32_t a, uint32_t v);
 void st506_writeb(st506_t *st506, uint32_t a, uint8_t v)
 {
-//        return;
-        rpclog("Write HDC %08X %08X\n",a,v);
-#ifndef RELEASE_BUILD
-        fatal("ST506 write %08X %02X %02X at %07X\n",a,a&0x3C,v,PC);
-#endif
+        st506_writel(st506, a, v);
 }
 
 uint8_t st506_readb(st506_t *st506, uint32_t a)

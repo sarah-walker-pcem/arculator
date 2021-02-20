@@ -44,7 +44,7 @@ void wd1770_reset()
         wd1770.status = 0;
         motorspin = 0;
         rpclog("Reset 1770\n");
-        if (fdctype == FDC_WD1770)
+        if (fdctype != FDC_82C711)
         {
                 rpclog("WD1770 present\n");
                 timer_add(&fdc_timer, wd1770_callback, NULL, 0);
@@ -178,6 +178,10 @@ void wd1770_write(uint16_t addr, uint8_t val)
                         if (val & 8)
                            ioc_fiq(IOC_FIQ_DISC_IRQ);
                         wd1770_setspindown();
+                        disc_stop(0);
+                        disc_stop(1);
+                        disc_stop(2);
+                        disc_stop(3);
                         break;
                         case 0xF: /*Write track*/
                         wd1770.status = 0x80 | 0x1;
@@ -219,6 +223,11 @@ uint8_t wd1770_read(uint16_t addr)
         {
                 case 0x0:
                 ioc_fiqc(IOC_FIQ_DISC_IRQ);
+                if (fdctype == FDC_WD1793_A500)
+                {
+                        /*Bit 7 on WD1793 is !READY*/
+                        return (wd1770.status & ~0x80) | (fdc_ready ? 0x80 : 0);
+                }
 //                rpclog("Status %02X\n",wd1770.status);
                 return wd1770.status;
                 case 0x4:
@@ -257,7 +266,15 @@ void wd1770_writelatch_a(uint8_t val)
 void wd1770_writelatch_b(uint8_t val)
 {
 //        rpclog("Write latch B %02X\n", val);
-        wd1770.density = !(val & 2);
+        if (fdctype == FDC_WD1793_A500)
+        {
+                wd1770.density = (val & 4) ? 1 : 0;
+                /*TODO : support quad/high density*/
+        }
+        else
+        {
+                wd1770.density = !(val & 2);
+        }
 }
 
 void wd1770_callback(void *p)

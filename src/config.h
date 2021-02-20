@@ -1,7 +1,8 @@
 enum
 {
         FDC_WD1770,
-        FDC_82C711
+        FDC_82C711,
+        FDC_WD1793_A500
 };
 
 extern int fdctype;
@@ -17,6 +18,9 @@ enum
         ROM_RISCOS_311,
         ROM_RISCOS_319,
         
+        ROM_ARTHUR_120_A500,
+        ROM_RISCOS_200_A500,
+
         ROM_MAX
 };
 

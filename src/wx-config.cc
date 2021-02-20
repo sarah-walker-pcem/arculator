@@ -164,6 +164,7 @@ enum
 
 #define MEM_1M_4M  (MEM_MASK_1M | MEM_MASK_2M | MEM_MASK_4M)
 #define MEM_2M_4M  (MEM_MASK_2M | MEM_MASK_4M)
+#define MEM_4M     (MEM_MASK_4M)
 
 const char *rom_names[] =
 {
@@ -174,7 +175,9 @@ const char *rom_names[] =
         "RISC OS 3.00",
         "RISC OS 3.10",
         "RISC OS 3.11",
-        "RISC OS 3.19"
+        "RISC OS 3.19",
+        "Arthur 1.20 (A500)",
+        "RISC OS 2.00 (A500)"
 };
 
 enum
@@ -186,7 +189,10 @@ enum
         ROM_RISCOS_300_MASK = (1 << ROM_RISCOS_300),
         ROM_RISCOS_310_MASK = (1 << ROM_RISCOS_310),
         ROM_RISCOS_311_MASK = (1 << ROM_RISCOS_311),
-        ROM_RISCOS_319_MASK = (1 << ROM_RISCOS_319)
+        ROM_RISCOS_319_MASK = (1 << ROM_RISCOS_319),
+
+        ROM_ARTHUR_120_A500_MASK = (1 << ROM_ARTHUR_120_A500),
+        ROM_RISCOS_200_A500_MASK = (1 << ROM_RISCOS_200_A500)
 };
 
 /*Arthur and later - Archimedes 305, 310, 440*/
@@ -208,6 +214,8 @@ enum
 
 /*RISC OS 3.10 and later - A3010, A3020, A4000, A5000a*/
 #define ROM_RISCOS31 (ROM_RISCOS_310_MASK | ROM_RISCOS_311_MASK | ROM_RISCOS_319_MASK)
+
+#define ROM_A500 (ROM_ARTHUR_120_A500_MASK | ROM_RISCOS_200_A500_MASK)
 
 const char *monitor_names[] =
 {
@@ -260,6 +268,7 @@ static const machine_preset_t presets[] =
         {"A3020",            "a3020",  "ARM250, 2MB RAM, MEMC1A, New IO, RISC OS 3.1",         CPU_ARM250_ONLY,       MEM_2M_4M,    MEMC_MIN_MEMC1A_12, ROM_RISCOS31,  MONITOR_NO_MONO, CPU_ARM250,  MEM_2M,   MEMC_MEMC1A_12, IO_NEW},
         {"A4000",            "a4000",  "ARM250, 2MB RAM, MEMC1A, New IO, RISC OS 3.1",         CPU_ARM250_ONLY,       MEM_2M_4M,    MEMC_MIN_MEMC1A_12, ROM_RISCOS31,  MONITOR_NO_MONO, CPU_ARM250,  MEM_2M,   MEMC_MEMC1A_12, IO_NEW},
         {"A5000a",           "a5000a", "ARM3/33, 4MB RAM, MEMC1A, New IO, RISC OS 3.1",        CPU_ARM3_33_AND_LATER, MEM_MIN_4M,   MEMC_MIN_MEMC1A_12, ROM_RISCOS31,  MONITOR_NO_MONO, CPU_ARM3_33, MEM_4M,   MEMC_MEMC1A_12, IO_NEW},
+        {"A500 (prototype)", "a500",   "ARM2, 4MB RAM, MEMC1, Old IO + ST-506 HD, Arthur",     CPU_ARM2_AND_LATER,    MEM_4M,       MEMC_MIN_MEMC1,     ROM_A500,      MONITOR_ALL,     CPU_ARM2,    MEM_4M,   MEMC_MEMC1,     IO_OLD_ST506},
         {"", 0, 0, 0, 0, 0}
 };
 
@@ -757,8 +766,11 @@ void ConfigDialog::OnOK(wxCommandEvent &event)
 
         fpaena = (config_fpu == FPU_NONE) ? 0 : 1;
         fpu_type = (config_cpu >= CPU_ARM3_20) ? 0 : 1;
-        fdctype = (config_io >= IO_NEW) ? 1 : 0;
-        st506_present = (config_io == IO_OLD_ST506) ? 1 : 0;
+        if (romset == ROM_ARTHUR_120_A500 || romset == ROM_RISCOS_200_A500)
+                fdctype = FDC_WD1793_A500;
+        else
+                fdctype = (config_io >= IO_NEW) ? 1 : 0;
+        st506_present = (fdctype == FDC_WD1770 || fdctype == FDC_WD1793_A500) ? 1 : 0;
 
         switch (config_mem)
         {

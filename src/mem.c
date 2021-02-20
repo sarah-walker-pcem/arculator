@@ -251,7 +251,7 @@ uint8_t readmemfb(uint32_t a)
                                 return ioc_read(a);
                         return 0xff;
                         case 1: /*1772 FDC*/
-                        if (fdctype == FDC_WD1770)
+                        if (fdctype != FDC_82C711)
                                 return wd1770_read(a);
                         return c82c711_read(a);
                         case 2: /*Econet*/
@@ -365,7 +365,7 @@ uint32_t readmemfl(uint32_t a)
                                 return ioc_read(a);
                         return 0xff;
                         case 1: /*1772 FDC*/
-                        if (fdctype == FDC_WD1770)
+                        if (fdctype != FDC_82C711)
                                 return wd1770_read(a);
                         if ((a&0xFFF)==0x7C0)
                                 return readidew(&ide_internal);
@@ -483,7 +483,7 @@ void writememfb(uint32_t a,uint8_t v)
                                 ioc_write(a, v);
                         return;
                         case 1: /*1772 FDC*/
-                        if (fdctype == FDC_WD1770)
+                        if (fdctype != FDC_82C711)
                                 wd1770_write(a,v);
                         else
                                 c82c711_write(a,v);
@@ -531,13 +531,20 @@ void writememfb(uint32_t a,uint8_t v)
                         }
                         break;
                         case 6: /*Backplane*/
-                        switch (a&0xFFFC)
+                        if (fdctype == FDC_WD1793_A500)
                         {
-                                case 0x0000:
-                                return;
-                                case 0x0004:
-                                podule_write_backplane_mask(v);
-                                return;
+                                wd1770_writelatch_a(v);
+                        }
+                        else
+                        {
+                                switch (a&0xFFFC)
+                                {
+                                        case 0x0000:
+                                        return;
+                                        case 0x0004:
+                                        podule_write_backplane_mask(v);
+                                        return;
+                                }
                         }
                         break;
                 }
@@ -608,7 +615,7 @@ void writememfl(uint32_t a,uint32_t v)
                                 ioc_write(a,v>>16);
                         return;
                         case 1: /*1772 FDC*/
-                        if (fdctype == FDC_WD1770)
+                        if (fdctype != FDC_82C711)
                                 wd1770_write(a,v>>16);
                         else
                         {

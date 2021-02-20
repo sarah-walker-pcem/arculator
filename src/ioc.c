@@ -167,6 +167,13 @@ uint8_t ioc_read(uint32_t addr)
                         if ((ioc.ctrl & 8) && ds2401_read())
                                 temp |= 8;
                 }
+                else if (fdctype == FDC_WD1793_A500)
+                {
+                        if (!discchange[curdrive])
+                                temp |= 0x10;
+                        else
+                                temp &= ~0x10;
+                }
                 else
                 {
                         if (!fdc_ready)

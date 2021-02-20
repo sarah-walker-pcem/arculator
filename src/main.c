@@ -207,7 +207,7 @@ int arc_init()
                 ioc_discchange(c);
         }
 
-        if (!fdctype && st506_present)
+        if ((fdctype != FDC_82C711) && st506_present)
                 st506_internal_init();
 
         cmos_init();
@@ -244,7 +244,7 @@ void arc_reset()
         disc_reset();
         wd1770_reset();
         c82c711_fdc_init();
-        if (!fdctype && st506_present)
+        if ((fdctype != FDC_82C711) && st506_present)
                 st506_internal_init();
         sound_init();
         cmos_init();

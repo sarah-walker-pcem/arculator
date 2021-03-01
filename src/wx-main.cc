@@ -1,7 +1,7 @@
 /*Arculator 2.0 by Sarah Walker
   Main function*/
 #include "wx-app.h"
-#include <SDL2/SDL.h>
+#include <SDL.h>
 #include <wx/filename.h>
 #include "wx-config_sel.h"
 

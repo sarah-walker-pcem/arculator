@@ -1,6 +1,6 @@
 /*Arculator 2.0 by Sarah Walker
   SDL2 video handling*/
-#include <SDL2/SDL.h>
+#include <SDL.h>
 
 #if WIN32
 #define BITMAP __win_bitmap

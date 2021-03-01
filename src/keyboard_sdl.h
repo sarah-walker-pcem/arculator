@@ -1,4 +1,4 @@
-#include <SDL2/SDL.h>
+#include <SDL.h>
 
 #define KEY_ESC               SDL_SCANCODE_ESCAPE     /* keyboard scan codes  */
 #define KEY_1                 SDL_SCANCODE_1

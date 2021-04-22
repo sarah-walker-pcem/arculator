@@ -18,6 +18,7 @@ typedef struct ide_t
         uint8_t *idebufferb;
         int skip512[2];
         emu_timer_t timer;
+        int irq_active[2], irq_enabled[2];
 
         void (*irq_raise)(struct ide_t *ide);
         void (*irq_clear)(struct ide_t *ide);

@@ -23,15 +23,29 @@
 
 ide_t ide_internal;
 
+static void ide_update_irq(ide_t *ide)
+{
+        if (ide->irq_active[ide->drive] && ide->irq_enabled[ide->drive])
+        {
+                if (ide->irq_raise)
+                        ide->irq_raise(ide);
+        }
+        else
+        {
+                if (ide->irq_clear)
+                        ide->irq_clear(ide);
+        }
+}
+
 static void ide_raise_irq(ide_t *ide)
 {
-        if (ide->irq_raise)
-                ide->irq_raise(ide);
+        ide->irq_active[ide->drive] = 1;
+        ide_update_irq(ide);
 }
 static void ide_clear_irq(ide_t *ide)
 {
-        if (ide->irq_clear)
-                ide->irq_clear(ide);
+        ide->irq_active[ide->drive] = 0;
+        ide_update_irq(ide);
 }
 
 void closeide(ide_t *ide)
@@ -144,6 +158,7 @@ void writeide(ide_t *ide, uint32_t addr, uint8_t val)
                 case 0x1F6:
                 ide->head=val&0xF;
                 ide->drive=(val>>4)&1;
+                ide_update_irq(ide);
 //                rpclog("Write IDE head %02X %i,%i\n",val,ide->head,ide->drive);
                 return;
                 case 0x1F7: /*Command register*/
@@ -225,6 +240,8 @@ void writeide(ide_t *ide, uint32_t addr, uint8_t val)
 //                        rpclog("IDE Reset\n");
                 }
                 ide->fdisk=val;
+                ide->irq_enabled[ide->drive] = !(val & 2);
+                ide_update_irq(ide);
                 return;
         }
 #ifndef RELEASE_BUILD

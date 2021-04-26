@@ -569,6 +569,11 @@ char *config_get_romset_name(int romset)
         return "riscos311";
 }
 
+int machine_is_a500(void)
+{
+        return (romset == ROM_ARTHUR_120_A500 || romset == ROM_RISCOS_200_A500);
+}
+
 static char cmos_name[80];
 char *config_get_cmos_name(int romset, int fdctype)
 {

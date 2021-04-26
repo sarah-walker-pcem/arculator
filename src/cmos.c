@@ -23,10 +23,14 @@ int i2c_clock = 1, i2c_data = 1;
 #define I2C_ACKNOWLEDGE      3
 #define I2C_TRANSACKNOWLEDGE 4
 
-#define CMOS_IDLE            0
-#define CMOS_RECEIVEADDR     1
-#define CMOS_RECEIVEDATA     2
-#define CMOS_SENDDATA        3
+enum
+{
+        CMOS_IDLE,
+        CMOS_RECEIVEADDR,
+        CMOS_RECEIVEDATA,
+        CMOS_SENDDATA,
+        CMOS_NOT_SELECTED
+};
 
 static struct
 {
@@ -39,11 +43,14 @@ static struct
 
 static struct
 {
+        uint8_t device_addr;
+
         int state;
         int addr;
         int rw;
         
         uint8_t ram[256];
+        uint8_t rtc_ram[8];
 
         emu_timer_t timer;
 } cmos;
@@ -124,35 +131,65 @@ static void cmos_stop()
 static void cmos_next_byte()
 {
         LOG_CMOS("cmos_next_byte(%d)\n", cmos.addr);
-        i2c.byte = cmos.ram[(cmos.addr++) & 0xFF];
+        if (!machine_is_a500() || cmos.device_addr == 0xa0)
+                i2c.byte = cmos.ram[(cmos.addr++) & 0xFF];
+        else if (machine_is_a500() && cmos.device_addr == 0xd0)
+        {
+                if (!(cmos.addr & 0x70))
+                {
+                        i2c.byte = cmos.rtc_ram[cmos.addr & 0x07];
+                        cmos.addr = (cmos.addr & 0x70) | ((cmos.addr + 1) & 7);
+                }
+                else
+                        i2c.byte = 0;
+//                rpclog(" read RTC %02x %02x\n", cmos.addr-1, i2c.byte);
+        }
 }
 
 static void cmos_get_time()
 {
         int c, d;
-        
+
         LOG_CMOS("cmos_get_time()\n");
 
-        c = systemtime.msec / 10;
-        d = c % 10;
-        c /= 10;
-        cmos.ram[1] = d | (c << 4);
-        d = systemtime.sec % 10;
-        c = systemtime.sec / 10;
-        cmos.ram[2] = d | (c << 4);
-        d = systemtime.min % 10;
-        c = systemtime.min / 10;
-        cmos.ram[3] = d | (c << 4);
-        d = systemtime.hour % 10;
-        c = systemtime.hour / 10;
-        cmos.ram[4] = d | (c << 4);
-        d = systemtime.day % 10;
-        c = systemtime.day / 10;
-        cmos.ram[5] = d | (c << 4);
-        d = systemtime.mon % 10;
-        c = systemtime.mon / 10;
-        cmos.ram[6] = d | (c << 4);
-//        LOG_CMOS("Read time - %02X %02X %02X %02X %02X %02X\n",cmosram[1],cmosram[2],cmosram[3],cmosram[4],cmosram[5],cmosram[6]);
+        if (machine_is_a500())
+        {
+                d = systemtime.hour % 10;
+                c = systemtime.hour / 10;
+                cmos.rtc_ram[0] = d | (c << 4);
+                d = systemtime.min % 10;
+                c = systemtime.min / 10;
+                cmos.rtc_ram[1] = d | (c << 4);
+                d = systemtime.day % 10;
+                c = systemtime.day / 10;
+                cmos.rtc_ram[2] = d | (c << 4);
+                d = systemtime.mon % 10;
+                c = systemtime.mon / 10;
+                cmos.rtc_ram[3] = d | (c << 4);
+        }
+        else
+        {
+                c = systemtime.msec / 10;
+                d = c % 10;
+                c /= 10;
+                cmos.ram[1] = d | (c << 4);
+                d = systemtime.sec % 10;
+                c = systemtime.sec / 10;
+                cmos.ram[2] = d | (c << 4);
+                d = systemtime.min % 10;
+                c = systemtime.min / 10;
+                cmos.ram[3] = d | (c << 4);
+                d = systemtime.hour % 10;
+                c = systemtime.hour / 10;
+                cmos.ram[4] = d | (c << 4);
+                d = systemtime.day % 10;
+                c = systemtime.day / 10;
+                cmos.ram[5] = d | (c << 4);
+                d = systemtime.mon % 10;
+                c = systemtime.mon / 10;
+                cmos.ram[6] = d | (c << 4);
+//                LOG_CMOS("Read time - %02X %02X %02X %02X %02X %02X\n",cmosram[1],cmosram[2],cmosram[3],cmosram[4],cmosram[5],cmosram[6]);
+        }
 }
 
 static void cmos_tick(void *p)
@@ -217,20 +254,47 @@ void cmos_write(uint8_t byte)
         {
                 case CMOS_IDLE:
                 cmos.rw = byte & 1;
-                if (cmos.rw)
+                /*A500 has PCF8570 EEPROM at 0xa0, PCF8573 RTC at 0xd0
+                  Production machines have PCF8583 at 0xa0*/
+                cmos.device_addr = byte & 0xfe;
+//                rpclog("CMOS addr %02x\n", byte);
+                if (cmos.device_addr == 0xa0 || (cmos.device_addr == 0xd0 && machine_is_a500()))
                 {
-                        cmos.state = CMOS_SENDDATA;
-                        i2c.transmit = TRANSMITTER_CMOS;
-                        if (cmos.addr < 0x10)
-                                cmos_get_time();
-                        i2c.byte = cmos.ram[(cmos.addr++) & 0xFF];
+                        if (cmos.rw)
+                        {
+                                cmos.state = CMOS_SENDDATA;
+                                i2c.transmit = TRANSMITTER_CMOS;
+                                if (cmos.device_addr == 0xa0)
+                                {
+                                        if (!machine_is_a500() && (cmos.addr < 0x10))
+                                                cmos_get_time();
+                                        i2c.byte = cmos.ram[(cmos.addr++) & 0xFF];
+                                }
+                                else if (machine_is_a500())
+                                {
+                                        cmos_get_time();
+                                        if (!(cmos.addr & 0x70))
+                                        {
+                                                i2c.byte = cmos.rtc_ram[cmos.addr & 0x07];
+                                                cmos.addr = (cmos.addr & 0x70) | ((cmos.addr + 1) & 7);
+                                        }
+                                        else
+                                                i2c.byte = 0;
+//                                        rpclog(" read RTC %02x %02x\n", cmos.addr-1, i2c.byte);
+                                }
 //printf("CMOS - %02X from %02X\n",i2cbyte,cmosaddr-1);
 //                        log("Transmitter now CMOS\n");
+                        }
+                        else
+                        {
+                                cmos.state = CMOS_RECEIVEADDR;
+                                i2c.transmit = TRANSMITTER_ARM;
+                        }
                 }
                 else
                 {
-                        cmos.state = CMOS_RECEIVEADDR;
-                        i2c.transmit = TRANSMITTER_ARM;
+                        cmos.state = CMOS_NOT_SELECTED;
+                        i2c.byte = 0xff;
                 }
 //                log("CMOS R/W=%i\n",cmosrw);
                 return;
@@ -248,9 +312,21 @@ void cmos_write(uint8_t byte)
                 case CMOS_RECEIVEDATA:
 //                printf("CMOS write %02X %02X\n",cmosaddr,byte);
 //                log("%02X now %02X\n",cmosaddr,byte);
-                cmos.ram[(cmos.addr++) & 0xFF] = byte;
-                if (!cmos_changed)
-                        cmos_changed = CMOS_CHANGE_DELAY;
+                if (!machine_is_a500() || cmos.device_addr == 0xa0)
+                {
+                        if (!cmos_changed)
+                                cmos_changed = CMOS_CHANGE_DELAY;
+                        cmos.ram[(cmos.addr++) & 0xFF] = byte;
+                }
+                else
+                {
+//                        rpclog(" write RTC %02x %02x\n", cmos.addr, byte);
+                        if (!(cmos.addr & 0x70))
+                        {
+                                cmos.rtc_ram[cmos.addr & 0x07] = byte;
+                                cmos.addr = (cmos.addr & 0x70) | ((cmos.addr + 1) & 7);
+                        }
+                }
                 break;
 
                 case CMOS_SENDDATA:

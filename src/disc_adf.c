@@ -301,7 +301,7 @@ void adf_poll()
                         fdc_sectorid(adf_track, adf_side, adf_rsector + ((adf[adf_drive].size == 512) ? 1 : 0), (adf[adf_drive].size == 256) ? 1 : ((adf[adf_drive].size == 512) ? 2 : 3), 0, 0);
                         adf_inreadaddr = 0;
                         adf_rsector++;
-                        if (adf_rsector == adf[adf_drive].sectors)
+                        if (adf_rsector >= adf[adf_drive].sectors)
                         {
                                 adf_rsector=0;
                                 rpclog("adf_rsector reset\n");
@@ -322,7 +322,7 @@ void adf_poll()
                                 fdc_finishread();
                                 rpclog("Read addr - %i %i %i %i 0 0 (%i %i %i)\n", adf_track, adf_side, adf_rsector + ((adf[adf_drive].size == 512) ? 1 : 0), (adf[adf_drive].size == 256) ? 1 : ((adf[adf_drive].size == 512) ? 2 : 3), adf[adf_drive].sectors, adf_drive, adf_rsector);
                                 adf_rsector++;
-                                if (adf_rsector == adf[adf_drive].sectors)
+                                if (adf_rsector >= adf[adf_drive].sectors)
                                 {
                                         adf_rsector=0;
                                         rpclog("adf_rsector reset\n");

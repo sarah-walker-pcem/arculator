@@ -219,9 +219,14 @@ int loadrom()
                 len=ftell(f)+1;
                 fseek(f,0,SEEK_SET);
 //                rpclog("Loading %s %08X %08X\n",romfns[c],len,pos);
-                fread(&romb[pos],len,1,f);
+                if ((pos + len) > 0x200000)
+                        len = 0x200000 - pos;
+                if (len > 0)
+                        fread(&romb[pos],len,1,f);
                 fclose(f);
                 pos+=len;
+                if (pos >= 0x200000)
+                        break;
         }
         chdir(olddir);
 //        rpclog("Successfully loaded!\n");

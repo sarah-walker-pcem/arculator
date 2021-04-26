@@ -164,7 +164,7 @@ enum
 
 #define MEM_1M_4M  (MEM_MASK_1M | MEM_MASK_2M | MEM_MASK_4M)
 #define MEM_2M_4M  (MEM_MASK_2M | MEM_MASK_4M)
-#define MEM_4M     (MEM_MASK_4M)
+#define MEM_4M_ONLY (MEM_MASK_4M)
 
 const char *rom_names[] =
 {
@@ -268,7 +268,7 @@ static const machine_preset_t presets[] =
         {"A3020",            "a3020",  "ARM250, 2MB RAM, MEMC1A, New IO, RISC OS 3.1",         CPU_ARM250_ONLY,       MEM_2M_4M,    MEMC_MIN_MEMC1A_12, ROM_RISCOS31,  MONITOR_NO_MONO, CPU_ARM250,  MEM_2M,   MEMC_MEMC1A_12, IO_NEW},
         {"A4000",            "a4000",  "ARM250, 2MB RAM, MEMC1A, New IO, RISC OS 3.1",         CPU_ARM250_ONLY,       MEM_2M_4M,    MEMC_MIN_MEMC1A_12, ROM_RISCOS31,  MONITOR_NO_MONO, CPU_ARM250,  MEM_2M,   MEMC_MEMC1A_12, IO_NEW},
         {"A5000a",           "a5000a", "ARM3/33, 4MB RAM, MEMC1A, New IO, RISC OS 3.1",        CPU_ARM3_33_AND_LATER, MEM_MIN_4M,   MEMC_MIN_MEMC1A_12, ROM_RISCOS31,  MONITOR_NO_MONO, CPU_ARM3_33, MEM_4M,   MEMC_MEMC1A_12, IO_NEW},
-        {"A500 (prototype)", "a500",   "ARM2, 4MB RAM, MEMC1, Old IO + ST-506 HD, Arthur",     CPU_ARM2_AND_LATER,    MEM_4M,       MEMC_MIN_MEMC1,     ROM_A500,      MONITOR_ALL,     CPU_ARM2,    MEM_4M,   MEMC_MEMC1,     IO_OLD_ST506},
+        {"A500 (prototype)", "a500",   "ARM2, 4MB RAM, MEMC1, Old IO + ST-506 HD, Arthur",     CPU_ARM2_AND_LATER,    MEM_4M_ONLY,  MEMC_MIN_MEMC1,     ROM_A500,      MONITOR_ALL,     CPU_ARM2,    MEM_4M,   MEMC_MEMC1,     IO_OLD_ST506},
         {"", 0, 0, 0, 0, 0}
 };
 

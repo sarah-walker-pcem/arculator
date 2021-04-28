@@ -2,6 +2,7 @@
   Keyboard/mouse emulation*/
 #include <stdio.h>
 #include "arc.h"
+#include "config.h"
 #include "ioc.h"
 #include "keyboard.h"
 #include "plat_input.h"
@@ -24,17 +25,26 @@ int mousedown[3]={0,0,0};
 int mouseena=0,keyena=0;
 int keystat=0xFF;
 int keyrow,keycol;
-uint8_t mousex,mousey;
 
 static uint8_t key_data[2];
 
 enum
 {
+        KEYBOARD_STANDARD = 0,
+        KEYBOARD_A500
+};
+
+static int keyboard_type;
+
+enum
+{
+        /*HRST/RAK1/RAK2 are same on A500 and production keyboards*/
         KEYBOARD_HRST = 0xff,
         KEYBOARD_RAK1 = 0xfe,
         KEYBOARD_RAK2 = 0xfd,
         
-        KEYBOARD_BACK = 0x3f
+        KEYBOARD_BACK = 0x3f,
+        KEYBOARD_BACK_A500 = 0x30
 };
 
 enum
@@ -79,26 +89,20 @@ void key_do_tx_callback()
         ioc_irqb(IOC_IRQB_KEYBOARD_TX);
 }
 
-int keyboard_keydown(int row, int col)
+static void keyboard_keydown(int row, int col)
 {
-        if (!keystat)
-        {
-                LOG_KB_MOUSE("keydown\n");
+        if (keyboard_type == KEYBOARD_STANDARD)
                 keyboard_send_double(0xc0 | row, 0xc0 | col);
-                return 1;
-        }
-        return 0;
+        else if (keyboard_type == KEYBOARD_A500)
+                keyboard_send_double(0x20 | row, 0x20 | col);
 }
 
-int keyboard_keyup(int row, int col)
+static void keyboard_keyup(int row, int col)
 {
-        if (!keystat)
-        {
-                LOG_KB_MOUSE("keyup\n");
+        if (keyboard_type == KEYBOARD_STANDARD)
                 keyboard_send_double(0xd0 | row, 0xd0 | col);
-                return 1;
-        }
-        return 0;
+        else
+                keyboard_send_double(0x30 | row, 0x30 | col);
 }
 
 uint8_t keyboard_read()
@@ -120,13 +124,10 @@ uint8_t keyboard_read()
         return 0;
 }
 
-void keyboard_write(uint8_t val)
+static void keyboard_standard_write(uint8_t val)
 {
         int c;
 
-        timer_set_delay_u64(&keyboard_tx_timer, 1000 * TIMER_USEC);
-
-        LOG_KB_MOUSE("Keyboard write %02X %i %08X\n", val, keystat, PC);
         switch (keystat)
         {
                 case KEYBOARD_RESET: /*Reset sequence*/
@@ -212,10 +213,114 @@ void keyboard_write(uint8_t val)
         }
 }
 
+static void keyboard_a500_write(uint8_t val)
+{
+        int c;
+
+        switch (keystat)
+        {
+                case KEYBOARD_RESET: /*Reset sequence*/
+                LOG_KB_MOUSE("Reset sequence - write %02X\n", val);
+                switch (val)
+                {
+                        case KEYBOARD_HRST: /*HRST*/
+                        keyboard_send_single(KEYBOARD_HRST); /*HRST*/
+                        for (c = 0; c < 512; c++)
+                                keydat[c] = 0;
+                        keyena = mouseena = 0;
+                        keystat = KEYBOARD_RESET;
+                        break;
+                        case KEYBOARD_RAK1: /*RAK1*/
+                        keyboard_send_single(KEYBOARD_RAK1); /*RAK1*/
+                        for (c = 0; c < 512; c++)
+                                keydat[c] = 0;
+                        keyena = mouseena = 0;
+                        keystat = KEYBOARD_RESET;
+                        break;
+                        case KEYBOARD_RAK2: /*RAK2*/
+                        keyboard_send_single(KEYBOARD_RAK2); /*RAK2*/
+                        keystat = KEYBOARD_IDLE;
+                        break;
+                }
+                break;
+
+                case KEYBOARD_IDLE: /*Normal*/
+//                LOG_KB_MOUSE("Normal - write %02X\n",v);
+                switch (val)
+                {
+                        case 0x00: case 0x01: case 0x02: case 0x03: /*Keyboard LEDs*/
+                        case 0x04: case 0x05: case 0x06: case 0x07:
+                        ledcaps = val & 1;
+                        lednum  = val & 2;
+                        ledscr  = val & 4;
+                        break;
+                        case 0x20: /*Keyboard ID*/
+                        keyboard_send_double(0x10, 0x10);
+                        break;
+                        case 0x30: case 0x31: case 0x32: case 0x33: /*Enable mouse, disable keyboard*/
+                        if (val & 2) mouseena = 1;
+                        if (val & 1) keyena = 1;
+                        break;
+                        case KEYBOARD_HRST:  /*HRST*/
+                        keyboard_send_single(KEYBOARD_HRST);
+                        keystat = KEYBOARD_RESET;
+                        break;
+                }
+                break;
+
+                case KEYBOARD_DAT1:
+                switch (val)
+                {
+                        case KEYBOARD_BACK:
+                        case KEYBOARD_BACK_A500:
+                        keystat = KEYBOARD_DAT2;
+                        timer_set_delay_u64(&keyboard_rx_timer, 1000 * TIMER_USEC);
+                        break;
+
+                        case KEYBOARD_HRST:
+                        keyboard_send_single(KEYBOARD_HRST);
+                        keystat = KEYBOARD_RESET;
+                        break;
+                }
+                break;
+
+                case KEYBOARD_DAT2:
+                case KEYBOARD_DAT_SINGLE:
+                switch (val)
+                {
+                        case 0x30: case 0x31: case 0x32: case 0x33: /*Enable mouse, disable keyboard*/
+                        if (val & 2) mouseena = 1;
+                        if (val & 1) keyena = 1;
+                        keystat = KEYBOARD_IDLE;
+                        break;
+
+                        case KEYBOARD_HRST:
+                        keyboard_send_single(KEYBOARD_HRST);
+                        keystat = KEYBOARD_RESET;
+                        break;
+                }
+                break;
+        }
+}
+
+void keyboard_write(uint8_t val)
+{
+        timer_set_delay_u64(&keyboard_tx_timer, 1000 * TIMER_USEC);
+
+        LOG_KB_MOUSE("Keyboard write %02X %i %08X\n", val, keystat, PC);
+
+        if (keyboard_type == KEYBOARD_STANDARD)
+                keyboard_standard_write(val);
+        else if (keyboard_type == KEYBOARD_A500)
+                keyboard_a500_write(val);
+}
+
 void keyboard_init()
 {
         int c, d;
         
+        keyboard_type = machine_is_a500() ? KEYBOARD_A500 : KEYBOARD_STANDARD;
+
         keyboard_send_single(KEYBOARD_HRST);
         keystat = KEYBOARD_RESET;        
         for (c = 0; c < 512; c++)
@@ -226,11 +331,22 @@ void keyboard_init()
         c = d = 0;
         while (!d)
         {
-                keytable[keys[c][0] - 1][0] = keys[c][1];
-                keytable[keys[c][0] - 1][1] = keys[c][2];
-                c++;
-                if (keys[c][0] == -1)
-                        d = 1;
+                if (keyboard_type == KEYBOARD_STANDARD)
+                {
+                        keytable[keys[c][0] - 1][0] = keys[c][1];
+                        keytable[keys[c][0] - 1][1] = keys[c][2];
+                        c++;
+                        if (keys[c][0] == -1)
+                                d = 1;
+                }
+                else if (keyboard_type == KEYBOARD_A500)
+                {
+                        keytable[keys_a500[c][0] - 1][0] = keys_a500[c][1];
+                        keytable[keys_a500[c][0] - 1][1] = keys_a500[c][2];
+                        c++;
+                        if (keys_a500[c][0] == -1)
+                                d = 1;
+                }
         }
         
         timer_add(&keyboard_timer, keyboard_poll, NULL, 1);
@@ -268,13 +384,9 @@ void keyboard_poll(void *p)
                 if (key[c] != keydat[c] && c != KEY_MENU && keytable[c-1][0] != -1)
                 {
                         if (key[c])
-                        {
-                                keyboard_send_double(0xc0 | keytable[c-1][0], 0xc0 | keytable[c-1][1]);
-                        }
+                                keyboard_keydown(keytable[c-1][0], keytable[c-1][1]);
                         else
-                        {
-                                keyboard_send_double(0xd0 | keytable[c-1][0], 0xd0 | keytable[c-1][1]);
-                        }
+                                keyboard_keyup(keytable[c-1][0], keytable[c-1][1]);
                         keydat[c] = key[c];
                         return;
                 }
@@ -286,20 +398,40 @@ void keyboard_poll(void *p)
         {
                 LOG_KB_MOUSE("mouse left click\n");
                 mousedown[0] = mouse_buttons & 1;
-                if (mousedown[0])
-                        keyboard_send_double(0xc7, 0xc0);
-                else
-                        keyboard_send_double(0xd7, 0xd0);
+                if (keyboard_type == KEYBOARD_STANDARD)
+                {
+                        if (mousedown[0])
+                                keyboard_keydown(7, 0);
+                        else
+                                keyboard_keyup(7, 0);
+                }
+                else if (keyboard_type == KEYBOARD_A500)
+                {
+                        if (mousedown[0])
+                                keyboard_keydown(0xf, 0);
+                        else
+                                keyboard_keyup(0xf, 0);
+                }
                 return;
         }
         if ((mouse_buttons & 2) != mousedown[1]) /*Right button*/
         {
                 LOG_KB_MOUSE("mouse right click\n");
                 mousedown[1] = mouse_buttons & 2;
-                if (mousedown[1])
-                        keyboard_send_double(0xc7, 0xc2);
-                else
-                        keyboard_send_double(0xd7, 0xd2);
+                if (keyboard_type == KEYBOARD_STANDARD)
+                {
+                        if (mousedown[1])
+                                keyboard_keydown(7, 2);
+                        else
+                                keyboard_keyup(7, 2);
+                }
+                else if (keyboard_type == KEYBOARD_A500)
+                {
+                        if (mousedown[1])
+                                keyboard_keydown(0xd, 0);
+                        else
+                                keyboard_keyup(0xd, 0);
+                }
                 return;
         }
         /* There are three ways to perform a menu-click in Arculator:
@@ -310,10 +442,20 @@ void keyboard_poll(void *p)
         {
                 LOG_KB_MOUSE("mouse middle click / menu key pressed\n");
                 mousedown[2] = (mouse_buttons & 4) | ((key[KEY_MENU] || key[KEY_LWIN]) ? 4 : 0);
-                if (mousedown[2])
-                        keyboard_send_double(0xc7, 0xc1);
-                else
-                        keyboard_send_double(0xd7, 0xd1);
+                if (keyboard_type == KEYBOARD_STANDARD)
+                {
+                        if (mousedown[2])
+                                keyboard_keydown(7, 1);
+                        else
+                                keyboard_keyup(7, 1);
+                }
+                else if (keyboard_type == KEYBOARD_A500)
+                {
+                        if (mousedown[2])
+                                keyboard_keydown(0xe, 0);
+                        else
+                                keyboard_keyup(0xe, 0);
+                }
                 return;
         }
 
@@ -326,17 +468,42 @@ void keyboard_poll(void *p)
                 if (!mx && !my) 
                         return;
                         
-                if (mx < 0) dx = ((-mx) > 63) ? 63 : -mx;
-                else        dx = (mx > 63) ? 63 : mx;
-                if (mx < 0) dx = ((dx ^ 0x7f) + 1) & 0x7f;
-                my = -my;
-                if (my < 0) dy = ((-my) > 63) ? 63 : -my;
-                else        dy = (my > 63) ? 63 : my;
-                if (my < 0) dy = ((dy ^ 0x7f) + 1) & 0x7f;
-                mousex = dx;
-                mousey = dy;
+                if (keyboard_type == KEYBOARD_STANDARD)
+                {
+                        if (mx < -63)
+                                dx = -63;
+                        else if (mx > 63)
+                                dx = 63;
+                        else
+                                dx = mx;
 
-                keyboard_send_double(mousex, mousey);
+                        if (my < -63)
+                                dy = -63;
+                        else if (my > 63)
+                                dy = 63;
+                        else
+                                dy = my;
+
+                        keyboard_send_double(dx & 0x7f, (-dy) & 0x7f);
+                }
+                else if (keyboard_type == KEYBOARD_A500)
+                {
+                        if (mx < -31)
+                                dx = -31;
+                        else if (mx > 31)
+                                dx = 31;
+                        else
+                                dx = mx;
+
+                        if (my < -31)
+                                dy = -31;
+                        else if (my > 31)
+                                dy = 31;
+                        else
+                                dy = my;
+
+                        keyboard_send_double((dx & 0x3f) | 0x40, ((-dy) & 0x3f) | 0x40);
+                }
 
                 LOG_KB_MOUSE("Update mouse %i %i %i\n", mousex, mousey, keystat);
         }

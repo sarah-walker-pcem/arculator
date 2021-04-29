@@ -32,6 +32,7 @@
 #include "plat_joystick.h"
 #include "plat_video.h"
 #include "podules.h"
+#include "romload.h"
 #include "sound.h"
 #include "soundopenal.h"
 #include "st506.h"
@@ -163,6 +164,7 @@ int arc_init()
         
         if (loadrom())
                 return -1;
+        rom_load_5th_column();
 
         resizemem(memsize);
         
@@ -233,6 +235,7 @@ void arc_reset()
                 cmos_save();
         }
         loadrom();
+        rom_load_5th_column();
         cmos_load();
         resizemem(memsize);
         resetarm();

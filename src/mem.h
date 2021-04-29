@@ -5,3 +5,5 @@ void mem_updatetimings();
 
 extern int mem_dorefresh;
 extern uint64_t mem_spd_multi;
+
+extern uint8_t *rom_5th_column;

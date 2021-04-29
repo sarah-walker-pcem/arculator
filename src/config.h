@@ -39,6 +39,14 @@ enum
 
 extern int monitor_type;
 
+enum
+{
+        MACHINE_TYPE_NORMAL,
+        MACHINE_TYPE_A4
+};
+
+extern int machine_type;
+
 extern float config_get_float(int is_global, const char *head, const char *name, float def);
 extern int config_get_int(int is_global, const char *head, const char *name, int def);
 extern const char *config_get_string(int is_global, const char *head, const char *name, const char *def);

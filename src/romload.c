@@ -11,6 +11,7 @@
 #include <unistd.h>
 #include "arc.h"
 #include "config.h"
+#include "mem.h"
 
 char romfns[17][256];
 int firstromload=1;
@@ -254,4 +255,26 @@ int rom_establish_availability()
         romset = old_romset;
 
         return (!romset_available_mask);
+}
+
+void rom_load_5th_column(void)
+{
+        FILE *f;
+        char fn[512];
+
+        rpclog("rom_load_5th_column: machine_type=%i\n", machine_type);
+        memset(rom_5th_column, 0xff, 0x10000);
+
+        switch (machine_type)
+        {
+                case MACHINE_TYPE_A4:
+                append_filename(fn, exname, "roms/A4 5th Column.rom", sizeof(fn));
+                rpclog("  %s\n", fn);
+                f = fopen(fn, "rb");
+                if (!f)
+                        rpclog("File not found\n");
+                fread(rom_5th_column, 0x10000, 1, f);
+                fclose(f);
+                break;
+        }
 }

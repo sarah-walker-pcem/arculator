@@ -209,5 +209,4 @@ void initmemc()
 {
         int c;
         for (c=0;c<0x2000;c++) memstat[c]=0;
-        for (c=0x3400;c<0x3800;c++) memstat[c]=0;
 }

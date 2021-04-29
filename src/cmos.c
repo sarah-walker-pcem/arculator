@@ -7,6 +7,7 @@
 #include <windows.h>
 #endif
 #include "arc.h"
+#include "bmu.h"
 #include "cmos.h"
 #include "config.h"
 #include "timer.h"
@@ -258,7 +259,9 @@ void cmos_write(uint8_t byte)
                   Production machines have PCF8583 at 0xa0*/
                 cmos.device_addr = byte & 0xfe;
 //                rpclog("CMOS addr %02x\n", byte);
-                if (cmos.device_addr == 0xa0 || (cmos.device_addr == 0xd0 && machine_is_a500()))
+                if (cmos.device_addr == 0xa0 ||
+                                (cmos.device_addr == 0xa2 && machine_type == MACHINE_TYPE_A4) ||
+                                (cmos.device_addr == 0xd0 && machine_is_a500()))
                 {
                         if (cmos.rw)
                         {
@@ -270,7 +273,12 @@ void cmos_write(uint8_t byte)
                                                 cmos_get_time();
                                         i2c.byte = cmos.ram[(cmos.addr++) & 0xFF];
                                 }
-                                else if (machine_is_a500())
+                                else if (cmos.device_addr == 0xa2 && machine_type == MACHINE_TYPE_A4)
+                                {
+                                        i2c.byte = bmu_read(cmos.addr);
+                                        cmos.addr++;
+                                }
+                                else if (cmos.device_addr == 0xd0 && machine_is_a500())
                                 {
                                         cmos_get_time();
                                         if (!(cmos.addr & 0x70))
@@ -312,13 +320,18 @@ void cmos_write(uint8_t byte)
                 case CMOS_RECEIVEDATA:
 //                printf("CMOS write %02X %02X\n",cmosaddr,byte);
 //                log("%02X now %02X\n",cmosaddr,byte);
-                if (!machine_is_a500() || cmos.device_addr == 0xa0)
+                if (cmos.device_addr == 0xa0)
                 {
                         if (!cmos_changed)
                                 cmos_changed = CMOS_CHANGE_DELAY;
                         cmos.ram[(cmos.addr++) & 0xFF] = byte;
                 }
-                else
+                else if (cmos.device_addr == 0xa2 && machine_type == MACHINE_TYPE_A4)
+                {
+                        bmu_write(cmos.addr, byte);
+                        cmos.addr++;
+                }
+                else if (cmos.device_addr == 0xd0 && machine_is_a500())
                 {
 //                        rpclog(" write RTC %02x %02x\n", cmos.addr, byte);
                         if (!(cmos.addr & 0x70))

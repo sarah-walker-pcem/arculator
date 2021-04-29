@@ -14,6 +14,7 @@
 #include "ioc.h"
 #include "ioeb.h"
 #include "joystick.h"
+#include "lc.h"
 #include "memc.h"
 #include "podules.h"
 #include "printer.h"
@@ -39,6 +40,7 @@ int fdcside;
 int realmemsize;
 
 uint32_t *ram,*rom;
+uint8_t *rom_5th_column;
 uint8_t *romb;
 uint32_t *mempoint[0x4000];
 uint8_t *mempointb[0x4000];
@@ -54,6 +56,7 @@ void initmem(int memsize)
         ram=(uint32_t *)malloc(memsize*1024);
         rom=(uint32_t *)malloc(0x200000);
         romb = (uint8_t *)rom;
+        rom_5th_column = (uint8_t *)malloc(0x10000);
         for (c=0;c<0x4000;c++) memstat[c]=0;
         for (c=0x2000;c<0x3000;c++) memstat[c]=3;
         for (c=0x2000;c<0x3000;c++) mempoint[c]=&ram[(c&d)<<10];
@@ -255,6 +258,8 @@ uint8_t readmemfb(uint32_t a)
                                 return wd1770_read(a);
                         return c82c711_read(a);
                         case 2: /*Econet*/
+                        if (machine_type == MACHINE_TYPE_A4 && (a & 0xc000) == 0xc000)
+                                return lc_read(a);
                         if (joystick_rtfm_present)
                                 return joystick_rtfm_read(a);
                         return 0xFF;
@@ -304,6 +309,11 @@ uint8_t readmemfb(uint32_t a)
                         break;
                 }
                 return 0xFF;
+
+                case 0x34: case 0x35: case 0x36: case 0x37: /*Expansion ROMs*/
+                if ((a & 3) == 3)
+                        return rom_5th_column[(a >> 2) & 0xffff];
+                return 0xff;
         }
 //        rpclog("Data abort b %07X\n",a);
         databort=1;
@@ -371,6 +381,8 @@ uint32_t readmemfl(uint32_t a)
                                 return readidew(&ide_internal);
                         return c82c711_read(a);
                         case 2: /*Econet*/
+                        if (machine_type == MACHINE_TYPE_A4 && (a & 0xc000) == 0xc000)
+                                return lc_read(a);
                         if (joystick_rtfm_present)
                                 return joystick_rtfm_read(a);
                         return 0xFFFF;
@@ -423,7 +435,7 @@ uint32_t readmemfl(uint32_t a)
                 }
                 return 0xFFFF;
                 case 0x34: case 0x35: case 0x36: case 0x37: /*Expansion ROMs*/
-                return 0xFFFFFFFF;
+                return (rom_5th_column[(a >> 2) & 0xffff] << 24) | 0xffffff;
         }
 //        rpclog("Data abort l %07X\n",a);
         databort=1;
@@ -489,6 +501,11 @@ void writememfb(uint32_t a,uint8_t v)
                                 c82c711_write(a,v);
                         return;
                         case 2: /*Econet*/
+                        if (machine_type == MACHINE_TYPE_A4 && (a & 0xc000) == 0xc000)
+                        {
+                                lc_write(a,v);
+                                return;
+                        }
                         return;
                         case 3: /*Serial*/
                         return;
@@ -628,6 +645,11 @@ void writememfl(uint32_t a,uint32_t v)
                         }
                         return;
                         case 2: /*Econet*/
+                        if (machine_type == MACHINE_TYPE_A4 && (a & 0xc000) == 0xc000)
+                        {
+                                lc_write(a,v);
+                                return;
+                        }
                         return;
                         case 3: /*Serial*/
                         return;

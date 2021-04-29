@@ -23,6 +23,7 @@ int hd_spt[2], hd_hpc[2], hd_cyl[2];
 char machine[7];
 
 int monitor_type;
+int machine_type;
 
 uint32_t unique_id;
 
@@ -569,6 +570,29 @@ char *config_get_romset_name(int romset)
         return "riscos311";
 }
 
+static struct
+{
+        char *config_name;
+        int machine_type;
+} machine_type_lookup[] =
+{
+        {"a4", MACHINE_TYPE_A4}
+};
+
+static int get_machine_type(char *name)
+{
+        int c;
+
+        for (c = 0; c < nr_elems(machine_type_lookup); c++)
+        {
+                if (!strcmp(name, machine_type_lookup[c].config_name))
+                        return machine_type_lookup[c].machine_type;
+        }
+
+        return MACHINE_TYPE_NORMAL;
+}
+
+
 int machine_is_a500(void)
 {
         return (romset == ROM_ARTHUR_120_A500 || romset == ROM_RISCOS_200_A500);
@@ -654,6 +678,7 @@ void loadconfig()
                 strcpy(machine, p);
         else
                 machine[0] = 0;
+        machine_type = get_machine_type(machine);
         soundena = config_get_int(CFG_GLOBAL, NULL, "sound_enable", 1);
         display_mode = config_get_int(CFG_MACHINE, NULL, "display_mode", DISPLAY_MODE_NO_BORDERS);
         arm_cpu_type = config_get_int(CFG_MACHINE, NULL, "cpu_type", 0);

@@ -96,6 +96,11 @@ static void blank_timer_callback(void *p);
 
 void lc_init(void)
 {
+        lc.vdsr = 0;
+        lc.vdlr = 0;
+        lc.hdsr = 0;
+        lc.hdlr = 0;
+        lc.licr = 0;
         if (!lc.lc_buffer)
                 lc.lc_buffer = create_bitmap(640, 480);
         vidc_attach(lc_vidc_data, lc_vidc_vsync, NULL);

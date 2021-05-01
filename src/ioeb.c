@@ -13,16 +13,18 @@ static const struct
 {
         uint8_t id;
         uint8_t hs;
-} monitor_id[4] =
+} monitor_id[5] =
 {
         {0xe, 0x1}, /*Standard*/
         {0xb, 0x4}, /*Multisync/SVGA*/
         {0xe, 0x0}, /*Colour VGA*/
-        {0xf, 0x0}  /*High res mono - not supported by IOEB systems*/
+        {0xf, 0x0}, /*High res mono - not supported by IOEB systems*/
+        {0xf, 0x0}  /*LCD*/
 };
 
 static int hs_invert;
 static int has_joystick_ports;
+int ioeb_clock_select;
 
 static uint8_t ioeb_joystick_read(int addr)
 {
@@ -81,6 +83,7 @@ void ioeb_write(uint32_t addr, uint8_t val)
         switch (addr & 0xf8)
         {
                 case 0x48:
+                ioeb_clock_select = val & 3;
                 vidc_setclock(val & 3);
                 hs_invert = val & 4;
                 break;

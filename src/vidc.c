@@ -62,6 +62,11 @@ int fullborders,noborders;
 int dblscan;
 
 
+static void clear(BITMAP *b)
+{
+        memset(b->dat, 0, b->w * b->h * 4);
+}
+
 BITMAP *create_bitmap(int x, int y)
 {
         BITMAP *b = (BITMAP *)malloc(sizeof(BITMAP) + (y * sizeof(uint8_t *)));
@@ -73,6 +78,7 @@ BITMAP *create_bitmap(int x, int y)
         }
         b->w = x;
         b->h = y;
+        clear(b);
         return b;
 }
 
@@ -80,11 +86,6 @@ void destroy_bitmap(BITMAP *b)
 {
         free(b->dat);
         free(b);
-}
-
-static void clear(BITMAP *b)
-{
-        memset(b->dat, 0, b->w * b->h * 4);
 }
 
 int vidc_dma_length;
@@ -156,7 +157,13 @@ struct
         
         int border_was_disabled, display_was_disabled;
         
+        int output_enable;
+
         emu_timer_t timer;
+
+        void (*data_callback)(uint8_t *data, int pixels, void *p);
+        void (*vsync_callback)(void *p);
+        void *callback_p;
 } vidc;
 
 enum
@@ -555,7 +562,7 @@ static void vidc_poll(void *__p)
         uint32_t *p;
         uint8_t *bp;
 //        char s[256];
-        int l = (vidc.line - 17);
+        int l = vidc.line;
         int xoffset,xoffset2;
         int do_double_scan = (!vidc.scanrate && !dblscan);
 
@@ -707,7 +714,7 @@ static void vidc_poll(void *__p)
                                 if ((l+1) > vidc.disp_y_max)
                                         vidc.disp_y_max = l+1;
                         }
-                        else 
+                        else
                                 archline(bp, 0, l, 1023, 0);
                 }
                 else
@@ -1059,6 +1066,22 @@ static void vidc_poll(void *__p)
         else if (display_mode == DISPLAY_MODE_TV && l >= TV_Y_MIN && l < TV_Y_MAX)
                 archline(buffer->line[l], TV_X_MIN, l, TV_X_MAX-1, 0);
 
+        if (vidc.data_callback)
+        {
+                uint8_t out_data[2048];
+
+                /*Extract red nibble for full scanline to send to attached device*/
+                if (l >= 0)
+                {
+                        for (x = 0; x < (vidc.htot+1)*2; x++)
+                                out_data[x] = (((uint32_t *)buffer->line[l])[x] >> 20) & 0xf;
+                }
+                else
+                        memset(out_data, 0, (vidc.htot+1)*2);
+
+                vidc.data_callback(out_data, (vidc.htot+1)*2, vidc.callback_p);
+        }
+
         if (vidc.line>=vidc.vtot)
         {
                 LOG_VIDEO_FRAMES("Frame over!  vidc.line=%d, vidc.vtot=%d\n", vidc.line, vidc.vtot);
@@ -1074,116 +1097,125 @@ static void vidc_poll(void *__p)
 
                 oldflash=readflash[0]|readflash[1]|readflash[2]|readflash[3];
 
-                if ((display_mode == DISPLAY_MODE_NO_BORDERS) || (monitor_type == MONITOR_MONO))
+                if (vidc.output_enable)
                 {
-                        int hd_start = (vidc.hbstart > vidc.hdstart) ? vidc.hbstart : vidc.hdstart;
-                        int hd_end = (vidc.hbend < vidc.hdend) ? vidc.hbend : vidc.hdend;
-                        int height = vidc.disp_y_max - vidc.disp_y_min;
+                        if ((display_mode == DISPLAY_MODE_NO_BORDERS) || (monitor_type == MONITOR_MONO))
+                        {
+                                int hd_start = (vidc.hbstart > vidc.hdstart) ? vidc.hbstart : vidc.hdstart;
+                                int hd_end = (vidc.hbend < vidc.hdend) ? vidc.hbend : vidc.hdend;
+                                int height = vidc.disp_y_max - vidc.disp_y_min;
 
-                        if (monitor_type == MONITOR_MONO)
-                        {
-                                hd_start = vidc.hdstart * 4;
-                                hd_end = vidc.hdend * 4;
-                        }
-                        else if (!(vidcr[VIDC_CR] & 2))
-                        {
-                                hd_start *= 2;
-                                hd_end *= 2;
-                        }
+                                if (monitor_type == MONITOR_MONO)
+                                {
+                                        hd_start = vidc.hdstart * 4;
+                                        hd_end = vidc.hdend * 4;
+                                }
+                                else if (!(vidcr[VIDC_CR] & 2))
+                                {
+                                        hd_start *= 2;
+                                        hd_end *= 2;
+                                }
 
-                        if (vidc.scanrate || !dblscan)
-                        {
-                                LOG_VIDEO_FRAMES("PRESENT: normal display\n");
-                                updatewindowsize(hd_end-hd_start, height);
-                                video_renderer_update(buffer, hd_start, vidc.disp_y_min, 0, 0, hd_end-hd_start, height);
-                                video_renderer_present(0, 0, hd_end-hd_start, height, 0);
+                                if (vidc.scanrate || !dblscan)
+                                {
+                                        LOG_VIDEO_FRAMES("PRESENT: normal display\n");
+                                        updatewindowsize(hd_end-hd_start, height);
+                                        video_renderer_update(buffer, hd_start, vidc.disp_y_min, 0, 0, hd_end-hd_start, height);
+                                        video_renderer_present(0, 0, hd_end-hd_start, height, 0);
+                                }
+                                else
+                                {
+                                        LOG_VIDEO_FRAMES("PRESENT: line doubled");
+                                        updatewindowsize(hd_end-hd_start, height * 2);
+                                        video_renderer_update(buffer, hd_start, vidc.disp_y_min, 0, 0, hd_end-hd_start, height);
+                                        video_renderer_present(0, 0, hd_end-hd_start, height, 1);
+                                }
                         }
-                        else
+                        else if (display_mode == DISPLAY_MODE_NATIVE_BORDERS)
                         {
-                                LOG_VIDEO_FRAMES("PRESENT: line doubled");
-                                updatewindowsize(hd_end-hd_start, height * 2);
-                                video_renderer_update(buffer, hd_start, vidc.disp_y_min, 0, 0, hd_end-hd_start, height);
-                                video_renderer_present(0, 0, hd_end-hd_start, height, 1);
-                        }
-                }
-                else if (display_mode == DISPLAY_MODE_NATIVE_BORDERS)
-                {
-                        LOG_VIDEO_FRAMES("BLIT: fullborders|fullscreen\n");
-			int hb_start = vidc.hbstart;
-			int hb_end = vidc.hbend;
+                                LOG_VIDEO_FRAMES("BLIT: fullborders|fullscreen\n");
+                                int hb_start = vidc.hbstart;
+                                int hb_end = vidc.hbend;
 
-                        if (!(vidcr[VIDC_CR] & 2))
-                        {
-                                hb_start *= 2;
-                                hb_end *= 2;
-                        }
+                                if (!(vidcr[VIDC_CR] & 2))
+                                {
+                                        hb_start *= 2;
+                                        hb_end *= 2;
+                                }
 				
-                        if (vidc.scanrate || !dblscan)
-                        {
-                                LOG_VIDEO_FRAMES("UPDATE AND PRESENT: fullborders|fullscreen no doubling\n");
-                                updatewindowsize(hb_end-hb_start, vidc.y_max-vidc.y_min);
-                                video_renderer_update(buffer, hb_start, vidc.y_min, 0, 0, hb_end-hb_start, vidc.y_max-vidc.y_min);
-                                video_renderer_present(0, 0, hb_end-hb_start, vidc.y_max-vidc.y_min, 0);
-                        }
-                        else
-                        {
-                                LOG_VIDEO_FRAMES("UPDATE AND PRESENT: fullborders|fullscreen + doubling\n");
-                                updatewindowsize(hb_end-hb_start, (vidc.y_max-vidc.y_min) * 2);
-                                video_renderer_update(buffer, hb_start, vidc.y_min, 0, 0, hb_end-hb_start, vidc.y_max-vidc.y_min);
-                                video_renderer_present(0, 0, hb_end-hb_start, vidc.y_max-vidc.y_min, 1);
-                        }
-                }
-                else
-                {
-                        LOG_VIDEO_FRAMES("BLIT: !(fullborders|fullscreen) dblscan=%d VIDC_CR=%08X\n", dblscan, vidcr[VIDC_CR]);
-                        updatewindowsize(TV_X_MAX-TV_X_MIN, (TV_Y_MAX-TV_Y_MIN)*2);
-                        if (vidcr[VIDC_CR] & 1)
-                        {
-                                if (dblscan)
+                                if (vidc.scanrate || !dblscan)
                                 {
-                                        video_renderer_update(buffer, TV_X_MIN_24, TV_Y_MIN, 0, 0, TV_X_MAX_24-TV_X_MIN_24, TV_Y_MAX-TV_Y_MIN);
-                                        video_renderer_present(0, 0, TV_X_MAX_24-TV_X_MIN_24, TV_Y_MAX-TV_Y_MIN, 1);
+                                        LOG_VIDEO_FRAMES("UPDATE AND PRESENT: fullborders|fullscreen no doubling\n");
+                                        updatewindowsize(hb_end-hb_start, vidc.y_max-vidc.y_min);
+                                        video_renderer_update(buffer, hb_start, vidc.y_min, 0, 0, hb_end-hb_start, vidc.y_max-vidc.y_min);
+                                        video_renderer_present(0, 0, hb_end-hb_start, vidc.y_max-vidc.y_min, 0);
                                 }
                                 else
                                 {
-                                        video_renderer_update(buffer, TV_X_MIN_24, TV_Y_MIN*2, 0, 0, TV_X_MAX_24-TV_X_MIN_24, (TV_Y_MAX-TV_Y_MIN)*2);
-                                        video_renderer_present(0, 0, TV_X_MAX_24-TV_X_MIN_24, (TV_Y_MAX-TV_Y_MIN)*2, 0);
+                                        LOG_VIDEO_FRAMES("UPDATE AND PRESENT: fullborders|fullscreen + doubling\n");
+                                        updatewindowsize(hb_end-hb_start, (vidc.y_max-vidc.y_min) * 2);
+                                        video_renderer_update(buffer, hb_start, vidc.y_min, 0, 0, hb_end-hb_start, vidc.y_max-vidc.y_min);
+                                        video_renderer_present(0, 0, hb_end-hb_start, vidc.y_max-vidc.y_min, 1);
                                 }
                         }
                         else
                         {
-                                if (dblscan)
+                                LOG_VIDEO_FRAMES("BLIT: !(fullborders|fullscreen) dblscan=%d VIDC_CR=%08X\n", dblscan, vidcr[VIDC_CR]);
+                                updatewindowsize(TV_X_MAX-TV_X_MIN, (TV_Y_MAX-TV_Y_MIN)*2);
+                                if (vidcr[VIDC_CR] & 1)
                                 {
-                                        video_renderer_update(buffer, TV_X_MIN, TV_Y_MIN, 0, 0, TV_X_MAX-TV_X_MIN, TV_Y_MAX-TV_Y_MIN);
-                                        video_renderer_present(0, 0, TV_X_MAX-TV_X_MIN, TV_Y_MAX-TV_Y_MIN, 1);
+                                        if (dblscan)
+                                        {
+                                                video_renderer_update(buffer, TV_X_MIN_24, TV_Y_MIN, 0, 0, TV_X_MAX_24-TV_X_MIN_24, TV_Y_MAX-TV_Y_MIN);
+                                                video_renderer_present(0, 0, TV_X_MAX_24-TV_X_MIN_24, TV_Y_MAX-TV_Y_MIN, 1);
+                                        }
+                                        else
+                                        {
+                                                video_renderer_update(buffer, TV_X_MIN_24, TV_Y_MIN*2, 0, 0, TV_X_MAX_24-TV_X_MIN_24, (TV_Y_MAX-TV_Y_MIN)*2);
+                                                video_renderer_present(0, 0, TV_X_MAX_24-TV_X_MIN_24, (TV_Y_MAX-TV_Y_MIN)*2, 0);
+                                        }
                                 }
                                 else
                                 {
-                                        video_renderer_update(buffer, TV_X_MIN, TV_Y_MIN*2, 0, 0, TV_X_MAX-TV_X_MIN, (TV_Y_MAX-TV_Y_MIN)*2);
-                                        video_renderer_present(0, 0, TV_X_MAX-TV_X_MIN, (TV_Y_MAX-TV_Y_MIN)*2, 0);
+                                        if (dblscan)
+                                        {
+                                                video_renderer_update(buffer, TV_X_MIN, TV_Y_MIN, 0, 0, TV_X_MAX-TV_X_MIN, TV_Y_MAX-TV_Y_MIN);
+                                                video_renderer_present(0, 0, TV_X_MAX-TV_X_MIN, TV_Y_MAX-TV_Y_MIN, 1);
+                                        }
+                                        else
+                                        {
+                                                video_renderer_update(buffer, TV_X_MIN, TV_Y_MIN*2, 0, 0, TV_X_MAX-TV_X_MIN, (TV_Y_MAX-TV_Y_MIN)*2);
+                                                video_renderer_present(0, 0, TV_X_MAX-TV_X_MIN, (TV_Y_MAX-TV_Y_MIN)*2, 0);
+                                        }
                                 }
                         }
-                }
 
-                vidc.y_min = 9999;
-                vidc.y_max = 0;
-                vidc.disp_y_min = 9999;
-                vidc.disp_y_max = -1;
+                        vidc.y_min = 9999;
+                        vidc.y_max = 0;
+                        vidc.disp_y_min = 9999;
+                        vidc.disp_y_max = -1;
 
-                /*Clear the buffer now so we don't get a persistent ghost when changing
-                  from a high vertical res mode to a line-doubled mode.*/
-                if (vidc.clear_pending)
-                {
-                        vidc.clear_pending = 0;
-                        clear(buffer);
+                        /*Clear the buffer now so we don't get a persistent ghost when changing
+                          from a high vertical res mode to a line-doubled mode.*/
+                        if (vidc.clear_pending)
+                        {
+                                vidc.clear_pending = 0;
+                                clear(buffer);
+                        }
                 }
 
                 vidc.line=0;
+                if (vidc.vsync_callback)
+                        vidc.vsync_callback(vidc.callback_p);
                 vidc.border_was_disabled = 0;
                 vidc.display_was_disabled = 0;
 //                rpclog("%i fetches\n", vidc_fetches);
                 vidc_fetches = 0;
                 vidc_framecount++;
+
+/*                rpclog("vtot=%i vswr=%i vbsr=%i vdsr=%i vder=%i vber=%i cr=%08x\n",
+                                vidc.vtot, vidc.sync, vidc.vbstart,
+                                vidc.vdstart, vidc.vdend, vidc.vbend, vidcr[VIDC_CR]);*/
         }
 }
 
@@ -1210,6 +1242,13 @@ void vidc_setclock(int clock)
         recalcse();
 }
 
+void vidc_setclock_direct(int clock)
+{
+        vidc.clock = clock;
+        sound_set_clock((vidc.clock * 1000) / 24);
+        recalcse();
+}
+
 int vidc_getclock()
 {
         return vidc.clock;
@@ -1227,4 +1266,20 @@ void vidc_reset()
         vidc_setclock(0);
         sound_set_period(255);
         recalcse();
+        vidc_output_enable(1);
+        vidc.data_callback = NULL;
+        vidc.vsync_callback = NULL;
+}
+
+
+void vidc_attach(void (*vidc_data)(uint8_t *data, int pixels, void *p), void (*vidc_vsync)(void *p), void *p)
+{
+        vidc.data_callback = vidc_data;
+        vidc.vsync_callback = vidc_vsync;
+        vidc.callback_p = p;
+}
+
+void vidc_output_enable(int ena)
+{
+        vidc.output_enable = ena;
 }

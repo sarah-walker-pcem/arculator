@@ -631,7 +631,8 @@ static struct
         {MONITOR_STANDARD,  "standard"},
         {MONITOR_MULTISYNC, "multisync"},
         {MONITOR_VGA,       "vga"},
-        {MONITOR_MONO,      "mono"}
+        {MONITOR_MONO,      "mono"},
+        {MONITOR_LCD,       "lcd"}
 };
 
 static int get_monitor_type(char *name)

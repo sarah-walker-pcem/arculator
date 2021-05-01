@@ -26,6 +26,7 @@
 #include "ioeb.h"
 #include "joystick.h"
 #include "keyboard.h"
+#include "lc.h"
 #include "mem.h"
 #include "memc.h"
 #include "plat_input.h"
@@ -218,6 +219,8 @@ int arc_init()
         podules_reset();
         joystick_if_init();
         ioeb_init();
+        if (machine_type == MACHINE_TYPE_A4)
+                lc_init();
         
         return 0;
 }
@@ -257,6 +260,8 @@ void arc_reset()
         podules_reset();
         joystick_if_init();
         ioeb_init();
+        if (machine_type == MACHINE_TYPE_A4)
+                lc_init();
 }
 
 static struct

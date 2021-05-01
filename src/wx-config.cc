@@ -227,7 +227,8 @@ const char *monitor_names[] =
         "Standard",
         "Multisync",
         "VGA",
-        "High res mono"
+        "High res mono",
+        "LCD"
 };
 
 enum
@@ -235,7 +236,8 @@ enum
         MONITOR_STANDARD_MASK  = (1 << MONITOR_STANDARD),
         MONITOR_MULTISYNC_MASK = (1 << MONITOR_MULTISYNC),
         MONITOR_VGA_MASK       = (1 << MONITOR_VGA),
-        MONITOR_MONO_MASK      = (1 << MONITOR_MONO)
+        MONITOR_MONO_MASK      = (1 << MONITOR_MONO),
+        MONITOR_LCD_MASK       = (1 << MONITOR_LCD)
 };
 
 /*Machines supporting high res mono - Archimedes 440, 4x0/1, 540*/
@@ -244,6 +246,10 @@ enum
 
 /*Machines not supporting high res mono - everythine else*/
 #define MONITOR_NO_MONO (MONITOR_STANDARD_MASK | MONITOR_MULTISYNC_MASK | MONITOR_VGA_MASK)
+
+/*Machines with LCD*/
+#define MONITOR_LCD_A4 (MONITOR_STANDARD_MASK | MONITOR_MULTISYNC_MASK | MONITOR_VGA_MASK | \
+                MONITOR_LCD_MASK)
 
 typedef struct machine_preset_t
 {
@@ -270,7 +276,7 @@ static const machine_preset_t presets[] =
         {"A3000",            "a3000",  "ARM2, 1MB RAM, MEMC1A, Old IO, RISC OS 2",             MACHINE_TYPE_NORMAL, CPU_ARM2_AND_LATER,    MEM_MIN_1M,   MEMC_MIN_MEMC1A,    ROM_RISCOS,    MONITOR_NO_MONO, CPU_ARM2,    MEM_1M,   MEMC_MEMC1A_8,  IO_OLD},
         {"Archimedes 540",   "a540",   "ARM3/26, 4MB RAM, MEMC1A, Old IO, RISC OS 2.01",       MACHINE_TYPE_NORMAL, CPU_ARM3_26_AND_LATER, MEM_MIN_4M,   MEMC_MIN_MEMC1A_12, ROM_RISCOS201, MONITOR_ALL,     CPU_ARM3_26, MEM_4M,   MEMC_MEMC1A_12, IO_OLD},
         {"A5000",            "a5000",  "ARM3/25, 1MB RAM, MEMC1A, New IO, RISC OS 3.0",        MACHINE_TYPE_NORMAL, CPU_ARM3_25_AND_LATER, MEM_MIN_1M,   MEMC_MIN_MEMC1A_12, ROM_RISCOS3,   MONITOR_NO_MONO, CPU_ARM3_25, MEM_2M,   MEMC_MEMC1A_12, IO_NEW},
-        {"A4",               "a4",     "ARM3/24, 2MB RAM, MEMC1A, New IO, RISC OS 3.0",        MACHINE_TYPE_A4,     CPU_ARM3_24_ONLY,      MEM_2M_4M,    MEMC_MIN_MEMC1A_12, ROM_RISCOS3,   MONITOR_NO_MONO, CPU_ARM3_24, MEM_2M,   MEMC_MEMC1A_12, IO_NEW},
+        {"A4",               "a4",     "ARM3/24, 2MB RAM, MEMC1A, New IO, RISC OS 3.0",        MACHINE_TYPE_A4,     CPU_ARM3_24_ONLY,      MEM_2M_4M,    MEMC_MIN_MEMC1A_12, ROM_RISCOS3,   MONITOR_LCD_A4,  CPU_ARM3_24, MEM_2M,   MEMC_MEMC1A_12, IO_NEW},
         {"A3010",            "a3010",  "ARM250, 1MB RAM, MEMC1A, New IO, RISC OS 3.1",         MACHINE_TYPE_NORMAL, CPU_ARM250_ONLY,       MEM_1M_4M,    MEMC_MIN_MEMC1A_12, ROM_RISCOS31,  MONITOR_NO_MONO, CPU_ARM250,  MEM_1M,   MEMC_MEMC1A_12, IO_NEW},
         {"A3020",            "a3020",  "ARM250, 2MB RAM, MEMC1A, New IO, RISC OS 3.1",         MACHINE_TYPE_NORMAL, CPU_ARM250_ONLY,       MEM_2M_4M,    MEMC_MIN_MEMC1A_12, ROM_RISCOS31,  MONITOR_NO_MONO, CPU_ARM250,  MEM_2M,   MEMC_MEMC1A_12, IO_NEW},
         {"A4000",            "a4000",  "ARM250, 2MB RAM, MEMC1A, New IO, RISC OS 3.1",         MACHINE_TYPE_NORMAL, CPU_ARM250_ONLY,       MEM_2M_4M,    MEMC_MIN_MEMC1A_12, ROM_RISCOS31,  MONITOR_NO_MONO, CPU_ARM250,  MEM_2M,   MEMC_MEMC1A_12, IO_NEW},

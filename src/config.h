@@ -34,7 +34,8 @@ enum
         MONITOR_STANDARD,
         MONITOR_MULTISYNC,
         MONITOR_VGA,
-        MONITOR_MONO
+        MONITOR_MONO,
+        MONITOR_LCD
 };
 
 extern int monitor_type;

@@ -30,12 +30,12 @@ enum
         CPU_ARM2 = 0,
         CPU_ARM250,
         CPU_ARM3_20,
-        CPU_ARM3_24,
         CPU_ARM3_25,
         CPU_ARM3_26,
         CPU_ARM3_30,
         CPU_ARM3_33,
         CPU_ARM3_35,
+        CPU_ARM3_24,
         CPU_MAX
 };
 
@@ -44,12 +44,12 @@ const char *cpu_names[] =
         "ARM2",
         "ARM250",
         "ARM3 @ 20 MHz",
-        "ARM3 @ 24 MHz",
         "ARM3 @ 25 MHz",
         "ARM3 @ 26 MHz",
         "ARM3 @ 30 MHz",
         "ARM3 @ 33 MHz",
-        "ARM3 @ 35 MHz"
+        "ARM3 @ 35 MHz",
+        "ARM3 @ 24 MHz"
 };
 
 enum
@@ -57,12 +57,12 @@ enum
         CPU_MASK_ARM2    = (1 << CPU_ARM2),
         CPU_MASK_ARM250  = (1 << CPU_ARM250),
         CPU_MASK_ARM3_20 = (1 << CPU_ARM3_20),
-        CPU_MASK_ARM3_24 = (1 << CPU_ARM3_24),
         CPU_MASK_ARM3_25 = (1 << CPU_ARM3_25),
         CPU_MASK_ARM3_26 = (1 << CPU_ARM3_26),
         CPU_MASK_ARM3_30 = (1 << CPU_ARM3_30),
         CPU_MASK_ARM3_33 = (1 << CPU_ARM3_33),
-        CPU_MASK_ARM3_35 = (1 << CPU_ARM3_35)
+        CPU_MASK_ARM3_35 = (1 << CPU_ARM3_35),
+        CPU_MASK_ARM3_24 = (1 << CPU_ARM3_24)
 };
 
 #define CPU_ARM2_AND_LATER (CPU_MASK_ARM2 | CPU_MASK_ARM3_20 | CPU_MASK_ARM3_25 | \
@@ -753,6 +753,10 @@ void ConfigDialog::OnOK(wxCommandEvent &event)
                 case CPU_ARM3_20:
                 arm_has_swp = arm_has_cp15 = 1;
                 arm_cpu_speed = 20;
+                break;
+                case CPU_ARM3_24:
+                arm_has_swp = arm_has_cp15 = 1;
+                arm_cpu_speed = 24;
                 break;
                 case CPU_ARM3_25:
                 arm_has_swp = arm_has_cp15 = 1;

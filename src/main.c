@@ -293,6 +293,7 @@ static struct
         {"ARM3 (30 MHz)", 30, 1, 1},
         {"ARM3 (33 MHz)", 33, 1, 1},
         {"ARM3 (35 MHz)", 35, 1, 1},
+        {"ARM3 (24 MHz)", 24, 1, 1},
 };
 
 void arc_set_cpu(int cpu, int memc)

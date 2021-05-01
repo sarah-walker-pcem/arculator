@@ -62,7 +62,7 @@ int fullborders,noborders;
 int dblscan;
 
 
-static void clear(BITMAP *b)
+void clear(BITMAP *b)
 {
         memset(b->dat, 0, b->w * b->h * 4);
 }

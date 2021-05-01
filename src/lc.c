@@ -5,6 +5,7 @@
 #include "config.h"
 #include "ioeb.h"
 #include "lc.h"
+#include "timer.h"
 #include "vidc.h"
 #include "plat_video.h"
 
@@ -62,6 +63,9 @@ static struct
         uint32_t pal[16];
 
         BITMAP *lc_buffer;
+
+        int has_updated;
+        emu_timer_t blank_timer;
 } lc;
 
 /*Grey levels taken from patent GB 2245743*/
@@ -88,6 +92,7 @@ static const uint32_t lc_palette[16] =
 
 static void lc_vidc_data(uint8_t *data, int pixels, void *p);
 static void lc_vidc_vsync(void *p);
+static void blank_timer_callback(void *p);
 
 void lc_init(void)
 {
@@ -102,6 +107,8 @@ void lc_init(void)
                 updatewindowsize(640, 480);
                 video_renderer_update(lc.lc_buffer, 0, 0, 0, 0, 640, 480);
                 video_renderer_present(0, 0, 640, 480, 0);
+
+                timer_add(&lc.blank_timer, blank_timer_callback, NULL, 1);
         }
 }
 
@@ -174,6 +181,7 @@ static void lc_vidc_data(uint8_t *data, int pixels, void *p)
                         updatewindowsize(640, 480);
                         video_renderer_update(lc.lc_buffer, 0, 0, 0, 0, 640, 480);
                         video_renderer_present(0, 0, 640, 480, 0);
+                        lc.has_updated = 1;
                 }
         }
 }
@@ -186,6 +194,24 @@ static void lc_vidc_vsync(void *p)
         lc.v_delay = 512 - lc.vdsr;
         lc.v_display = lc.vdlr + 3;
 //        rpclog("LC: v_delay=%i v_display=%i hdlr=%i\n", lc.v_delay, lc.v_display, lc.hdlr);
+}
+
+/*If LCD hasn't updated the screen for a while, blank it. Avoids artifacts
+  during initial boot*/
+static void blank_timer_callback(void *p)
+{
+        timer_advance_u64(&lc.blank_timer, TIMER_USEC * 100 * 1000);
+
+        if (!lc.has_updated)
+        {
+                clear(lc.lc_buffer);
+
+                updatewindowsize(640, 480);
+                video_renderer_update(lc.lc_buffer, 0, 0, 0, 0, 640, 480);
+                video_renderer_present(0, 0, 640, 480, 0);
+        }
+        else
+                lc.has_updated = 0;
 }
 
 uint8_t lc_read(uint32_t addr)

@@ -44,4 +44,6 @@ typedef RGB PALETTE[256];
 #define makecol(r, g, b)    ((b) | ((g) << 8) | ((r) << 16))
 #define makecol32(r, g, b)  ((b) | ((g) << 8) | ((r) << 16))
 
+void clear(BITMAP *b);
+
 #endif /* _VIDC_H_ */

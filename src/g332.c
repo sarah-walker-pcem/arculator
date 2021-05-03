@@ -34,7 +34,7 @@
 #define G332_BOOT_MULTIPLIER_MASK (0x1f << 0)
 #define G332_BOOT_PLL             (1 << 5)
 
-#define G332_CTRL_INTERLACE      (1 << 2)
+#define G332_CTRL_INTERLACE      (1 << 1)
 #define G332_CTRL_BPP_MASK       (7 << 20)
 #define G332_CTRL_BPP_1          (0 << 20)
 #define G332_CTRL_BPP_2          (1 << 20)
@@ -55,9 +55,10 @@ enum
         V_STATE_LAST
 };
 
-void g332_init(g332_t *g332, uint8_t *ram, void (*irq_callback)(void *p, int state), void *callback_p)
+void g332_init(g332_t *g332, uint8_t *ram, int type, void (*irq_callback)(void *p, int state), void *callback_p)
 {
         memset(g332, 0, sizeof(g332_t));
+        g332->type = type;
         g332->ram = ram;
         g332->irq_callback = irq_callback;
         g332->callback_p = callback_p;
@@ -154,7 +155,7 @@ uint64_t g332_poll(g332_t *g332)
                                         g332->rp += g332->h_display;
                                 break;
                                 case G332_CTRL_BPP_15:
-                                for (x = 0; x < g332->h_display/2; x++)
+                                for (x = 0; x < ((g332->type == INMOS_G332) ? g332->h_display : (g332->h_display/2)); x++)
                                 {
                                         uint16_t data = *(uint16_t *)&g332->ram[g332->rp & 0x7ffff];
                                         uint32_t data_32 = ((data & 0x1f) << 19) | ((data & 0x3e0) << 6) | ((data & 0x7c00) >> 7);
@@ -167,7 +168,7 @@ uint64_t g332_poll(g332_t *g332)
                                         g332->rp += g332->h_display;
                                 break;
                                 case G332_CTRL_BPP_16:
-                                for (x = 0; x < g332->h_display/2; x++)
+                                for (x = 0; x < ((g332->type == INMOS_G332) ? g332->h_display : (g332->h_display/2)); x++)
                                 {
                                         uint16_t data = *(uint16_t *)&g332->ram[g332->rp & 0x7ffff];
                                         uint32_t data_32 = ((data & 0x1f) << 19) | ((data & 0x7e0) << 5) | ((data & 0xf800) >> 8);
@@ -251,7 +252,7 @@ uint64_t g332_poll(g332_t *g332)
                         case V_STATE_PRE_EQUALISE:
                         if (g332->output_enable)
                         {
-                                int h_display = ((g332->ctrl_a & G332_CTRL_BPP_MASK) >= G332_CTRL_BPP_15) ? g332->h_display/2 : g332->h_display;
+                                int h_display = ((g332->ctrl_a & G332_CTRL_BPP_MASK) >= G332_CTRL_BPP_15 && g332->type == INMOS_G335) ? g332->h_display/2 : g332->h_display;
                                 int v_display = (g332->ctrl_a & G332_CTRL_INTERLACE) ? g332->v_display : g332->v_display/2;
 
                                 if (((double)h_display / (double)v_display) > (5.0/3.0))

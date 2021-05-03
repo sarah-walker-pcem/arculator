@@ -87,7 +87,7 @@ static int colourcard_init(struct podule_t *podule)
         podule->p = colourcard;
         colourcard->podule = podule;
 
-        g332_init(&colourcard->g332, colourcard->ram, colourcard_irq_callback, colourcard);
+        g332_init(&colourcard->g332, colourcard->ram, INMOS_G335, colourcard_irq_callback, colourcard);
         vidc_attach(colourcard_data_callback, colourcard_vsync_callback, colourcard);
 
         return 0;

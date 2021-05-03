@@ -21,6 +21,9 @@
 #include "video.h"
 #include "plat_video.h"
 
+#define MIN(a, b) (((a) < (b)) ? (a) : (b))
+#define MAX(a, b) (((a) > (b)) ? (a) : (b))
+
 /*RISC OS 3 sets a total of 832 horizontal and 288 vertical for MODE 12. We use
   768x576 to get a 4:3 aspect ratio. This also allows MODEs 33-36 to display
   correctly*/
@@ -379,7 +382,7 @@ void writevidc(uint32_t v)
                 r.g=(v&0xF0)>>2;
                 r.r=(v&0xF)<<2;
                 c=vidc.pal[(v>>26)&0x1F];
-                vidc.pal[(v>>26)&0x1F]=makecol((r.r<<2)|(r.r>>2),(r.g<<2)|(r.g>>2),(r.b<<2)|(r.b>>2));
+                vidc.pal[(v >> 26) & 0x1F] = makecol((r.r<<2)|(r.r>>2), (r.g<<2)|(r.g>>2), (r.b<<2)|(r.b>>2)) | ((v & 0x1000) << 12);
                 LOG_VIDC_REGISTERS("VIDC Write pal %08X %08X %08X\n",c,vidc.pal[(v>>26)&0x1F],v);
                 d=v>>26;
                 palchange=1;
@@ -392,7 +395,8 @@ void writevidc(uint32_t v)
                         if (c&0x20) r.g|=4; else r.g&=~4;
                         if (c&0x40) r.g|=8; else r.g&=~8;
                         if (c&0x80) r.b|=8; else r.b&=~8;
-                        if (c<0x100) vidc.pal8[c]=makecol((r.r<<4)|r.r,(r.g<<4)|r.g,(r.b<<4)|r.b);
+                        if (c < 0x100)
+                                vidc.pal8[c] = makecol((r.r<<4)|r.r, (r.g<<4)|r.g, (r.b<<4)|r.b) | ((v & 0x1000) << 12);
                 }
         }
         vidcr[v>>26]=v;
@@ -680,6 +684,7 @@ static void vidc_poll(void *__p)
 
         if (l>=0 && vidc.line<=1023 && l<1536)
         {
+                int htot = (vidc.htot+1)*2;
                 bp = (uint8_t *)buffer->line[l];
                 if (!memc_videodma_enable)
                 {
@@ -699,6 +704,8 @@ static void vidc_poll(void *__p)
 
                                 if (display_mode == DISPLAY_MODE_TV)
                                         archline(bp, TV_X_MIN, l, hb_start-1, 0);
+                                else
+                                        archline(bp, 0, l, hb_start-1, 0);
                                 if (vidc.hdend > vidc.hbend || !vidc.displayon)
                                         archline(bp, hb_start, l, hb_end-1, vidc.pal[16]);
                                 else
@@ -709,6 +716,8 @@ static void vidc_poll(void *__p)
                                 }
                                 if (display_mode == DISPLAY_MODE_TV)
                                         archline(bp, hb_end, l, TV_X_MAX-1, 0);
+                                else
+                                        archline(bp, hb_end, l, htot, 0);
 
                                 if (l < vidc.y_min)
                                         vidc.y_min = l;
@@ -932,6 +941,8 @@ static void vidc_poll(void *__p)
                                                 if (display_mode == DISPLAY_MODE_TV)
                                                         archline(bp, vidc.hbend*2, l, TV_X_MAX-1, 0);
                                         }
+                                        if (htot > MAX(vidc.hbend, vidc.hdend))
+                                                archline(bp, MAX(vidc.hbend*2, vidc.hdend*2), l, htot*2, 0);
                                         break;
                                         case 2:  /*Mode 0*/
                                         case 3:  /*Mode 25*/
@@ -943,6 +954,7 @@ static void vidc_poll(void *__p)
                                         case 15: /*Mode 28*/
                                         if (monitor_type == MONITOR_MONO)
                                                 break;
+                                        archline(bp, 0, l, MIN(vidc.hbstart, vidc.hdstart)-1, 0);
                                         if (vidc.hbstart < vidc.hdstart)
                                         {
                                                 if (display_mode == DISPLAY_MODE_TV)
@@ -965,6 +977,8 @@ static void vidc_poll(void *__p)
                                                 if (display_mode == DISPLAY_MODE_TV)
                                                         archline(bp, vidc.hbend, l, TV_X_MAX-1, 0);
                                         }
+                                        if (htot > MAX(vidc.hbend, vidc.hdend))
+                                                archline(bp, MAX(vidc.hbend, vidc.hdend), l, htot, 0);
                                         break;
                                 }
 
@@ -1047,7 +1061,7 @@ static void vidc_poll(void *__p)
                         if (vidc.borderon && !vidc.displayon)
                         {
                                 int hb_start = vidc.hbstart, hb_end = vidc.hbend;
-                                
+
                                 if (!(vidcr[VIDC_CR] & 2))
                                 {
                                         hb_start *= 2;
@@ -1056,12 +1070,18 @@ static void vidc_poll(void *__p)
 
                                 if (display_mode == DISPLAY_MODE_TV)
                                         archline(bp, TV_X_MIN, l, hb_start-1, 0);
+                                else
+                                        archline(bp, 0, l, hb_start-1, 0);
                                 archline(bp, hb_start, l, hb_end-1, vidc.pal[16]);
                                 if (display_mode == DISPLAY_MODE_TV)
                                         archline(bp, hb_end, l, TV_X_MAX-1, 0);
+                                else
+                                        archline(bp, hb_end, l, htot, 0);
                         }
                         if (!vidc.borderon && vidc.displayon)
-                                archline(bp,0,l,1023,0);
+                                archline(bp,0,l,MAX(1023,htot),0);
+                        if (!vidc.borderon && !vidc.displayon)
+                                archline(bp,0,l,MAX(1023,htot),0);
                         if (vidc.borderon && l < vidc.y_min)
                                 vidc.y_min = l;
                         if (vidc.borderon && (l+1) > vidc.y_max)
@@ -1070,7 +1090,12 @@ static void vidc_poll(void *__p)
         }
         else if (display_mode == DISPLAY_MODE_TV && l >= TV_Y_MIN && l < TV_Y_MAX)
                 archline(buffer->line[l], TV_X_MIN, l, TV_X_MAX-1, 0);
+        else
+        {
+                int htot = (vidc.htot+1)*2;
 
+                archline(buffer->line[l], 0, l, htot, 0);
+        }
         if (vidc.data_callback)
         {
                 uint8_t out_data[4096];
@@ -1082,13 +1107,13 @@ static void vidc_poll(void *__p)
                         {
                                 int pixels = (vidc.htot+1)*2;
                                 for (x = 0; x < pixels; x++)
-                                        out_data[x] = (((uint32_t *)buffer->line[l])[x] >> 20) & 0xf;
+                                        out_data[x] = (((uint32_t *)buffer->line[l])[x] >> 20) & 0x1f;
                         }
                         else
                         {
                                 int pixels = (vidc.htot+1)*4;
                                 for (x = 0; x < pixels; x += 2)
-                                        out_data[x>>1] = (((uint32_t *)buffer->line[l])[x] >> 20) & 0xf;
+                                        out_data[x>>1] = (((uint32_t *)buffer->line[l])[x] >> 20) & 0x1f;
                         }
                 }
                 else

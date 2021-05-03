@@ -3,6 +3,8 @@
 
 typedef struct g332_t
 {
+        int type;
+
         uint32_t boot;
 
         uint32_t ctrl_a;
@@ -35,7 +37,13 @@ typedef struct g332_t
         void *callback_p;
 } g332_t;
 
-void g332_init(g332_t *g332, uint8_t *ram, void (*irq_callback)(void *p, int state), void *callback_p);
+enum
+{
+        INMOS_G332,
+        INMOS_G335
+};
+
+void g332_init(g332_t *g332, uint8_t *ram, int type, void (*irq_callback)(void *p, int state), void *callback_p);
 void g332_close(g332_t *g332);
 
 void g332_write(g332_t *g332, uint32_t addr, uint32_t val);

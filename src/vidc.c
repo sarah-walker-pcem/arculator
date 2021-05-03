@@ -161,8 +161,8 @@ struct
 
         emu_timer_t timer;
 
-        void (*data_callback)(uint8_t *data, int pixels, void *p);
-        void (*vsync_callback)(void *p);
+        void (*data_callback)(uint8_t *data, int pixels, int hsync_length, int resolution, void *p);
+        void (*vsync_callback)(void *p, int state);
         void *callback_p;
 } vidc;
 
@@ -505,7 +505,7 @@ void clearbitmap()
 
 void initvid()
 {
-        buffer = create_bitmap(2048, 2048);
+        buffer = create_bitmap(4096, 2048);
         vidc.line = 0;
         vidc.clock = 24000;
 }
@@ -596,6 +596,11 @@ static void vidc_poll(void *__p)
                 vidc.state = VIDC_HSYNC;
 
                 /*Clock vertical count*/
+                if (vidc.line == vidc.vsync)
+                {
+                        if (vidc.vsync_callback)
+                                vidc.vsync_callback(vidc.callback_p, 0);
+                }
                 if (vidc.line == vidc.vbstart && !vidc.border_was_disabled)
                 {
                         vidc.borderon = 1;
@@ -767,7 +772,7 @@ static void vidc_poll(void *__p)
                                         for (x = xstart; x < xend; x += 32)
                                         {
                                                 temp = ram[vidc.addr++];
-                                                if (x < 2048)
+                                                if (x < 4096)
                                                 {
                                                         for (xx = 0; xx < 64; xx += 2)
                                                                 ((uint32_t *)bp)[x+xx] = ((uint32_t *)bp)[x+xx+1] = vidc.pal[(temp>>xx)&1];
@@ -781,7 +786,7 @@ static void vidc_poll(void *__p)
                                         for (x = ((monitor_type == MONITOR_MONO) ? xstart*4 : xstart); x < ((monitor_type == MONITOR_MONO) ? xend*4 : xend); x += 32)
                                         {
                                                 temp = ram[vidc.addr++];
-                                                if (x < 2048)
+                                                if (x < 4096)
                                                 {
                                                         if (monitor_type == MONITOR_MONO)
                                                         {
@@ -810,7 +815,7 @@ static void vidc_poll(void *__p)
                                         for (x = xstart; x < xend; x += 32)
                                         {
                                                 temp = ram[vidc.addr++];
-                                                if (x < 2048)
+                                                if (x < 4096)
                                                 {
                                                         for (xx=0;xx<32;xx+=2)
                                                                 ((uint32_t *)bp)[x+xx]=((uint32_t *)bp)[x+xx+1]=vidc.pal[(temp>>xx)&3];
@@ -824,7 +829,7 @@ static void vidc_poll(void *__p)
                                         for (x = xstart; x < xend; x += 16)
                                         {
                                                 temp = ram[vidc.addr++];
-                                                if (x < 2048)
+                                                if (x < 4096)
                                                 {
                                                         for (xx = 0; xx < 16; xx++)
                                                                 ((uint32_t *)bp)[x+xx]=vidc.pal[temp>>(xx<<1)&3];
@@ -839,7 +844,7 @@ static void vidc_poll(void *__p)
                                         for (x = xstart; x < xend; x += 16)
                                         {
                                                 temp = ram[vidc.addr++];
-                                                if (x < 2048)
+                                                if (x < 4096)
                                                 {
                                                         for (c = 0; c < 16; c += 2)
                                                                 ((uint32_t *)bp)[x+c] = ((uint32_t *)bp)[x+c+1] = vidc.pal[(temp>>(c<<1))&0xF];
@@ -853,7 +858,7 @@ static void vidc_poll(void *__p)
                                         for (x = xstart; x < xend; x += 8)
                                         {
                                                 temp = ram[vidc.addr++];
-                                                if (x < 2048)
+                                                if (x < 4096)
                                                 {
                                                         for (c = 0; c < 8; c++)
                                                                 ((uint32_t *)bp)[x+c]=vidc.pal[(temp>>(c<<2))&0xF];
@@ -867,7 +872,7 @@ static void vidc_poll(void *__p)
                                         for (x = xstart; x < xend/*vidc.hdend*2*/; x += 8)
                                         {
                                                 temp=ram[vidc.addr++];
-                                                if (x < 2048)
+                                                if (x < 4096)
                                                 {
                                                         ((uint32_t *)bp)[x]=((uint32_t *)bp)[x+1]=vidc.pal8[temp&0xFF];
                                                         ((uint32_t *)bp)[x+2]=((uint32_t *)bp)[x+3]=vidc.pal8[(temp>>8)&0xFF];
@@ -882,7 +887,7 @@ static void vidc_poll(void *__p)
                                         for (x = xstart; x < xend; x += 4)
                                         {
                                                 temp = ram[vidc.addr++];
-                                                if (x < 2048)
+                                                if (x < 4096)
                                                 {
                                                         ((uint32_t *)bp)[x]   = vidc.pal8[temp&0xFF];
                                                         ((uint32_t *)bp)[x+1] = vidc.pal8[(temp>>8)&0xFF];
@@ -1068,18 +1073,28 @@ static void vidc_poll(void *__p)
 
         if (vidc.data_callback)
         {
-                uint8_t out_data[2048];
+                uint8_t out_data[4096];
 
                 /*Extract red nibble for full scanline to send to attached device*/
                 if (l >= 0)
                 {
-                        for (x = 0; x < (vidc.htot+1)*2; x++)
-                                out_data[x] = (((uint32_t *)buffer->line[l])[x] >> 20) & 0xf;
+                        if (mode & 2)
+                        {
+                                int pixels = (vidc.htot+1)*2;
+                                for (x = 0; x < pixels; x++)
+                                        out_data[x] = (((uint32_t *)buffer->line[l])[x] >> 20) & 0xf;
+                        }
+                        else
+                        {
+                                int pixels = (vidc.htot+1)*4;
+                                for (x = 0; x < pixels; x += 2)
+                                        out_data[x>>1] = (((uint32_t *)buffer->line[l])[x] >> 20) & 0xf;
+                        }
                 }
                 else
                         memset(out_data, 0, (vidc.htot+1)*2);
 
-                vidc.data_callback(out_data, (vidc.htot+1)*2, vidc.callback_p);
+                vidc.data_callback(out_data, (vidc.htot+1)*2, (vidc.sync+1)*2, !(mode & 2), vidc.callback_p);
         }
 
         if (vidc.line>=vidc.vtot)
@@ -1206,15 +1221,17 @@ static void vidc_poll(void *__p)
 
                 vidc.line=0;
                 if (vidc.vsync_callback)
-                        vidc.vsync_callback(vidc.callback_p);
+                        vidc.vsync_callback(vidc.callback_p, 1);
                 vidc.border_was_disabled = 0;
                 vidc.display_was_disabled = 0;
 //                rpclog("%i fetches\n", vidc_fetches);
                 vidc_fetches = 0;
                 vidc_framecount++;
 
-/*                rpclog("vtot=%i vswr=%i vbsr=%i vdsr=%i vder=%i vber=%i cr=%08x\n",
-                                vidc.vtot, vidc.sync, vidc.vbstart,
+/*                rpclog("htot=%i hswr=%i hbsr=%i hdsr=%i hder=%i hber=%i\n",
+                                vidc.htot, vidc.sync, vidc.hbstart, vidc.hdstart, vidc.hdend, vidc.hbend);
+                rpclog("vtot=%i vswr=%i vbsr=%i vdsr=%i vder=%i vber=%i cr=%08x\n",
+                                vidc.vtot, vidc.vsync, vidc.vbstart,
                                 vidc.vdstart, vidc.vdend, vidc.vbend, vidcr[VIDC_CR]);*/
         }
 }
@@ -1272,7 +1289,7 @@ void vidc_reset()
 }
 
 
-void vidc_attach(void (*vidc_data)(uint8_t *data, int pixels, void *p), void (*vidc_vsync)(void *p), void *p)
+void vidc_attach(void (*vidc_data)(uint8_t *data, int pixels, int hsync_length, int resolution, void *p), void (*vidc_vsync)(void *p, int state), void *p)
 {
         vidc.data_callback = vidc_data;
         vidc.vsync_callback = vidc_vsync;

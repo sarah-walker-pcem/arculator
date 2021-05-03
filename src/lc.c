@@ -90,8 +90,8 @@ static const uint32_t lc_palette[16] =
         0x808080, //50.0%, 128
 };
 
-static void lc_vidc_data(uint8_t *data, int pixels, void *p);
-static void lc_vidc_vsync(void *p);
+static void lc_vidc_data(uint8_t *data, int pixels, int hsync_length, int resolution, void *p);
+static void lc_vidc_vsync(void *p, int state);
 static void blank_timer_callback(void *p);
 
 void lc_init(void)
@@ -117,7 +117,7 @@ void lc_init(void)
         }
 }
 
-static void lc_vidc_data(uint8_t *data, int pixels, void *p)
+static void lc_vidc_data(uint8_t *data, int pixels, int hsync_length, int resolution, void *p)
 {
         int c;
 
@@ -191,13 +191,16 @@ static void lc_vidc_data(uint8_t *data, int pixels, void *p)
         }
 }
 
-static void lc_vidc_vsync(void *p)
+static void lc_vidc_vsync(void *p, int state)
 {
-        lc.wp = 0;
+        if (state)
+        {
+                lc.wp = 0;
 
-        lc.vc = 0;
-        lc.v_delay = 512 - lc.vdsr;
-        lc.v_display = lc.vdlr + 3;
+                lc.vc = 0;
+                lc.v_delay = 512 - lc.vdsr;
+                lc.v_display = lc.vdlr + 3;
+        }
 //        rpclog("LC: v_delay=%i v_display=%i hdlr=%i\n", lc.v_delay, lc.v_display, lc.hdlr);
 }
 

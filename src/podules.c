@@ -5,6 +5,7 @@
 
 #include "arc.h"
 #include "arcrom.h"
+#include "colourcard.h"
 #include "config.h"
 #include "ide_idea.h"
 #include "ide_riscdev.h"
@@ -29,6 +30,7 @@ static const podule_header_t *(*internal_podules[])(const podule_callbacks_t *ca
 {
         akd52_probe,
         arcrom_probe,
+        colourcard_probe,
         idea_ide_probe,
         riscdev_ide_probe,
         zidefs_ide_probe

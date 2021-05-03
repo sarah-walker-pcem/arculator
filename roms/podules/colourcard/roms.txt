@@ -1,0 +1,2 @@
+This directory contains the ROM for the Computer Concepts Colour Card. It is
+called 'cc.bin' and is 128kB long.

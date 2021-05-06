@@ -19,6 +19,7 @@
 #include "disc_apd.h"
 #include "disc_fdi.h"
 #include "disc_jfd.h"
+#include "disc_mfm_common.h"
 #include "disc_ssd.h"
 #include "ds2401.h"
 #include "ide.h"
@@ -193,6 +194,7 @@ int arc_init()
         fdi_init();
         jfd_init();
         ssd_init();
+        mfm_init();
         ddnoise_init();
 
         wd1770_reset();

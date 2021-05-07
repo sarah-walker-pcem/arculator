@@ -18,6 +18,7 @@
 #include "disc_adf.h"
 #include "disc_apd.h"
 #include "disc_fdi.h"
+#include "disc_hfe.h"
 #include "disc_jfd.h"
 #include "disc_mfm_common.h"
 #include "disc_ssd.h"
@@ -192,6 +193,7 @@ int arc_init()
         adf_init();
         apd_init();
         fdi_init();
+        hfe_init();
         jfd_init();
         ssd_init();
         mfm_init();

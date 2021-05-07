@@ -10,6 +10,7 @@
 #include "disc_adf.h"
 #include "disc_apd.h"
 #include "disc_fdi.h"
+#include "disc_hfe.h"
 #include "disc_jfd.h"
 #include "disc_ssd.h"
 
@@ -86,6 +87,7 @@ loaders[]=
         {"ADL", adl_load,       adf_close, 2*80*16* 256},
         {"FDI", fdi_load,       fdi_close, -1},
         {"APD", apd_load,       apd_close, -1},
+        {"HFE", hfe_load,       hfe_close, -1},
 //        {"JFD", jfd_load,       jfd_close, -1},
         {0,0,0}
 };

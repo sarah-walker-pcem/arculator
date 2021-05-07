@@ -213,7 +213,7 @@ void Frame::ChangeDisc(int drive)
         wxString old_fn(discname[drive]);
 
         wxFileDialog dlg(NULL, "Select a disc image", "", old_fn,
-                        "All disc images|*.adf;*.img;*.fdi;*.apd|FDI Disc Image|*.fdi|APD Disc Image|*.apd|ADFS Disc Image|*.adf|DOS Disc Image|*.img|All Files|*.*",
+                        "All disc images|*.adf;*.img;*.fdi;*.apd;*.hfe|FDI Disc Image|*.fdi|APD Disc Image|*.apd|ADFS Disc Image|*.adf|DOS Disc Image|*.img|HFE Disc Image|*.hfe|All Files|*.*",
                         wxFD_OPEN | wxFD_FILE_MUST_EXIST);
 
         if (dlg.ShowModal() == wxID_OK)

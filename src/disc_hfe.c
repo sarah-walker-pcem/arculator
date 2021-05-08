@@ -160,13 +160,42 @@ static void do_bitswap(uint8_t *data, int size)
         }
 }
 
+static void downsample_track(uint8_t *in_data, uint8_t *out_data, int in_size)
+{
+        int c;
+
+        for (c = 0; c < in_size; c += 2)
+        {
+                uint8_t fm_data = 0;
+
+                if (in_data[c+1] & 0x03)
+                        fm_data |= 0x01;
+                if (in_data[c+1] & 0x0c)
+                        fm_data |= 0x02;
+                if (in_data[c+1] & 0x30)
+                        fm_data |= 0x04;
+                if (in_data[c+1] & 0xc0)
+                        fm_data |= 0x08;
+                if (in_data[c] & 0x03)
+                        fm_data |= 0x10;
+                if (in_data[c] & 0x0c)
+                        fm_data |= 0x20;
+                if (in_data[c] & 0x30)
+                        fm_data |= 0x40;
+                if (in_data[c] & 0xc0)
+                        fm_data |= 0x80;
+
+                out_data[c/2] = fm_data;
+        }
+}
+
+
 void hfe_seek(int drive, int track)
 {
         hfe_header_t *header = &hfe[drive].header;
         mfm_t *mfm = &hfe[drive].mfm;
         int c;
         int density_side0, density_side1;
-        uint8_t encoding;
 
         if (!hfe[drive].f)
         {
@@ -182,47 +211,34 @@ void hfe_seek(int drive, int track)
         if (track >= header->nr_of_tracks)
                 track = header->nr_of_tracks - 1;
 
-        if (track == 0 && header->track0s0_altencoding == 0)
-                encoding = header->track0s0_encoding;
-        else
-                encoding = header->track_encoding;
-        density_side0 = (encoding == TRACK_ENCODING_ISOIBM_FM || encoding == TRACK_ENCODING_EMU_FM) ? 0 : 1;
-
-        if (track == 0 && header->track0s1_altencoding == 0)
-                encoding = header->track0s1_encoding;
-        else
-                encoding = header->track_encoding;
-        density_side1 = (encoding == TRACK_ENCODING_ISOIBM_FM || encoding == TRACK_ENCODING_EMU_FM) ? 0 : 1;
-
 //        rpclog("hfe_seek: drive=%i track=%i\n", drive, track);
 //        rpclog("  offset=%04x size=%04x\n", hfe[drive].tracks[track].offset, hfe[drive].tracks[track].track_len);
         fseek(hfe[drive].f, hfe[drive].tracks[track].offset * 0x200, SEEK_SET);
 //        rpclog("  start=%06x\n", ftell(hfe[drive].f));
         for (c = 0; c < (hfe[drive].tracks[track].track_len/2); c += 0x100)
         {
-                fread(&mfm->track_data[0][density_side0][c], 256, 1, hfe[drive].f);
-                memset(&mfm->track_data[0][density_side0^1][c], 0, 256);
+                fread(&mfm->track_data[0][1][c], 256, 1, hfe[drive].f);
                 if (header->nr_of_sides == 2)
-                {
-                        fread(&mfm->track_data[1][density_side1][c], 256, 1, hfe[drive].f);
-                        memset(&mfm->track_data[1][density_side1^1][c], 0, 256);
-                }
+                        fread(&mfm->track_data[1][1][c], 256, 1, hfe[drive].f);
                 else
-                {
-                        memset(&mfm->track_data[1][0][c], 0, 256);
                         memset(&mfm->track_data[1][1][c], 0, 256);
-                }
         }
 //        rpclog("  end=%06x\n", ftell(hfe[drive].f));
+        mfm->track_index[0][0] = 1;
+        mfm->track_index[1][0] = 1;
         mfm->track_index[0][1] = 1;
         mfm->track_index[1][1] = 1;
         mfm->track_len[0][1] = (hfe[drive].tracks[track].track_len*8)/2;
         mfm->track_len[1][1] = (hfe[drive].tracks[track].track_len*8)/2;
+        mfm->track_len[0][0] = mfm->track_len[0][1] / 2;
+        mfm->track_len[1][0] = mfm->track_len[1][1] / 2;
 
-        do_bitswap(mfm->track_data[0][0], (mfm->track_len[0][0] + 7) / 8);
         do_bitswap(mfm->track_data[0][1], (mfm->track_len[0][1] + 7) / 8);
-        do_bitswap(mfm->track_data[1][0], (mfm->track_len[1][0] + 7) / 8);
         do_bitswap(mfm->track_data[1][1], (mfm->track_len[1][1] + 7) / 8);
+
+        downsample_track(mfm->track_data[0][1], mfm->track_data[0][0], mfm->track_len[0][1]);
+        downsample_track(mfm->track_data[1][1], mfm->track_data[1][0], mfm->track_len[1][1]);
+
 //        printf("SD Track %i Len %i Index %i %i\n",track,ftracklen[drive][0][0],ftrackindex[drive][0][0],c);
 //        printf("DD Track %i Len %i Index %i %i\n",track,ftracklen[drive][0][1],ftrackindex[drive][0][1],c);
 }

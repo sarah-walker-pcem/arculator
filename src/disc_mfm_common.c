@@ -203,19 +203,19 @@ void mfm_common_poll(mfm_t *mfm)
                                                                                 fdc_sectorid(mfm->sectordat[0], mfm->sectordat[1], mfm->sectordat[2], mfm->sectordat[3], mfm->sectordat[4], mfm->sectordat[5]);
                                                                         else
                                                                                 fdc_finishread();
+                                                                        return;
                                                                 }
-                                                                else
-                                                                        fdc_headercrcerror();
+                                                                mfm->readidpoll = 0;
                                                                 return;
                                                         }
-                                                        if (mfm->sectordat[0] == mfm->track && mfm->sectordat[2] == mfm->sector && mfm->in_read && !mfm->in_readaddr)
+                                                        else if (mfm->sectordat[0] == mfm->track && mfm->sectordat[2] == mfm->sector && mfm->in_read && !mfm->in_readaddr)
                                                         {
                                                                 mfm->nextsector = 1;
                                                                 mfm->readidpoll = 0;
                                                                 mfm->sectorsize = (1 << (mfm->sectordat[3] + 7)) + 2;
                                                                 mfm->fdc_sectorsize = mfm->sectordat[3];
                                                         }
-                                                        if (mfm->in_readaddr)
+                                                        else if (mfm->in_readaddr)
                                                         {
 //                                                                rpclog("hfe_poll: ID %02x %02x %02x %02x %02x %02x\n", hfe_sectordat[0], hfe_sectordat[1], hfe_sectordat[2], hfe_sectordat[3], hfe_sectordat[4], hfe_sectordat[5]);
                                                                 if (fdc_sectorid)

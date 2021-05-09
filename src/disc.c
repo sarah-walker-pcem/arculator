@@ -271,6 +271,12 @@ void disc_poll(void *p)
 }
 
 int oldtrack[4] = {0, 0, 0, 0};
+
+int disc_get_current_track(int drive)
+{
+        return oldtrack[drive];
+}
+
 void disc_seek(int drive, int track)
 {
         if (drives[drive].seek)

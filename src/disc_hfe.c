@@ -115,6 +115,8 @@ void hfe_load(int drive, char *fn)
         drives[drive].format      = hfe_format;
         drives[drive].stop        = hfe_stop;
         rpclog("Loaded as hfe\n");
+
+        hfe_seek(drive, disc_get_current_track(drive));
 }
 
 void hfe_close(int drive)

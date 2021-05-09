@@ -30,6 +30,7 @@ void disc_stop(int drive);
 int disc_empty(int drive);
 void disc_set_motor(int enable);
 void disc_set_density(int density);
+int disc_get_current_track(int drive);
 extern int disc_drivesel;
 
 extern void (*fdc_data)(uint8_t dat);

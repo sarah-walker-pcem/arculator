@@ -226,10 +226,10 @@ void hfe_seek(int drive, int track)
                         memset(&mfm->track_data[1][1][c], 0, 256);
         }
 //        rpclog("  end=%06x\n", ftell(hfe[drive].f));
-        mfm->track_index[0][0] = 1;
-        mfm->track_index[1][0] = 1;
-        mfm->track_index[0][1] = 1;
-        mfm->track_index[1][1] = 1;
+        mfm->track_index[0][0] = 0;
+        mfm->track_index[1][0] = 0;
+        mfm->track_index[0][1] = 0;
+        mfm->track_index[1][1] = 0;
         mfm->track_len[0][1] = (hfe[drive].tracks[track].track_len*8)/2;
         mfm->track_len[1][1] = (hfe[drive].tracks[track].track_len*8)/2;
         mfm->track_len[0][0] = mfm->track_len[0][1] / 2;
@@ -241,8 +241,8 @@ void hfe_seek(int drive, int track)
         downsample_track(mfm->track_data[0][1], mfm->track_data[0][0], mfm->track_len[0][1]);
         downsample_track(mfm->track_data[1][1], mfm->track_data[1][0], mfm->track_len[1][1]);
 
-        mfm->track_index[0][2] = 1;
-        mfm->track_index[1][2] = 1;
+        mfm->track_index[0][2] = 0;
+        mfm->track_index[1][2] = 0;
         mfm->track_len[0][2] = 0;
         mfm->track_len[1][2] = 0;
         memset(mfm->track_data[0][2], 0, 65536);

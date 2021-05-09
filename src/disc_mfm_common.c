@@ -118,37 +118,37 @@ void mfm_common_poll(mfm_t *mfm)
         int tempi, c, polls;
         for (polls = 0; polls < 16; polls++)
         {
-                if (mfm->pos >= mfm->track_len[mfm->side][mfm->density])
-                {
-                        mfm->pos = 0;
-                        if (mfm->track_len[mfm->side][mfm->density])
-                                fdc_indexpulse();
-                        else
-                        {
-                                mfm->indextime_blank--;
-                                if (!mfm->indextime_blank)
-                                {
-                                        mfm->indextime_blank = 6250 * 8;
-                                        fdc_indexpulse();
-                                }
-                        }
-                }
-//                tempi = mfm->track_data[mfm->side][mfm->density][(mfm->pos >> 3) & 0xFFFF] & (1 << (7-(mfm->pos & 7)));
                 tempi = mfm->track_data[mfm->side][mfm->density][(mfm->pos >> 3) & 0xFFFF] & (1 << (7-(mfm->pos & 7)));
                 mfm->pos++;
                 mfm->buffer <<= 1;
                 mfm->buffer |= (tempi ? 1 : 0);
-                if (mfm->in_write)
+
+                if (mfm->pos >= mfm->track_len[mfm->side][mfm->density])
                 {
-                        mfm->in_write=0;
-                        fdc_writeprotect();
-                        return;
+                        mfm->pos = 0;
                 }
-                if (!mfm->in_read && !mfm->in_readaddr) continue;
+
                 if (mfm->pos == mfm->track_index[mfm->side][mfm->density])
                 {
-                        mfm->revs++;
-                        if (mfm->revs == 3)
+//                        rpclog("disc index %i  %i\n", mfm->pos, mfm->indextime_blank);
+                        if (mfm->track_len[mfm->side][mfm->density])
+                        {
+                                fdc_indexpulse();
+                                if (mfm->in_read || mfm->in_readaddr)
+                                        mfm->revs++;
+                        }
+                        else
+                        {
+                                mfm->indextime_blank--;
+                                if (mfm->indextime_blank <= 0)
+                                {
+                                        mfm->indextime_blank = 6250 * 8;
+                                        fdc_indexpulse();
+                                        if (mfm->in_read || mfm->in_readaddr)
+                                                mfm->revs++;
+                                }
+                        }
+                        if ((mfm->in_read || mfm->in_readaddr) && mfm->revs == 3)
                         {
 //                                rpclog("hfe_poll: Not found!\n");
                                 fdc_notfound();
@@ -156,6 +156,14 @@ void mfm_common_poll(mfm_t *mfm)
                                 return;
                         }
                 }
+
+                if (mfm->in_write)
+                {
+                        mfm->in_write=0;
+                        fdc_writeprotect();
+                        return;
+                }
+                if (!mfm->in_read && !mfm->in_readaddr) continue;
 //                if (hfe_tracklen[hfe_drive][mfm->side][mfm->density] > 1)
 //                        rpclog(" %05i: %i %04x %02x\n", mfm->pos, tempi ? 1 : 0, mfm->buffer, decodefm(mfm->buffer));
                 if (mfm->pollbitsleft)

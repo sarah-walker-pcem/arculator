@@ -1,8 +1,8 @@
 typedef struct mfm_t
 {
-        uint8_t track_data[2][2][65536]; /*[side][density][byte]*/
-        int track_len[2][2];
-        int track_index[2][2];
+        uint8_t track_data[2][3][65536]; /*[side][density][byte]*/
+        int track_len[2][3];
+        int track_index[2][3];
 
         int sector, track, side, drive, density;
 

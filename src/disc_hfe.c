@@ -239,8 +239,17 @@ void hfe_seek(int drive, int track)
         downsample_track(mfm->track_data[0][1], mfm->track_data[0][0], mfm->track_len[0][1]);
         downsample_track(mfm->track_data[1][1], mfm->track_data[1][0], mfm->track_len[1][1]);
 
-//        printf("SD Track %i Len %i Index %i %i\n",track,ftracklen[drive][0][0],ftrackindex[drive][0][0],c);
-//        printf("DD Track %i Len %i Index %i %i\n",track,ftracklen[drive][0][1],ftrackindex[drive][0][1],c);
+        mfm->track_index[0][2] = 1;
+        mfm->track_index[1][2] = 1;
+        mfm->track_len[0][2] = 0;
+        mfm->track_len[1][2] = 0;
+        memset(mfm->track_data[0][2], 0, 65536);
+        memset(mfm->track_data[1][2], 0, 65536);
+
+//        rpclog(" SD side 0 Track %i Len %i Index %i\n", track, mfm->track_len[0][0], mfm->track_index[0][0]);
+//        rpclog(" SD side 1 Track %i Len %i Index %i\n", track, mfm->track_len[1][0], mfm->track_index[1][0]);
+//        rpclog(" DD side 0 Track %i Len %i Index %i\n", track, mfm->track_len[0][1], mfm->track_index[0][1]);
+//        rpclog(" DD side 1 Track %i Len %i Index %i\n", track, mfm->track_len[1][1], mfm->track_index[1][1]);
 }
 
 void hfe_writeback(int drive, int track)

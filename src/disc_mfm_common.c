@@ -48,6 +48,7 @@ void mfm_readsector(mfm_t *mfm, int drive, int sector, int track, int side, int 
         rpclog("mfm Read sector %i %i %i %i %i\n",drive,side,track,sector, density);
 
         mfm->in_read  = 1;
+        mfm->sync_required = (density != 2);
 }
 
 void mfm_writesector(mfm_t *mfm, int drive, int sector, int track, int side, int density)
@@ -60,6 +61,7 @@ void mfm_writesector(mfm_t *mfm, int drive, int sector, int track, int side, int
 //        printf("Write sector %i %i %i %i\n",drive,side,track,sector);
 
         mfm->in_write = 1;
+        mfm->sync_required = 0;
 }
 
 void mfm_readaddress(mfm_t *mfm, int drive, int track, int side, int density)
@@ -72,6 +74,7 @@ void mfm_readaddress(mfm_t *mfm, int drive, int track, int side, int density)
         rpclog("Read address %i %i %i %i\n",drive,side,track,density);
 
         mfm->in_readaddr = 1;
+        mfm->sync_required = (density != 2);
 }
 
 void mfm_format(mfm_t *mfm, int drive, int track, int side, int density)
@@ -84,6 +87,7 @@ void mfm_format(mfm_t *mfm, int drive, int track, int side, int density)
 //        printf("Format %i %i %i\n",drive,side,track);
 
         mfm->in_write = 1;
+        mfm->sync_required = 0;
 }
 
 void mfm_stop(mfm_t *mfm)
@@ -96,6 +100,33 @@ void mfm_stop(mfm_t *mfm)
 static void calccrc(mfm_t *mfm, uint8_t byte)
 {
 	mfm->crc = (mfm->crc << 8) ^ CRCTable[(mfm->crc >> 8) ^ byte];
+}
+
+static uint16_t pack_2us(uint32_t in_data)
+{
+        uint16_t out_data = 0;
+        int c;
+
+        for (c = 0; c < 16; c++)
+        {
+                if (in_data & (2 << c*2))
+                        out_data |= (1 << c);
+        }
+
+        return out_data;
+}
+static uint16_t pack_4us(uint64_t in_data)
+{
+        uint16_t out_data = 0;
+        int c;
+
+        for (c = 0; c < 16; c++)
+        {
+                if (in_data & (8ull << c*4))
+                        out_data |= (1 << c);
+        }
+        
+        return out_data;
 }
 
 static uint8_t decodefm(uint16_t dat)
@@ -113,48 +144,107 @@ static uint8_t decodefm(uint16_t dat)
         return temp;
 }
 
-void mfm_common_poll(mfm_t *mfm)
+static void next_bit(mfm_t *mfm)
 {
-        int tempi, c, polls;
-        for (polls = 0; polls < 16; polls++)
+        mfm->pos++;
+
+        if (mfm->pos >= mfm->track_len[mfm->side])
         {
-                tempi = mfm->track_data[mfm->side][mfm->density][(mfm->pos >> 3) & 0xFFFF] & (1 << (7-(mfm->pos & 7)));
-                mfm->pos++;
-                mfm->buffer <<= 1;
-                mfm->buffer |= (tempi ? 1 : 0);
+//                rpclog("disc loop %i  index %i\n", mfm->pos,mfm->track_index[mfm->side]);
+                mfm->pos = 0;
+        }
 
-                if (mfm->pos >= mfm->track_len[mfm->side][mfm->density])
+        if (mfm->pos == mfm->track_index[mfm->side])
+        {
+//                rpclog("disc index %i  %i\n", mfm->pos, mfm->indextime_blank);
+                if (mfm->track_len[mfm->side])
                 {
-                        mfm->pos = 0;
+                        fdc_indexpulse();
+                        if (mfm->in_read || mfm->in_readaddr)
+                                mfm->revs++;
                 }
-
-                if (mfm->pos == mfm->track_index[mfm->side][mfm->density])
+                else
                 {
-//                        rpclog("disc index %i  %i\n", mfm->pos, mfm->indextime_blank);
-                        if (mfm->track_len[mfm->side][mfm->density])
+                        mfm->indextime_blank--;
+                        if (mfm->indextime_blank <= 0)
                         {
+                                mfm->indextime_blank = 6250 * 8;
                                 fdc_indexpulse();
                                 if (mfm->in_read || mfm->in_readaddr)
                                         mfm->revs++;
                         }
-                        else
+                }
+                if ((mfm->in_read || mfm->in_readaddr) && mfm->revs == 3)
+                {
+//                                        rpclog("hfe_poll: Not found!\n");
+                        fdc_notfound();
+                        mfm->in_read = mfm->in_readaddr = 0;
+                }
+        }
+}
+
+void mfm_common_poll(mfm_t *mfm)
+{
+        int tempi, c, polls;
+        int nr_bits = 4 >> mfm->density;
+
+        for (polls = 0; polls < 16; polls++)
+        {
+                uint16_t new_data;
+
+                if (mfm->sync_required)
+                {
+                        if (mfm->density == 0)
                         {
-                                mfm->indextime_blank--;
-                                if (mfm->indextime_blank <= 0)
+                                for (c = 0; c < nr_bits; c++)
                                 {
-                                        mfm->indextime_blank = 6250 * 8;
-                                        fdc_indexpulse();
-                                        if (mfm->in_read || mfm->in_readaddr)
-                                                mfm->revs++;
+                                        int tempi = mfm->track_data[mfm->side][(mfm->pos >> 3) & 0xFFFF] & (1 << (7-(mfm->pos & 7)));
+                                        mfm->buffer <<= 1;
+                                        mfm->buffer |= (tempi ? 1 : 0);
+                                        next_bit(mfm);
+
+                                        if ((mfm->buffer & 0x8080808080808080ull) == 0x8080808080808080ull &&
+                                            !(mfm->buffer & 0x7777777777777777ull))
+                                        {
+                                                mfm->sync_required = 0;
+                                                break;
+                                        }
                                 }
                         }
-                        if ((mfm->in_read || mfm->in_readaddr) && mfm->revs == 3)
+                        else if (mfm->density == 1)
                         {
-//                                rpclog("hfe_poll: Not found!\n");
-                                fdc_notfound();
-                                mfm->in_read = mfm->in_readaddr = 0;
+                                for (c = 0; c < nr_bits; c++)
+                                {
+                                        int tempi = mfm->track_data[mfm->side][(mfm->pos >> 3) & 0xFFFF] & (1 << (7-(mfm->pos & 7)));
+                                        mfm->buffer <<= 1;
+                                        mfm->buffer |= (tempi ? 1 : 0);
+                                        next_bit(mfm);
+
+                                        if ((mfm->buffer & 0xffff) == 0x8888)
+                                        {
+                                                mfm->sync_required = 0;
+                                                break;
+                                        }
+                                }
                         }
+
+                        if (mfm->sync_required)
+                                continue;
                 }
+
+                for (c = 0; c < nr_bits; c++)
+                {
+                        tempi = mfm->track_data[mfm->side][(mfm->pos >> 3) & 0xFFFF] & (1 << (7-(mfm->pos & 7)));
+                        mfm->buffer <<= 1;
+                        mfm->buffer |= (tempi ? 1 : 0);
+                        next_bit(mfm);
+                }
+                if (mfm->density == 2)
+                        new_data = mfm->buffer & 0xffff;
+                else if (mfm->density == 1)
+                        new_data = pack_2us(mfm->buffer);
+                else
+                        new_data = pack_4us(mfm->buffer);
 
                 if (mfm->in_write)
                 {
@@ -163,8 +253,7 @@ void mfm_common_poll(mfm_t *mfm)
                 }
                 if (!mfm->in_read && !mfm->in_readaddr)
                         continue;
-//                if (hfe_tracklen[hfe_drive][mfm->side][mfm->density] > 1)
-//                        rpclog(" %05i: %i %04x %02x\n", mfm->pos, tempi ? 1 : 0, mfm->buffer, decodefm(mfm->buffer));
+
                 if (mfm->pollbitsleft)
                         mfm->pollbitsleft--;
                 if (!mfm->pollbitsleft && mfm->pollbytesleft)
@@ -174,7 +263,7 @@ void mfm_common_poll(mfm_t *mfm)
                                 mfm->pollbitsleft = 16; /*Set up another word if we need it*/
                         if (mfm->readidpoll)
                         {
-                                mfm->sectordat[5 - mfm->pollbytesleft] = decodefm(mfm->buffer);
+                                mfm->sectordat[5 - mfm->pollbytesleft] = decodefm(new_data);
                                 if (mfm->in_readaddr && !fdc_sectorid)// && mfm->pollbytesleft > 1)
                                 {
 //                                        rpclog("inreadaddr - %02X\n", hfe_sectordat[5 - mfm->pollbytesleft]);
@@ -225,10 +314,10 @@ void mfm_common_poll(mfm_t *mfm)
                         {
                                 if (mfm->pollbytesleft > 1)
                                 {
-                                        calccrc(mfm, decodefm(mfm->buffer));
+                                        calccrc(mfm, decodefm(new_data));
                                 }
                                 else
-                                        mfm->sectorcrc[1 - mfm->pollbytesleft] = decodefm(mfm->buffer);
+                                        mfm->sectorcrc[1 - mfm->pollbytesleft] = decodefm(new_data);
                                 if (!mfm->pollbytesleft)
                                 {
                                         mfm->in_read = 0;
@@ -250,7 +339,7 @@ void mfm_common_poll(mfm_t *mfm)
                                 else if (mfm->lastdat[1] != 0)
                                         fdc_data(decodefm(mfm->lastdat[1]));
                                 mfm->lastdat[1] = mfm->lastdat[0];
-                                mfm->lastdat[0] = mfm->buffer;
+                                mfm->lastdat[0] = new_data;
                                 if (!mfm->pollbytesleft)
                                         mfm->readdatapoll = 0;
                         }
@@ -258,7 +347,7 @@ void mfm_common_poll(mfm_t *mfm)
 
                 if (mfm->density)
                 {
-                        if (mfm->buffer == 0x4489)
+                        if (new_data == 0x4489)
                         {
 //                        rpclog("mfm_common_poll: Found sync pos=%i\n", mfm->pos);
                                 mfm->ddidbitsleft = 16;
@@ -268,15 +357,15 @@ void mfm_common_poll(mfm_t *mfm)
                                 mfm->ddidbitsleft--;
                                 if (!mfm->ddidbitsleft)
                                 {
-//                                        rpclog("ID bits over %04X %02X %i\n",mfm->buffer,decodefm(mfm->buffer),mfm->pos);
-                                        if (decodefm(mfm->buffer) == 0xFE)
+//                                        rpclog("ID bits over %04X %02X %i\n",new_data,decodefm(new_data),mfm->pos);
+                                        if (decodefm(new_data) == 0xFE)
                                         {
 //                                                rpclog("Sector header\n");
                                                 mfm->pollbytesleft = 6;
                                                 mfm->pollbitsleft  = 16;
                                                 mfm->readidpoll    = 1;
                                         }
-                                        else if (decodefm(mfm->buffer) == 0xFB)
+                                        else if (decodefm(new_data) == 0xFB)
                                         {
 //                                                rpclog("Data header\n");
                                                 if (mfm->nextsector)
@@ -286,7 +375,7 @@ void mfm_common_poll(mfm_t *mfm)
                                                         mfm->readdatapoll   = 1;
                                                         mfm->nextsector = 0;
                                                         mfm->crc = 0xcdb4;
-                                                        if (mfm->buffer == 0xF56A)
+                                                        if (new_data == 0xF56A)
                                                                 calccrc(mfm, 0xF8);
                                                         else
                                                                 calccrc(mfm, 0xFB);
@@ -298,13 +387,13 @@ void mfm_common_poll(mfm_t *mfm)
                 }
                 else
                 {
-                        if (mfm->buffer == 0xF57E)
+                        if (new_data == 0xF57E)
                         {
                                 mfm->pollbytesleft = 6;
                                 mfm->pollbitsleft  = 16;
                                 mfm->readidpoll    = 1;
                         }
-                        if (mfm->buffer == 0xF56F || mfm->buffer == 0xF56A)
+                        if (new_data == 0xF56F || new_data == 0xF56A)
                         {
                                 if (mfm->nextsector)
                                 {
@@ -313,7 +402,7 @@ void mfm_common_poll(mfm_t *mfm)
                                         mfm->readdatapoll   = 1;
                                         mfm->nextsector = 0;
                                         mfm->crc = 0xffff;
-                                        if (mfm->buffer == 0xF56A)
+                                        if (new_data == 0xF56A)
                                                 calccrc(mfm, 0xF8);
                                         else
                                                 calccrc(mfm, 0xFB);

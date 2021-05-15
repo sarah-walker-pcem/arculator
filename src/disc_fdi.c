@@ -75,6 +75,37 @@ static void do_byteswap(uint8_t *buffer, int size)
 }
 
 
+static void upsample_track(uint8_t *data, int size)
+{
+        int c;
+
+        for (c = size-1; c >= 0; c--)
+        {
+                uint8_t new_data = 0;
+
+                if (data[c] & 0x08)
+                        new_data |= 0x80;
+                if (data[c] & 0x04)
+                        new_data |= 0x20;
+                if (data[c] & 0x02)
+                        new_data |= 0x08;
+                if (data[c] & 0x01)
+                        new_data |= 0x02;
+                data[c*2+1] = new_data;
+
+                new_data = 0;
+                if (data[c] & 0x80)
+                        new_data |= 0x80;
+                if (data[c] & 0x40)
+                        new_data |= 0x20;
+                if (data[c] & 0x20)
+                        new_data |= 0x08;
+                if (data[c] & 0x10)
+                        new_data |= 0x02;
+                data[c*2] = new_data;
+        }
+}
+
 void fdi_seek(int drive, int track)
 {
         mfm_t *mfm = &fdi[drive].mfm;
@@ -87,33 +118,32 @@ void fdi_seek(int drive, int track)
                 track = 0;
         if (track > fdi[drive].lasttrack)
                 track = fdi[drive].lasttrack - 1;
-        c = fdi2raw_loadtrack(fdi[drive].h, (uint16_t *)mfm->track_data[0][0], (uint16_t *)fdi_timing, track << fdi[drive].sides, &mfm->track_len[0][0], &mfm->track_index[0][0], NULL, 0);
+        c = fdi2raw_loadtrack(fdi[drive].h, (uint16_t *)mfm->track_data[0], (uint16_t *)fdi_timing, track << fdi[drive].sides, &mfm->track_len[0], &mfm->track_index[0], NULL, 1);
         if (!c)
-                memset(mfm->track_data[0][0], 0, 65536);
-        c = fdi2raw_loadtrack(fdi[drive].h, (uint16_t *)mfm->track_data[0][1], (uint16_t *)fdi_timing, track << fdi[drive].sides, &mfm->track_len[0][1], &mfm->track_index[0][1], NULL, 1);
-        if (!c)
-                memset(mfm->track_data[0][1], 0, 65536);
+                memset(mfm->track_data[0], 0, 65536);
         if (fdi[drive].sides)
         {
-                c = fdi2raw_loadtrack(fdi[drive].h, (uint16_t *)mfm->track_data[1][0], (uint16_t *)fdi_timing, (track << fdi[drive].sides) + 1, &mfm->track_len[1][0], &mfm->track_index[1][0], NULL, 0);
+                c = fdi2raw_loadtrack(fdi[drive].h, (uint16_t *)mfm->track_data[1], (uint16_t *)fdi_timing, (track << fdi[drive].sides) + 1, &mfm->track_len[1], &mfm->track_index[1], NULL, 1);
                 if (!c)
-                        memset(mfm->track_data[1][0], 0, 65536);
-                c = fdi2raw_loadtrack(fdi[drive].h, (uint16_t *)mfm->track_data[1][1], (uint16_t *)fdi_timing, (track << fdi[drive].sides) + 1, &mfm->track_len[1][1], &mfm->track_index[1][1], NULL, 1);
-                if (!c)
-                        memset(mfm->track_data[1][1], 0, 65536);
+                        memset(mfm->track_data[1], 0, 65536);
         }
         else
         {
-                memset(mfm->track_data[1][0], 0, 65536);
-                memset(mfm->track_data[1][1], 0, 65536);
-                mfm->track_len[1][0]   = mfm->track_len[1][1]   = 10000;
-                mfm->track_index[1][0] = mfm->track_index[1][1] = 100;
+                memset(mfm->track_data[1], 0, 65536);
+                mfm->track_len[1]   = 10000;
+                mfm->track_index[1] = 100;
         }
 
-        do_byteswap(mfm->track_data[0][0], (mfm->track_len[0][0] + 7) / 8);
-        do_byteswap(mfm->track_data[0][1], (mfm->track_len[0][1] + 7) / 8);
-        do_byteswap(mfm->track_data[1][0], (mfm->track_len[1][0] + 7) / 8);
-        do_byteswap(mfm->track_data[1][1], (mfm->track_len[1][1] + 7) / 8);
+        do_byteswap(mfm->track_data[0], (mfm->track_len[0] + 7) / 8);
+        do_byteswap(mfm->track_data[1], (mfm->track_len[1] + 7) / 8);
+
+        upsample_track(mfm->track_data[0], (mfm->track_len[0] + 7) / 8);
+        upsample_track(mfm->track_data[1], (mfm->track_len[1] + 7) / 8);
+        mfm->track_len[0] *= 2;
+        mfm->track_len[1] *= 2;
+        mfm->track_index[0] *= 2;
+        mfm->track_index[1] *= 2;
+
 //        rpclog("SD Track %i Len %i Index %i %i\n", track, mfm->track_len[0][0], mfm->track_index[0][0],c);
 //        rpclog("DD Track %i Len %i Index %i %i\n", track, mfm->track_len[0][1], mfm->track_index[0][1],c);
 }

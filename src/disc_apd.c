@@ -99,6 +99,37 @@ void apd_close(int drive)
         apd[drive].f = NULL;
 }
 
+static void upsample_track(uint8_t *data, int size)
+{
+        int c;
+
+        for (c = size-1; c >= 0; c--)
+        {
+                uint8_t new_data = 0;
+
+                if (data[c] & 0x08)
+                        new_data |= 0x80;
+                if (data[c] & 0x04)
+                        new_data |= 0x20;
+                if (data[c] & 0x02)
+                        new_data |= 0x08;
+                if (data[c] & 0x01)
+                        new_data |= 0x02;
+                data[c*2+1] = new_data;
+
+                new_data = 0;
+                if (data[c] & 0x80)
+                        new_data |= 0x80;
+                if (data[c] & 0x40)
+                        new_data |= 0x20;
+                if (data[c] & 0x20)
+                        new_data |= 0x08;
+                if (data[c] & 0x10)
+                        new_data |= 0x02;
+                data[c*2] = new_data;
+        }
+}
+
 void apd_seek(int drive, int track)
 {
         mfm_t *mfm = &apd[drive].mfm;
@@ -113,47 +144,32 @@ void apd_seek(int drive, int track)
         
         track <<= 1;
         
-        if (apd[drive].header.sdtrack[track].len)
-        {
-                gzseek(apd[drive].f, apd[drive].header.sdtrack[track].pos, SEEK_SET);
-                gzread(apd[drive].f, mfm->track_data[0][0], apd[drive].header.sdtrack[track].rd);
-        }
-        else
-                memset(mfm->track_data[0][0], 0, mfm->track_len[0][0]);
-
-        if (apd[drive].header.sdtrack[track + 1].len)
-        {
-                gzseek(apd[drive].f, apd[drive].header.sdtrack[track + 1].pos, SEEK_SET);
-                gzread(apd[drive].f, mfm->track_data[1][0], apd[drive].header.sdtrack[track + 1].rd);
-        }
-        else
-                memset(mfm->track_data[1][0], 0, mfm->track_len[1][0]);
-                        
         if (apd[drive].header.track[track].len)
         {
                 gzseek(apd[drive].f, apd[drive].header.track[track].pos, SEEK_SET);
-                gzread(apd[drive].f, mfm->track_data[0][1], apd[drive].header.track[track].rd);
+                gzread(apd[drive].f, mfm->track_data[0], apd[drive].header.track[track].rd);
         }
         else
-                memset(mfm->track_data[0][1], 0, mfm->track_len[0][1]);
+                memset(mfm->track_data[0], 0, mfm->track_len[0]);
 
         if (apd[drive].header.track[track + 1].len)
         {
                 gzseek(apd[drive].f, apd[drive].header.track[track + 1].pos, SEEK_SET);
-                gzread(apd[drive].f, mfm->track_data[1][1], apd[drive].header.track[track + 1].rd);
+                gzread(apd[drive].f, mfm->track_data[1], apd[drive].header.track[track + 1].rd);
         }
         else
-                memset(mfm->track_data[1][1], 0, mfm->track_len[1][1]);
+                memset(mfm->track_data[1], 0, mfm->track_len[1]);
                         
 
-        mfm->track_len[0][0] = apd[drive].header.sdtrack[track].len;
-        mfm->track_len[1][0] = apd[drive].header.sdtrack[track + 1].len;
-        mfm->track_len[0][1] = apd[drive].header.track[track].len;
-        mfm->track_len[1][1] = apd[drive].header.track[track + 1].len;
-        mfm->track_index[0][0] = 1;
-        mfm->track_index[1][0] = 1;
-        mfm->track_index[0][1] = 1;
-        mfm->track_index[1][1] = 1;
+        mfm->track_len[0] = apd[drive].header.track[track].len;
+        mfm->track_len[1] = apd[drive].header.track[track + 1].len;
+        mfm->track_index[0] = 0;
+        mfm->track_index[1] = 0;
+
+        upsample_track(mfm->track_data[0], (mfm->track_len[0] + 7) / 8);
+        upsample_track(mfm->track_data[1], (mfm->track_len[1] + 7) / 8);
+        mfm->track_len[0] *= 2;
+        mfm->track_len[1] *= 2;
 
 //        rpclog("SD Track %i Len %i %i\n", track, mfm->track_len[0][0], mfm->track_len[1][0]);
 //        rpclog("DD Track %i Len %i %i\n", track, mfm->track_len[0][1], mfm->track_len[1][1]);

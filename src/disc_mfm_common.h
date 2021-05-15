@@ -1,13 +1,14 @@
 typedef struct mfm_t
 {
-        uint8_t track_data[2][3][65536]; /*[side][density][byte]*/
-        int track_len[2][3];
-        int track_index[2][3];
+        uint8_t track_data[2][65536]; /*[side][byte]*/
+        int track_len[3];
+        int track_index[3];
 
         int sector, track, side, drive, density;
 
         int in_read, in_write, in_readaddr;
-        uint16_t buffer;
+        int sync_required;
+        uint64_t buffer;
         int pos, revs;
         int indextime_blank;
         int pollbytesleft, pollbitsleft, ddidbitsleft;

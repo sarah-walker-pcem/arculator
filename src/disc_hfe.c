@@ -162,35 +162,36 @@ static void do_bitswap(uint8_t *data, int size)
         }
 }
 
-static void downsample_track(uint8_t *in_data, uint8_t *out_data, int in_size)
+static void upsample_track(uint8_t *data, int size)
 {
         int c;
 
-        for (c = 0; c < in_size; c += 2)
+        for (c = size-1; c >= 0; c--)
         {
-                uint8_t fm_data = 0;
+                uint8_t new_data = 0;
 
-                if (in_data[c+1] & 0x03)
-                        fm_data |= 0x01;
-                if (in_data[c+1] & 0x0c)
-                        fm_data |= 0x02;
-                if (in_data[c+1] & 0x30)
-                        fm_data |= 0x04;
-                if (in_data[c+1] & 0xc0)
-                        fm_data |= 0x08;
-                if (in_data[c] & 0x03)
-                        fm_data |= 0x10;
-                if (in_data[c] & 0x0c)
-                        fm_data |= 0x20;
-                if (in_data[c] & 0x30)
-                        fm_data |= 0x40;
-                if (in_data[c] & 0xc0)
-                        fm_data |= 0x80;
+                if (data[c] & 0x08)
+                        new_data |= 0x80;
+                if (data[c] & 0x04)
+                        new_data |= 0x20;
+                if (data[c] & 0x02)
+                        new_data |= 0x08;
+                if (data[c] & 0x01)
+                        new_data |= 0x02;
+                data[c*2+1] = new_data;
 
-                out_data[c/2] = fm_data;
+                new_data = 0;
+                if (data[c] & 0x80)
+                        new_data |= 0x80;
+                if (data[c] & 0x40)
+                        new_data |= 0x20;
+                if (data[c] & 0x20)
+                        new_data |= 0x08;
+                if (data[c] & 0x10)
+                        new_data |= 0x02;
+                data[c*2] = new_data;
         }
 }
-
 
 void hfe_seek(int drive, int track)
 {
@@ -201,10 +202,8 @@ void hfe_seek(int drive, int track)
 
         if (!hfe[drive].f)
         {
-                memset(mfm->track_data[0][0], 0, 65536);
-                memset(mfm->track_data[1][0], 0, 65536);
-                memset(mfm->track_data[0][1], 0, 65536);
-                memset(mfm->track_data[1][1], 0, 65536);
+                memset(mfm->track_data[0], 0, 65536);
+                memset(mfm->track_data[1], 0, 65536);
                 return;
         }
 //        printf("Track start %i\n",track);
@@ -219,39 +218,29 @@ void hfe_seek(int drive, int track)
 //        rpclog("  start=%06x\n", ftell(hfe[drive].f));
         for (c = 0; c < (hfe[drive].tracks[track].track_len/2); c += 0x100)
         {
-                fread(&mfm->track_data[0][1][c], 256, 1, hfe[drive].f);
+                fread(&mfm->track_data[0][c], 256, 1, hfe[drive].f);
                 if (header->nr_of_sides == 2)
-                        fread(&mfm->track_data[1][1][c], 256, 1, hfe[drive].f);
+                        fread(&mfm->track_data[1][c], 256, 1, hfe[drive].f);
                 else
-                        memset(&mfm->track_data[1][1][c], 0, 256);
+                        memset(&mfm->track_data[1][c], 0, 256);
         }
 //        rpclog("  end=%06x\n", ftell(hfe[drive].f));
-        mfm->track_index[0][0] = 0;
-        mfm->track_index[1][0] = 0;
-        mfm->track_index[0][1] = 0;
-        mfm->track_index[1][1] = 0;
-        mfm->track_len[0][1] = (hfe[drive].tracks[track].track_len*8)/2;
-        mfm->track_len[1][1] = (hfe[drive].tracks[track].track_len*8)/2;
-        mfm->track_len[0][0] = mfm->track_len[0][1] / 2;
-        mfm->track_len[1][0] = mfm->track_len[1][1] / 2;
+        mfm->track_index[0] = 0;
+        mfm->track_index[1] = 0;
+        mfm->track_len[0] = (hfe[drive].tracks[track].track_len*8)/2;
+        mfm->track_len[1] = (hfe[drive].tracks[track].track_len*8)/2;
 
-        do_bitswap(mfm->track_data[0][1], (mfm->track_len[0][1] + 7) / 8);
-        do_bitswap(mfm->track_data[1][1], (mfm->track_len[1][1] + 7) / 8);
-
-        downsample_track(mfm->track_data[0][1], mfm->track_data[0][0], mfm->track_len[0][1]);
-        downsample_track(mfm->track_data[1][1], mfm->track_data[1][0], mfm->track_len[1][1]);
-
-        mfm->track_index[0][2] = 0;
-        mfm->track_index[1][2] = 0;
-        mfm->track_len[0][2] = 0;
-        mfm->track_len[1][2] = 0;
-        memset(mfm->track_data[0][2], 0, 65536);
-        memset(mfm->track_data[1][2], 0, 65536);
+        do_bitswap(mfm->track_data[0], (mfm->track_len[0] + 7) / 8);
+        do_bitswap(mfm->track_data[1], (mfm->track_len[1] + 7) / 8);
+        upsample_track(mfm->track_data[0], (mfm->track_len[0] + 7) / 8);
+        upsample_track(mfm->track_data[1], (mfm->track_len[1] + 7) / 8);
+        mfm->track_len[0] *= 2;
+        mfm->track_len[1] *= 2;
 
 //        rpclog(" SD side 0 Track %i Len %i Index %i\n", track, mfm->track_len[0][0], mfm->track_index[0][0]);
 //        rpclog(" SD side 1 Track %i Len %i Index %i\n", track, mfm->track_len[1][0], mfm->track_index[1][0]);
-//        rpclog(" DD side 0 Track %i Len %i Index %i\n", track, mfm->track_len[0][1], mfm->track_index[0][1]);
-//        rpclog(" DD side 1 Track %i Len %i Index %i\n", track, mfm->track_len[1][1], mfm->track_index[1][1]);
+        rpclog(" DD side 0 Track %i Len %i Index %i\n", track, mfm->track_len[0], mfm->track_index[0]);
+        rpclog(" DD side 1 Track %i Len %i Index %i\n", track, mfm->track_len[1], mfm->track_index[1]);
 }
 
 void hfe_writeback(int drive, int track)

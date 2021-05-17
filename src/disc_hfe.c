@@ -229,13 +229,16 @@ void hfe_seek(int drive, int track)
         mfm->track_index[1] = 0;
         mfm->track_len[0] = (hfe[drive].tracks[track].track_len*8)/2;
         mfm->track_len[1] = (hfe[drive].tracks[track].track_len*8)/2;
-
         do_bitswap(mfm->track_data[0], (mfm->track_len[0] + 7) / 8);
         do_bitswap(mfm->track_data[1], (mfm->track_len[1] + 7) / 8);
-        upsample_track(mfm->track_data[0], (mfm->track_len[0] + 7) / 8);
-        upsample_track(mfm->track_data[1], (mfm->track_len[1] + 7) / 8);
-        mfm->track_len[0] *= 2;
-        mfm->track_len[1] *= 2;
+
+        if (header->bitrate < 400)
+        {
+                upsample_track(mfm->track_data[0], (mfm->track_len[0] + 7) / 8);
+                upsample_track(mfm->track_data[1], (mfm->track_len[1] + 7) / 8);
+                mfm->track_len[0] *= 2;
+                mfm->track_len[1] *= 2;
+        }
 
 //        rpclog(" SD side 0 Track %i Len %i Index %i\n", track, mfm->track_len[0][0], mfm->track_index[0][0]);
 //        rpclog(" SD side 1 Track %i Len %i Index %i\n", track, mfm->track_len[1][0], mfm->track_index[1][0]);

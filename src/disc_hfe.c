@@ -219,10 +219,7 @@ void hfe_seek(int drive, int track)
         for (c = 0; c < (hfe[drive].tracks[track].track_len/2); c += 0x100)
         {
                 fread(&mfm->track_data[0][c], 256, 1, hfe[drive].f);
-                if (header->nr_of_sides == 2)
-                        fread(&mfm->track_data[1][c], 256, 1, hfe[drive].f);
-                else
-                        memset(&mfm->track_data[1][c], 0, 256);
+                fread(&mfm->track_data[1][c], 256, 1, hfe[drive].f);
         }
 //        rpclog("  end=%06x\n", ftell(hfe[drive].f));
         mfm->track_index[0] = 0;

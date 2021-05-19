@@ -10,6 +10,8 @@
 #include "disc_hfe.h"
 #include "disc_mfm_common.h"
 
+void hfe_writeback(int drive);
+
 #define TRACK_ENCODING_ISOIBM_MFM 0x00
 #define TRACK_ENCODING_AMIGA_MFM  0x01
 #define TRACK_ENCODING_ISOIBM_FM  0x02
@@ -47,6 +49,7 @@ typedef struct hfe_t
         hfe_track_t *tracks;
         mfm_t mfm;
         FILE *f;
+        int current_track;
 } hfe_t;
 
 static hfe_t hfe[4];
@@ -102,10 +105,19 @@ void hfe_init()
 
 void hfe_load(int drive, char *fn)
 {
-        writeprot[drive] = fwriteprot[drive] = 1;
+        writeprot[drive] = fwriteprot[drive] = 0;
         memset(&hfe[drive], 0, sizeof(hfe_t));
-        hfe[drive].f = fopen(fn, "rb");
+        hfe[drive].f = fopen(fn, "rb+");
+        if (!hfe[drive].f)
+        {
+                hfe[drive].f = fopen(fn, "rb");
+                if (!hfe[drive].f)
+                        return;
+                writeprot[drive] = fwriteprot[drive] = 1;
+        }
         hfe_load_header(&hfe[drive]);
+        hfe[drive].mfm.write_protected = writeprot[drive];
+        hfe[drive].mfm.writeback = hfe_writeback;
 
         drives[drive].seek        = hfe_seek;
         drives[drive].readsector  = hfe_readsector;
@@ -193,6 +205,34 @@ static void upsample_track(uint8_t *data, int size)
         }
 }
 
+static void downsample_track(uint8_t *data, int size)
+{
+        int c;
+
+        for (c = 0; c < size; c++)
+        {
+                uint8_t new_data = 0;
+
+                if (data[c*2+1] & 0x80)
+                        new_data |= 0x08;
+                if (data[c*2+1] & 0x20)
+                        new_data |= 0x04;
+                if (data[c*2+1] & 0x08)
+                        new_data |= 0x02;
+                if (data[c*2+1] & 0x02)
+                        new_data |= 0x01;
+                if (data[c*2] & 0x80)
+                        new_data |= 0x80;
+                if (data[c*2] & 0x20)
+                        new_data |= 0x40;
+                if (data[c*2] & 0x08)
+                        new_data |= 0x20;
+                if (data[c*2] & 0x02)
+                        new_data |= 0x10;
+                data[c] = new_data;
+        }
+}
+
 void hfe_seek(int drive, int track)
 {
         hfe_header_t *header = &hfe[drive].header;
@@ -211,6 +251,8 @@ void hfe_seek(int drive, int track)
                 track = 0;
         if (track >= header->nr_of_tracks)
                 track = header->nr_of_tracks - 1;
+
+        hfe->current_track = track;
 
 //        rpclog("hfe_seek: drive=%i track=%i\n", drive, track);
 //        rpclog("  offset=%04x size=%04x\n", hfe[drive].tracks[track].offset, hfe[drive].tracks[track].track_len);
@@ -239,13 +281,40 @@ void hfe_seek(int drive, int track)
 
 //        rpclog(" SD side 0 Track %i Len %i Index %i\n", track, mfm->track_len[0][0], mfm->track_index[0][0]);
 //        rpclog(" SD side 1 Track %i Len %i Index %i\n", track, mfm->track_len[1][0], mfm->track_index[1][0]);
-        rpclog(" DD side 0 Track %i Len %i Index %i\n", track, mfm->track_len[0], mfm->track_index[0]);
-        rpclog(" DD side 1 Track %i Len %i Index %i\n", track, mfm->track_len[1], mfm->track_index[1]);
+//        rpclog(" DD side 0 Track %i Len %i Index %i\n", track, mfm->track_len[0], mfm->track_index[0]);
+//        rpclog(" DD side 1 Track %i Len %i Index %i\n", track, mfm->track_len[1], mfm->track_index[1]);
 }
 
-void hfe_writeback(int drive, int track)
+void hfe_writeback(int drive)
 {
-        return;
+        hfe_header_t *header = &hfe[drive].header;
+        mfm_t *mfm = &hfe[drive].mfm;
+        int track = hfe[drive].current_track;
+        uint8_t track_data[2][65536];
+        int c;
+
+//        rpclog("hfe_writeback: drive=%i track=%i\n", drive, track);
+
+        for (c = 0; c < 2; c++)
+        {
+                int track_len = mfm->track_len[c];
+                memcpy(track_data[c], mfm->track_data[c], (track_len + 7) / 8);
+
+                if (header->bitrate < 400)
+                {
+                        downsample_track(track_data[c], (track_len + 7) / 8);
+                        track_len /= 2;
+                }
+                do_bitswap(track_data[c], (track_len + 7) / 8);
+        }
+
+        fseek(hfe[drive].f, hfe[drive].tracks[track].offset * 0x200, SEEK_SET);
+//        rpclog(" at %06x\n", ftell(hfe[drive].f));
+        for (c = 0; c < (hfe[drive].tracks[track].track_len/2); c += 0x100)
+        {
+                fwrite(&track_data[0][c], 256, 1, hfe[drive].f);
+                fwrite(&track_data[1][c], 256, 1, hfe[drive].f);
+        }
 }
 
 void hfe_readsector(int drive, int sector, int track, int side, int density)

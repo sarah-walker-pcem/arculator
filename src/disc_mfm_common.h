@@ -6,18 +6,23 @@ typedef struct mfm_t
 
         int sector, track, side, drive, density;
 
-        int in_read, in_write, in_readaddr;
+        int in_read, in_write, in_readaddr, in_format;
         int sync_required;
         uint64_t buffer;
         int pos, revs;
         int indextime_blank;
         int pollbytesleft, pollbitsleft, ddidbitsleft;
-        int readidpoll, readdatapoll;
+        int readidpoll, readdatapoll, writedatapoll;
+        int rw_write;
         int nextsector;
         uint8_t sectordat[1026];
         uint16_t crc;
         int lastdat[2], sectorcrc[2];
         int sectorsize, fdc_sectorsize;
+        int last_bit;
+
+        int write_protected;
+        void (*writeback)(int drive);
 } mfm_t;
 
 void mfm_init(void);

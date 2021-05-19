@@ -42,6 +42,7 @@ void fdi_load(int drive, char *fn)
 //        if (!fdih[drive]) printf("Failed to load!\n");
         fdi[drive].lasttrack = fdi2raw_get_last_track(fdi[drive].h);
         fdi[drive].sides = (fdi[drive].lasttrack > 83) ? 1 : 0;
+        fdi[drive].mfm.write_protected = 1;
 //        printf("Last track %i\n",fdilasttrack[drive]);
         drives[drive].seek        = fdi_seek;
         drives[drive].readsector  = fdi_readsector;

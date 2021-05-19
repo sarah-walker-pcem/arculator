@@ -81,6 +81,7 @@ void apd_load(int drive, char *fn)
 	}
 //        if (!apdh[drive]) rpclog("Failed to load!\n");
         apd[drive].lasttrack = 83;
+        apd[drive].mfm.write_protected = 1;
 //        rpclog("Last track %i\n",apdlasttrack[drive]);
         drives[drive].seek        = apd_seek;
         drives[drive].readsector  = apd_readsector;

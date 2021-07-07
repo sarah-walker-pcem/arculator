@@ -238,7 +238,6 @@ void hfe_seek(int drive, int track)
         hfe_header_t *header = &hfe[drive].header;
         mfm_t *mfm = &hfe[drive].mfm;
         int c;
-        int density_side0, density_side1;
 
         if (!hfe[drive].f)
         {

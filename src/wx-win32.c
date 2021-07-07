@@ -42,7 +42,6 @@ LRESULT CALLBACK WindowProcedure (HWND, UINT, WPARAM, LPARAM);
 static int winsizex = 0, winsizey = 0;
 static int win_doresize = 0;
 static int win_dofullscreen = 0;
-static int win_dosetresize = 0;
 static int win_renderer_reset = 0;
 
 static int pause_main_thread = 0;

@@ -143,16 +143,16 @@ dma_t dma[8];
 
 
 /*PIC*/
-typedef struct PIC
+typedef struct PIC_t
 {
         uint8_t icw1,icw4,mask,ins,pend,mask2;
         int icw;
         uint8_t vector;
         int read;
         uint8_t level_sensitive;
-} PIC;
+} PIC_t;
 
-PIC pic,pic2;
+PIC_t pic,pic2;
 extern int pic_intpending;
 
 

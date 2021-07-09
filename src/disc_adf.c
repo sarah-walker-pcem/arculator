@@ -139,7 +139,10 @@ void adf_readsector(int drive, int sector, int track, int side, int density)
         adf_side   = side;
         adf_drive  = drive;
         if (adf[drive].size == 512)
+        {
                 adf_sector--;
+                sector_nr--;
+        }
         rpclog("ADFS Read sector %i %i %i %i\n",drive,side,track,sector);
 
         if (!adf[drive].f || (side && !adf[drive].dblside) || (density != adf[drive].density) ||
@@ -165,7 +168,10 @@ void adf_writesector(int drive, int sector, int track, int side, int density)
         adf_side   = side;
         adf_drive  = drive;
         if (adf[drive].size == 512)
+        {
                 adf_sector--;
+                sector_nr--;
+        }
 //        printf("ADFS Write sector %i %i %i %i\n",drive,side,track,sector);
 
         if (!adf[drive].f || (side && !adf[drive].dblside) || (density != adf[drive].density) ||

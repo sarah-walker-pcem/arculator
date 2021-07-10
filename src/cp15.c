@@ -7,6 +7,7 @@
 #include "vidc.h"
 
 int cp15_cacheon;
+struct _arm3cp arm3cp;
 
 void resetcp15()
 {

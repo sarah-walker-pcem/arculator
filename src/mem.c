@@ -54,14 +54,14 @@ void initmem(int memsize)
         rpclog("initmem %i\n", memsize);
         realmemsize=memsize;
         ram=(uint32_t *)malloc(memsize*1024);
-        rom=(uint32_t *)malloc(0x200000);
+        rom=(uint32_t *)malloc(0x400000);
         romb = (uint8_t *)rom;
         rom_5th_column = (uint8_t *)malloc(0x10000);
         for (c=0;c<0x4000;c++) memstat[c]=0;
         for (c=0x2000;c<0x3000;c++) memstat[c]=3;
         for (c=0x2000;c<0x3000;c++) mempoint[c]=&ram[(c&d)<<10];
         for (c=0x3800;c<0x4000;c++) memstat[c]=5;
-        for (c=0x3800;c<0x4000;c++) mempoint[c]=&rom[(c&0x1FF)<<10];
+        for (c=0x3800;c<0x4000;c++) mempoint[c]=&rom[(c&0x3FF)<<10];
         memset(ram,0,memsize*1024);
         memstat[0]=1;
         mempoint[0]=rom;

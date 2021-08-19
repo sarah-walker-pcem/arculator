@@ -190,13 +190,13 @@ static void sync_to_fclk(void)
 {
         if (clock_domain != DOMAIN_FCLK)
         {
-                tsc = (tsc + 0x3ff) & ~0x3ff;
+                tsc = (tsc + 0xffffffffull) & ~0xffffffffull;
 
                 clock_domain = DOMAIN_FCLK;
         }
 }
 
-static int last_cycle_length = 0;
+static uint64_t last_cycle_length = 0;
 
 static void CLOCK_N(uint32_t addr)
 {

@@ -702,6 +702,8 @@ void resetarm()
 	clock_domain = DOMAIN_MCLK;
 	pending_reads = 0;
 	promote_fetch_to_n = PROMOTE_NONE;
+        prefabort = 0;
+        databort = 0;
 }
 
 int indumpregs=0;

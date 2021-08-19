@@ -130,23 +130,23 @@ void ioc_write(uint32_t addr, uint32_t v)
                 case 0x64: 
                 ioc.timerl[2] = (ioc.timerl[2] & 0x00ff) | (v << 8); 
                 return;
-                case 0x68: 
-                ioc.timerc[2] = ioc.timerl[2]; 
+                case 0x68:
+                load_timer(2);
                 return;
-                case 0x6C: 
-                ioc.timerr[2] = ioc.timerc[2]; 
+                case 0x6C:
+                ioc.timerr[2] = read_timer(2);
                 return;
-                case 0x70: 
+                case 0x70:
                 ioc.timerl[3] = (ioc.timerl[3] & 0xff00) | v; 
                 return;
                 case 0x74: 
                 ioc.timerl[3] = (ioc.timerl[3] & 0x00ff) | (v << 8); 
                 return;
-                case 0x78: 
-                ioc.timerc[3] = ioc.timerl[3]; 
+                case 0x78:
+                load_timer(3);
                 return;
-                case 0x7C: 
-                ioc.timerr[3] = ioc.timerc[3]; 
+                case 0x7C:
+                ioc.timerr[3] = read_timer(3);
                 return;
         }
 #ifndef RELEASE_BUILD
@@ -270,7 +270,8 @@ static void ioc_timer_callback(void *p)
 {
         int timer_nr = (int)p;
         
-        ioc_irqa(timer_nr ? IOC_IRQA_TIMER_1 : IOC_IRQA_TIMER_0);
+        if (timer_nr < 2)
+                ioc_irqa(timer_nr ? IOC_IRQA_TIMER_1 : IOC_IRQA_TIMER_0);
         
         if (ioc.timerl[timer_nr])
                 timer_advance_u64(&ioc.timers[timer_nr], ((ioc.timerl[timer_nr] + 1) * TIMER_USEC) / 2);
@@ -287,6 +288,8 @@ void ioc_reset()
         ioc.irqb = 2;
         timer_add(&ioc.timers[0], ioc_timer_callback, (void *)0, 1);
         timer_add(&ioc.timers[1], ioc_timer_callback, (void *)1, 1);
+        timer_add(&ioc.timers[2], ioc_timer_callback, (void *)2, 1);
+        timer_add(&ioc.timers[3], ioc_timer_callback, (void *)3, 1);
 }
 
 void ioc_discchange(int drive)

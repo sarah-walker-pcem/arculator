@@ -29,7 +29,7 @@
   correctly*/
 #define TV_X_MIN (197)
 #define TV_X_MAX (TV_X_MIN+768)
-#define TV_Y_MIN (6)
+#define TV_Y_MIN (21)
 #define TV_Y_MAX (TV_Y_MIN+288)
 
 /*TV horizontal settings for 12/24 MHz modes. Use 1152x576, scaled to 4:3*/

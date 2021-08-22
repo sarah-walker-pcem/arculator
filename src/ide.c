@@ -67,7 +67,7 @@ void resetide(ide_t *ide,
         memset(ide, 0, sizeof(ide_t));
 
         ide->drive=0;
-        ide->atastat=0x40;
+        ide->atastat = READY_STAT | DSC_STAT;
         ide->idebufferb = (uint8_t *)ide->idebuffer;
         ide->irq_raise = irq_raise;
         ide->irq_clear = irq_clear;
@@ -119,7 +119,7 @@ void writeidew(ide_t *ide, uint16_t val)
         if (ide->pos>=512)
         {
                 ide->pos=0;
-                ide->atastat=0x80;
+                ide->atastat = BUSY_STAT | DSC_STAT;
                 timer_set_delay_u64(&ide->timer, 1000 * TIMER_USEC);
         }
 }
@@ -134,7 +134,7 @@ void writeide(ide_t *ide, uint32_t addr, uint8_t val)
                 if (ide->pos>=512)
                 {
                         ide->pos=0;
-                        ide->atastat=0x80;
+                        ide->atastat = BUSY_STAT | DSC_STAT;
                         timer_set_delay_u64(&ide->timer, 1000 * TIMER_USEC);
                 }
                 return;
@@ -169,7 +169,7 @@ void writeide(ide_t *ide, uint32_t addr, uint8_t val)
                 {
                         case 0x10: /*Restore*/
                         case 0x70: /*Seek*/
-                        ide->atastat=0x40;
+                        ide->atastat = BUSY_STAT | READY_STAT;
                         timer_set_delay_u64(&ide->timer, 1000 * TIMER_USEC);
                         return;
                         case 0x20: /*Read sector*/
@@ -180,7 +180,7 @@ void writeide(ide_t *ide, uint32_t addr, uint8_t val)
                                 exit(-1);
                         }*/
                         rpclog("Read %i sectors from sector %i cylinder %i head %i\n",ide->secount,ide->sector,ide->cylinder,ide->head);
-                        ide->atastat=0x80;
+                        ide->atastat = BUSY_STAT | READY_STAT | DSC_STAT;
                         timer_set_delay_u64(&ide->timer, 1000 * TIMER_USEC);
                         return;
                         case 0x30: /*Write sector*/
@@ -191,36 +191,36 @@ void writeide(ide_t *ide, uint32_t addr, uint8_t val)
                                 exit(-1);
                         }*/
                         rpclog("Write %i sectors to sector %i cylinder %i head %i\n",ide->secount,ide->sector,ide->cylinder,ide->head);
-                        ide->atastat=0x08;
+                        ide->atastat = READY_STAT | DRQ_STAT | DSC_STAT;
                         ide->pos=0;
                         return;
                         case 0x40: /*Read verify*/
                         case 0x41:
 //                        rpclog("Read verify %i sectors from sector %i cylinder %i head %i\n",ide->secount,ide->sector,ide->cylinder,ide->head);
-                        ide->atastat=0x80;
+                        ide->atastat = BUSY_STAT | READY_STAT | DSC_STAT;
                         timer_set_delay_u64(&ide->timer, 1000 * TIMER_USEC);
                         return;
                         case 0x50:
 //                        rpclog("Format track %i head %i\n",ide->cylinder,ide->head);
-                        ide->atastat=0x08;
+                        ide->atastat = READY_STAT | DRQ_STAT | DSC_STAT;
 //                        idecallback=200;
                         ide->pos=0;
                         return;
                         case 0x91: /*Set parameters*/
-                        ide->atastat=0x80;
+                        ide->atastat = BUSY_STAT | READY_STAT | DSC_STAT;
                         timer_set_delay_u64(&ide->timer, 1000 * TIMER_USEC);
                         return;
                         case 0xA1: /*Identify packet device*/
                         case 0xE3: /*Idle*/
-                        ide->atastat=0x80;
+                        ide->atastat = BUSY_STAT | READY_STAT | DSC_STAT;
                         timer_set_delay_u64(&ide->timer, 1000 * TIMER_USEC);
                         return;
                         case 0xEC: /*Identify device*/
-                        ide->atastat=0x80;
+                        ide->atastat = BUSY_STAT | READY_STAT | DSC_STAT;
                         timer_set_delay_u64(&ide->timer, 1000 * TIMER_USEC);
                         return;
                         case 0xE5: /*Standby power check*/
-                        ide->atastat=0x80;
+                        ide->atastat = BUSY_STAT | READY_STAT | DSC_STAT;
                         timer_set_delay_u64(&ide->timer, 1000 * TIMER_USEC);
                         return;
 
@@ -236,7 +236,7 @@ void writeide(ide_t *ide, uint32_t addr, uint8_t val)
                 {
                         timer_set_delay_u64(&ide->timer, 5000 * TIMER_USEC);
                         ide->reset=1;
-                        ide->atastat=0x80;
+                        ide->atastat = BUSY_STAT | DSC_STAT;
 //                        rpclog("IDE Reset\n");
                 }
                 ide->fdisk=val;
@@ -262,7 +262,7 @@ uint8_t readide(ide_t *ide, uint32_t addr)
                 if (ide->pos>=512)
                 {
                         ide->pos=0;
-                        ide->atastat=0x40;
+                        ide->atastat = READY_STAT | DSC_STAT;
                 }
                 return temp;
                 case 0x1F1:
@@ -303,14 +303,13 @@ uint16_t readidew(ide_t *ide)
         if (ide->pos>=512)
         {
                 ide->pos=0;
-                ide->atastat=0x40;
+                ide->atastat = READY_STAT | DSC_STAT;
                 if (ide->command == 0x20 || ide->command == 0x21)
                 {
                         ide->secount--;
 //                        rpclog("Sector done - secount %i\n",ide->secount);
                         if (ide->secount)
                         {
-                                ide->atastat=0x08;
                                 ide->sector++;
                                 if (ide->sector==(ide->spt[ide->drive]+1))
                                 {
@@ -322,7 +321,7 @@ uint16_t readidew(ide_t *ide)
                                                 ide->cylinder++;
                                         }
                                 }
-                                ide->atastat=0x80;
+                                ide->atastat = BUSY_STAT | READY_STAT | DSC_STAT;
                                 timer_set_delay_u64(&ide->timer, 1000 * TIMER_USEC);
                         }
                 }
@@ -334,7 +333,7 @@ void resetide_drive(ide_t *ide)
 {
         timer_set_delay_u64(&ide->timer, 1000 * TIMER_USEC);
         ide->reset=1;
-        ide->atastat=0x80;
+        ide->atastat = BUSY_STAT | DSC_STAT;
         rpclog("Requested reset\n");
 }
 
@@ -346,14 +345,14 @@ void callbackide(void *p)
 //        rpclog("IDE callback %08X %i %02X\n",hdfile[ide->drive],ide->drive,ide->command);
 	if (!ide->hdfile[ide->drive])
 	{
-                ide->atastat=0x41;
+                ide->atastat = READY_STAT | DSC_STAT | ERR_STAT;
                 ide->error=4;
                 ide_raise_irq(ide);
 		return;
 	}
         if (ide->reset)
         {
-                ide->atastat=0x40;
+                ide->atastat = READY_STAT | DSC_STAT;
                 ide->error=0;
                 ide->secount=1;
                 ide->sector=1;
@@ -368,14 +367,14 @@ void callbackide(void *p)
                 case 0x10: /*Restore*/
                 case 0x70: /*Seek*/
 //                rpclog("Restore callback\n");
-                ide->atastat=0x40;
+                ide->atastat = READY_STAT | DSC_STAT;
                 ide_raise_irq(ide);
                 return;
                 case 0x20: /*Read sectors*/
                 case 0x21: /*Read sectors, no retry*/
                 if (!ide->secount)
                 {
-                        ide->atastat=0x40;
+                        ide->atastat = READY_STAT | DSC_STAT;
                         return;
                 }
                 readflash[0]=1;
@@ -390,7 +389,7 @@ void callbackide(void *p)
                 fseek(ide->hdfile[ide->drive],addr,SEEK_SET);
                 fread(ide->idebuffer,512,1,ide->hdfile[ide->drive]);
                 ide->pos=0;
-                ide->atastat=0x08;
+                ide->atastat = READY_STAT | DRQ_STAT | DSC_STAT;
 //                rpclog("Read sector callback %i %i %i offset %08X %i left %i\n",ide->sector,ide->cylinder,ide->head,addr,ide->secount,ide->spt[ide->drive]);
                 ide_raise_irq(ide);
                 return;
@@ -406,7 +405,7 @@ void callbackide(void *p)
                 ide->secount--;
                 if (ide->secount)
                 {
-                        ide->atastat=0x08;
+                        ide->atastat = READY_STAT | DRQ_STAT | DSC_STAT;
                         ide->pos=0;
                         ide->sector++;
                         if (ide->sector==(ide->spt[ide->drive]+1))
@@ -421,12 +420,12 @@ void callbackide(void *p)
                         }
                 }
                 else
-                   ide->atastat=0x40;
+                        ide->atastat = READY_STAT | DSC_STAT;
                 return;
                 case 0x40: /*Read verify*/
                 case 0x41:
                 ide->pos=0;
-                ide->atastat=0x40;
+                ide->atastat = READY_STAT | DSC_STAT;
 //                rpclog("Read verify callback %i %i %i offset %08X %i left\n",ide->sector,ide->cylinder,ide->head,addr,ide->secount);
                 ide_raise_irq(ide);
                 return;
@@ -440,7 +439,7 @@ void callbackide(void *p)
                 {
                         fwrite(ide->idebuffer,512,1,ide->hdfile[ide->drive]);
                 }
-                ide->atastat=0x40;
+                ide->atastat = READY_STAT | DSC_STAT;
                 ide_raise_irq(ide);
                 return;
                 case 0x91: /*Set parameters*/
@@ -448,13 +447,13 @@ void callbackide(void *p)
                 ide->hpc[ide->drive]=ide->head+1;
                 ide->cyl[ide->drive] = (ide->def_cyl[ide->drive] * ide->def_hpc[ide->drive] * ide->def_spt[ide->drive]) /
                                        (ide->hpc[ide->drive] * ide->spt[ide->drive]);
-                ide->atastat=0x40;
+                ide->atastat = READY_STAT | DSC_STAT;
                 ide_raise_irq(ide);
                 return;
                 case 0xA1:
                 case 0xE3:
                         case 0xE5:
-                ide->atastat=0x41;
+                ide->atastat = READY_STAT | DSC_STAT | ERR_STAT;
                 ide->error=4;
                 ide_raise_irq(ide);
                 return;
@@ -492,7 +491,7 @@ void callbackide(void *p)
                 ide->idebuffer[57] = (ide->cyl[ide->drive] * ide->hpc[ide->drive] * ide->spt[ide->drive]) & 0xffff;
                 ide->idebuffer[58] = (ide->cyl[ide->drive] * ide->hpc[ide->drive] * ide->spt[ide->drive]) >> 16;
                 ide->pos=0;
-                ide->atastat=0x08;
+                ide->atastat = READY_STAT | DRQ_STAT | DSC_STAT;
 //                rpclog("ID callback\n");
                 ide_raise_irq(ide);
                 return;

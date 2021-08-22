@@ -107,7 +107,28 @@ static const podule_header_t arcrom_podule_header =
         }
 };
 
+static const podule_header_t arcrom_a3k_podule_header =
+{
+        .version = PODULE_API_VERSION,
+        .flags = PODULE_FLAGS_UNIQUE | PODULE_FLAGS_8BIT,
+        .short_name = "arculator_rom",
+        .name = "Arculator support modules",
+        .functions =
+        {
+                .init = arcrom_init,
+                .close = arcrom_close,
+                .reset = arcrom_reset,
+                .read_b = arcrom_read_b,
+                .write_b = arcrom_write_b
+        }
+};
+
 const podule_header_t *arcrom_probe(const podule_callbacks_t *callbacks, char *path)
 {
         return &arcrom_podule_header;
+}
+
+const podule_header_t *arcrom_a3k_probe(const podule_callbacks_t *callbacks, char *path)
+{
+        return &arcrom_a3k_podule_header;
 }

@@ -169,6 +169,8 @@ typedef struct podule_config_t
 
 /*Only one instance of this podule allowed per system*/
 #define PODULE_FLAGS_UNIQUE (1 << 0)
+/*Podule is 8-bit minipodule (A30x0/A4000)*/
+#define PODULE_FLAGS_8BIT (1 << 1)
 
 typedef struct podule_header_t
 {

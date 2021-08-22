@@ -1,0 +1,2 @@
+This directory contains the ROM for the ZIDEFS 8-bit IDE Controller. It is
+called 'ZIDEFSROM' and is a maximum of 16kB long.

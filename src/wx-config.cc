@@ -251,6 +251,13 @@ enum
 #define MONITOR_LCD_A4 (MONITOR_STANDARD_MASK | MONITOR_MULTISYNC_MASK | MONITOR_VGA_MASK | \
                 MONITOR_LCD_MASK)
 
+enum
+{
+        PODULE_NONE = 0,
+        PODULE_16BIT,
+        PODULE_8BIT
+};
+
 typedef struct machine_preset_t
 {
         const char *name;
@@ -263,25 +270,26 @@ typedef struct machine_preset_t
         unsigned int allowed_romset_mask;
         unsigned int allowed_monitor_mask;
         int default_cpu, default_mem, default_memc, io;
+        int podule_type[4];
 } machine_preset_t;
 
 static const machine_preset_t presets[] =
 {
-        {"Archimedes 305",   "a305",   "ARM2, 512kB RAM, MEMC1, Old IO, Arthur",               MACHINE_TYPE_NORMAL, CPU_ARM2_AND_LATER,    MEM_MIN_512K, MEMC_MIN_MEMC1,     ROM_ALL,       MONITOR_NO_MONO, CPU_ARM2,    MEM_512K, MEMC_MEMC1,     IO_OLD},
-        {"Archimedes 310",   "a310",   "ARM2, 1MB RAM, MEMC1, Old IO, Arthur",                 MACHINE_TYPE_NORMAL, CPU_ARM2_AND_LATER,    MEM_MIN_1M,   MEMC_MIN_MEMC1,     ROM_ALL,       MONITOR_NO_MONO, CPU_ARM2,    MEM_1M,   MEMC_MEMC1,     IO_OLD},
-        {"Archimedes 440",   "a440",   "ARM2, 1MB RAM, MEMC1, Old IO + ST-506 HD, Arthur",     MACHINE_TYPE_NORMAL, CPU_ARM2_AND_LATER,    MEM_MIN_4M,   MEMC_MIN_MEMC1,     ROM_ALL,       MONITOR_ALL,     CPU_ARM2,    MEM_4M,   MEMC_MEMC1,     IO_OLD_ST506},
-        {"Archimedes 410/1", "a410/1", "ARM2, 1MB RAM, MEMC1A, Old IO + ST-506 HD, RISC OS 2", MACHINE_TYPE_NORMAL, CPU_ARM2_AND_LATER,    MEM_MIN_1M,   MEMC_MIN_MEMC1A,    ROM_RISCOS,    MONITOR_ALL,     CPU_ARM2,    MEM_1M,   MEMC_MEMC1A_8,  IO_OLD_ST506},
-        {"Archimedes 420/1", "a420/1", "ARM2, 2MB RAM, MEMC1A, Old IO + ST-506 HD, RISC OS 2", MACHINE_TYPE_NORMAL, CPU_ARM2_AND_LATER,    MEM_MIN_2M,   MEMC_MIN_MEMC1A,    ROM_RISCOS,    MONITOR_ALL,     CPU_ARM2,    MEM_2M,   MEMC_MEMC1A_8,  IO_OLD_ST506},
-        {"Archimedes 440/1", "a440/1", "ARM2, 4MB RAM, MEMC1A, Old IO + ST-506 HD, RISC OS 2", MACHINE_TYPE_NORMAL, CPU_ARM2_AND_LATER,    MEM_MIN_4M,   MEMC_MIN_MEMC1A,    ROM_RISCOS,    MONITOR_ALL,     CPU_ARM2,    MEM_4M,   MEMC_MEMC1A_8,  IO_OLD_ST506},
-        {"A3000",            "a3000",  "ARM2, 1MB RAM, MEMC1A, Old IO, RISC OS 2",             MACHINE_TYPE_NORMAL, CPU_ARM2_AND_LATER,    MEM_MIN_1M,   MEMC_MIN_MEMC1A,    ROM_RISCOS,    MONITOR_NO_MONO, CPU_ARM2,    MEM_1M,   MEMC_MEMC1A_8,  IO_OLD},
-        {"Archimedes 540",   "a540",   "ARM3/26, 4MB RAM, MEMC1A, Old IO, RISC OS 2.01",       MACHINE_TYPE_NORMAL, CPU_ARM3_26_AND_LATER, MEM_MIN_4M,   MEMC_MIN_MEMC1A_12, ROM_RISCOS201, MONITOR_ALL,     CPU_ARM3_26, MEM_4M,   MEMC_MEMC1A_12, IO_OLD},
-        {"A5000",            "a5000",  "ARM3/25, 1MB RAM, MEMC1A, New IO, RISC OS 3.0",        MACHINE_TYPE_NORMAL, CPU_ARM3_25_AND_LATER, MEM_MIN_1M,   MEMC_MIN_MEMC1A_12, ROM_RISCOS3,   MONITOR_NO_MONO, CPU_ARM3_25, MEM_2M,   MEMC_MEMC1A_12, IO_NEW},
-        {"A4",               "a4",     "ARM3/24, 2MB RAM, MEMC1A, New IO, RISC OS 3.0",        MACHINE_TYPE_A4,     CPU_ARM3_24_ONLY,      MEM_2M_4M,    MEMC_MIN_MEMC1A_12, ROM_RISCOS3,   MONITOR_LCD_A4,  CPU_ARM3_24, MEM_2M,   MEMC_MEMC1A_12, IO_NEW},
-        {"A3010",            "a3010",  "ARM250, 1MB RAM, MEMC1A, New IO, RISC OS 3.1",         MACHINE_TYPE_NORMAL, CPU_ARM250_ONLY,       MEM_1M_4M,    MEMC_MIN_MEMC1A_12, ROM_RISCOS31,  MONITOR_NO_MONO, CPU_ARM250,  MEM_1M,   MEMC_MEMC1A_12, IO_NEW},
-        {"A3020",            "a3020",  "ARM250, 2MB RAM, MEMC1A, New IO, RISC OS 3.1",         MACHINE_TYPE_NORMAL, CPU_ARM250_ONLY,       MEM_2M_4M,    MEMC_MIN_MEMC1A_12, ROM_RISCOS31,  MONITOR_NO_MONO, CPU_ARM250,  MEM_2M,   MEMC_MEMC1A_12, IO_NEW},
-        {"A4000",            "a4000",  "ARM250, 2MB RAM, MEMC1A, New IO, RISC OS 3.1",         MACHINE_TYPE_NORMAL, CPU_ARM250_ONLY,       MEM_2M_4M,    MEMC_MIN_MEMC1A_12, ROM_RISCOS31,  MONITOR_NO_MONO, CPU_ARM250,  MEM_2M,   MEMC_MEMC1A_12, IO_NEW},
-        {"A5000a",           "a5000a", "ARM3/33, 4MB RAM, MEMC1A, New IO, RISC OS 3.1",        MACHINE_TYPE_NORMAL, CPU_ARM3_33_AND_LATER, MEM_MIN_4M,   MEMC_MIN_MEMC1A_12, ROM_RISCOS31,  MONITOR_NO_MONO, CPU_ARM3_33, MEM_4M,   MEMC_MEMC1A_12, IO_NEW},
-        {"A500 (prototype)", "a500",   "ARM2, 4MB RAM, MEMC1, Old IO + ST-506 HD, Arthur",     MACHINE_TYPE_NORMAL, CPU_ARM2_AND_LATER,    MEM_4M_ONLY,  MEMC_MIN_MEMC1,     ROM_A500,      MONITOR_ALL,     CPU_ARM2,    MEM_4M,   MEMC_MEMC1,     IO_OLD_ST506},
+        {"Archimedes 305",   "a305",   "ARM2, 512kB RAM, MEMC1, Old IO, Arthur",               MACHINE_TYPE_NORMAL, CPU_ARM2_AND_LATER,    MEM_MIN_512K, MEMC_MIN_MEMC1,     ROM_ALL,       MONITOR_NO_MONO, CPU_ARM2,    MEM_512K, MEMC_MEMC1,     IO_OLD,       PODULE_16BIT, PODULE_16BIT, PODULE_16BIT, PODULE_16BIT},
+        {"Archimedes 310",   "a310",   "ARM2, 1MB RAM, MEMC1, Old IO, Arthur",                 MACHINE_TYPE_NORMAL, CPU_ARM2_AND_LATER,    MEM_MIN_1M,   MEMC_MIN_MEMC1,     ROM_ALL,       MONITOR_NO_MONO, CPU_ARM2,    MEM_1M,   MEMC_MEMC1,     IO_OLD,       PODULE_16BIT, PODULE_16BIT, PODULE_16BIT, PODULE_16BIT},
+        {"Archimedes 440",   "a440",   "ARM2, 1MB RAM, MEMC1, Old IO + ST-506 HD, Arthur",     MACHINE_TYPE_NORMAL, CPU_ARM2_AND_LATER,    MEM_MIN_4M,   MEMC_MIN_MEMC1,     ROM_ALL,       MONITOR_ALL,     CPU_ARM2,    MEM_4M,   MEMC_MEMC1,     IO_OLD_ST506, PODULE_16BIT, PODULE_16BIT, PODULE_16BIT, PODULE_16BIT},
+        {"Archimedes 410/1", "a410/1", "ARM2, 1MB RAM, MEMC1A, Old IO + ST-506 HD, RISC OS 2", MACHINE_TYPE_NORMAL, CPU_ARM2_AND_LATER,    MEM_MIN_1M,   MEMC_MIN_MEMC1A,    ROM_RISCOS,    MONITOR_ALL,     CPU_ARM2,    MEM_1M,   MEMC_MEMC1A_8,  IO_OLD_ST506, PODULE_16BIT, PODULE_16BIT, PODULE_16BIT, PODULE_16BIT},
+        {"Archimedes 420/1", "a420/1", "ARM2, 2MB RAM, MEMC1A, Old IO + ST-506 HD, RISC OS 2", MACHINE_TYPE_NORMAL, CPU_ARM2_AND_LATER,    MEM_MIN_2M,   MEMC_MIN_MEMC1A,    ROM_RISCOS,    MONITOR_ALL,     CPU_ARM2,    MEM_2M,   MEMC_MEMC1A_8,  IO_OLD_ST506, PODULE_16BIT, PODULE_16BIT, PODULE_16BIT, PODULE_16BIT},
+        {"Archimedes 440/1", "a440/1", "ARM2, 4MB RAM, MEMC1A, Old IO + ST-506 HD, RISC OS 2", MACHINE_TYPE_NORMAL, CPU_ARM2_AND_LATER,    MEM_MIN_4M,   MEMC_MIN_MEMC1A,    ROM_RISCOS,    MONITOR_ALL,     CPU_ARM2,    MEM_4M,   MEMC_MEMC1A_8,  IO_OLD_ST506, PODULE_16BIT, PODULE_16BIT, PODULE_16BIT, PODULE_16BIT},
+        {"A3000",            "a3000",  "ARM2, 1MB RAM, MEMC1A, Old IO, RISC OS 2",             MACHINE_TYPE_NORMAL, CPU_ARM2_AND_LATER,    MEM_MIN_1M,   MEMC_MIN_MEMC1A,    ROM_RISCOS,    MONITOR_NO_MONO, CPU_ARM2,    MEM_1M,   MEMC_MEMC1A_8,  IO_OLD,       PODULE_16BIT, PODULE_8BIT,  PODULE_NONE,  PODULE_NONE},
+        {"Archimedes 540",   "a540",   "ARM3/26, 4MB RAM, MEMC1A, Old IO, RISC OS 2.01",       MACHINE_TYPE_NORMAL, CPU_ARM3_26_AND_LATER, MEM_MIN_4M,   MEMC_MIN_MEMC1A_12, ROM_RISCOS201, MONITOR_ALL,     CPU_ARM3_26, MEM_4M,   MEMC_MEMC1A_12, IO_OLD,       PODULE_16BIT, PODULE_16BIT, PODULE_16BIT, PODULE_16BIT},
+        {"A5000",            "a5000",  "ARM3/25, 1MB RAM, MEMC1A, New IO, RISC OS 3.0",        MACHINE_TYPE_NORMAL, CPU_ARM3_25_AND_LATER, MEM_MIN_1M,   MEMC_MIN_MEMC1A_12, ROM_RISCOS3,   MONITOR_NO_MONO, CPU_ARM3_25, MEM_2M,   MEMC_MEMC1A_12, IO_NEW,       PODULE_16BIT, PODULE_16BIT, PODULE_16BIT, PODULE_16BIT},
+        {"A4",               "a4",     "ARM3/24, 2MB RAM, MEMC1A, New IO, RISC OS 3.0",        MACHINE_TYPE_A4,     CPU_ARM3_24_ONLY,      MEM_2M_4M,    MEMC_MIN_MEMC1A_12, ROM_RISCOS3,   MONITOR_LCD_A4,  CPU_ARM3_24, MEM_2M,   MEMC_MEMC1A_12, IO_NEW,       PODULE_NONE,  PODULE_8BIT,  PODULE_NONE,  PODULE_NONE},
+        {"A3010",            "a3010",  "ARM250, 1MB RAM, MEMC1A, New IO, RISC OS 3.1",         MACHINE_TYPE_NORMAL, CPU_ARM250_ONLY,       MEM_1M_4M,    MEMC_MIN_MEMC1A_12, ROM_RISCOS31,  MONITOR_NO_MONO, CPU_ARM250,  MEM_1M,   MEMC_MEMC1A_12, IO_NEW,       PODULE_NONE,  PODULE_8BIT,  PODULE_NONE,  PODULE_NONE},
+        {"A3020",            "a3020",  "ARM250, 2MB RAM, MEMC1A, New IO, RISC OS 3.1",         MACHINE_TYPE_NORMAL, CPU_ARM250_ONLY,       MEM_2M_4M,    MEMC_MIN_MEMC1A_12, ROM_RISCOS31,  MONITOR_NO_MONO, CPU_ARM250,  MEM_2M,   MEMC_MEMC1A_12, IO_NEW,       PODULE_NONE,  PODULE_8BIT,  PODULE_NONE,  PODULE_NONE},
+        {"A4000",            "a4000",  "ARM250, 2MB RAM, MEMC1A, New IO, RISC OS 3.1",         MACHINE_TYPE_NORMAL, CPU_ARM250_ONLY,       MEM_2M_4M,    MEMC_MIN_MEMC1A_12, ROM_RISCOS31,  MONITOR_NO_MONO, CPU_ARM250,  MEM_2M,   MEMC_MEMC1A_12, IO_NEW,       PODULE_NONE,  PODULE_8BIT,  PODULE_NONE,  PODULE_NONE},
+        {"A5000a",           "a5000a", "ARM3/33, 4MB RAM, MEMC1A, New IO, RISC OS 3.1",        MACHINE_TYPE_NORMAL, CPU_ARM3_33_AND_LATER, MEM_MIN_4M,   MEMC_MIN_MEMC1A_12, ROM_RISCOS31,  MONITOR_NO_MONO, CPU_ARM3_33, MEM_4M,   MEMC_MEMC1A_12, IO_NEW,       PODULE_16BIT, PODULE_16BIT, PODULE_16BIT, PODULE_16BIT},
+        {"A500 (prototype)", "a500",   "ARM2, 4MB RAM, MEMC1, Old IO + ST-506 HD, Arthur",     MACHINE_TYPE_NORMAL, CPU_ARM2_AND_LATER,    MEM_4M_ONLY,  MEMC_MIN_MEMC1,     ROM_A500,      MONITOR_ALL,     CPU_ARM2,    MEM_4M,   MEMC_MEMC1,     IO_OLD_ST506, PODULE_16BIT, PODULE_16BIT, PODULE_16BIT, PODULE_16BIT},
         {"", 0, 0, 0, 0, 0}
 };
 
@@ -672,21 +680,37 @@ void ConfigDialog::UpdateList(int cpu, int mem, int memc, int fpu, int io)
 void ConfigDialog::PopulatePoduleList(int slot_nr, wxComboBox *cbox)
 {
         int c = 0;
+        int slot_type = presets[config_preset].podule_type[slot_nr];
         
         cbox->Clear();
         cbox->Append("None");
         cbox->SetValue("None");
-        while (podule_get_name(c))
+        if (slot_type != PODULE_NONE)
         {
-                cbox->Append(podule_get_name(c));
-                if (!strcmp(config_podules[slot_nr], podule_get_short_name(c)))
-                        cbox->SetValue(podule_get_name(c));
-                c++;
+                cbox->Enable();
+                while (podule_get_name(c))
+                {
+                        uint32_t flags = podule_get_flags(c);
+
+                        if ((!(podule_get_flags(c) & PODULE_FLAGS_8BIT) && slot_type == PODULE_16BIT) ||
+                            ((podule_get_flags(c) & PODULE_FLAGS_8BIT) && slot_type == PODULE_8BIT))
+                        {
+                                cbox->Append(podule_get_name(c));
+                                if (!strcmp(config_podules[slot_nr], podule_get_short_name(c)))
+                                        cbox->SetValue(podule_get_name(c));
+                        }
+                        c++;
+                }
         }
+        else
+                cbox->Disable();
 }
 
 bool ConfigDialog::PoduleGetConfigEnable(int slot_nr)
 {
+        if (presets[config_preset].podule_type[slot_nr] == PODULE_NONE)
+                return false;
+
         const podule_header_t *podule = podule_find(config_podules[slot_nr]);
         
         if (podule && podule->config)
@@ -877,6 +901,7 @@ void ConfigDialog::OnMachine(wxCommandEvent &event)
         config_io   = presets[config_preset].io;
 
         UpdateList(config_cpu, config_mem, config_memc, config_fpu, config_io);
+        PopulatePoduleLists();
 }
 
 void ConfigDialog::OnComboCPU(wxCommandEvent &event)
@@ -1058,10 +1083,10 @@ void ConfigDialog::OnHDEject(wxCommandEvent &event)
 void ConfigDialog::OnComboPodule(wxCommandEvent &event)
 {
         wxComboBox *cbox = (wxComboBox *)this->FindWindow(event.GetId());
-        int sel_nr = cbox->GetCurrentSelection();
+        const char *sel_s = cbox->GetStringSelection().c_str();
         wxButton *config_button;
         int slot_nr;
-        
+
         if (event.GetId() == XRCID("IDC_COMBO_PODULE0"))
         {
                 slot_nr = 0;
@@ -1081,6 +1106,16 @@ void ConfigDialog::OnComboPodule(wxCommandEvent &event)
         {
                 slot_nr = 3;
                 config_button = (wxButton *)this->FindWindow(XRCID("IDC_CONFIG_PODULE3"));
+        }
+
+        int sel_nr = 0;
+        for (int i = 0; podule_get_name(i) != NULL; i++)
+        {
+                if (!strcmp(sel_s, podule_get_name(i)))
+                {
+                        sel_nr = i+1;
+                        break;
+                }
         }
 
         if (!sel_nr)

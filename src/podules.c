@@ -11,6 +11,7 @@
 #include "ide_idea.h"
 #include "ide_riscdev.h"
 #include "ide_zidefs.h"
+#include "ide_zidefs_a3k.h"
 #include "ioc.h"
 #include "podules.h"
 #include "st506_akd52.h"
@@ -29,13 +30,18 @@ static podule_list *podule_list_head = NULL;
 
 static const podule_header_t *(*internal_podules[])(const podule_callbacks_t *callbacks, char *path) =
 {
+        /*16-bit podules*/
         akd52_probe,
         arcrom_probe,
         colourcard_probe,
         g16_probe,
         idea_ide_probe,
         riscdev_ide_probe,
-        zidefs_ide_probe
+        zidefs_ide_probe,
+
+        /*8-bit minipodules*/
+        arcrom_a3k_probe,
+        zidefs_a3k_ide_probe
 };
 
 #define NR_INTERNAL_PODULES (sizeof(internal_podules) / sizeof(internal_podules[0]))

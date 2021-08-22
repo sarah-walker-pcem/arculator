@@ -972,8 +972,8 @@
 									<option>0</option>
 									<flag>wxALIGN_CENTER_VERTICAL</flag>
 									<border>5</border>
-									<object class="wxStaticText" name="m_staticTextP0">
-										<size>55,-1</size>
+									<object class="wxStaticText" name="IDC_TEXT_PODULE0">
+										<size>75,-1</size>
 										<label>Podule 0 :</label>
 										<wrap>-1</wrap>
 									</object>
@@ -1003,8 +1003,8 @@
 									<option>0</option>
 									<flag>wxALIGN_CENTER_VERTICAL</flag>
 									<border>5</border>
-									<object class="wxStaticText" name="m_staticTextP1">
-										<size>55,-1</size>
+									<object class="wxStaticText" name="IDC_TEXT_PODULE1">
+										<size>75,-1</size>
 										<label>Podule 1 :</label>
 										<wrap>-1</wrap>
 									</object>
@@ -1034,8 +1034,8 @@
 									<option>0</option>
 									<flag>wxALIGN_CENTER_VERTICAL</flag>
 									<border>5</border>
-									<object class="wxStaticText" name="m_staticTextP2">
-										<size>55,-1</size>
+									<object class="wxStaticText" name="IDC_TEXT_PODULE2">
+										<size>75,-1</size>
 										<label>Podule 2 :</label>
 										<wrap>-1</wrap>
 									</object>
@@ -1065,8 +1065,8 @@
 									<option>0</option>
 									<flag>wxALIGN_CENTER_VERTICAL</flag>
 									<border>5</border>
-									<object class="wxStaticText" name="m_staticTextP3">
-										<size>55,-1</size>
+									<object class="wxStaticText" name="IDC_TEXT_PODULE3">
+										<size>75,-1</size>
 										<label>Podule 3 :</label>
 										<wrap>-1</wrap>
 									</object>

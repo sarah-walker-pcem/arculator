@@ -321,7 +321,8 @@ private:
 	void PopulatePoduleList(int nr, wxComboBox *cbox);
 	void PopulatePoduleLists(void);
 	bool PoduleGetConfigEnable(int slot_nr);
-	
+        wxString PoduleGetLabel(int slot_nr);
+
 	int get_preset(char *machine);
 	int get_preset_config(char *machine);
 
@@ -719,6 +720,20 @@ bool ConfigDialog::PoduleGetConfigEnable(int slot_nr)
         return false;
 }
 
+wxString ConfigDialog::PoduleGetLabel(int slot_nr)
+{
+        wxString s;
+
+        if (presets[config_preset].podule_type[slot_nr] == PODULE_8BIT)
+                s.Printf("Minipodule %i :", slot_nr);
+        else if (presets[config_preset].podule_type[slot_nr] == PODULE_NONE)
+                s.Printf("Podule %i (N/A)", slot_nr);
+        else
+                s.Printf("Podule %i :", slot_nr);
+
+        return s;
+}
+
 void ConfigDialog::PopulatePoduleLists(void)
 {
         PopulatePoduleList(0, (wxComboBox *)this->FindWindow(XRCID("IDC_COMBO_PODULE0")));
@@ -730,6 +745,11 @@ void ConfigDialog::PopulatePoduleLists(void)
         ((wxButton *)this->FindWindow(XRCID("IDC_CONFIG_PODULE1")))->Enable(PoduleGetConfigEnable(1));
         ((wxButton *)this->FindWindow(XRCID("IDC_CONFIG_PODULE2")))->Enable(PoduleGetConfigEnable(2));
         ((wxButton *)this->FindWindow(XRCID("IDC_CONFIG_PODULE3")))->Enable(PoduleGetConfigEnable(3));
+
+        ((wxButton *)this->FindWindow(XRCID("IDC_TEXT_PODULE0")))->SetLabel(PoduleGetLabel(0));
+        ((wxButton *)this->FindWindow(XRCID("IDC_TEXT_PODULE1")))->SetLabel(PoduleGetLabel(1));
+        ((wxButton *)this->FindWindow(XRCID("IDC_TEXT_PODULE2")))->SetLabel(PoduleGetLabel(2));
+        ((wxButton *)this->FindWindow(XRCID("IDC_TEXT_PODULE3")))->SetLabel(PoduleGetLabel(3));
 }
 
 void ConfigDialog::OnOK(wxCommandEvent &event)

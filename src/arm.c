@@ -4,7 +4,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include "arc.h"
-#include "arcrom.h"
 #include "arm.h"
 #include "cp15.h"
 #include "disc.h"

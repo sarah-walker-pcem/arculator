@@ -4,7 +4,6 @@
 #include <string.h>
 
 #include "arc.h"
-#include "arcrom.h"
 #include "colourcard.h"
 #include "config.h"
 #include "g16.h"
@@ -32,7 +31,6 @@ static const podule_header_t *(*internal_podules[])(const podule_callbacks_t *ca
 {
         /*16-bit podules*/
         akd52_probe,
-        arcrom_probe,
         colourcard_probe,
         g16_probe,
         idea_ide_probe,
@@ -40,7 +38,6 @@ static const podule_header_t *(*internal_podules[])(const podule_callbacks_t *ca
         zidefs_ide_probe,
 
         /*8-bit minipodules*/
-        arcrom_a3k_probe,
         zidefs_a3k_ide_probe
 };
 

@@ -42,6 +42,7 @@ int realmemsize;
 uint32_t *ram,*rom;
 uint8_t *rom_5th_column;
 uint8_t *romb;
+uint8_t *rom_arcrom;
 uint32_t *mempoint[0x4000];
 uint8_t *mempointb[0x4000];
 int memstat[0x4000];
@@ -55,13 +56,17 @@ void initmem(int memsize)
         realmemsize=memsize;
         ram=(uint32_t *)malloc(memsize*1024);
         rom=(uint32_t *)malloc(0x200000);
+        rom_arcrom = malloc(0x10000);
         romb = (uint8_t *)rom;
         rom_5th_column = (uint8_t *)malloc(0x20000);
         for (c=0;c<0x4000;c++) memstat[c]=0;
         for (c=0x2000;c<0x3000;c++) memstat[c]=3;
         for (c=0x2000;c<0x3000;c++) mempoint[c]=&ram[(c&d)<<10];
-        for (c=0x3800;c<0x4000;c++) memstat[c]=5;
+        for (c=0x3800;c<0x3fc0;c++) memstat[c]=5;
         for (c=0x3800;c<0x4000;c++) mempoint[c]=&rom[(c&0x1FF)<<10];
+        for (c = 0x3fc0; c < 0x4000; c++) /*Map support ROM at end of address space*/
+                memstat[c] = support_rom_enabled ? 0 : 5;
+
         memset(ram,0,memsize*1024);
         memstat[0]=1;
         mempoint[0]=rom;
@@ -133,6 +138,9 @@ void resizemem(int memsize) /*memsize is 4096,8192,16384*/
         memset(ram,0,memsize*1024);
         realmemsize=memsize;
         for (c=0;c<0x4000;c++) mempointb[c]=(uint8_t *)mempoint[c];
+
+        for (c = 0x3fc0; c < 0x4000; c++) /*Map support ROM at end of address space*/
+                memstat[c] = support_rom_enabled ? 0 : 5;
 }
 
 void resetpagesize(int pagesize)
@@ -314,6 +322,13 @@ uint8_t readmemfb(uint32_t a)
                 if ((a & 3) == 3)
                         return rom_5th_column[(a >> 2) & 0x1ffff];
                 return 0xff;
+
+                case 0x3f: /*Expansion ROMs*/
+                if (!support_rom_enabled)
+                        break;
+                if ((a & 3) == 3)
+                        return rom_arcrom[(a >> 2) & 0xffff];
+                return 0xff;
         }
 //        rpclog("Data abort b %07X\n",a);
         databort=1;
@@ -436,6 +451,11 @@ uint32_t readmemfl(uint32_t a)
                 return 0xFFFF;
                 case 0x34: case 0x35: case 0x36: case 0x37: /*Expansion ROMs*/
                 return (rom_5th_column[(a >> 2) & 0x1ffff] << 24) | 0xffffff;
+
+                case 0x3f: /*Expansion ROMs*/
+                if (!support_rom_enabled)
+                        break;
+                return (rom_arcrom[(a >> 2) & 0xffff] << 24) | 0xffffff;
         }
 //        rpclog("Data abort l %07X\n",a);
         databort=1;

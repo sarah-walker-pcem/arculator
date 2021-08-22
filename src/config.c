@@ -30,6 +30,7 @@ uint32_t unique_id;
 char joystick_if[16];
 
 char _5th_column_fn[512];
+int support_rom_enabled;
 
 char *get_filename(char *s)
 {
@@ -788,6 +789,7 @@ void loadconfig()
         else
                 _5th_column_fn[0] = 0;
 
+        support_rom_enabled = config_get_int(CFG_MACHINE, NULL, "support_rom_enabled", 1);
 }
 
 void saveconfig()
@@ -870,6 +872,7 @@ void saveconfig()
         config_set_string(CFG_MACHINE, NULL, "podule_2", podule_names[2]);
         config_set_string(CFG_MACHINE, NULL, "podule_3", podule_names[3]);
         config_set_string(CFG_MACHINE, NULL, "5th_column_fn", _5th_column_fn);
+        config_set_int(CFG_MACHINE, NULL, "support_rom_enabled", support_rom_enabled);
 
         config_save(CFG_GLOBAL, config_file);
         config_save(CFG_MACHINE, machine_config_file);

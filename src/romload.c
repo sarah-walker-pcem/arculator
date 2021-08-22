@@ -281,3 +281,14 @@ void rom_load_5th_column(void)
         else
                 rpclog("File not found\n");
 }
+
+void rom_load_arc_support_extrom(void)
+{
+        char fn[512];
+        FILE *f;
+
+        append_filename(fn, exname, "roms/arcrom_ext", 511);
+        f = fopen(fn, "rb");
+        fread(rom_arcrom, 0x10000, 1, f);
+        fclose(f);
+}

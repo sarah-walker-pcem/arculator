@@ -502,6 +502,10 @@ void ConfigDialog::CommonInit(wxWindow *parent, bool is_running)
 
         tctrl = (wxTextCtrl *)this->FindWindow(XRCID("IDC_EDIT_5THCOL"));
         tctrl->SetValue(_5th_column_fn);
+
+        wxCheckBox *cbctrl = (wxCheckBox *)this->FindWindow(XRCID("IDC_CHECK_ASROM"));
+        cbctrl->SetValue(support_rom_enabled);
+        cbctrl->Enable(config_rom >= ROM_RISCOS_300);
 }
 
 ConfigDialog::ConfigDialog(wxWindow *parent, bool is_running)
@@ -515,6 +519,8 @@ ConfigDialog::ConfigDialog(wxWindow *parent, bool is_running)
         config_io = fdctype ? IO_NEW : (st506_present ? IO_OLD_ST506 : IO_OLD);
         config_monitor = monitor_type;
         config_unique_id = unique_id;
+
+        config_rom = romset;
 
         CommonInit(parent, is_running);
 
@@ -539,8 +545,6 @@ ConfigDialog::ConfigDialog(wxWindow *parent, bool is_running)
                 config_mem = MEM_16M;
                 break;
         }
-
-        config_rom = romset;
 
         UpdateList(config_cpu, config_mem, config_memc, config_fpu, config_io);
 
@@ -909,6 +913,8 @@ void ConfigDialog::OnOK(wxCommandEvent &event)
         tctrl = (wxTextCtrl *)this->FindWindow(XRCID("IDC_EDIT_5THCOL"));
         strcpy(_5th_column_fn, tctrl->GetValue().mb_str());
 
+        support_rom_enabled = ((wxCheckBox *)this->FindWindow(XRCID("IDC_CHECK_ASROM")))->GetValue();
+
         saveconfig();
         if (running)
                 arc_reset();
@@ -995,6 +1001,7 @@ void ConfigDialog::OnComboOS(wxCommandEvent &event)
         strncpy(rom_c_s, rom_s, sizeof(rom_c_s));
 
         config_rom = get_rom(rom_c_s);
+        ((wxCheckBox *)FindWindow(XRCID("IDC_CHECK_ASROM")))->Enable(config_rom >= ROM_RISCOS_300);
 }
 
 void ConfigDialog::OnComboMonitor(wxCommandEvent &event)

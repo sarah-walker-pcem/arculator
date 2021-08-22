@@ -263,7 +263,7 @@ void rom_load_5th_column(void)
         char fn[512];
 
         rpclog("rom_load_5th_column: machine_type=%i\n", machine_type);
-        memset(rom_5th_column, 0xff, 0x10000);
+        memset(rom_5th_column, 0xff, 0x20000);
 
         strcpy(fn, _5th_column_fn);
 
@@ -275,7 +275,7 @@ void rom_load_5th_column(void)
         f = fopen(fn, "rb");
         if (f)
         {
-                fread(rom_5th_column, 0x10000, 1, f);
+                fread(rom_5th_column, 0x20000, 1, f);
                 fclose(f);
         }
         else

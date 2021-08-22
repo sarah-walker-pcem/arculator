@@ -56,7 +56,7 @@ void initmem(int memsize)
         ram=(uint32_t *)malloc(memsize*1024);
         rom=(uint32_t *)malloc(0x200000);
         romb = (uint8_t *)rom;
-        rom_5th_column = (uint8_t *)malloc(0x10000);
+        rom_5th_column = (uint8_t *)malloc(0x20000);
         for (c=0;c<0x4000;c++) memstat[c]=0;
         for (c=0x2000;c<0x3000;c++) memstat[c]=3;
         for (c=0x2000;c<0x3000;c++) mempoint[c]=&ram[(c&d)<<10];
@@ -312,7 +312,7 @@ uint8_t readmemfb(uint32_t a)
 
                 case 0x34: case 0x35: case 0x36: case 0x37: /*Expansion ROMs*/
                 if ((a & 3) == 3)
-                        return rom_5th_column[(a >> 2) & 0xffff];
+                        return rom_5th_column[(a >> 2) & 0x1ffff];
                 return 0xff;
         }
 //        rpclog("Data abort b %07X\n",a);
@@ -435,7 +435,7 @@ uint32_t readmemfl(uint32_t a)
                 }
                 return 0xFFFF;
                 case 0x34: case 0x35: case 0x36: case 0x37: /*Expansion ROMs*/
-                return (rom_5th_column[(a >> 2) & 0xffff] << 24) | 0xffffff;
+                return (rom_5th_column[(a >> 2) & 0x1ffff] << 24) | 0xffffff;
         }
 //        rpclog("Data abort l %07X\n",a);
         databort=1;

@@ -82,5 +82,6 @@ extern int hd_spt[2], hd_hpc[2], hd_cyl[2];
 extern char machine[7];
 extern uint32_t unique_id;
 extern char joystick_if[16];
+extern char _5th_column_fn[512];
 
 int machine_is_a500(void);

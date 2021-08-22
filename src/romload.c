@@ -265,16 +265,19 @@ void rom_load_5th_column(void)
         rpclog("rom_load_5th_column: machine_type=%i\n", machine_type);
         memset(rom_5th_column, 0xff, 0x10000);
 
-        switch (machine_type)
-        {
-                case MACHINE_TYPE_A4:
+        strcpy(fn, _5th_column_fn);
+
+        /*If machine is an A4 and no 5th column ROM is specified, load in the default*/
+        if (machine_type == MACHINE_TYPE_A4 && _5th_column_fn[0] == 0)
                 append_filename(fn, exname, "roms/A4 5th Column.rom", sizeof(fn));
-                rpclog("  %s\n", fn);
-                f = fopen(fn, "rb");
-                if (!f)
-                        rpclog("File not found\n");
+
+        rpclog("  %s\n", fn);
+        f = fopen(fn, "rb");
+        if (f)
+        {
                 fread(rom_5th_column, 0x10000, 1, f);
                 fclose(f);
-                break;
         }
+        else
+                rpclog("File not found\n");
 }

@@ -29,6 +29,8 @@ uint32_t unique_id;
 
 char joystick_if[16];
 
+char _5th_column_fn[512];
+
 char *get_filename(char *s)
 {
         int c = strlen(s) - 1;
@@ -780,6 +782,12 @@ void loadconfig()
         if (romset == ROM_ARTHUR_120_A500 || romset == ROM_RISCOS_200_A500)
                 fdctype = FDC_WD1793_A500;
 
+        p = (char *)config_get_string(CFG_MACHINE, NULL, "5th_column_fn", NULL);
+        if (p)
+                strcpy(_5th_column_fn, p);
+        else
+                _5th_column_fn[0] = 0;
+
 }
 
 void saveconfig()
@@ -861,6 +869,7 @@ void saveconfig()
         config_set_string(CFG_MACHINE, NULL, "podule_1", podule_names[1]);
         config_set_string(CFG_MACHINE, NULL, "podule_2", podule_names[2]);
         config_set_string(CFG_MACHINE, NULL, "podule_3", podule_names[3]);
+        config_set_string(CFG_MACHINE, NULL, "5th_column_fn", _5th_column_fn);
 
         config_save(CFG_GLOBAL, config_file);
         config_save(CFG_MACHINE, machine_config_file);

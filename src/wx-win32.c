@@ -426,3 +426,8 @@ LRESULT CALLBACK WindowProcedure(HWND hwnd, UINT message, WPARAM wParam, LPARAM 
         }
         return DefWindowProc (hwnd, message, wParam, lParam);
 }
+
+void arc_send_close()
+{
+        PostMessage(ghwnd, WM_CLOSE, 0, 0);
+}

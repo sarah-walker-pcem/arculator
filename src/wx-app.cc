@@ -226,11 +226,19 @@ void Frame::ChangeDisc(int drive)
         }
 }
 
+#ifdef _WIN32
+extern "C" void arc_send_close();
+#endif
+
 void Frame::OnMenuCommand(wxCommandEvent &event)
 {
         if (event.GetId() == XRCID("IDM_FILE_EXIT"))
         {
+#ifdef _WIN32
+                arc_send_close();
+#else
                 arc_stop_emulation();
+#endif
         }
         else if (event.GetId() == XRCID("IDM_FILE_RESET"))
         {

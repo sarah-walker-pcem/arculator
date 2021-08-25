@@ -29,6 +29,7 @@ private:
 	void OnCopy(wxCommandEvent &event);
 	void OnDelete(wxCommandEvent &event);
 	void OnConfig(wxCommandEvent &event);
+	void OnDClickConfig(wxCommandEvent &event);
 
         void BuildConfigList();
 };
@@ -44,6 +45,7 @@ ConfigSelDialog::ConfigSelDialog(wxWindow* parent)
         Bind(wxEVT_BUTTON, &ConfigSelDialog::OnCopy, this, XRCID("IDC_COPY"));
         Bind(wxEVT_BUTTON, &ConfigSelDialog::OnDelete, this, XRCID("IDC_DELETE"));
         Bind(wxEVT_BUTTON, &ConfigSelDialog::OnConfig, this, XRCID("IDC_CONFIG"));
+        Bind(wxEVT_LISTBOX_DCLICK, &ConfigSelDialog::OnDClickConfig, this, XRCID("IDC_LIST"));
         BuildConfigList();
 }
 
@@ -66,6 +68,18 @@ void ConfigSelDialog::BuildConfigList()
 }
 
 void ConfigSelDialog::OnOK(wxCommandEvent &event)
+{
+        wxListBox *list = (wxListBox*)FindWindow(XRCID("IDC_LIST"));
+        wxString selection = list->GetStringSelection();
+        if (!selection.IsEmpty())
+        {
+                wxString config_path = GetConfigPath(list->GetStringSelection());
+                strcpy(machine_config_file, config_path.mb_str());
+                strcpy(machine_config_name, list->GetStringSelection().mb_str());
+                EndModal(0);
+        }
+}
+void ConfigSelDialog::OnDClickConfig(wxCommandEvent &event)
 {
         wxListBox *list = (wxListBox*)FindWindow(XRCID("IDC_LIST"));
         wxString selection = list->GetStringSelection();

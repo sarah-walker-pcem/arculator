@@ -409,7 +409,7 @@ PoduleConfigDialog::PoduleConfigDialog(wxWindow *parent, const podule_header_t *
                         case CONFIG_STRING:
 //                        sizer->Add(0, 0, 1, wxEXPAND, 5);
                         sizer->Add(new wxStaticText(this, id++, item->description), 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
-                        sizer->Add(new wxTextCtrl(this, id++), 0, wxALL, 5);
+                        sizer->Add(new wxTextCtrl(this, id++, wxEmptyString, wxDefaultPosition, wxSize(250, -1)), 0, wxALL, 5);
                         break;
 
                         case CONFIG_BINARY:

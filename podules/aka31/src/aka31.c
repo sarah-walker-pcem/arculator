@@ -38,14 +38,14 @@ typedef struct aka31_t
 {
         uint8_t rom[0x10000];
         uint8_t ram[0x10000];
-        
+
         int page;
         uint8_t intstat;
-        
+
         wd33c93a_t wd;
         d71071l_t dma;
         scsi_bus_t bus;
-        
+
         int wd_poll_time;
         int audio_poll_count;
 
@@ -59,7 +59,7 @@ void aka31_log(const char *format, ...)
 #ifdef DEBUG_LOG
    	char buf[1024];
    	va_list ap;
-   	
+
 	if (!aka31_logf)
 		aka31_logf = fopen("aka31_log.txt", "wt");
 
@@ -88,6 +88,41 @@ void fatal(const char *format, ...)
    	fflush(aka31_logf);
    	exit(-1);
 }
+
+
+void scsi_log(const char *format, ...)
+{
+#ifdef DEBUG_LOG
+   	char buf[1024];
+   	va_list ap;
+
+	if (!aka31_logf)
+		aka31_logf = fopen("aka31_log.txt", "wt");
+
+   	va_start(ap, format);
+   	vsprintf(buf, format, ap);
+   	va_end(ap);
+   	fputs(buf, aka31_logf);
+   	fflush(aka31_logf);
+#endif
+}
+
+void scsi_fatal(const char *format, ...)
+{
+   	char buf[1024];
+   	va_list ap;
+
+	if (!aka31_logf)
+		aka31_logf = fopen("aka31_log.txt", "wt");
+
+   	va_start(ap, format);
+   	vsprintf(buf, format, ap);
+   	va_end(ap);
+   	fputs(buf, aka31_logf);
+   	fflush(aka31_logf);
+   	exit(-1);
+}
+
 
 void aka31_write_ram(podule_t *podule, uint16_t addr, uint8_t val)
 {
@@ -321,10 +356,10 @@ static int aka31_init(struct podule_t *podule)
         }
         fread(aka31->rom, 0x10000, 1, f);
         fclose(f);
-        
+
         aka31->page = 0;
         d71071l_init(&aka31->dma, podule);
-        wd33c93a_init(&aka31->wd, podule, &aka31->dma, &aka31->bus);
+        wd33c93a_init(&aka31->wd, podule, podule_callbacks, &aka31->dma, &aka31->bus);
 //        addpodule(NULL,icswritew,icswriteb,NULL,icsreadw,icsreadb,NULL);
         aka31_log("aka31 Initialised!\n");
 
@@ -338,7 +373,7 @@ static int aka31_init(struct podule_t *podule)
 static void aka31_close(struct podule_t *podule)
 {
         aka31_t *aka31 = podule->p;
-        
+
         sound_out_close(aka31->sound_out);
         wd33c93a_close(&aka31->wd);
         free(aka31);
@@ -428,18 +463,18 @@ static const podule_header_t aka31_podule_header =
                 .write_w = aka31_write_w,
                 .run = aka31_run
         },
-        .config = &aka31_podule_config
+        .config = &scsi_podule_config
 };
 
 const podule_header_t *podule_probe(const podule_callbacks_t *callbacks, char *path)
 {
         aka31_log("podule_probe %p path=%s\n", &aka31_podule_header, path);
-        
+
         podule_callbacks = callbacks;
         strcpy(podule_path, path);
 
-        scsi_config_init();
-        
+        scsi_config_init(callbacks);
+
         return &aka31_podule_header;
 }
 

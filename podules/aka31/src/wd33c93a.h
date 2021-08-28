@@ -32,7 +32,7 @@ typedef struct wd33c93a_t
         scsi_state_t scsi_state;
 } wd33c93a_t;
 
-void wd33c93a_init(wd33c93a_t *wd, podule_t *podule, d71071l_t *dma, struct scsi_bus_t *bus);
+void wd33c93a_init(wd33c93a_t *wd, podule_t *podule, const podule_callbacks_t *podule_callbacks, d71071l_t *dma, struct scsi_bus_t *bus);
 void wd33c93a_close(wd33c93a_t *wd);
 void wd33c93a_write(wd33c93a_t *wd, uint32_t addr, uint8_t val);
 uint8_t wd33c93a_read(wd33c93a_t *wd, uint32_t addr);

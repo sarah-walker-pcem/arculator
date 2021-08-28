@@ -48,13 +48,13 @@
 
 
 
-void wd33c93a_init(wd33c93a_t *wd, podule_t *podule, d71071l_t *dma, struct scsi_bus_t *bus)
+void wd33c93a_init(wd33c93a_t *wd, podule_t *podule, const podule_callbacks_t *podule_callbacks, d71071l_t *dma, struct scsi_bus_t *bus)
 {
         memset(wd, 0, sizeof(wd33c93a_t));
         wd->podule = podule;
         wd->dma = dma;
         wd->bus = bus;
-        scsi_bus_init(wd->bus, podule);
+        scsi_bus_init(wd->bus, podule, podule_callbacks);
 }
 
 void wd33c93a_close(wd33c93a_t *wd)
@@ -80,7 +80,7 @@ int scsi_add_data(wd33c93a_t *wd, uint8_t val)
 int scsi_get_data(wd33c93a_t *wd)
 {
         int val = dma_read(wd->dma, 0);
-        
+
         if (val == -1)
                 return -1;
 
@@ -90,7 +90,7 @@ int scsi_get_data(wd33c93a_t *wd)
 void scsi_send_complete(void *controller_p)
 {
         wd33c93a_t *wd = controller_p;
-        
+
         wd->status = 0x16;
         wd->aux_status = AUX_STATUS_INT;
         aka31_sbic_int(wd->podule);
@@ -99,7 +99,7 @@ void scsi_send_complete(void *controller_p)
 void scsi_illegal_field(void *controller_p)
 {
         wd33c93a_t *wd = controller_p;
-        
+
         wd->status = 0x4b;
         wd->aux_status = AUX_STATUS_INT;
         aka31_sbic_int(wd->podule);
@@ -117,7 +117,7 @@ void scsi_select_failed(wd33c93a_t *wd)
 void scsi_set_phase(void *controller_p, uint8_t phase)
 {
         wd33c93a_t *wd = controller_p;
-        
+
         wd->command_phase = phase;
 }
 
@@ -142,7 +142,7 @@ void wd33c93a_reset(wd33c93a_t *wd)
 void wd33c93a_finish_command(wd33c93a_t *wd)
 {
 //        aka31_log("wd33c93a_finish_command\n");
-        
+
         switch (wd->command & CMD_MASK)
         {
                 case CMD_TRANSFER_INFO:
@@ -160,7 +160,7 @@ void wd33c93a_finish_command(wd33c93a_t *wd)
 void wd33c93a_poll(wd33c93a_t *wd)
 {
         int id = wd->destid & 7;
-        
+
         if (wd->aux_status & AUX_STATUS_CIP)
         {
                 switch (wd->command & CMD_MASK)
@@ -174,7 +174,7 @@ void wd33c93a_poll(wd33c93a_t *wd)
                                 wd->status = 0x00; /*Reset*/
 			aka31_sbic_int(wd->podule);
                         break;
-                        
+
                         case CMD_SEL_W_ATN_AND_TRANSFER:
                         case CMD_SEL_WO_ATN_AND_TRANSFER:
 //                        aka31_log("Sel and transfer command %i %p\n", id, NULL/*(void *)devices[id]*/);
@@ -201,7 +201,7 @@ void wd33c93a_poll(wd33c93a_t *wd)
                                 }
                         }
                         break;
-                        
+
                         case CMD_TRANSFER_INFO:
                         scsi_add_data(wd, wd->info);
                         wd->aux_status &= ~AUX_STATUS_CIP;
@@ -289,7 +289,7 @@ void wd33c93a_write(wd33c93a_t *wd, uint32_t addr, uint8_t val)
                 case REG_TRANSFER+2:
                 wd->transfer_count = (wd->transfer_count & 0xffff00) | val;
                 break;
-                
+
                 case REG_DESTID:
                 wd->destid = val;
                 break;
@@ -303,7 +303,7 @@ void wd33c93a_write(wd33c93a_t *wd, uint32_t addr, uint8_t val)
                 wd->aux_status |= AUX_STATUS_CIP;
                 wd->command = val;
                 break;
-                
+
                 default:
 //                aka31_log("Write to bad WD reg %02x %02x\n", reg, val);
                 break;
@@ -313,21 +313,21 @@ void wd33c93a_write(wd33c93a_t *wd, uint32_t addr, uint8_t val)
 uint8_t wd33c93a_read(wd33c93a_t *wd, uint32_t addr)
 {
         int reg;
-        
+
         if (!(addr & 4))
         {
                 uint8_t temp = wd->aux_status;
-                
+
                 if (wd->fifo_read != wd->fifo_write)
                         temp |= AUX_STATUS_DBR;
-                        
+
                 return temp;
         }
-        
+
         reg = wd->addr_reg;
         if (wd->addr_reg < 0x18)
                 wd->addr_reg = (wd->addr_reg + 1) & 0x1f;
-        
+
         switch (reg)
         {
                 case REG_CMD_PHASE:
@@ -360,7 +360,7 @@ uint8_t wd33c93a_read(wd33c93a_t *wd, uint32_t addr)
 
                 case REG_TARGETSTAT:
                 return wd->target_status;
-                
+
                 case REG_TRANSFER:
                 return (wd->transfer_count >> 16) & 0xff;
                 case REG_TRANSFER+1:
@@ -377,20 +377,20 @@ uint8_t wd33c93a_read(wd33c93a_t *wd, uint32_t addr)
 //                p->irq = 0;
 //                aka31_log("Read status %02x\n", wd->status);
                 return wd->status;
-                
+
                 case REG_CMD:
                 return wd->command;
-                
+
                 case REG_DATA:
                 if (wd->fifo_read != wd->fifo_write)
                         return wd->fifo[(wd->fifo_write++) % 12];
                 return wd->fifo[wd->fifo_write % 12];
-                
+
                 default:
 //                aka31_log("Read from bad WD reg %02x\n", reg);
                 break;
         }
-        
+
         return 0xff;
 }
 
@@ -650,7 +650,7 @@ void wd33c93a_process_scsi(wd33c93a_t *wd)
                                         data = scsi_get_data(wd);
                                         if (data == -1)
                                                 break;
-                                        
+
                                         wd->transfer_count--;
 
 //                                        aka31_log("Write data %02x %i\n", data);
@@ -794,7 +794,7 @@ void wd33c93a_process_scsi(wd33c93a_t *wd)
                                 if (bus_state & BUS_REQ)
                                 {
                                         int bus_out = BUS_SETDATA(0);
-                                        
+
                                         scsi_bus_update(wd->bus, bus_out | BUS_ACK);
                                         scsi_bus_update(wd->bus, bus_out & ~BUS_ACK);
                                         break;

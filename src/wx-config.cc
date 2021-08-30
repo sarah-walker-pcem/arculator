@@ -182,7 +182,8 @@ const char *rom_names[] =
         "RISC OS 3.11",
         "RISC OS 3.19",
         "Arthur 1.20 (A500)",
-        "RISC OS 2.00 (A500)"
+        "RISC OS 2.00 (A500)",
+        "RISC OS 3.10 (A500)"
 };
 
 enum
@@ -197,7 +198,8 @@ enum
         ROM_RISCOS_319_MASK = (1 << ROM_RISCOS_319),
 
         ROM_ARTHUR_120_A500_MASK = (1 << ROM_ARTHUR_120_A500),
-        ROM_RISCOS_200_A500_MASK = (1 << ROM_RISCOS_200_A500)
+        ROM_RISCOS_200_A500_MASK = (1 << ROM_RISCOS_200_A500),
+        ROM_RISCOS_310_A500_MASK = (1 << ROM_RISCOS_310_A500)
 };
 
 /*Arthur and later - Archimedes 305, 310, 440*/
@@ -220,7 +222,7 @@ enum
 /*RISC OS 3.10 and later - A3010, A3020, A4000, A5000a, A4*/
 #define ROM_RISCOS31 (ROM_RISCOS_310_MASK | ROM_RISCOS_311_MASK | ROM_RISCOS_319_MASK)
 
-#define ROM_A500 (ROM_ARTHUR_120_A500_MASK | ROM_RISCOS_200_A500_MASK)
+#define ROM_A500 (ROM_ARTHUR_120_A500_MASK | ROM_RISCOS_200_A500_MASK | ROM_RISCOS_310_A500_MASK)
 
 const char *monitor_names[] =
 {
@@ -840,7 +842,7 @@ void ConfigDialog::OnOK(wxCommandEvent &event)
 
         fpaena = (config_fpu == FPU_NONE) ? 0 : 1;
         fpu_type = (config_cpu >= CPU_ARM3_20) ? 0 : 1;
-        if (romset == ROM_ARTHUR_120_A500 || romset == ROM_RISCOS_200_A500)
+        if (romset == ROM_ARTHUR_120_A500 || romset == ROM_RISCOS_200_A500 || romset == ROM_RISCOS_310_A500)
                 fdctype = FDC_WD1793_A500;
         else
                 fdctype = (config_io >= IO_NEW) ? 1 : 0;

@@ -545,6 +545,7 @@ static struct
         {ROM_RISCOS_319, "riscos319", "riscos3"},
         {ROM_ARTHUR_120_A500, "arthur120_a500", "arthur"},
         {ROM_RISCOS_200_A500, "riscos200_a500", "riscos2"},
+        {ROM_RISCOS_310_A500, "riscos310_a500", "riscos3"},
 };
 
 static int get_romset(char *name)
@@ -598,7 +599,7 @@ static int get_machine_type(char *name)
 
 int machine_is_a500(void)
 {
-        return (romset == ROM_ARTHUR_120_A500 || romset == ROM_RISCOS_200_A500);
+        return (romset == ROM_ARTHUR_120_A500 || romset == ROM_RISCOS_200_A500 || romset == ROM_RISCOS_310_A500);
 }
 
 static char cmos_name[80];
@@ -780,7 +781,7 @@ void loadconfig()
         else
                 strcpy(podule_names[3], "");
 
-        if (romset == ROM_ARTHUR_120_A500 || romset == ROM_RISCOS_200_A500)
+        if (romset == ROM_ARTHUR_120_A500 || romset == ROM_RISCOS_200_A500 || romset == ROM_RISCOS_310_A500)
                 fdctype = FDC_WD1793_A500;
 
         p = (char *)config_get_string(CFG_MACHINE, NULL, "5th_column_fn", NULL);

@@ -20,6 +20,7 @@ enum
         
         ROM_ARTHUR_120_A500,
         ROM_RISCOS_200_A500,
+        ROM_RISCOS_310_A500,
 
         ROM_MAX
 };

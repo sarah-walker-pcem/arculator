@@ -1,0 +1,2 @@
+This directory needs to contain the RiscOS ROMs. They can be called anything, and in any
+number of files. They will be loaded in alphabetical order.

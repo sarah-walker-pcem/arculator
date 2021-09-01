@@ -1,0 +1,2 @@
+This directory contains the ROM for the ICS A3000 IDE Interface v5. It is
+called 'ICS 93 A3IN 3V5 3V06 - 256.BIN' and is 32kB long.

@@ -1,0 +1,2 @@
+This directory contains the ROM for the ZIDEFS IDE Controller. It is
+called 'zidefsrom' and is 8kB long.

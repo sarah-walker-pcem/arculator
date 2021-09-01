@@ -1020,12 +1020,12 @@ int ldrlookup[4]={0,8,16,24};
 
 void refillpipeline()
 {
-        uint32_t templ,templ2,addr=PC-4;
+        uint32_t templ,templ2,addr = (PC-4) & 0x3fffffc;
         
         prefabort_next = 0;
 //        if ((armregs[15]&0x3FFFFFC)==8) rpclog("illegal instruction %08X at %07X\n",opcode,opc);
         readmemfff(addr,opcode2);
-        addr+=4;
+        addr = (addr + 4) & 0x3fffffc;
         prefabort = prefabort_next;
         readmemfff(addr,opcode3);
 

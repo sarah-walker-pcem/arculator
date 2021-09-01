@@ -708,8 +708,8 @@ void ConfigDialog::PopulatePoduleList(int slot_nr, wxComboBox *cbox)
                 {
                         uint32_t flags = podule_get_flags(c);
 
-                        if ((!(podule_get_flags(c) & PODULE_FLAGS_8BIT) && slot_type == PODULE_16BIT) ||
-                            ((podule_get_flags(c) & PODULE_FLAGS_8BIT) && slot_type == PODULE_8BIT))
+                        if ((!(flags & PODULE_FLAGS_8BIT) && slot_type == PODULE_16BIT) ||
+                            ((flags & PODULE_FLAGS_8BIT) && slot_type == PODULE_8BIT))
                         {
                                 cbox->Append(podule_get_name(c));
                                 if (!strcmp(config_podules[slot_nr], podule_get_short_name(c)))

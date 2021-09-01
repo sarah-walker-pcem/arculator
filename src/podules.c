@@ -7,6 +7,7 @@
 #include "colourcard.h"
 #include "config.h"
 #include "g16.h"
+#include "ide_a3in.h"
 #include "ide_idea.h"
 #include "ide_riscdev.h"
 #include "ide_zidefs.h"
@@ -38,6 +39,7 @@ static const podule_header_t *(*internal_podules[])(const podule_callbacks_t *ca
         zidefs_ide_probe,
 
         /*8-bit minipodules*/
+        ics_a3inv5_ide_probe,
         zidefs_a3k_ide_probe
 };
 
@@ -283,6 +285,8 @@ void podule_write_w(int num, uint32_t addr, uint32_t val)
 //        rpclog("podule_write_w: addr=%08x val=%08x\n", addr, val);
         if (podule_functions[num] && podule_functions[num]->write_w)
                 podule_functions[num]->write_w(&podules[num].podule, PODULE_IO_TYPE_IOC, addr, val >> 16);
+        else if (podule_functions[num] && podule_functions[num]->write_b)
+                podule_functions[num]->write_b(&podules[num].podule, PODULE_IO_TYPE_IOC, addr, (val >> 16) & 0xff);
 }
 
 void podule_memc_write_b(int num, uint32_t addr, uint8_t val)
@@ -315,6 +319,8 @@ uint32_t podule_read_w(int num, uint32_t addr)
 
         if (podule_functions[num] && podule_functions[num]->read_w)
                 temp = podule_functions[num]->read_w(&podules[num].podule, PODULE_IO_TYPE_IOC, addr);
+        else if (podule_functions[num] && podule_functions[num]->read_b)
+                temp = podule_functions[num]->read_b(&podules[num].podule, PODULE_IO_TYPE_IOC, addr) | 0xff00;
 
         return temp;
 }

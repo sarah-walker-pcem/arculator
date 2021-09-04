@@ -59,6 +59,8 @@ void adf_loadex(int drive, char *fn, int sectors, int size, int sides, int dblst
         adf[drive].dblstep = dblstep;
         adf[drive].density = density;
         adf[drive].maxsector = (ftell(adf[drive].f)+1 ) / size;
+
+        adf_seek(drive, disc_get_current_track(drive));
 }
 
 void adf_load(int drive, char *fn)

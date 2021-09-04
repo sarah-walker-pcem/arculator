@@ -91,6 +91,8 @@ void apd_load(int drive, char *fn)
         drives[drive].format      = apd_format;
         drives[drive].stop        = apd_stop;
         rpclog("Loaded as apd\n");
+
+        apd_seek(drive, disc_get_current_track(drive));
 }
 
 void apd_close(int drive)

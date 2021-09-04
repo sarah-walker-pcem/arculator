@@ -52,6 +52,7 @@ void fdi_load(int drive, char *fn)
         drives[drive].format      = fdi_format;
         drives[drive].stop        = fdi_stop;
         rpclog("Loaded as FDI\n");
+        fdi_seek(drive, disc_get_current_track(drive));
 }
 
 void fdi_close(int drive)

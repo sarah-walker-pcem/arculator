@@ -7,6 +7,9 @@
 
 extern "C"
 {
+#ifndef _WIN32
+	#include <X11/Xlib.h>
+#endif
         #include "arc.h"
         #include "config.h"
         #include "podules.h"
@@ -15,6 +18,10 @@ extern "C"
 
 int main(int argc, char **argv)
 {
+#ifndef _WIN32
+	XInitThreads();
+#endif
+
         al_init_main(0, NULL);
 
         strncpy(exname, argv[0], 511);

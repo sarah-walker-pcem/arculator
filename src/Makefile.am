@@ -37,7 +37,7 @@ arculator_LDADD = @LIBS@
 
 if OS_LINUX
 arculator_SOURCES += hostfs-unix.c podules-linux.c
-arculator_LDADD += -ldl
+arculator_LDADD += -ldl -lX11
 endif
 
 if OS_MACOSX

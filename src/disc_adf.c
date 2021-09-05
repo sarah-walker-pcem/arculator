@@ -1,4 +1,4 @@
-/*Arculator 2.0 by Sarah Walker
+/*Arculator 2.1 by Sarah Walker
   ADFS disc support (really all double-density formats)*/
 #include <stdio.h>
 #include <string.h>

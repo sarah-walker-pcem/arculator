@@ -1,4 +1,4 @@
-/*Arculator 2.0 by Sarah Walker*/
+/*Arculator 2.1 by Sarah Walker*/
 
 /*ICS ideA Hard Disc Interface
 

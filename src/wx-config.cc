@@ -1,4 +1,4 @@
-/*Arculator 2.0 by Sarah Walker
+/*Arculator 2.1 by Sarah Walker
   Machine configuration dialogue*/
 #include <wx/wxprec.h>
 

@@ -1,3 +1,18 @@
+Version 2.0 (09/11/19) :
+- FPA10 emulation
+- Podule emulation. Current included podules : AKA31 SCSI Podule, AKD52 Hard Disc Podule,
+  Computer Concepts Lark, HCCS Ultimate CD-ROM, ICS ideA, RISC Developments IDE Podule,
+  Wild Vision MIDI Max, ZIDEFS
+- Much better CPU/memory timing. Now emulates ARM3 cache and MEMC1/MEMC1a timings
+- Added emulation of GamesPad, RTFM and Serial Port/Vertical Twist joysticks
+- Improved sound filter emulation
+- Re-implemented FDI support
+- Added HostFS (ported from RPCemu)
+- Disc drive noise
+- Linux port
+- Numerous bug fixes
+- Many other changes
+
 Version 0.99 (15/08/09) :
 - ICS IDE interface emulated, when new FDC is not in use
 - Improved IOC mapping, improvements on !PCem, NetBSD etc

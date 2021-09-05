@@ -1,4 +1,4 @@
-/*Arculator 2.0 by Sarah Walker
+/*Arculator 2.1 by Sarah Walker
   OpenAL interface*/
 #include <string.h>  
 #include <stdio.h>

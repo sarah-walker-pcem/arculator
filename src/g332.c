@@ -1,4 +1,4 @@
-/*Arculator 2.0 by Sarah Walker
+/*Arculator 2.1 by Sarah Walker
   Inmos G332/G335 emulation*/
 #include <string.h>
 #include "arc.h"

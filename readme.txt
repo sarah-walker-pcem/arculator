@@ -1,54 +1,17 @@
-Arculator 2.0
+Arculator 2.1
 ~~~~~~~~~~~~~
 
-
 Changes since last release :
-- FPA10 emulation
-- Podule emulation. Current included podules : AKA31 SCSI Podule, AKD52 Hard Disc Podule,
-  Computer Concepts Lark, HCCS Ultimate CD-ROM, ICS ideA, RISC Developments IDE Podule,
-  Wild Vision MIDI Max, ZIDEFS
-- Much better CPU/memory timing. Now emulates ARM3 cache and MEMC1/MEMC1a timings
-- Added emulation of GamesPad, RTFM and Serial Port/Vertical Twist joysticks
-- Improved sound filter emulation
-- Re-implemented FDI support
-- Added HostFS (ported from RPCemu)
-- Disc drive noise
-- Linux port
-- Numerous bug fixes
-- Many other changes
-
-
-
-Usage
-~~~~~
-
-Arculator requires at least one RISC OS or Arthur ROM set. These should be placed
-in the appropriate directory in the 'roms' directory. For most users RISC OS 3.11
-will be the most useful.
-
-
-Dumping ROMs
-~~~~~~~~~~~~
-
-If you want to dump ROMs from a real machine, this can be done from the RISC OS
-command line :
-
-*SAVE ic24 3800000+80000
-*SAVE ic25 3880000+80000
-*SAVE ic26 3900000+80000
-*SAVE ic27 3980000+80000
-
-for four 512 kB files. Alternatively you could use
-
-*SAVE rom 3800000+200000
-
-for a single 2 MB file.
-
-For RISC OS 2 and Arthur you only need
-
-*SAVE rom 3800000+80000
-
-for a single 512 kB file.
+- New podules : Acorn AKA05 ROM Podule, Acorn AKA10 IO Podule (w/AKA15 MIDI Upgrade), Acorn
+  AKA16 MIDI Podule, Aleph One 386PC/486PC Podule, Computer Concepts ColourCard, State Machine
+  G16 Graphics Accelerator, Oak 16 Bit SCSI Interface
+- Minipodule support for A30x0/A4000. Currently included : Acorn AKA12 MIDI/IO Podule, ICS
+  A3INv5 IDE Interface, ZIDEFS IDE Interface
+- Added A4 laptop emulation
+- Added A500 prototype emulation
+- Added HFE disc image support (read/write)
+- Fixed MEMC1 timing
+- Bugfixes
 
 
 Configuration
@@ -70,7 +33,7 @@ Memory - Varies depending on machine
 	 Archimedes 420/2 supports 2MB - 16MB
 	 Archimedes 440, 440/1, 540 and A5000a support 4MB - 16MB
 	 A3010 supports 1MB to 4MB
-	 A3020 and A4000 support 2MB to 4MB
+	 A4, A3020 and A4000 support 2MB to 4MB
 
 MEMC - MEMC1 at 8 MHz, MEMC1a at 8 MHz, 12 MHz, or 16 MHz
        MEMC1 is ~10% slower than MEMC1a, and does not support ARM3
@@ -81,7 +44,8 @@ OS - Arthur 0.30 - RISC OS 3.19
      Archimedes 4x0/1 and A3000 can run RISC OS 2.00 and later
      Archimedes 540 can run RISC OS 2.01 and later
      A5000 can run RISC OS 3.00 and later
-     A3010, A3020, A4000 and A5000a can run RISC OS 3.10 and later
+     A4, A3010, A3020, A4000 and A5000a can run RISC OS 3.10 and later
+     A500 has specific builds of Arthur, RISC OS 2.00 and RISC OS 3.10
 
 Monitor - Standard, Multisync, VGA or Mono
           Standard supports lower resolution modes (288 lines and lower)
@@ -93,10 +57,9 @@ Monitor - Standard, Multisync, VGA or Mono
 Unique ID - Unique machine ID implemented on A3010, A3020, A4000, A5000 and A5000a systems
             This is used by some copy protected software. Most users won't need to change this
 
-
 Hard discs - Configures hard discs on internal interface (if present)
 	Archimedes A440 and A4x0/1 have an internal ST-506 interface
-	A3020, A4000, A5000 and A5000a have an internal IDE interface
+	A3020, A4000, A4, A5000 and A5000a have an internal IDE interface
 	Other machines have no internal hard disc interface and need to use a podule
 
 Joystick - Select emulated joystick interface. Available options :
@@ -106,7 +69,15 @@ Joystick - Select emulated joystick interface. Available options :
 	   The Serial Port / Vertical Twist - joystick interface plugged into printer port.
 	          Supports 2 buttons per joystick
 
-Podules - Select and configure up to 4 podules per machine
+Podules - Select and configure up to 4 podules per machine. Slot 1 in A30x0 and A4000 machines is
+	  a minipodule slot supporting 8-bit minipodules. A3010, A3020 and A4000 have no support
+	  for podules in any other slot. A4 has no podule support.
+
+5th column ROM - Select a 5th column ROM to use on A4 and A5000 machines. A4 will use the default
+		 LCD/BMU support ROM if nothing else is configured.
+
+Arculator support extension ROM - Enable Arculator support ROM, including HostFS. This is only
+				  available on RISC OS 3.
 
 
 Podules
@@ -116,6 +87,19 @@ Arculator supports add-on podules installed into the podules directory. It also 
 podules built in.
 
 The podules supplied are :
+
+- Acorn AKA05 ROM Podule
+	Supports up to 5 ROMs per podule, plus up to 2 banks of RAM. Battery backed RAM is not
+	currently emulated.
+
+- Acorn AKA10 IO Podule w/ AKA15 MIDI podule
+	Currently only the MIDI functionality is emulated, and MIDI in has not been well tested.
+
+- Acorn AKA12 MIDI/IO Podule (8-bit)
+	Currently only the MIDI functionality is emulated, and MIDI in has not been well tested.
+
+- Acorn AKA16 MIDI Podule
+	MIDI in/out.
 
 - Acorn AKA31 SCSI Controller
 	Supports hard discs and CD-ROM drives. SCSIFS only supports four hard discs, starting 
@@ -130,9 +114,19 @@ The podules supplied are :
 	ST-506 podule, for use with Archimedes 305, 310 and 540 machines. Supports two hard drives.
 	This will most likely not work on other machines.
 
-- Arculator support modules
-	Contains HostFS support modules, support module implementing MODE 99 (800x600x256), and 
-	FPE v4.00 for use with FPA emulation.
+- Aleph One 386/486PC Card
+	PC card based on a 386SX design with 1 or 4 MB of RAM. Current emulation supports the base
+	386SX25, higher spec 486SLC/25 and later 486SLC2/50 CPUs, optionally with a 387 FPU. !PC
+	v2.06 was used; note that later versions may require RiscPC hardware and hence are not
+	suitable here. Currently the original 'Diva'/'slow PAL' card is emulated.
+
+- Computer Concepts ColourCard
+	Supports higher desktop resolutions with up to 256 colours, and non-desktop resolutions
+	with 16-bit colour.
+
+	CC's FlipTop application is required to select the new modes. You must also load a module
+	containing mode definitions, my copy of the software has 'AcornMulti' and 'Taxan795'
+	modules. Either will work under emulation.
 
 - Computer Concepts Lark
 	MIDI in/out, 16-bit sample playback/recording. Sample recording has a few issues, the
@@ -144,13 +138,36 @@ The podules supplied are :
 - ICS ideA Hard Disc Interface
 	Supports two hard drives, using IDEFS v3.10.
 
+- Oak 16-bit SCSI Interface
+	Supports hard discs and CD-ROM drives. SCSIFS only supports four hard discs, starting 
+	from ID 0. The current podule emulates a single Toshiba XM-3301 drive, which can be at
+	any ID, and is mapped to a physical or virtual drive. The ROM image I have does not
+	contain any CDFS modules, these will have to be loaded seperately.
+
+	One quirk I discovered - Oak's !SCSIForm application works best with caps lock turned ON.
+	Otherwise it may silently fail format/initialisation commands.
+
 - RISC Developments IDE Controller
 	Supports two hard drives, using IDEFS v1.15.
+
+- State Machine G16 Graphic Accelerator
+	Supports higher desktop resolutions with up to 256 colours, and non-desktop resolutions
+	with 16-bit colour.
+
+	The G16 does not have pass-through, so a podule configuration option determines whether
+	the emulated monitor is connected to the Archimedes or G16 video out. Whether the card is
+	in use or not depends on the RISC OS 'G8Monitor' configuration option; if 0 then the
+	standard video is in use, otherwise the G16 is in use.
+
+	The DeskMode application is required to select the new modes.
 
 - Wild Vision MIDI Max
 	MIDI in/out.
 
 - ZIDEFS IDE Controller
+	Supports two hard drives, using ZIDEFS.
+
+- ZIDEFS 8-bit IDE Controller
 	Supports two hard drives, using ZIDEFS.
 
 
@@ -197,7 +214,7 @@ Settings :
 Compatibility
 ~~~~~~~~~~~~~
 
-The below OSes/applications/games demos are known to work on this version :
+The below OSes/applications/games/demos are known to work on this version :
 
 Arthur 0.30
 Arthur 1.20
@@ -213,216 +230,217 @@ RISC iX 1.2.1c
 Acorn Advance (v1.01)
 Acorn C/C++
 ArtWorks (v1.7)
-AudioWorks (v1.53)
-ClearView (v1.06)
-Coconizer (v1.31)
-EasiWriter Professional (v4.08)
-FasterPC (v3.005)
+AudioWorks (v1.38)
 Impression Publisher (v4.09)
 Impression Style (v3.10)
-Miracle (v0.10)
 Music Studio 32 (v1.01)
 Notate
-Ovation (v1.42S)
+!PC (r2.06sf)
 PC Emulator (v1.82)
 PenDown (v1.72)
-POVRay (v2.2)
 ProArtisan
-ProSound (v1.11b)
+Render Bender (v1.14)
 Rhapsody (v1.20)
 Rhapsody 3 (v3.03)
-SparkFS (v1.28)
-Speculator (v1.03)
+Splosh (v1.09)
 Studio24 (v1.10)
-TechWriter Professional (v4.10)
+Talking Canvas Jr (v1.04)
+The Complete Animator (v1.04) (HFE)
 
-3D Tanks
-Aggressor
-Air Supremacy
+10 out of 10 - Junior Essentials
+Crystal Rainforest 2
+Fun School 2 - Under 6
+Fun School 2 - 6-8
+Fun School 3 - Over 7
+My World 2
+
+3D Chess (FDI)
 Aldebaran
-Alerion (FDI)
 Alien Invasion (FDI)
-Aliped
 Alone in the Dark
-All In Boxing
-Ankh
+Alpha-Blockers
+Ankh (CD)
 Apocalypse
 Arcade Soccer
-ArcElite
-ARCticulate (FDI)
 Asylum
 Axis (FDI)
-Bambuzle (FDI)
+Bambuzle
 Battle Chess (FDI)
-Battle Tanks (FDI)
+Battle Tank (FDI)
 Big Bang (FDI)
 Black Angel (FDI)
-Blaston
-Blitz (FDI)
+Block Out
 Blowpipe
-Bloxed
-Bobbie Blockhead vs The Dark Planet
+Bobby Blockhead vs The Dark Planet
 Boogie Buggy (FDI)
-Botkiller
-Botkiller 2
-Break 147
-Brian Clough's Football Fortunes (FDI)
-Bubble Fair
-Bug Hunter
-Bug Hunter II
+BotKiller
+BotKiller 2
+Bug Hunter in Space
 Burn 'Out (FDI)
 Cannon Fodder
-Cataclysm (FDI)
-Chess (FDI)
-Chess 3D
-Chocks Away
+Cataclysm
+Chocks Away (FDI)
 Chopper Force (FDI)
 Chuck Rock
-Conqueror
-Creepie Crawlie
-Cyber Chess (FDI)
-Cycloids (APD)
-Darkwood (APD)
+Command Ship (HFE)
+Corruption
+Crystal Maze (FDI)
+Cycloids (HFE)
 Days of Steam (FDI)
-Demons Lair (FDI)
+Deeva
+Demon's Lair (FDI)
 Diggers
 DinoSaw
 Doom+
 Drifter
-Dune II (floppy & CD v1.30b)
+Dune II
+Dune II (CD)
+EGO : Repton 4
+Elite
 Empire Soccer
-Enigma
-Enter the Realm (FDI)
+Enter The Realm
 E-Type (FDI)
-E-Type 2 (FDI)
-Fireball II
+Fine Racer
+Fish!
 Flashback
-FTT (APD)
-Galactic Dan
-Gods (FDI)
-Grievous Bodily 'ARM (FDI)
-Gyrinus II 
+FTT (HFE)
+Fugitive's Quest
+Galactic Dan (FDI)
+Global Effect
+Gribbly's Day Out
+Grievous Bodily 'ARM
+Gods
+Guile
+Gyrinus II
 Hamsters
 Heimdall
 Hero Quest
-Holed Out (FDI)
+Holed Out
 Hostages
 Inertia (FDI)
-Inferno
-Iron Lord
 Ixion
-Jahangir Khan World Championship Squash (FDI)
 James Pond
-Leeds United Champions
-Lemings
+James Pond 2 : Robocod
+Jinxter
+Karma - The Flight Trainer
+Lander
 Lemmings
 Lemmings 2 : The Tribes
-Lotus 2 (FDI)
-Mad Professor Mariati
+Letrouve (FDI)
+Loopz
+Lotus Turbo Challenge II (FDI)
+Mad Professor Mariarti
 Magic Pockets (FDI)
 Man At Arms (FDI)
-Manchester United (FDI)
 Manchester United Europe (FDI)
 Master Break (FDI)
-MicroDrive (FDI)
-MiG-29 Fulcrum
-Moonquake
+Merp (HFE)
+Micro Drive (FDI)
 Mr Doo
 Nebulus
-Nevryon (APD)
-No Excuses (FDI)
-Oddball
-Oh No! More Lemmings
-Overload (Clares - FDI)
-Overload (Paradise)
+Nevryon
+No Excuses
+Oh No! More Lemmings (HFE)
 Pacmania
-Pandora's Box (APD)
-Paradroid 2000
-Phaethon
-Pipe Mania
+Phaethon (HFE)
 Poizone
 Populous (APD)
 Premier Manager (APD)
-Pysakki
-Quest For Gold
-RedShift (FDI)
+Psyanki (FDI)
 Repton 3
 Revelation
 Revolver (FDI)
+Quest for Gold
 Saloon Cars (FDI)
 Saloon Cars Deluxe (FDI)
-Sensible Soccer (APD)
-Silverball (APD)
+Sensible Soccer (HFE)
+Silverball
 SimCity
 SimCity 2000
+Simon the Sorcerer
 Simon the Sorcerer (CD)
-Speedball II
-Spheres of Chaos
-Spy Snatcher (FDI)
-Star Fighter 3000 (APD)
-Starch
+Speedball 2
+Star Fighter 3000 (FDI)
+Star Trader (FDI)
+Stranded!
 Stunt Racer 2000 (APD)
-Super Foul Egg
 Super Snail
-SWIV
-Talisman
+Superior Golf (FDI)
+SWIV (FDI)
+Sylvia Lane (FDI)
+Syndicate (CD)
 Technodream (FDI)
-Terramex
-The Adventures of Sylvia Lane (FDI)
-The Dungeon (APD)
+The Chaos Engine
 The Last Ninja (APD)
-The Olympics (FDI)
-The Wimp Game (APD)
-Time Zone
+The Pawn
 Top Banana
-Tower of Babel
-Trivial Pursuit
-Twin World
+Trivial Pursuit (FDI)
+Twinworld
 Virtual Golf (FDI)
 Warlocks
 White Magic 2 (FDI)
-Wolfenstein 3D (APD)
+Wolfenstein 3D (HFE)
 Wonderland
 World Championship Boxing Manager
-World Class Leaderboard (APD)
+Worra Battle
 X-Fire (FDI)
-Zarch (FDI)
-Zool (FDI)
+Xenon 2
+Zarch
+Zelanites (FDI)
+Zool (HFE)
 
-Address Exception - Demo6399
+Adept - Adept
 Arc Angels - Arc Angels
 Arc Angels - Megademo
-Arc Sailor - Adramort
-Arc Sailor - ARMATAS
-Arc Sailor - Fantasy Demo
 ArcEmpire - Transmortal
 Archiologics - Jojo
-Archiologics/Icebird/Slompt - Ostern95
-ARM's Tech - CakeHead 2
 ARM's Tech - Damn!
 ARMageddon - Demo Collection III
+Armaxess - Megademo 2
 Armaxess - Risc Dream
 Armie and Bert - Everybody
-BASS et al - Xtreme (v1.02)
-Brothers in ARM - BIATetris
-Brothers in ARM - Bounce
-Brothers in ARM - DEMO^2
-Brothers in ARM - Rotate
-Brothers in ARM - Sister
-Bytepool - Nirvana
-Daydream Software - Adept
+BASS - TNT
+BASS et al - Xtreme
+Bitshifters - Back By Popular Demand
+Brothers In ARM - 0 Borders
+Brothers In ARM - BIA^2
+Brothers In ARM - BIAtris
+Brothers In ARM - Bounce
+Brothers in ARM - Ikosaeder
+Brothers In ARM - Rotate
+Brothers In ARM - Sister
+Byte Pool Productions - Nirvana
+DFI - Fishtank
 Expression - Insanity
-Expression - Signum
-Network 23 - Grafitti Street
+Icebird & Archiologics & Slompt - Ostern95
+John Graley - FunkyDemo
+John Graley - FunkyDemo2
+Network 23 - Graffiti Street
+Nophobia - Come and See
+Progen - Bad Apple
+Progen - Reach
 Quantum - Liquid Dreams
-Shifty - Sinedemo
-SICK - Ba
-SquoQuo - Black Zone
-TCD - Power Scroll
+Shifty - Braindead
+Shifty - Sindemo
+Squoquo - Black Zone
+The Arc Sailor - Adramort
+The Arc Sailor - ARMATAS
+The Arc Sailor - Fantasy Demo
+The Chip Duo - Demo #1
+The Chip Duo - Power Scroll
 The Master - Horizon
-The Obsessed Maniacs - Zerblast
-The Xperience - Xcentric
+The Xperience via The Vision Factory - fakeBlu
+Xymox Project - Time's Up
 Zarquon - Metamorphosis
+??? - x-Blu
+
+PC card :
+MS-DOS 6.22
+Windows 3.1
+Windows 95
+Works for Windows 3.0
+Dune
+Scorched Earth
 
 
 Sarah

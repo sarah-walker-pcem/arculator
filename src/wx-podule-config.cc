@@ -1,4 +1,4 @@
-/*Arculator 2.0 by Sarah Walker
+/*Arculator 2.1 by Sarah Walker
   Podule configuration subsystem*/
 #include <wx/wxprec.h>
 

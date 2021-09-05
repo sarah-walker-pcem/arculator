@@ -1,4 +1,4 @@
-/*Arculator 2.0 by Sarah Walker
+/*Arculator 2.1 by Sarah Walker
   'Flexible' ROM loader*/
 #ifdef WIN32
 #include <io.h>

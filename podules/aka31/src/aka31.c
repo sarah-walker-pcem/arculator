@@ -451,7 +451,7 @@ static const podule_header_t aka31_podule_header =
         .version = PODULE_API_VERSION,
         .flags = PODULE_FLAGS_UNIQUE,
         .short_name = "aka31",
-        .name = "Acorn SCSI podule (AKA31)",
+        .name = "Acorn AKA31 SCSI Podule",
         .functions =
         {
                 .init = aka31_init,

@@ -1,0 +1,2 @@
+This directory contains the ROM for the State Machine G16 Graphic Accelerator.
+It is called 'g16.rom' and is 64kB long.

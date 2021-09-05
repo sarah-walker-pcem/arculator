@@ -572,7 +572,7 @@ ConfigDialog::ConfigDialog(wxWindow *parent, bool is_running, int preset)
                 srand(time(NULL));
                 config_unique_id = rand() ^ (rand() << 16);
         }
-        config_rom = ROM_RISCOS_311;
+        config_rom = (preset != 14) ? ROM_RISCOS_311 : ROM_RISCOS_310_A500;
 
         CommonInit(parent, is_running);
         
@@ -651,8 +651,8 @@ void ConfigDialog::UpdateList(int cpu, int mem, int memc, int fpu, int io)
                 if ((romset_available_mask & (1 << c)) && (presets[config_preset].allowed_romset_mask & (1 << c)))
                         cbox->Append(rom_names[c]);
         }
-        if (romset_available_mask & (1 << romset))
-                cbox->SetValue(rom_names[romset]);
+        if (romset_available_mask & (1 << config_rom))
+                cbox->SetValue(rom_names[config_rom]);
         else
                 wxMessageBox("Configured ROM set is not available.\nYou must select an available ROM set to run this machine.", "Arculator", wxOK | wxCENTRE | wxSTAY_ON_TOP, this);
 

@@ -1,4 +1,4 @@
-Arculator v2.0 Linux supplement
+Arculator v2.1 Linux supplement
 
 
 You will need the following libraries :

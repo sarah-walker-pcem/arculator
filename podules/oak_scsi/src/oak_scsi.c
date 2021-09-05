@@ -30,7 +30,7 @@
   NCR5380 SCSI
   93C06 EEPROM
 */
-#define DEBUG_LOG
+//#define DEBUG_LOG
 
 #ifdef WIN32
 #include <windows.h>

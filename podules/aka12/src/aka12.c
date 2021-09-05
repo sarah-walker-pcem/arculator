@@ -10,7 +10,7 @@
   results in the ROM high bits being pulled high. The loader will switch PA0-PA2 between input to read the
   header and chunk directory, and output to read module data.
 */
-#define DEBUG_LOG
+//#define DEBUG_LOG
 
 #ifdef WIN32
 #include <windows.h>

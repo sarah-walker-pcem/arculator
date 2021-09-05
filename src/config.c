@@ -611,7 +611,7 @@ char *config_get_cmos_name(int romset, int fdctype)
         {
                 if (romset == romset_lookup[c].romset)
                 {
-                        if (romset >= ROM_RISCOS_300 && romset <= ROM_RISCOS_319)
+                        if ((romset >= ROM_RISCOS_300 && romset <= ROM_RISCOS_319) || (romset == ROM_RISCOS_310_A500))
                         {
                                 snprintf(cmos_name, sizeof(cmos_name), "%s_%s",
                                                 romset_lookup[c].cmos_name, (fdctype == FDC_82C711) ? "new" : "old");

@@ -6,6 +6,7 @@
 #include "mem.h"
 #include "vidc.h"
 
+arm3cp_t arm3cp;
 int cp15_cacheon;
 
 void resetcp15()

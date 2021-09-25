@@ -469,7 +469,7 @@ void mfm_common_poll(mfm_t *mfm)
                                 }
                         }
 
-                        if (mfm->density)
+                        if (mfm->density && !mfm->readdatapoll)
                         {
                                 if (new_data == 0x4489)
                                 {
@@ -515,7 +515,7 @@ void mfm_common_poll(mfm_t *mfm)
                                         }
                                 }
                         }
-                        else
+                        else if (!mfm->readdatapoll)
                         {
                                 if (new_data == 0xF57E)
                                 {

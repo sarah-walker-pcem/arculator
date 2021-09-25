@@ -137,8 +137,7 @@ static void colourcard_irq_callback(void *p, int state)
         if (state)
         {
                 colourcard->irq_status |= 1;
-                if (colourcard->control & 0x40)
-                        podule_callbacks->set_irq(colourcard->podule, 1);
+                podule_callbacks->set_irq(colourcard->podule, 1);
         }
 }
 

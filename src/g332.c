@@ -186,9 +186,16 @@ uint64_t g332_poll(g332_t *g332)
                         if (cursor_line >= 0 && cursor_line < 64 && !(g332->ctrl_a & G332_CTRL_CURSOR_DISABLE))
                         {
                                 int cursor_row = (g332->cursor_x >= 0) ? 0 : -g332->cursor_x;
-                                uint32_t *p = &((uint32_t *)g332->buffer->line[display_line])[(g332->cursor_x >= 0) ? g332->cursor_x : 0];
                                 uint64_t cursor_data = *(uint64_t *)&g332->cursor_store[cursor_line*8];
+                                int cursor_x;
+                                uint32_t *p;
 
+                                if ((g332->ctrl_a & G332_CTRL_BPP_MASK) >= G332_CTRL_BPP_15)
+                                        cursor_x = ((g332->cursor_x + 21) / 2) - 21; /*Horrible bodge and probably wrong*/
+                                else
+                                        cursor_x = g332->cursor_x;
+
+                                p = &((uint32_t *)g332->buffer->line[display_line])[(cursor_x >= 0) ? cursor_x : 0];
                                 cursor_data >>= cursor_row*2;
 
                                 while (cursor_row < 64)

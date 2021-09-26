@@ -1,9 +1,9 @@
-VPATH = . ..\..\common\midi ..\..\common\uart
+VPATH = . ..\..\common\midi ..\..\common\misc ..\..\common\uart
 CPP  = g++.exe
 CC   = gcc.exe
-OBJ  = aka12.o midi_win.o scc2691.o
+OBJ  = 6522.o aka12.o midi_win.o scc2691.o
 LIBS = --no-export-all-symbols --add-stdcall-alias -lwinmm
-CFLAGS = $(INCS) -DBUILDING_DLL=1 -I..\..\..\src -I..\..\common\midi  -I..\..\common\uart -O3
+CFLAGS = $(INCS) -DBUILDING_DLL=1 -I..\..\..\src -I..\..\common\midi -I..\..\common\misc -I..\..\common\uart -O3
 
 all: aka12.dll
 

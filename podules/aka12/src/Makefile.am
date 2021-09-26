@@ -23,7 +23,7 @@ endif
 
 amrefresh:	
 
-libaka12_la_SOURCES = ../../common/uart/scc2691.c aka12.c
+libaka12_la_SOURCES = ../../common/misc/6522.c ../../common/uart/scc2691.c aka12.c
 
 if OS_WINDOWS
 libaka12_la_SOURCES += ../../common/midi/midi_win.c
@@ -35,7 +35,7 @@ if OS_MACOSX
 libaka12_la_SOURCES += ../../common/midi/midi_null.c
 endif
 
-libaka12_la_CFLAGS = -I../../../src -I../../common/midi -I../../common/uart
+libaka12_la_CFLAGS = -I../../../src -I../../common/midi -I../../common/misc -I../../common/uart
 libaka12_la_LIBADD = @LIBS@
 
 endif

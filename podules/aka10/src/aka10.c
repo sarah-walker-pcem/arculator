@@ -126,6 +126,9 @@ static uint8_t aka10_read_b(struct podule_t *podule, podule_io_type type, uint32
 				if (joystick_state[1].button[0])
 					temp &= ~0x80;
 				return temp;
+
+				case 0xd: /*IFR*/
+				return 0;
 			}
 			break;
 	        }

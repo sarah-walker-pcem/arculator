@@ -1,9 +1,9 @@
-VPATH = . ..\..\common\adc ..\..\common\joystick ..\..\common\midi ..\..\common\uart
+VPATH = . ..\..\common\adc ..\..\common\joystick ..\..\common\midi ..\..\common\misc ..\..\common\uart
 CPP  = g++.exe
 CC   = gcc.exe
-OBJ  = aka10.o joystick_sdl2.o midi_win.o 6850.o d7002c.o
+OBJ  = aka10.o joystick_sdl2.o midi_win.o 6850.o d7002c.o 6522.o
 LIBS = --no-export-all-symbols --add-stdcall-alias -lwinmm -lSDL2main -lSDL2
-CFLAGS = $(INCS) -DBUILDING_DLL=1 -I..\..\..\src -I..\..\common\adc -I..\..\common\joystick -I..\..\common\midi  -I..\..\common\uart -O3
+CFLAGS = $(INCS) -DBUILDING_DLL=1 -I..\..\..\src -I..\..\common\adc -I..\..\common\joystick -I..\..\common\midi -I..\..\common\misc -I..\..\common\uart -O3
 
 all: aka10.dll
 

@@ -23,7 +23,7 @@ endif
 
 amrefresh:	
 
-libaka10_la_SOURCES = ../../common/uart/6850.c aka10.c ../../common/joystick/joystick_sdl2.o ../../common/adc/d7002c.o
+libaka10_la_SOURCES = ../../common/uart/6850.c aka10.c ../../common/joystick/joystick_sdl2.o ../../common/adc/d7002c.o ../../common/misc/6522.o
 
 if OS_WINDOWS
 libaka10_la_SOURCES += ../../common/midi/midi_win.c
@@ -35,7 +35,7 @@ if OS_MACOSX
 libaka10_la_SOURCES += ../../common/midi/midi_null.c
 endif
 
-libaka10_la_CFLAGS = -I../../../src -I../../common/adc -I../../common/joystick -I../../common/midi -I../../common/uart $(shell sdl2-config --cflags)
+libaka10_la_CFLAGS = -I../../../src -I../../common/adc -I../../common/joystick -I../../common/midi -I../../common/misc -I../../common/uart $(shell sdl2-config --cflags)
 libaka10_la_LIBADD = @LIBS@
 
 endif

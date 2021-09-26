@@ -4,6 +4,8 @@
   0000-1fff - ROM
   2000-2fff - 6522 VIA
     PA0-PA2 - ROM bank
+    PA6 - Analogue fire button 0
+    PA7 - Analogue fire button 1
 
   MEMC address map :
   0000-07ff - FRED
@@ -15,7 +17,7 @@
   results in the ROM high bits being pulled high. The loader will switch PA0-PA2 between input to read the
   header and chunk directory, and output to read module data.
 
-  Only MIDI is currently implemented.
+  Only MIDI and ADC are currently implemented.
 */
 //#define DEBUG_LOG
 
@@ -29,6 +31,8 @@
 #include <stdarg.h>
 #include <string.h>
 #include "6850.h"
+#include "d7002c.h"
+#include "joystick_api.h"
 #include "midi.h"
 #include "podule_api.h"
 
@@ -70,7 +74,14 @@ typedef struct aka10_t
 
         uint8_t ora, ddra;
 
+        int adc_irq;
+        int uart_irq;
+
+	d7002c_t d7002c;
         m6850_t m6850;
+
+	int joy_poll_count;
+        int ms_poll_count;
 
         podule_t *podule;
         void *midi;
@@ -86,6 +97,9 @@ static uint8_t aka10_read_b(struct podule_t *podule, podule_io_type type, uint32
 //		aka10_log("aka10_read_b: MEMC, addr=%04x\n", addr);
 		switch (addr & 0x3800)
 		{
+			case 0x1000: /*D7002C ADC*/
+//			aka10_log("ADC read %08x\n", addr);
+			return d7002c_read(&aka10->d7002c, addr >> 2);
 			case 0x1800: /*6850 UART*/
 			return m6850_read(&aka10->m6850, addr >> 2);
 		}
@@ -99,6 +113,21 @@ static uint8_t aka10_read_b(struct podule_t *podule, podule_io_type type, uint32
 	                case 0x0000: case 0x1000:
 	                //aka10_log("  rom_page=%i rom_addr=%04x\n", aka10->rom_page, ((aka10->rom_page * 2048) + ((addr & 0x1fff) >> 2)) & 0x3fff);
 	                return aka10->rom[((aka10->rom_page * 2048) + ((addr & 0x1fff) >> 2)) & 0x3fff];
+
+		        case 0x2000:
+		        /*6522 VIA is mapped here. We only currently look at port A which is used for ROM paging
+		          and joystick buttons*/
+		        switch ((addr & 0x3c) >> 2)
+		        {
+				case 0x1:
+				temp = aka10->ora | 0xc0;
+				if (joystick_state[0].button[0])
+					temp &= ~0x40;
+				if (joystick_state[1].button[0])
+					temp &= ~0x80;
+				return temp;
+			}
+			break;
 	        }
 	}
         return 0xFF;
@@ -113,6 +142,10 @@ static void aka10_write_b(struct podule_t *podule, podule_io_type type, uint32_t
 //		aka10_log("aka10_write_b: MEMC, addr=%04x val=%02x\n", addr, val);
 		switch (addr & 0x3800)
 		{
+			case 0x1000: /*D7002C ADC*/
+//			aka10_log("ADC write %08x %02x\n", addr, val);
+			d7002c_write(&aka10->d7002c, addr >> 2, val);
+			break;
 			case 0x1800: /*6850 UART*/
 			m6850_write(&aka10->m6850, addr >> 2, val);
 			break;
@@ -125,7 +158,8 @@ static void aka10_write_b(struct podule_t *podule, podule_io_type type, uint32_t
         	switch (addr & 0x3000)
         	{
         	        case 0x2000:
-        	        /*6522 VIA is mapped here. We only currently look at port A which is used for ROM paging*/
+			/*6522 VIA is mapped here. We only currently look at port A which is used for ROM paging
+			  and joystick buttons*/
         	        if ((addr & 0x3c) == 0x4)
         	        	aka10->ora = val;
         	        if ((addr & 0x3c) == 0xc)
@@ -141,9 +175,33 @@ static int aka10_run(struct podule_t *podule, int timeslice_us)
 {
         aka10_t *aka10 = podule->p;
 
+	aka10->ms_poll_count++;
+	if (aka10->ms_poll_count >= 4)
+	{
+		aka10->ms_poll_count = 0;
+		/*Approximately 1ms*/
+		d7002c_poll(&aka10->d7002c);
+	}
+	aka10->joy_poll_count++;
+	if (aka10->joy_poll_count >= 80)
+	{
+		aka10->joy_poll_count = 0;
+		/*Approximately 20ms*/
+		joystick_poll_host();
+	}
+
         m6850_run(&aka10->m6850, timeslice_us);
 
         return 256; /*256us = 1 byte at 31250 baud*/
+}
+
+static void aka10_adc_irq(void *p, int state)
+{
+        aka10_t *aka10 = p;
+        podule_t *podule = aka10->podule;
+
+        aka10->adc_irq = state;
+        podule_callbacks->set_irq(podule, aka10->adc_irq || aka10->uart_irq);
 }
 
 static void aka10_uart_irq(void *p, int state)
@@ -151,7 +209,8 @@ static void aka10_uart_irq(void *p, int state)
         aka10_t *aka10 = p;
         podule_t *podule = aka10->podule;
 
-        podule_callbacks->set_irq(podule, state);
+        aka10->uart_irq = state;
+        podule_callbacks->set_irq(podule, aka10->adc_irq || aka10->uart_irq);
 }
 
 static void aka10_uart_send(void *p, uint8_t val)
@@ -166,6 +225,26 @@ static void aka10_midi_receive(void *p, uint8_t val)
         struct aka10_t *aka10 = p;
 
         m6850_receive(&aka10->m6850, val);
+}
+
+int joystick_get_max_joysticks(void)
+{
+	return 2;
+}
+
+int joystick_get_axis_count(void)
+{
+	return 2;
+}
+
+int joystick_get_button_count(void)
+{
+	return 1;
+}
+
+int joystick_get_pov_count(void)
+{
+	return 0;
 }
 
 static int aka10_init(struct podule_t *podule)
@@ -188,6 +267,7 @@ static int aka10_init(struct podule_t *podule)
 
         aka10->rom_page = 7; /*Header is in last page*/
 
+	d7002c_init(&aka10->d7002c, aka10_adc_irq, aka10);
         m6850_init(&aka10->m6850, MIDI_UART_CLOCK, aka10_uart_irq, aka10_uart_send, aka10, aka10_log);
 
         aka10->midi = midi_init(aka10, aka10_midi_receive, aka10_log, podule_callbacks, podule);
@@ -195,12 +275,16 @@ static int aka10_init(struct podule_t *podule)
         aka10->podule = podule;
         podule->p = aka10;
 
+        joystick_init();
+
         return 0;
 }
 
 static void aka10_close(struct podule_t *podule)
 {
         aka10_t *aka10 = podule->p;
+
+	joystick_close();
 
         midi_close(aka10->midi);
 

@@ -347,6 +347,10 @@ void PoduleConfigDialog::OnCombo(wxCommandEvent &event)
                                 
                                 switch (item->type)
                                 {
+                                        case CONFIG_SELECTION:
+                                        update = item->function(this, item, (void *)(dynamic_cast<wxComboBox *>(obj)->GetCurrentSelection()));
+                                        break;
+
                                         case CONFIG_SELECTION_STRING:
                                         update = item->function(this, item, (void *)(dynamic_cast<wxComboBox *>(obj)->GetValue().char_str()));
                                         break;
@@ -510,6 +514,7 @@ PoduleConfigDialog::PoduleConfigDialog(wxWindow *parent, const podule_header_t *
                         }
                         if (item->flags & CONFIG_FLAGS_DISABLED)
                                 cbox->Enable(false);
+                        Bind(wxEVT_COMBOBOX, &PoduleConfigDialog::OnCombo, this, id+1, id+1, new wxPointer(item));
 
                         id_map.insert(std::pair<int, int>(item->id, id+1));
                         id += 2;
@@ -577,6 +582,12 @@ void *podule_config_get_current(void *window_p, int id)
                         return temp_s;
                 }
 
+                case CONFIG_SELECTION:
+                {
+                        wxComboBox *cbox = dynamic_cast<wxComboBox *>(window);
+                        return (void *)cbox->GetSelection();
+                }
+
                 case CONFIG_SELECTION_STRING:
                 {
                         wxComboBox *cbox = dynamic_cast<wxComboBox *>(window);
@@ -599,6 +610,13 @@ void podule_config_set_current(void *window_p, int id, void *val)
                 {
                         wxTextCtrl *text = dynamic_cast<wxTextCtrl *>(window);
                         text->SetValue((char *)val);
+                        break;
+                }
+
+                case CONFIG_SELECTION:
+                {
+                        wxComboBox *cbox = dynamic_cast<wxComboBox *>(window);
+                        cbox->SetSelection((int)val);
                         break;
                 }
 

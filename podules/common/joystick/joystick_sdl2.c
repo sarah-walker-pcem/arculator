@@ -4,6 +4,7 @@
 #include <math.h>
 #include <SDL2/SDL.h>
 #include "joystick_api.h"
+#include "podule_api.h"
 
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))
 
@@ -13,9 +14,11 @@ joystick_t joystick_state[MAX_JOYSTICKS];
 plat_joystick_t plat_joystick_state[MAX_PLAT_JOYSTICKS];
 static SDL_Joystick *sdl_joy[MAX_PLAT_JOYSTICKS];
 
-void joystick_init(void)
+void joystick_init(podule_t *podule, const podule_callbacks_t *podule_callbacks)
 {
         int c;
+
+	SDL_Init(SDL_INIT_JOYSTICK);
 
         joysticks_present = SDL_NumJoysticks();
 
@@ -57,10 +60,39 @@ void joystick_init(void)
                 }
         }
 
-        joystick_state[0].button_mapping[0] = 0;
-        joystick_state[0].axis_mapping[0] = 0;
-        joystick_state[0].axis_mapping[1] = 1;
-        joystick_state[0].plat_joystick_nr = 1;
+	if (podule)
+	{
+		for (c = 0; c < joystick_get_max_joysticks(); c++)
+		{
+			char s[80];
+
+			sprintf(s, "joystick_%i_nr", c);
+			joystick_state[c].plat_joystick_nr = podule_callbacks->config_get_int(podule, s, 0);
+
+			if (joystick_state[c].plat_joystick_nr)
+			{
+				int d;
+
+				for (d = 0; d < joystick_get_axis_count(); d++)
+				{
+					sprintf(s, "joystick_%i_axis_%i", c, d);
+					joystick_state[c].axis_mapping[d] = podule_callbacks->config_get_int(podule, s, d);
+				}
+				for (d = 0; d < joystick_get_button_count(); d++)
+				{
+					sprintf(s, "joystick_%i_button_%i", c, d);
+					joystick_state[c].button_mapping[d] = podule_callbacks->config_get_int(podule, s, d);
+				}
+				for (d = 0; d < joystick_get_pov_count(); d++)
+				{
+					sprintf(s, "joystick_%i_pov_%i_x", c, d);
+					joystick_state[c].pov_mapping[d][0] = podule_callbacks->config_get_int(podule, s, d);
+					sprintf(s, "joystick_%i_pov_%i_y", c, d);
+					joystick_state[c].pov_mapping[d][1] = podule_callbacks->config_get_int(podule, s, d);
+				}
+			}
+		}
+	}
 }
 void joystick_close(void)
 {
@@ -167,4 +199,123 @@ void joystick_poll_host(void)
                                 joystick_state[c].pov[d] = -1;
                 }
         }
+}
+
+podule_config_selection_t *joystick_devices_config(const podule_callbacks_t *podule_callbacks)
+{
+	podule_config_selection_t *sel;
+	podule_config_selection_t *sel_p;
+	char *joystick_dev_text = malloc(65536);
+	int c;
+
+	joystick_init(NULL, podule_callbacks);
+
+        sel = malloc(sizeof(podule_config_selection_t) * (joysticks_present+2));
+        sel_p = sel;
+
+        strcpy(joystick_dev_text, "None");
+        sel_p->description = joystick_dev_text;
+        sel_p->value = 0;
+        sel_p++;
+        joystick_dev_text += strlen(joystick_dev_text)+1;
+
+        for (c = 0; c < joysticks_present; c++)
+        {
+		strcpy(joystick_dev_text, plat_joystick_state[c].name);
+                sel_p->description = joystick_dev_text;
+                sel_p->value = c+1;
+                sel_p++;
+
+                joystick_dev_text += strlen(joystick_dev_text)+1;
+        }
+
+        strcpy(joystick_dev_text, "");
+        sel_p->description = joystick_dev_text;
+
+	joystick_close();
+
+        return sel;
+}
+
+static char joystick_button_text[65536];
+podule_config_selection_t joystick_button_config_selection[33];
+
+void joystick_update_buttons_config(int joy_device)
+{
+	podule_config_selection_t *sel_p = joystick_button_config_selection;
+	char *text_p = joystick_button_text;
+
+	if (joy_device)
+	{
+		int c;
+
+		for (c = 0; c < MIN(plat_joystick_state[joy_device-1].nr_buttons, 8); c++)
+                {
+			strcpy(text_p, plat_joystick_state[joy_device-1].button[c].name);
+			sel_p->description = text_p;
+			sel_p->value = c;
+			sel_p++;
+			text_p += strlen(text_p)+1;
+		}
+	}
+	else
+	{
+		strcpy(text_p, "None");
+		sel_p->description = text_p;
+		sel_p->value = 0;
+		sel_p++;
+		text_p += strlen(text_p)+1;
+	}
+
+        strcpy(text_p, "");
+        sel_p->description = text_p;
+}
+
+static char joystick_axis_text[65536];
+podule_config_selection_t joystick_axis_config_selection[13];
+
+void joystick_update_axes_config(int joy_device)
+{
+	podule_config_selection_t *sel_p = joystick_axis_config_selection;
+	char *text_p = joystick_axis_text;
+
+	if (joy_device)
+	{
+		int c;
+
+		for (c = 0; c < MIN(plat_joystick_state[joy_device-1].nr_axes, 8); c++)
+                {
+			strcpy(text_p, plat_joystick_state[joy_device-1].axis[c].name);
+			sel_p->description = text_p;
+			sel_p->value = c;
+			sel_p++;
+			text_p += strlen(text_p)+1;
+		}
+
+		for (c = 0; c < MIN(plat_joystick_state[joy_device-1].nr_povs, 4); c++)
+                {
+			sprintf(text_p, "%s (X axis)", plat_joystick_state[joy_device-1].pov[c].name);
+			sel_p->description = text_p;
+			sel_p->value = c | POV_X;
+			sel_p++;
+			text_p += strlen(text_p)+1;
+
+			sprintf(text_p, "%s (Y axis)", plat_joystick_state[joy_device-1].pov[c].name);
+			sel_p->description = text_p;
+			sel_p->value = c | POV_Y;
+			sel_p++;
+			text_p += strlen(text_p)+1;
+		}
+	}
+	else
+	{
+	        strcpy(text_p, "None");
+		sel_p->description = text_p;
+	        sel_p->value = 0;
+		sel_p++;
+	        text_p += strlen(text_p)+1;
+	}
+
+        strcpy(text_p, "");
+        sel_p->description = text_p;
 }

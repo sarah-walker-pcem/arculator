@@ -312,7 +312,7 @@ static int aka10_init(struct podule_t *podule)
         aka10->podule = podule;
         podule->p = aka10;
 
-        joystick_init();
+        joystick_init(podule, podule_callbacks);
 
         return 0;
 }
@@ -328,6 +328,74 @@ static void aka10_close(struct podule_t *podule)
         free(aka10);
 }
 
+static podule_config_t joystick_2a_1b_config =
+{
+        .items =
+        {
+                {
+                        .name = "axis_0",
+                        .description = "X axis",
+                        .type = CONFIG_SELECTION,
+                        .flags = CONFIG_FLAGS_NAME_PREFIXED,
+                        .selection = joystick_axis_config_selection,
+                        .default_int = 0,
+                        .id = 1
+                },
+                {
+                        .name = "axis_1",
+                        .description = "Y axis",
+                        .type = CONFIG_SELECTION,
+                        .flags = CONFIG_FLAGS_NAME_PREFIXED,
+                        .selection = joystick_axis_config_selection,
+                        .default_int = 1,
+                        .id = 2
+                },
+                {
+                        .name = "button_0",
+                        .description = "Fire button",
+                        .type = CONFIG_SELECTION,
+                        .flags = CONFIG_FLAGS_NAME_PREFIXED,
+                        .selection = joystick_button_config_selection,
+                        .default_int = 0,
+                        .id = 3
+                },
+                {
+                        .type = -1
+                }
+        }
+};
+
+enum
+{
+	ID_MIDI_OUT_DEVICE,
+	ID_MIDI_IN_DEVICE,
+	ID_JOYSTICK_0_DEVICE,
+	ID_JOYSTICK_1_DEVICE,
+	ID_JOYSTICK_0_MAPPING,
+	ID_JOYSTICK_1_MAPPING
+};
+
+static int config_joystick(void *window_p, const struct podule_config_item_t *item, void *new_data)
+{
+	int joystick_nr;
+	int device;
+	char prefix[32];
+
+	joystick_nr = (item->id == ID_JOYSTICK_0_MAPPING) ? 0 : 1;
+	device = (int)podule_callbacks->config_get_current(window_p, joystick_nr ? ID_JOYSTICK_1_DEVICE : ID_JOYSTICK_0_DEVICE);
+
+	if (device)
+	{
+		joystick_update_axes_config(device);
+		joystick_update_buttons_config(device);
+
+		sprintf(prefix, "joystick_%i_", joystick_nr);
+		podule_callbacks->config_open(window_p, &joystick_2a_1b_config, prefix);
+	}
+
+	return 0;
+}
+
 static podule_config_t aka10_config =
 {
         .items =
@@ -337,14 +405,44 @@ static podule_config_t aka10_config =
                         .description = "MIDI output device",
                         .type = CONFIG_SELECTION,
                         .selection = NULL,
-                        .default_int = -1
+                        .default_int = -1,
+                        .id = ID_MIDI_OUT_DEVICE
                 },
                 {
                         .name = "midi_in_device",
                         .description = "MIDI input device",
                         .type = CONFIG_SELECTION,
                         .selection = NULL,
-                        .default_int = -1
+                        .default_int = -1,
+                        .id = ID_MIDI_IN_DEVICE
+                },
+                {
+                        .name = "joystick_0_nr",
+                        .description = "Device",
+                        .type = CONFIG_SELECTION,
+                        .selection = NULL,
+                        .default_int = 0,
+                        .id = ID_JOYSTICK_0_DEVICE
+                },
+                {
+                        .description = "Joystick 1...",
+                        .type = CONFIG_BUTTON,
+                        .function = config_joystick,
+                        .id = ID_JOYSTICK_0_MAPPING
+                },
+                {
+                        .name = "joystick_1_nr",
+                        .description = "Device",
+                        .type = CONFIG_SELECTION,
+                        .selection = NULL,
+                        .default_int = 0,
+                        .id = ID_JOYSTICK_1_DEVICE
+                },
+                {
+                        .description = "Joystick 2...",
+                        .type = CONFIG_BUTTON,
+                        .function = config_joystick,
+                        .id = ID_JOYSTICK_1_MAPPING
                 },
                 {
                         .type = -1
@@ -376,6 +474,9 @@ const podule_header_t *podule_probe(const podule_callbacks_t *callbacks, char *p
 
         aka10_config.items[0].selection = midi_out_devices_config();
         aka10_config.items[1].selection = midi_in_devices_config();
+
+        aka10_config.items[2].selection = joystick_devices_config(callbacks);
+        aka10_config.items[4].selection = joystick_devices_config(callbacks);
 
         return &aka10_podule_header;
 }

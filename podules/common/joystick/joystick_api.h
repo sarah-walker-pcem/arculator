@@ -1,4 +1,6 @@
-void joystick_init(void);
+#include "podule_api.h"
+
+void joystick_init(podule_t *podule, const podule_callbacks_t *podule_callbacks);
 void joystick_close(void);
 void joystick_poll_host(void);
 
@@ -63,3 +65,11 @@ extern int joystick_get_max_joysticks(void);
 extern int joystick_get_axis_count(void);
 extern int joystick_get_button_count(void);
 extern int joystick_get_pov_count(void);
+
+podule_config_selection_t *joystick_devices_config(const podule_callbacks_t *podule_callbacks);
+
+extern podule_config_selection_t joystick_button_config_selection[33];
+extern podule_config_selection_t joystick_axis_config_selection[13];
+
+void joystick_update_buttons_config(int joystick_device);
+void joystick_update_axes_config(int joy_device);

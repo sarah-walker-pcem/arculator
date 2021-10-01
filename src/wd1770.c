@@ -13,15 +13,15 @@
 #define ABS(x) (((x)>0)?(x):-(x))
 
 void wd1770_callback(void *p);
-void wd1770_data(uint8_t dat);
+void wd1770_data(uint8_t dat, void *p);
 void wd1770_spindown();
-void wd1770_finishread();
-void wd1770_notfound();
-void wd1770_datacrcerror();
-void wd1770_headercrcerror();
-void wd1770_writeprotect();
-int  wd1770_getdata(int last);
-void wd1770_fdc_indexpulse();
+void wd1770_finishread(void *p);
+void wd1770_notfound(void *p);
+void wd1770_datacrcerror(void *p);
+void wd1770_headercrcerror(void *p);
+void wd1770_writeprotect(void *p);
+int  wd1770_getdata(int last, void *p);
+void wd1770_fdc_indexpulse(void *p);
 
 struct
 {
@@ -33,6 +33,8 @@ struct
         int stepdir;
         int index_count;
         int rnf_detection;
+
+        emu_timer_t timer;
 } wd1770;
 
 int byte;
@@ -47,7 +49,7 @@ void wd1770_reset()
         if (fdctype != FDC_82C711)
         {
                 rpclog("WD1770 present\n");
-                timer_add(&fdc_timer, wd1770_callback, NULL, 0);
+                timer_add(&wd1770.timer, wd1770_callback, NULL, 0);
                 fdc_data           = wd1770_data;
                 fdc_spindown       = wd1770_spindown;
                 fdc_finishread     = wd1770_finishread;
@@ -58,6 +60,9 @@ void wd1770_reset()
                 fdc_getdata        = wd1770_getdata;
                 fdc_sectorid       = NULL;
                 fdc_indexpulse     = wd1770_fdc_indexpulse;
+                fdc_timer = &wd1770.timer;
+                fdc_p = NULL;
+                fdc_overridden = 0;
                 
                 disc_set_density(0);
         }
@@ -110,12 +115,14 @@ void wd1770_write(uint16_t addr, uint8_t val)
                 {
                         case 0x0: /*Restore*/
                         wd1770.status = 0x80 | 0x21 | track0;
-                        disc_seek(curdrive, 0);
+                        if (!fdc_overridden)
+                                disc_seek(curdrive, 0);
                         break;
                         
                         case 0x1: /*Seek*/
                         wd1770.status = 0x80 | 0x21 | track0;
-                        disc_seek(curdrive, wd1770.data);
+                        if (!fdc_overridden)
+                                disc_seek(curdrive, wd1770.data);
                         break;
                         
                         case 0x2:
@@ -123,14 +130,16 @@ void wd1770_write(uint16_t addr, uint8_t val)
                         wd1770.status = 0x80 | 0x21 | track0;
                         wd1770.curtrack += wd1770.stepdir;
                         if (wd1770.curtrack < 0) wd1770.curtrack = 0;
-                        disc_seek(curdrive, wd1770.curtrack);
+                        if (!fdc_overridden)
+                                disc_seek(curdrive, wd1770.curtrack);
                         break;
 
                         case 0x4:
                         case 0x5: /*Step in*/
                         wd1770.status = 0x80 | 0x21 | track0;
                         wd1770.curtrack++;
-                        disc_seek(curdrive, wd1770.curtrack);
+                        if (!fdc_overridden)
+                                disc_seek(curdrive, wd1770.curtrack);
                         wd1770.stepdir = 1;
                         break;
                         case 0x6:
@@ -138,13 +147,15 @@ void wd1770_write(uint16_t addr, uint8_t val)
                         wd1770.status = 0x80 | 0x21 | track0;
                         wd1770.curtrack--;
                         if (wd1770.curtrack < 0) wd1770.curtrack = 0;
-                        disc_seek(curdrive, wd1770.curtrack);
+                        if (!fdc_overridden)
+                                disc_seek(curdrive, wd1770.curtrack);
                         wd1770.stepdir = -1;
                         break;
 
                         case 0x8: /*Read sector*/
                         wd1770.status = 0x80 | 0x1;
-                        disc_readsector(curdrive, wd1770.sector, wd1770.track, wd1770.curside, wd1770.density);
+                        if (!fdc_overridden)
+                                disc_readsector(curdrive, wd1770.sector, wd1770.track, wd1770.curside, wd1770.density);
                         //printf("Read sector %i %i %i %i %i\n",curdrive,wd1770.sector,wd1770.track,wd1770.curside,wd1770.density);
                         byte = 0;
                         readflash[curdrive] = 1;
@@ -154,7 +165,8 @@ void wd1770_write(uint16_t addr, uint8_t val)
                         break;
                         case 0xA: /*Write sector*/
                         wd1770.status = 0x80 | 0x1;
-                        disc_writesector(curdrive, wd1770.sector, wd1770.track, wd1770.curside, wd1770.density);
+                        if (!fdc_overridden)
+                                disc_writesector(curdrive, wd1770.sector, wd1770.track, wd1770.curside, wd1770.density);
                         byte = 0;
                         ioc_fiq(IOC_FIQ_DISC_DATA);
                         wd1770.status |= 2;
@@ -166,31 +178,36 @@ void wd1770_write(uint16_t addr, uint8_t val)
                         break;
                         case 0xC: /*Read address*/
                         wd1770.status = 0x80 | 0x1;
-                        disc_readaddress(curdrive, wd1770.track, wd1770.curside, wd1770.density);
+                        if (!fdc_overridden)
+                                disc_readaddress(curdrive, wd1770.track, wd1770.curside, wd1770.density);
                         byte = 0;
                         wd1770.index_count = 0;
                         wd1770.rnf_detection = 1;
                         break;
                         case 0xD: /*Force interrupt*/
 //                        rpclog("Force interrupt\n");
-                        timer_disable(&fdc_timer);
+                        timer_disable(&wd1770.timer);
                         wd1770.status = 0x80 | track0;
                         if (val & 8)
                            ioc_fiq(IOC_FIQ_DISC_IRQ);
                         wd1770_setspindown();
-                        disc_stop(0);
-                        disc_stop(1);
-                        disc_stop(2);
-                        disc_stop(3);
+                        if (!fdc_overridden)
+                        {
+                                disc_stop(0);
+                                disc_stop(1);
+                                disc_stop(2);
+                                disc_stop(3);
+                        }
                         break;
                         case 0xF: /*Write track*/
                         wd1770.status = 0x80 | 0x1;
-                        disc_format(curdrive, wd1770.track, wd1770.curside, wd1770.density);
+                        if (!fdc_overridden)
+                                disc_format(curdrive, wd1770.track, wd1770.curside, wd1770.density);
                         break;
                         
                         default:
 //                                rpclog("Bad 1770 command %02X\n",val);
-                        timer_disable(&fdc_timer);
+                        timer_disable(&wd1770.timer);
                         ioc_fiq(IOC_FIQ_DISC_IRQ);
                         wd1770.status = 0x90;
                         wd1770_spindown();
@@ -248,18 +265,21 @@ uint8_t wd1770_read(uint16_t addr)
 void wd1770_writelatch_a(uint8_t val)
 {
 //        rpclog("Write latch A %02X\n", val);
-        if (!(val & 1)) disc_drivesel = curdrive = 0;
-        if (!(val & 2)) disc_drivesel = curdrive = 1;
-        if (!(val & 4)) disc_drivesel = curdrive = 2;
-        if (!(val & 8)) disc_drivesel = curdrive = 3;
+        if (!fdc_overridden)
+        {
+                if (!(val & 1)) disc_drivesel = curdrive = 0;
+                if (!(val & 2)) disc_drivesel = curdrive = 1;
+                if (!(val & 4)) disc_drivesel = curdrive = 2;
+                if (!(val & 8)) disc_drivesel = curdrive = 3;
+                motoron = !(val & 0x20);
+                disc_set_motor(motoron);
+        }
         ioc_updateirqs();
         wd1770.curside = (val & 0x10) ? 0 : 1;
-        motoron = !(val & 0x20);
-        disc_set_motor(motoron);
-        if (motoron && !disc_empty(curdrive))
-           fdc_ready = 0;
+        if (motoron && !disc_empty(curdrive) && !fdc_overridden)
+                fdc_ready = 0;
         else
-           fdc_ready = 4;
+                fdc_ready = 4;
         if (!(val & FDC_LATCHA_DSKCHG_CLEAR) && !disc_empty(curdrive) && (romset < ROM_RISCOS_200))
                 ioc_discchange_clear(curdrive);
 }
@@ -335,7 +355,7 @@ void wd1770_callback(void *p)
         wd1770.rnf_detection = 0;
 }
 
-void wd1770_data(uint8_t dat)
+void wd1770_data(uint8_t dat, void *p)
 {
         wd1770_pos++;
 //        rpclog("wd1770_data %02X %i\n", dat, wd1770_pos);
@@ -352,40 +372,40 @@ void wd1770_data(uint8_t dat)
         ioc_fiq(IOC_FIQ_DISC_DATA);
 }
 
-void wd1770_finishread()
+void wd1770_finishread(void *p)
 {
 //        rpclog("fdc_time set by wd1770_finishread\n");
-        timer_set_delay_u64(&fdc_timer, 25 * TIMER_USEC);
+        timer_set_delay_u64(&wd1770.timer, 25 * TIMER_USEC);
 }
 
-void wd1770_notfound()
+void wd1770_notfound(void *p)
 {
 //        rpclog("Not found\n");
-        timer_disable(&fdc_timer);
+        timer_disable(&wd1770.timer);
         ioc_fiq(IOC_FIQ_DISC_IRQ);
         wd1770.status = 0x90;
         wd1770_spindown();
 }
 
-void wd1770_datacrcerror()
+void wd1770_datacrcerror(void *p)
 {
 //        rpclog("Data CRC\n");
-        timer_disable(&fdc_timer);
+        timer_disable(&wd1770.timer);
         ioc_fiq(IOC_FIQ_DISC_IRQ);
         wd1770.status = 0x88;
         wd1770_spindown();
 }
 
-void wd1770_headercrcerror()
+void wd1770_headercrcerror(void *p)
 {
 //        rpclog("Header CRC\n");
-        timer_disable(&fdc_timer);
+        timer_disable(&wd1770.timer);
         ioc_fiq(IOC_FIQ_DISC_IRQ);
         wd1770.status = 0x98;
         wd1770_spindown();
 }
 
-int wd1770_getdata(int last)
+int wd1770_getdata(int last, void *p)
 {
 //        rpclog("Disc get data\n");
         if (!wd1770.written) return -1;
@@ -398,17 +418,17 @@ int wd1770_getdata(int last)
         return wd1770.data;
 }
 
-void wd1770_writeprotect()
+void wd1770_writeprotect(void *p)
 {
-        timer_disable(&fdc_timer);
+        timer_disable(&wd1770.timer);
         ioc_fiq(IOC_FIQ_DISC_IRQ);
         wd1770.status = 0xC0;
         wd1770_spindown();
 }
 
-void wd1770_fdc_indexpulse()
+void wd1770_fdc_indexpulse(void *p)
 {
         wd1770.index_count++;
         if ((wd1770.index_count == 5) && wd1770.rnf_detection)
-                wd1770_notfound();
+                wd1770_notfound(NULL);
 }

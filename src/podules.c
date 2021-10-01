@@ -14,6 +14,7 @@
 #include "ide_zidefs_a3k.h"
 #include "ioc.h"
 #include "podules.h"
+#include "riscdev_hdfc.h"
 #include "st506_akd52.h"
 #include "timer.h"
 
@@ -35,6 +36,7 @@ static const podule_header_t *(*internal_podules[])(const podule_callbacks_t *ca
         colourcard_probe,
         g16_probe,
         idea_ide_probe,
+        riscdev_hdfc_probe,
         riscdev_ide_probe,
         zidefs_ide_probe,
 
@@ -257,6 +259,10 @@ void rethinkpoduleints(void)
                 }
         }
         ioc_updateirqs();
+        if (ioc.fiq & 0x40)
+                ioc_fiq(0x40);
+        else
+                ioc_fiqc(0x40);
 }
 
 void podule_set_irq(podule_t *podule, int state)

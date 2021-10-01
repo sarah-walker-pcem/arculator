@@ -209,7 +209,7 @@ static void next_bit(mfm_t *mfm)
 //                rpclog("disc index %i  %i\n", mfm->pos, mfm->indextime_blank);
                 if (mfm->track_len[mfm->side])
                 {
-                        fdc_indexpulse();
+                        fdc_indexpulse(fdc_p);
                         if (mfm->in_read || mfm->in_readaddr || mfm->in_write)
                                 mfm->revs++;
                 }
@@ -219,7 +219,7 @@ static void next_bit(mfm_t *mfm)
                         if (mfm->indextime_blank <= 0)
                         {
                                 mfm->indextime_blank = 6250 * 8;
-                                fdc_indexpulse();
+                                fdc_indexpulse(fdc_p);
                                 if (mfm->in_read || mfm->in_readaddr || mfm->in_write)
                                         mfm->revs++;
                         }
@@ -227,7 +227,7 @@ static void next_bit(mfm_t *mfm)
                 if ((mfm->in_read || mfm->in_readaddr || mfm->in_write) && mfm->revs == 3)
                 {
 //                                        rpclog("hfe_poll: Not found!\n");
-                        fdc_notfound();
+                        fdc_notfound(fdc_p);
                         mfm->in_read = mfm->in_readaddr = mfm->in_write = 0;
                 }
         }
@@ -292,13 +292,13 @@ void mfm_common_poll(mfm_t *mfm)
                 if (mfm->in_format)
                 {
                         mfm->in_format = 0;
-                        fdc_writeprotect();
+                        fdc_writeprotect(fdc_p);
                         continue;
                 }
                 if (mfm->in_write && mfm->write_protected)
                 {
                         mfm->in_write = 0;
-                        fdc_writeprotect();
+                        fdc_writeprotect(fdc_p);
                         continue;
                 }
 
@@ -316,7 +316,7 @@ void mfm_common_poll(mfm_t *mfm)
                                 }
                                 else
                                 {
-                                        int c = fdc_getdata(mfm->pollbytesleft == 3);
+                                        int c = fdc_getdata(mfm->pollbytesleft == 3, fdc_p);
 
                                         write_data = c & 0xff;
                                         calccrc(mfm, write_data);
@@ -350,7 +350,7 @@ void mfm_common_poll(mfm_t *mfm)
                                 else
                                 {
 //                                        rpclog("MFM finished write\n");
-                                        fdc_finishread();
+                                        fdc_finishread(fdc_p);
                                         mfm->writedatapoll = 0;
                                         mfm->rw_write = 0;
                                         mfm->in_write = 0;
@@ -390,7 +390,7 @@ void mfm_common_poll(mfm_t *mfm)
                                         if (mfm->in_readaddr && !fdc_sectorid)// && mfm->pollbytesleft > 1)
                                         {
 //                                                rpclog("inreadaddr - %02X\n", hfe_sectordat[5 - mfm->pollbytesleft]);
-                                                fdc_data(mfm->sectordat[5 - mfm->pollbytesleft]);
+                                                fdc_data(mfm->sectordat[5 - mfm->pollbytesleft], fdc_p);
                                         }
                                         if (!mfm->pollbytesleft)
                                         {
@@ -407,9 +407,9 @@ void mfm_common_poll(mfm_t *mfm)
                                                                 {
 //                                                                rpclog("inreadaddr - %02X\n", mfm->sector);
                                                                         if (fdc_sectorid)
-                                                                                fdc_sectorid(mfm->sectordat[0], mfm->sectordat[1], mfm->sectordat[2], mfm->sectordat[3], mfm->sectordat[4], mfm->sectordat[5]);
+                                                                                fdc_sectorid(mfm->sectordat[0], mfm->sectordat[1], mfm->sectordat[2], mfm->sectordat[3], mfm->sectordat[4], mfm->sectordat[5], fdc_p);
                                                                         else
-                                                                                fdc_finishread();
+                                                                                fdc_finishread(fdc_p);
                                                                 }
                                                                 else
                                                                         mfm->readidpoll = 0;
@@ -425,9 +425,9 @@ void mfm_common_poll(mfm_t *mfm)
                                                         {
 //                                                                rpclog("hfe_poll: ID %02x %02x %02x %02x %02x %02x\n", hfe_sectordat[0], hfe_sectordat[1], hfe_sectordat[2], hfe_sectordat[3], hfe_sectordat[4], hfe_sectordat[5]);
                                                                 if (fdc_sectorid)
-                                                                        fdc_sectorid(mfm->sectordat[0], mfm->sectordat[1], mfm->sectordat[2], mfm->sectordat[3], mfm->sectordat[4], mfm->sectordat[5]);
+                                                                        fdc_sectorid(mfm->sectordat[0], mfm->sectordat[1], mfm->sectordat[2], mfm->sectordat[3], mfm->sectordat[4], mfm->sectordat[5], fdc_p);
                                                                 else
-                                                                        fdc_finishread();
+                                                                        fdc_finishread(fdc_p);
                                                                 mfm->in_readaddr = 0;
                                                         }
                                                 }
@@ -448,20 +448,20 @@ void mfm_common_poll(mfm_t *mfm)
                                                 if ((mfm->crc >> 8) != mfm->sectorcrc[0] || (mfm->crc & 0xFF) != mfm->sectorcrc[1])// || (hfetrack==79 && hfesect==4 && fdc_side&1))
                                                 {
 //                                                        rpclog("Data CRC error : %02X %02X %02X %02X\n",mfm->crc>>8,mfm->crc&0xFF,mfm->sectorcrc[0],mfm->sectorcrc[1]);
-                                                        fdc_data(decodefm(mfm->lastdat[1]));
-                                                        fdc_finishread();
-                                                        fdc_datacrcerror();
+                                                        fdc_data(decodefm(mfm->lastdat[1]), fdc_p);
+                                                        fdc_finishread(fdc_p);
+                                                        fdc_datacrcerror(fdc_p);
                                                         mfm->readdatapoll = 0;
                                                 }
                                                 else
                                                 {
 //                                                        rpclog("End of hfe read %02X %02X %02X %02X\n",mfm->crc>>8,mfm->crc&0xFF,mfm->sectorcrc[0],mfm->sectorcrc[1]);
-                                                        fdc_data(decodefm(mfm->lastdat[1]));
-                                                        fdc_finishread();
+                                                        fdc_data(decodefm(mfm->lastdat[1]), fdc_p);
+                                                        fdc_finishread(fdc_p);
                                                 }
                                         }
                                         else if (mfm->lastdat[1] != 0)
-                                                fdc_data(decodefm(mfm->lastdat[1]));
+                                                fdc_data(decodefm(mfm->lastdat[1]), fdc_p);
                                         mfm->lastdat[1] = mfm->lastdat[0];
                                         mfm->lastdat[0] = new_data;
                                         if (!mfm->pollbytesleft)

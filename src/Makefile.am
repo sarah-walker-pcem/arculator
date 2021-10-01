@@ -26,7 +26,7 @@ wx-resources.cpp : arculator.xrc
 arculator_SOURCES = 82c711.c 82c711_fdc.c arm.c bmu.c cmos.c colourcard.c config.c cp15.c ddnoise.c \
  disc.c disc_adf.c disc_apd.c disc_fdi.c disc_hfe.c disc_jfd.c disc_mfm_common.c disc_ssd.c ds2401.c eterna.c \
  fdi2raw.c fpa.c g16.c g332.c hostfs.c ide.c ide_a3in.c ide_config.c ide_idea.c ide_riscdev.c ide_zidefs.c \
- ide_zidefs_a3k.c input_sdl2.c ioc.c ioeb.c joystick.c keyboard.c lc.c main.c mem.c memc.c podules.c printer.c \
+ ide_zidefs_a3k.c input_sdl2.c ioc.c ioeb.c joystick.c keyboard.c lc.c main.c mem.c memc.c podules.c printer.c riscdev_hdfc.c \
  romload.c sound.c soundopenal.c st506.c st506_akd52.c timer.c vidc.c video_sdl2.c wd1770.c wx-app.cc wx-config.cc \
  wx-config_sel.cc wx-hd_conf.cc wx-hd_new.cc wx-joystick-config.cc wx-main.cc wx-podule-config.cc wx-resources.cc \
  wx-sdl2.c wx-sdl2-joystick.c

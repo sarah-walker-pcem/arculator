@@ -203,30 +203,30 @@ void ssd_poll()
                 ssd_notfound--;
                 if (!ssd_notfound)
                 {
-                        fdc_notfound();
+                        fdc_notfound(fdc_p);
                 }
         }
         if (ssd_inread && ssd_f[ssd_drive])
         {
 //                printf("Read %i\n",ssdreadpos);
-                fdc_data(trackinfo[ssd_drive][ssd_side][(ssd_sector << 8) + ssd_readpos]);
+                fdc_data(trackinfo[ssd_drive][ssd_side][(ssd_sector << 8) + ssd_readpos], fdc_p);
                 ssd_readpos++;
                 if (ssd_readpos == 256)
                 {
                         ssd_inread = 0;
-                        fdc_finishread();
+                        fdc_finishread(fdc_p);
                 }
         }
         if (ssd_inwrite && ssd_f[ssd_drive])
         {
                 if (writeprot[ssd_drive])
                 {
-                        fdc_writeprotect();
+                        fdc_writeprotect(fdc_p);
                         ssd_inwrite = 0;
                         return;
                 }
 //                printf("Write data %i\n",ssdreadpos);
-                c = fdc_getdata(ssd_readpos == 255);
+                c = fdc_getdata(ssd_readpos == 255, fdc_p);
                 if (c == -1)
                 {
 //                        printf("Data overflow!\n");
@@ -237,7 +237,7 @@ void ssd_poll()
                 if (ssd_readpos == 256)
                 {
                         ssd_inwrite = 0;
-                        fdc_finishread();
+                        fdc_finishread(fdc_p);
                         ssd_writeback(ssd_drive, ssd_track);
                 }
         }
@@ -245,15 +245,15 @@ void ssd_poll()
         {
                 switch (ssd_readpos)
                 {
-                        case 0: fdc_data(ssd_track);   break;
-                        case 1: fdc_data(ssd_side);    break;
-                        case 2: fdc_data(ssd_rsector); break;
-                        case 3: fdc_data(1);           break;
-                        case 4: fdc_data(0);           break;
-                        case 5: fdc_data(0);           break;
+                        case 0: fdc_data(ssd_track, fdc_p);   break;
+                        case 1: fdc_data(ssd_side, fdc_p);    break;
+                        case 2: fdc_data(ssd_rsector, fdc_p); break;
+                        case 3: fdc_data(1, fdc_p);           break;
+                        case 4: fdc_data(0, fdc_p);           break;
+                        case 5: fdc_data(0, fdc_p);           break;
                         case 6:
                         ssd_inreadaddr = 0;
-                        fdc_finishread();
+                        fdc_finishread(fdc_p);
                         ssd_rsector++;
                         if (ssd_rsector == 10) ssd_rsector=0;
                         break;
@@ -264,7 +264,7 @@ void ssd_poll()
         {
                 if (writeprot[ssd_drive])
                 {
-                        fdc_writeprotect();
+                        fdc_writeprotect(fdc_p);
                         ssd_informat = 0;
                         return;
                 }
@@ -277,7 +277,7 @@ void ssd_poll()
                         if (ssd_sector == 10)
                         {
                                 ssd_informat = 0;
-                                fdc_finishread();
+                                fdc_finishread(fdc_p);
                                 ssd_writeback(ssd_drive, ssd_track);
                         }
                 }

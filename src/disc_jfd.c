@@ -299,7 +299,7 @@ void jfd_poll()
         if (jfd_pos_us == 191808)
         {
 //                rpclog("index pulse\n");
-                fdc_indexpulse();
+                fdc_indexpulse(fdc_p);
         }
                 
         switch (jfd_state)
@@ -322,7 +322,7 @@ void jfd_poll()
                                         rpclog("jfd_inreadaddr %i %i %i\n", fdc_sectorid, (header >> 16) & 0xf, jfd_density);
                                         if (fdc_sectorid && ((header >> 16) & 0xf) == jfd_density)
                                         {
-                                                fdc_sectorid(jfd_track, jfd_side, header >> 8 & 0xff, header & 3, 0, 0);
+                                                fdc_sectorid(jfd_track, jfd_side, header >> 8 & 0xff, header & 3, 0, 0, fdc_p);
                                                 jfd_inreadaddr = 0;
                                                 jfd_state = JFD_IDLE;
                                         }
@@ -334,7 +334,7 @@ void jfd_poll()
                                         {
                                                 if (header & CRC_ID_INVALID)
                                                 {
-                                                        fdc_headercrcerror();
+                                                        fdc_headercrcerror(fdc_p);
                                                         jfd_state = JFD_IDLE;
                                                 }
                                                 else
@@ -352,14 +352,14 @@ void jfd_poll()
                 
                 case JFD_READ_SECTOR:
 //                rpclog("JFD_READ_SECTOR : %04i %02X\n", jfd_readpos, jfd[jfd_drive].sector_data[jfd_side][jfd_realsector][jfd_readpos]);
-                fdc_data(jfd[jfd_drive].sector_data[jfd_side][jfd_realsector][jfd_readpos]);
+                fdc_data(jfd[jfd_drive].sector_data[jfd_side][jfd_realsector][jfd_readpos], fdc_p);
                 jfd_readpos++;
                 if (jfd_readpos == (128 << (jfd[jfd_drive].sector_table[jfd_side][jfd_realsector].header & 3)))
                 {
 //                        rpclog("Read %i bytes\n", jfd_readpos);
-                        fdc_finishread();
+                        fdc_finishread(fdc_p);
                         if (jfd[jfd_drive].sector_table[jfd_side][jfd_realsector].header & CRC_DATA_INVALID)
-                                fdc_datacrcerror();
+                                fdc_datacrcerror(fdc_p);
                         jfd_inread = 0;
                         jfd_state = JFD_IDLE;
                 }

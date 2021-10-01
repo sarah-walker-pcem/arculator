@@ -57,18 +57,20 @@ int motoron;
 
 int fdc_indexcount = 52;
 
-void (*fdc_data)(uint8_t dat);
-void (*fdc_spindown)();
-void (*fdc_finishread)();
-void (*fdc_notfound)();
-void (*fdc_datacrcerror)();
-void (*fdc_headercrcerror)();
-void (*fdc_writeprotect)();
-int  (*fdc_getdata)(int last);
-void (*fdc_sectorid)(uint8_t track, uint8_t side, uint8_t sector, uint8_t size, uint8_t crc1, uint8_t crc2);
-void (*fdc_indexpulse)();
+void (*fdc_data)(uint8_t dat, void *p);
+void (*fdc_spindown)(void *p);
+void (*fdc_finishread)(void *p);
+void (*fdc_notfound)(void *p);
+void (*fdc_datacrcerror)(void *p);
+void (*fdc_headercrcerror)(void *p);
+void (*fdc_writeprotect)(void *p);
+int  (*fdc_getdata)(int last, void *p);
+void (*fdc_sectorid)(uint8_t track, uint8_t side, uint8_t sector, uint8_t size, uint8_t crc1, uint8_t crc2, void *p);
+void (*fdc_indexpulse)(void *p);
+void *fdc_p;
+int fdc_overridden;
 
-emu_timer_t fdc_timer;
+emu_timer_t *fdc_timer;
 
 static struct
 {
@@ -266,12 +268,13 @@ void disc_poll(void *p)
         timer_advance_u64(&disc_timer, disc_poll_time);
         if (!drive_empty[disc_drivesel])
         {
-                if (drives[disc_drivesel].poll) drives[disc_drivesel].poll();
+                if (drives[disc_drivesel].poll)
+                        drives[disc_drivesel].poll();
                 if (disc_notfound)
                 {
                         disc_notfound--;
                         if (!disc_notfound)
-                           fdc_notfound();
+                                fdc_notfound(fdc_p);
                 }
         }
 }

@@ -261,13 +261,13 @@ void ddnoise_seek(int len)
         if (len == 0)
         {
                 ddnoise_sstat = -1;
-                timer_set_delay_u64(&fdc_timer, 200 * TIMER_USEC);
+                timer_set_delay_u64(fdc_timer, 200 * TIMER_USEC);
 //                rpclog("fdc_time set by ddnoise_seek 0\n");
         }
         else if (len == 1)
         {
                 ddnoise_sstat = 0;
-                timer_set_delay_u64(&fdc_timer, 6000 * TIMER_USEC);
+                timer_set_delay_u64(fdc_timer, 6000 * TIMER_USEC);
 //                rpclog("fdc_time set by ddnoise_seek 1\n");
         }
         else if (len < 7)
@@ -329,7 +329,7 @@ void ddnoise_mix()
                                         if (ddnoise_sstat > 0)
                                         {
 //                                                rpclog("fdc_time set by ddnoise_mix\n");
-                                                timer_set_delay_u64(&fdc_timer, 200 * TIMER_USEC);
+                                                timer_set_delay_u64(fdc_timer, 200 * TIMER_USEC);
                                         }
                                         ddnoise_spos = 0;
                                         ddnoise_sstat = -1;

@@ -241,7 +241,7 @@ void adf_poll()
         if (!adf_index)
         {
                 adf_index = 6250;
-                fdc_indexpulse();
+                fdc_indexpulse(fdc_p);
         }
         
         if (adf_pause)
@@ -257,20 +257,20 @@ void adf_poll()
                 if (!adf_notfound)
                 {
 //                        rpclog("Not found!\n");
-                        fdc_notfound();
+                        fdc_notfound(fdc_p);
                 }
         }
         if (adf_inread && adf[adf_drive].f)
         {
 //                rpclog("Read pos %i\n", adf_readpos);
 //                if (!adfreadpos) rpclog("%i\n",adfsector*adfsize[adfdrive]);
-                fdc_data(adf[adf_drive].track_data[adf_side][(adf_sector * adf[adf_drive].size) + adf_readpos]);
+                fdc_data(adf[adf_drive].track_data[adf_side][(adf_sector * adf[adf_drive].size) + adf_readpos], fdc_p);
                 adf_readpos++;
                 if (adf_readpos == adf[adf_drive].size)
                 {
 //                        rpclog("Read %i bytes\n",adf_readpos);
                         adf_inread = 0;
-                        fdc_finishread();
+                        fdc_finishread(fdc_p);
                 }
         }
         if (adf_inwrite && adf[adf_drive].f)
@@ -278,12 +278,12 @@ void adf_poll()
                 if (writeprot[adf_drive])
                 {
 //                        rpclog("writeprotect\n");
-                        fdc_writeprotect();
+                        fdc_writeprotect(fdc_p);
                         adf_inwrite = 0;
                         return;
                 }
 //                rpclog("Write data %i\n",adf_readpos);
-                c = fdc_getdata(adf_readpos == (adf[adf_drive].size - 1));
+                c = fdc_getdata(adf_readpos == (adf[adf_drive].size - 1), fdc_p);
                 if (c == -1)
                 {
 //Carlo Concari: do not write if data not ready yet
@@ -297,7 +297,7 @@ void adf_poll()
                 {
 //                        rpclog("write over\n");
                         adf_inwrite = 0;
-                        fdc_finishread();
+                        fdc_finishread(fdc_p);
                         adf_writeback(adf_drive, adf_track);
                 }
         }
@@ -306,7 +306,7 @@ void adf_poll()
 //                rpclog("adf_inreadaddr %08X\n", fdc_sectorid);
                 if (fdc_sectorid)
                 {
-                        fdc_sectorid(adf_track, adf_side, adf_rsector + ((adf[adf_drive].size == 512) ? 1 : 0), (adf[adf_drive].size == 256) ? 1 : ((adf[adf_drive].size == 512) ? 2 : 3), 0, 0);
+                        fdc_sectorid(adf_track, adf_side, adf_rsector + ((adf[adf_drive].size == 512) ? 1 : 0), (adf[adf_drive].size == 256) ? 1 : ((adf[adf_drive].size == 512) ? 2 : 3), 0, 0, fdc_p);
                         adf_inreadaddr = 0;
                         adf_rsector++;
                         if (adf_rsector >= adf[adf_drive].sectors)
@@ -319,15 +319,15 @@ void adf_poll()
                 {
                         switch (adf_readpos)
                         {
-                                case 0: fdc_data(adf_track); break;
-                                case 1: fdc_data(adf_side); break;
-                                case 2: fdc_data(adf_rsector + ((adf[adf_drive].size == 512) ? 1 : 0)); break;
-                                case 3: fdc_data((adf[adf_drive].size == 256) ? 1 : ((adf[adf_drive].size == 512) ? 2 : 3)); break;
-                                case 4: fdc_data(0); break;
-                                case 5: fdc_data(0); break;
+                                case 0: fdc_data(adf_track, fdc_p); break;
+                                case 1: fdc_data(adf_side, fdc_p); break;
+                                case 2: fdc_data(adf_rsector + ((adf[adf_drive].size == 512) ? 1 : 0), fdc_p); break;
+                                case 3: fdc_data((adf[adf_drive].size == 256) ? 1 : ((adf[adf_drive].size == 512) ? 2 : 3), fdc_p); break;
+                                case 4: fdc_data(0, fdc_p); break;
+                                case 5: fdc_data(0, fdc_p); break;
                                 case 6:
                                 adf_inreadaddr = 0;
-                                fdc_finishread();
+                                fdc_finishread(fdc_p);
                                 rpclog("Read addr - %i %i %i %i 0 0 (%i %i %i)\n", adf_track, adf_side, adf_rsector + ((adf[adf_drive].size == 512) ? 1 : 0), (adf[adf_drive].size == 256) ? 1 : ((adf[adf_drive].size == 512) ? 2 : 3), adf[adf_drive].sectors, adf_drive, adf_rsector);
                                 adf_rsector++;
                                 if (adf_rsector >= adf[adf_drive].sectors)
@@ -344,7 +344,7 @@ void adf_poll()
         {
                 if (writeprot[adf_drive])
                 {
-                        fdc_writeprotect();
+                        fdc_writeprotect(fdc_p);
                         adf_informat = 0;
                         return;
                 }
@@ -357,7 +357,7 @@ void adf_poll()
                         if (adf_sector == adf[adf_drive].sectors)
                         {
                                 adf_informat = 0;
-                                fdc_finishread();
+                                fdc_finishread(fdc_p);
                                 adf_writeback(adf_drive, adf_track);
                         }
                 }

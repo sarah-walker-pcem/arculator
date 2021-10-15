@@ -50,13 +50,15 @@ typedef struct hfe_t
         mfm_t mfm;
         FILE *f;
         int current_track;
+
+        int is_v3;
 } hfe_t;
 
 static hfe_t hfe[4];
 
 static int hfe_drive;
 
-static int hfe_load_header(hfe_t *hfe)
+static int hfe_load_header(hfe_t *hfe, int drive)
 {
         hfe_header_t *header = &hfe->header;
 
@@ -77,7 +79,7 @@ static int hfe_load_header(hfe_t *hfe)
         header->track0s1_altencoding = getc(hfe->f);
         header->track0s1_encoding = getc(hfe->f);
 
-        if (strncmp(header->signature, "HXCPICFE", 8))
+        if (strncmp(header->signature, "HXCPICFE", 8) && strncmp(header->signature, "HXCHFEV3", 8))
         {
                 rpclog("HFE signature does not match\n");
                 return -1;
@@ -90,6 +92,12 @@ static int hfe_load_header(hfe_t *hfe)
 
 //        rpclog("HFE: %i tracks, %i sides\n", header->nr_of_tracks, header->nr_of_sides);
 //        rpclog("  track_list_offset: %i\n", header->track_list_offset);
+        hfe->is_v3 = !strncmp(header->signature, "HXCHFEV3", 8);
+        if (hfe->is_v3)
+        {
+                rpclog("Loading as HFE v3\n");
+                writeprot[drive] = fwriteprot[drive] = 1;
+        }
         hfe->tracks = malloc(header->nr_of_tracks * header->nr_of_sides * sizeof(hfe_track_t));
         fseek(hfe->f, header->track_list_offset * 0x200, SEEK_SET);
         fread(hfe->tracks, header->nr_of_tracks * header->nr_of_sides * sizeof(hfe_track_t), 1, hfe->f);
@@ -115,7 +123,7 @@ void hfe_load(int drive, char *fn)
                         return;
                 writeprot[drive] = fwriteprot[drive] = 1;
         }
-        hfe_load_header(&hfe[drive]);
+        hfe_load_header(&hfe[drive], drive);
         hfe[drive].mfm.write_protected = writeprot[drive];
         hfe[drive].mfm.writeback = hfe_writeback;
 
@@ -233,6 +241,89 @@ static void downsample_track(uint8_t *data, int size)
         }
 }
 
+#define HFE_V3_OPCODE_NOP         0xf0
+#define HFE_V3_OPCODE_SET_INDEX   0xf1
+#define HFE_V3_OPCODE_SET_BITRATE 0xf2
+#define HFE_V3_OPCODE_SKIP_BITS   0xf3
+#define HFE_V3_OPCODE_RAND        0xf4
+
+static void process_v3_track(mfm_t *mfm, int side)
+{
+        int length = (mfm->track_len[side] + 7) / 8;
+        uint8_t *in_data = malloc(length);
+        int wp = 0;
+        int next_byte_bitrate = 0;
+        int next_byte_skipbits = 0;
+        int skipbits = 0;
+        int i;
+
+        memcpy(in_data, mfm->track_data[side], length);
+        memset(mfm->track_data[side], 0, 65536);
+
+        for (i = 0; i < length; i++)
+        {
+//		rpclog("%06i: %02x  %i\n", i, in_data[i], wp);
+                if (next_byte_skipbits)
+                {
+                        next_byte_skipbits = 0;
+                        skipbits = in_data[i];
+                }
+                else if (next_byte_bitrate)
+                {
+                        next_byte_bitrate = 0;
+                }
+                else if ((in_data[i] & 0xf0) == 0xf0)
+                {
+                        switch (in_data[i])
+                        {
+                                case HFE_V3_OPCODE_NOP:
+                                break;
+
+                                case HFE_V3_OPCODE_SET_INDEX:
+                                break;
+
+                                case HFE_V3_OPCODE_SET_BITRATE:
+                                next_byte_bitrate = 1;
+                                break;
+
+                                case HFE_V3_OPCODE_SKIP_BITS:
+                                next_byte_skipbits = 1;
+                                break;
+
+                                case HFE_V3_OPCODE_RAND:
+                                /*Not currently implemented, just add a byte of zeroes*/
+                                wp += 8;
+                                break;
+
+                                default:
+                                rpclog("Unknown HFEv3 opcode %02x\n", in_data[i]);
+                                exit(-1);
+                        }
+                }
+                else
+                {
+                        uint8_t data = skipbits ? (in_data[i] << skipbits) : in_data[i];
+                        int nr_bits = skipbits ? (8 - skipbits) : 8;
+                        int bit;
+
+                        skipbits = 0;
+
+                        for (bit = 0; bit < nr_bits; bit++)
+                        {
+                                if (data & 0x80)
+                                        mfm->track_data[side][wp >> 3] |= 0x80 >> (wp & 7);
+                                data <<= 1;
+                                wp++;
+                        }
+                }
+        }
+
+        mfm->track_len[side] = wp;
+        //rpclog("Side %i: length %i->%i\n", side, length*8, wp);
+
+        free(in_data);
+}
+
 void hfe_seek(int drive, int track)
 {
         hfe_header_t *header = &hfe[drive].header;
@@ -269,6 +360,11 @@ void hfe_seek(int drive, int track)
         mfm->track_len[1] = (hfe[drive].tracks[track].track_len*8)/2;
         do_bitswap(mfm->track_data[0], (mfm->track_len[0] + 7) / 8);
         do_bitswap(mfm->track_data[1], (mfm->track_len[1] + 7) / 8);
+        if (hfe[drive].is_v3)
+        {
+                process_v3_track(mfm, 0);
+                process_v3_track(mfm, 1);
+        }
 
         if (header->bitrate < 400)
         {
@@ -291,6 +387,9 @@ void hfe_writeback(int drive)
         int track = hfe[drive].current_track;
         uint8_t track_data[2][65536];
         int c;
+
+        if (hfe[drive].is_v3)
+                return;
 
 //        rpclog("hfe_writeback: drive=%i track=%i\n", drive, track);
 

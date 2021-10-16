@@ -20,6 +20,7 @@ static struct
         int dblstep;
         int density;
         int maxsector;
+        int sector_offset;
 } adf[4];
 
 static int adf_sector,   adf_track,   adf_side,    adf_drive;
@@ -38,7 +39,7 @@ void adf_init()
         adf_notfound = 0;
 }
 
-void adf_loadex(int drive, char *fn, int sectors, int size, int sides, int dblstep, int density)
+void adf_loadex(int drive, char *fn, int sectors, int size, int sides, int dblstep, int density, int sector_offset)
 {
         writeprot[drive] = 0;
         adf[drive].f = fopen(fn, "rb+");
@@ -56,29 +57,30 @@ void adf_loadex(int drive, char *fn, int sectors, int size, int sides, int dblst
         adf[drive].dblstep = dblstep;
         adf[drive].density = density;
         adf[drive].maxsector = (ftell(adf[drive].f)+1 ) / size;
+        adf[drive].sector_offset = sector_offset;
 
         adf_seek(drive, disc_get_current_track(drive));
 }
 
 void adf_load(int drive, char *fn)
 {
-        adf_loadex(drive, fn, 16, 256, 0, 0, 1);
+        adf_loadex(drive, fn, 16, 256, 0, 0, 1, 0);
 }
 
 void adf_arcdd_load(int drive, char *fn)
 {
-        adf_loadex(drive, fn, 5, 1024, 1, 0, 1);
+        adf_loadex(drive, fn, 5, 1024, 1, 0, 1, 0);
 }
 
 void adf_archd_load(int drive, char *fn)
 {
         rpclog("HDload\n");
-        adf_loadex(drive, fn, 10, 1024, 1, 0, 2);
+        adf_loadex(drive, fn, 10, 1024, 1, 0, 2, 0);
 }
 
 void adl_load(int drive, char *fn)
 {
-        adf_loadex(drive, fn, 16, 256, 1, 0, 1);
+        adf_loadex(drive, fn, 16, 256, 1, 0, 1, 0);
 }
 
 static void adf_close(int drive)
@@ -130,17 +132,12 @@ static void adf_writeback(int drive, int track)
 
 static void adf_readsector(int drive, int sector, int track, int side, int density)
 {
-        int sector_nr = sector + adf[drive].sectors * (track * (adf[drive].dblside ? 2 : 1) + (side ? 1 : 0));
+        int sector_nr = (sector - adf[drive].sector_offset) + adf[drive].sectors * (track * (adf[drive].dblside ? 2 : 1) + (side ? 1 : 0));
         
-        adf_sector = sector;
+        adf_sector = sector - adf[drive].sector_offset;
         adf_track  = track;
         adf_side   = side;
         adf_drive  = drive;
-        if (adf[drive].size == 512)
-        {
-                adf_sector--;
-                sector_nr--;
-        }
         rpclog("ADFS Read sector %i %i %i %i\n",drive,side,track,sector);
 
         if (!adf[drive].f || (side && !adf[drive].dblside) || (density != adf[drive].density) ||
@@ -158,18 +155,14 @@ static void adf_readsector(int drive, int sector, int track, int side, int densi
 
 static void adf_writesector(int drive, int sector, int track, int side, int density)
 {
-        int sector_nr = sector + adf[drive].sectors * (track * (adf[drive].dblside ? 2 : 1) + (side ? 1 : 0));
+        int sector_nr = (sector - adf[drive].sector_offset) + adf[drive].sectors * (track * (adf[drive].dblside ? 2 : 1) + (side ? 1 : 0));
 
 //        if (adfdblstep[drive]) track/=2;
+        adf_sector = sector - adf[drive].sector_offset;
         adf_sector = sector;
         adf_track  = track;
         adf_side   = side;
         adf_drive  = drive;
-        if (adf[drive].size == 512)
-        {
-                adf_sector--;
-                sector_nr--;
-        }
 //        printf("ADFS Write sector %i %i %i %i\n",drive,side,track,sector);
 
         if (!adf[drive].f || (side && !adf[drive].dblside) || (density != adf[drive].density) ||
@@ -317,14 +310,14 @@ static void adf_poll()
                         {
                                 case 0: fdc_funcs->data(adf_track, fdc_p); break;
                                 case 1: fdc_funcs->data(adf_side, fdc_p); break;
-                                case 2: fdc_funcs->data(adf_rsector + ((adf[adf_drive].size == 512) ? 1 : 0), fdc_p); break;
+                                case 2: fdc_funcs->data(adf_rsector + adf[adf_drive].sector_offset, fdc_p); break;
                                 case 3: fdc_funcs->data((adf[adf_drive].size == 256) ? 1 : ((adf[adf_drive].size == 512) ? 2 : 3), fdc_p); break;
                                 case 4: fdc_funcs->data(0, fdc_p); break;
                                 case 5: fdc_funcs->data(0, fdc_p); break;
                                 case 6:
                                 adf_inreadaddr = 0;
                                 fdc_funcs->finishread(fdc_p);
-                                rpclog("Read addr - %i %i %i %i 0 0 (%i %i %i)\n", adf_track, adf_side, adf_rsector + ((adf[adf_drive].size == 512) ? 1 : 0), (adf[adf_drive].size == 256) ? 1 : ((adf[adf_drive].size == 512) ? 2 : 3), adf[adf_drive].sectors, adf_drive, adf_rsector);
+                                rpclog("Read addr - %i %i %i %i 0 0 (%i %i %i)\n", adf_track, adf_side, adf_rsector + adf[adf_drive].sector_offset, (adf[adf_drive].size == 256) ? 1 : ((adf[adf_drive].size == 512) ? 2 : 3), adf[adf_drive].sectors, adf_drive, adf_rsector);
                                 adf_rsector++;
                                 if (adf_rsector >= adf[adf_drive].sectors)
                                 {

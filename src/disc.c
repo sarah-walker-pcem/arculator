@@ -110,13 +110,13 @@ void disc_load(int drive, char *fn)
         if (size == (1680*1024)) /*1680k DOS - 80*2*21*512*/
         {
                 driveloaders[drive] = 3;
-                adf_loadex(drive, fn, 21, 512, 1, 0, 2);
+                adf_loadex(drive, fn, 21, 512, 1, 0, 2, 1);
                 return;
         }
         if (size == (1440*1024)) /*1440k DOS - 80*2*18*512*/
         {
                 driveloaders[drive] = 3;
-                adf_loadex(drive, fn, 18, 512, 1, 0, 2);
+                adf_loadex(drive, fn, 18, 512, 1, 0, 2, 1);
                 return;
         }
         if (size == (800*1024)) /*800k ADFS/DOS - 80*2*5*1024*/
@@ -134,13 +134,13 @@ void disc_load(int drive, char *fn)
         if (size == (720*1024)) /*720k DOS - 80*2*9*512*/
         {
                 driveloaders[drive] = 3;
-                adf_loadex(drive, fn, 9, 512, 1, 0, 1);
+                adf_loadex(drive, fn, 9, 512, 1, 0, 1, 1);
                 return;
         }
         if (size == (360*1024)) /*360k DOS - 40*2*9*512*/
         {
                 driveloaders[drive] = 3;
-                adf_loadex(drive, fn, 9, 512, 1, 1, 1);
+                adf_loadex(drive, fn, 9, 512, 1, 1, 1, 1);
                 return;
         }
         if (size <= (200 * 1024)) /*200k DFS - 80*1*10*256*/

@@ -21,7 +21,6 @@
 #include "disc_hfe.h"
 #include "disc_jfd.h"
 #include "disc_mfm_common.h"
-#include "disc_ssd.h"
 #include "ds2401.h"
 #include "ide.h"
 #include "ioc.h"
@@ -196,7 +195,6 @@ int arc_init()
         fdi_init();
         hfe_init();
         jfd_init();
-        ssd_init();
         mfm_init();
         ddnoise_init();
 

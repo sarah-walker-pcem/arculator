@@ -12,7 +12,6 @@
 #include "disc_fdi.h"
 #include "disc_hfe.h"
 #include "disc_jfd.h"
-#include "disc_ssd.h"
 
 #include "ddnoise.h"
 
@@ -35,6 +34,7 @@ int discchange[4];
 int fdctype;
 int readflash[4];
 int motoron;
+int writeprot[4];
 
 static int disc_current_track[4] = {0, 0, 0, 0};
 

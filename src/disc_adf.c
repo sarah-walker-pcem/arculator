@@ -1,5 +1,5 @@
 /*Arculator 2.1 by Sarah Walker
-  ADFS disc support (really all double-density formats)*/
+  ADFS disc support (really all raw sector formats)*/
 #include <stdio.h>
 #include <string.h>
 #include "arc.h"
@@ -81,6 +81,16 @@ void adf_archd_load(int drive, char *fn)
 void adl_load(int drive, char *fn)
 {
         adf_loadex(drive, fn, 16, 256, 1, 0, 1, 0);
+}
+
+void ssd_load(int drive, char *fn)
+{
+        adf_loadex(drive, fn, 10, 256, 0, 0, 0, 0);
+}
+
+void dsd_load(int drive, char *fn)
+{
+        adf_loadex(drive, fn, 10, 256, 1, 0, 0, 0);
 }
 
 static void adf_close(int drive)

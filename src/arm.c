@@ -2760,7 +2760,7 @@ void execarm(int cycles_to_execute)
                 if (output)
                 {
                         rpclog("%05i : %07X %08X %08X %08X %08X %08X %08X %08X %08X",ins,PC-8,armregs[0],armregs[1],armregs[2],armregs[3],armregs[4],armregs[5],armregs[6],armregs[7]);
-                        rpclog("  %08X %08X %08X %08X %08X %08X %08X %08X  %08X  %02X %02X %02X  %02X %02X %02X  %i %i %i %X %i\n",armregs[8],armregs[9],armregs[10],armregs[11],armregs[12],armregs[13],armregs[14],armregs[15],opcode,ioc.mska,ioc.mskb,ioc.mskf,ioc.irqa,ioc.irqb,ioc.fiq,  fdc_indexcount, 0, motoron, fdc_indexpulse, motorspin);
+                        rpclog("  %08X %08X %08X %08X %08X %08X %08X %08X  %08X  %02X %02X %02X  %02X %02X %02X  %i %i\n",armregs[8],armregs[9],armregs[10],armregs[11],armregs[12],armregs[13],armregs[14],armregs[15],opcode,ioc.mska,ioc.mskb,ioc.mskf,ioc.irqa,ioc.irqb,ioc.fiq,  0, motoron);
 
                         if (timetolive)
                         {

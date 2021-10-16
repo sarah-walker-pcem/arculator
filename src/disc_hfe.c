@@ -10,7 +10,11 @@
 #include "disc_hfe.h"
 #include "disc_mfm_common.h"
 
-void hfe_writeback(int drive);
+static disc_funcs_t hfe_disc_funcs;
+
+static void hfe_seek(int drive, int track);
+
+static void hfe_writeback(int drive);
 
 #define TRACK_ENCODING_ISOIBM_MFM 0x00
 #define TRACK_ENCODING_AMIGA_MFM  0x01
@@ -96,7 +100,7 @@ static int hfe_load_header(hfe_t *hfe, int drive)
         if (hfe->is_v3)
         {
                 rpclog("Loading as HFE v3\n");
-                writeprot[drive] = fwriteprot[drive] = 1;
+                writeprot[drive] = 1;
         }
         hfe->tracks = malloc(header->nr_of_tracks * header->nr_of_sides * sizeof(hfe_track_t));
         fseek(hfe->f, header->track_list_offset * 0x200, SEEK_SET);
@@ -113,7 +117,7 @@ void hfe_init()
 
 void hfe_load(int drive, char *fn)
 {
-        writeprot[drive] = fwriteprot[drive] = 0;
+        writeprot[drive] = 0;
         memset(&hfe[drive], 0, sizeof(hfe_t));
         hfe[drive].f = fopen(fn, "rb+");
         if (!hfe[drive].f)
@@ -121,25 +125,19 @@ void hfe_load(int drive, char *fn)
                 hfe[drive].f = fopen(fn, "rb");
                 if (!hfe[drive].f)
                         return;
-                writeprot[drive] = fwriteprot[drive] = 1;
+                writeprot[drive] = 1;
         }
         hfe_load_header(&hfe[drive], drive);
         hfe[drive].mfm.write_protected = writeprot[drive];
         hfe[drive].mfm.writeback = hfe_writeback;
 
-        drives[drive].seek        = hfe_seek;
-        drives[drive].readsector  = hfe_readsector;
-        drives[drive].writesector = hfe_writesector;
-        drives[drive].readaddress = hfe_readaddress;
-        drives[drive].poll        = hfe_poll;
-        drives[drive].format      = hfe_format;
-        drives[drive].stop        = hfe_stop;
+        drive_funcs[drive] = &hfe_disc_funcs;
         rpclog("Loaded as hfe\n");
 
         hfe_seek(drive, disc_get_current_track(drive));
 }
 
-void hfe_close(int drive)
+static void hfe_close(int drive)
 {
         if (hfe[drive].tracks)
         {
@@ -324,7 +322,7 @@ static void process_v3_track(mfm_t *mfm, int side)
         free(in_data);
 }
 
-void hfe_seek(int drive, int track)
+static void hfe_seek(int drive, int track)
 {
         hfe_header_t *header = &hfe[drive].header;
         mfm_t *mfm = &hfe[drive].mfm;
@@ -380,7 +378,7 @@ void hfe_seek(int drive, int track)
 //        rpclog(" DD side 1 Track %i Len %i Index %i\n", track, mfm->track_len[1], mfm->track_index[1]);
 }
 
-void hfe_writeback(int drive)
+static void hfe_writeback(int drive)
 {
         hfe_header_t *header = &hfe[drive].header;
         mfm_t *mfm = &hfe[drive].mfm;
@@ -415,36 +413,48 @@ void hfe_writeback(int drive)
         }
 }
 
-void hfe_readsector(int drive, int sector, int track, int side, int density)
+static void hfe_readsector(int drive, int sector, int track, int side, int density)
 {
         hfe_drive = drive;
         mfm_readsector(&hfe[drive].mfm, drive, sector, track, side, density);
 }
 
-void hfe_writesector(int drive, int sector, int track, int side, int density)
+static void hfe_writesector(int drive, int sector, int track, int side, int density)
 {
         hfe_drive = drive;
         mfm_writesector(&hfe[drive].mfm, drive, sector, track, side, density);
 }
 
-void hfe_readaddress(int drive, int track, int side, int density)
+static void hfe_readaddress(int drive, int track, int side, int density)
 {
         hfe_drive = drive;
         mfm_readaddress(&hfe[drive].mfm, drive, track, side, density);
 }
 
-void hfe_format(int drive, int track, int side, int density)
+static void hfe_format(int drive, int track, int side, int density)
 {
         hfe_drive = drive;
         mfm_format(&hfe[drive].mfm, drive, track, side, density);
 }
 
-void hfe_stop()
+static void hfe_stop()
 {
         mfm_stop(&hfe[hfe_drive].mfm);
 }
 
-void hfe_poll()
+static void hfe_poll()
 {
         mfm_common_poll(&hfe[hfe_drive].mfm);
 }
+
+static disc_funcs_t hfe_disc_funcs =
+{
+        .seek        = hfe_seek,
+        .readsector  = hfe_readsector,
+        .writesector = hfe_writesector,
+        .readaddress = hfe_readaddress,
+        .poll        = hfe_poll,
+        .format      = hfe_format,
+        .stop        = hfe_stop,
+        .close       = hfe_close
+};

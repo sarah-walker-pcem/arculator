@@ -1,10 +1,2 @@
 extern void hfe_init();
 extern void hfe_load(int drive, char *fn);
-extern void hfe_close(int drive);
-extern void hfe_seek(int drive, int track);
-extern void hfe_readsector(int drive, int sector, int track, int side, int density);
-extern void hfe_writesector(int drive, int sector, int track, int side, int density);
-extern void hfe_readaddress(int drive, int sector, int side, int density);
-extern void hfe_format(int drive, int sector, int side, int density);
-extern void hfe_stop();
-extern void hfe_poll();

@@ -11,6 +11,10 @@
 #include "disc_mfm_common.h"
 #include "fdi2raw.h"
 
+static disc_funcs_t fdi_disc_funcs;
+
+static void fdi_seek(int drive, int track);
+
 static struct
 {
         mfm_t mfm;
@@ -25,7 +29,6 @@ static uint8_t fdi_timing[65536];
 
 static int fdi_drive;
 
-
 void fdi_init()
 {
 //        printf("FDI reset\n");
@@ -34,7 +37,7 @@ void fdi_init()
 
 void fdi_load(int drive, char *fn)
 {
-        writeprot[drive] = fwriteprot[drive] = 1;
+        writeprot[drive] = 1;
         fdi[drive].f = fopen(fn, "rb");
         if (!fdi[drive].f)
                 return;
@@ -44,18 +47,12 @@ void fdi_load(int drive, char *fn)
         fdi[drive].sides = (fdi[drive].lasttrack > 83) ? 1 : 0;
         fdi[drive].mfm.write_protected = 1;
 //        printf("Last track %i\n",fdilasttrack[drive]);
-        drives[drive].seek        = fdi_seek;
-        drives[drive].readsector  = fdi_readsector;
-        drives[drive].writesector = fdi_writesector;
-        drives[drive].readaddress = fdi_readaddress;
-        drives[drive].poll        = fdi_poll;
-        drives[drive].format      = fdi_format;
-        drives[drive].stop        = fdi_stop;
+        drive_funcs[drive] = &fdi_disc_funcs;
         rpclog("Loaded as FDI\n");
         fdi_seek(drive, disc_get_current_track(drive));
 }
 
-void fdi_close(int drive)
+static void fdi_close(int drive)
 {
         if (fdi[drive].h)
                 fdi2raw_header_free(fdi[drive].h);
@@ -108,7 +105,7 @@ static void upsample_track(uint8_t *data, int size)
         }
 }
 
-void fdi_seek(int drive, int track)
+static void fdi_seek(int drive, int track)
 {
         mfm_t *mfm = &fdi[drive].mfm;
         int c;
@@ -150,41 +147,48 @@ void fdi_seek(int drive, int track)
 //        rpclog("DD Track %i Len %i Index %i %i\n", track, mfm->track_len[0][1], mfm->track_index[0][1],c);
 }
 
-void fdi_writeback(int drive, int track)
-{
-        return;
-}
-
-void fdi_readsector(int drive, int sector, int track, int side, int density)
+static void fdi_readsector(int drive, int sector, int track, int side, int density)
 {
         fdi_drive = drive;
         mfm_readsector(&fdi[drive].mfm, drive, sector, track, side, density);
 }
 
-void fdi_writesector(int drive, int sector, int track, int side, int density)
+static void fdi_writesector(int drive, int sector, int track, int side, int density)
 {
         fdi_drive = drive;
         mfm_writesector(&fdi[drive].mfm, drive, sector, track, side, density);
 }
 
-void fdi_readaddress(int drive, int track, int side, int density)
+static void fdi_readaddress(int drive, int track, int side, int density)
 {
         fdi_drive = drive;
         mfm_readaddress(&fdi[drive].mfm, drive, track, side, density);
 }
 
-void fdi_format(int drive, int track, int side, int density)
+static void fdi_format(int drive, int track, int side, int density)
 {
         fdi_drive = drive;
         mfm_format(&fdi[drive].mfm, drive, track, side, density);
 }
 
-void fdi_stop()
+static void fdi_stop()
 {
         mfm_stop(&fdi[fdi_drive].mfm);
 }
 
-void fdi_poll()
+static void fdi_poll()
 {
         mfm_common_poll(&fdi[fdi_drive].mfm);
 }
+
+static disc_funcs_t fdi_disc_funcs =
+{
+        .seek        = fdi_seek,
+        .readsector  = fdi_readsector,
+        .writesector = fdi_writesector,
+        .readaddress = fdi_readaddress,
+        .poll        = fdi_poll,
+        .format      = fdi_format,
+        .stop        = fdi_stop,
+        .close       = fdi_close
+};

@@ -11,17 +11,10 @@
 #include "ioc.h"
 #include "timer.h"
 
-void c82c711_fdc_callback(void *p);
-void c82c711_fdc_data(uint8_t dat, void *p);
-void c82c711_fdc_spindown(void *p);
-void c82c711_fdc_finishread(void *p);
-void c82c711_fdc_notfound(void *p);
-void c82c711_fdc_datacrcerror(void *p);
-void c82c711_fdc_headercrcerror(void *p);
-void c82c711_fdc_writeprotect(void *p);
-int  c82c711_fdc_getdata(int last, void *p);
-void c82c711_fdc_sectorid(uint8_t track, uint8_t side, uint8_t sector, uint8_t size, uint8_t crc1, uint8_t crc2, void *p);
-void c82c711_fdc_indexpulse(void *p);
+static fdc_funcs_t c82c711_fdc_funcs;
+
+static void c82c711_fdc_callback(void *p);
+static int c82c711_fdc_getdata(int last, void *p);
 
 /*FDC*/
 typedef struct FDC
@@ -83,7 +76,7 @@ static void (*c82711_fdc_irq)(int state, void *p);
 static void (*c82711_fdc_index_irq)(void *p);
 static void (*c82711_fdc_fiq)(int state, void *p);
 
-void c82c711_fdc_reset(void *p)
+static void c82c711_fdc_reset(void *p)
 {
         FDC *fdc = (FDC *)p;
 
@@ -110,16 +103,7 @@ void c82c711_fdc_init(void)
 
                 rpclog("82c711 present\n");
                 timer_add(&fdc->timer, c82c711_fdc_callback, fdc, 0);
-                fdc_data           = c82c711_fdc_data;
-                fdc_spindown       = c82c711_fdc_spindown;
-                fdc_finishread     = c82c711_fdc_finishread;
-                fdc_notfound       = c82c711_fdc_notfound;
-                fdc_datacrcerror   = c82c711_fdc_datacrcerror;
-                fdc_headercrcerror = c82c711_fdc_headercrcerror;
-                fdc_writeprotect   = c82c711_fdc_writeprotect;
-                fdc_getdata        = c82c711_fdc_getdata;
-                fdc_sectorid       = c82c711_fdc_sectorid;
-                fdc_indexpulse     = c82c711_fdc_indexpulse;
+                fdc_funcs = &c82c711_fdc_funcs;
                 fdc_timer = &fdc->timer;
                 fdc_p = fdc;
                 fdc_overridden = 0;
@@ -129,7 +113,6 @@ void c82c711_fdc_init(void)
                 c82711_fdc_fiq = arc_fdc_fiq;
                 fdc->p = NULL;
         }
-//        motorspin = 45000;
 }
 
 void *c82c711_fdc_init_override(void (*fdc_irq)(int state, void *p),
@@ -142,16 +125,7 @@ void *c82c711_fdc_init_override(void (*fdc_irq)(int state, void *p),
         c82c711_fdc_reset(fdc);
 
         timer_add(&fdc->timer, c82c711_fdc_callback, fdc, 0);
-        fdc_data           = c82c711_fdc_data;
-        fdc_spindown       = c82c711_fdc_spindown;
-        fdc_finishread     = c82c711_fdc_finishread;
-        fdc_notfound       = c82c711_fdc_notfound;
-        fdc_datacrcerror   = c82c711_fdc_datacrcerror;
-        fdc_headercrcerror = c82c711_fdc_headercrcerror;
-        fdc_writeprotect   = c82c711_fdc_writeprotect;
-        fdc_getdata        = c82c711_fdc_getdata;
-        fdc_sectorid       = c82c711_fdc_sectorid;
-        fdc_indexpulse     = c82c711_fdc_indexpulse;
+        fdc_funcs = &c82c711_fdc_funcs;
         fdc_timer = &fdc->timer;
         fdc_p = fdc;
         fdc_overridden = 1;
@@ -164,7 +138,7 @@ void *c82c711_fdc_init_override(void (*fdc_irq)(int state, void *p),
         return fdc;
 }
 
-void c82c711_fdc_spindown(void *p)
+static void c82c711_fdc_spindown(void *p)
 {
 //        rpclog("82c711 spindown\n");
         motoron = 0;
@@ -483,7 +457,7 @@ uint8_t c82c711_fdc_read(uint16_t addr, void *p)
         return temp;
 }
 
-void c82c711_fdc_callback(void *p)
+static void c82c711_fdc_callback(void *p)
 {
         FDC *fdc = (FDC *)p;
         int temp;
@@ -764,7 +738,7 @@ static void fdc_overrun(void *p)
         fdc->paramstogo = 7;
 }
 
-void c82c711_fdc_data(uint8_t dat, void *p)
+static void c82c711_fdc_data(uint8_t dat, void *p)
 {
         FDC *fdc = (FDC *)p;
 
@@ -786,8 +760,7 @@ void c82c711_fdc_data(uint8_t dat, void *p)
         }
 }
 
-
-void c82c711_fdc_finishread(void *p)
+static void c82c711_fdc_finishread(void *p)
 {
         FDC *fdc = (FDC *)p;
 
@@ -796,7 +769,7 @@ void c82c711_fdc_finishread(void *p)
 //        rpclog("fdc_finishread\n");
 }
 
-void c82c711_fdc_notfound(void *p)
+static void c82c711_fdc_notfound(void *p)
 {
         FDC *fdc = (FDC *)p;
 
@@ -815,7 +788,7 @@ void c82c711_fdc_notfound(void *p)
 //        rpclog("c82c711_fdc_notfound\n");
 }
 
-void c82c711_fdc_datacrcerror(void *p)
+static void c82c711_fdc_datacrcerror(void *p)
 {
         FDC *fdc = (FDC *)p;
 
@@ -834,7 +807,7 @@ void c82c711_fdc_datacrcerror(void *p)
 //        rpclog("c82c711_fdc_datacrcerror\n");
 }
 
-void c82c711_fdc_headercrcerror(void *p)
+static void c82c711_fdc_headercrcerror(void *p)
 {
         FDC *fdc = (FDC *)p;
 
@@ -853,7 +826,7 @@ void c82c711_fdc_headercrcerror(void *p)
 //        rpclog("c82c711_fdc_headercrcerror\n");
 }
 
-void c82c711_fdc_writeprotect(void *p)
+static void c82c711_fdc_writeprotect(void *p)
 {
         FDC *fdc = (FDC *)p;
 
@@ -871,7 +844,7 @@ void c82c711_fdc_writeprotect(void *p)
         fdc->paramstogo = 7;
 }
 
-int c82c711_fdc_getdata(int last, void *p)
+static int c82c711_fdc_getdata(int last, void *p)
 {
         FDC *fdc = (FDC *)p;
         uint8_t temp;
@@ -886,7 +859,7 @@ int c82c711_fdc_getdata(int last, void *p)
         return temp;
 }
 
-void c82c711_fdc_sectorid(uint8_t track, uint8_t side, uint8_t sector, uint8_t size, uint8_t crc1, uint8_t crc2, void *p)
+static void c82c711_fdc_sectorid(uint8_t track, uint8_t side, uint8_t sector, uint8_t size, uint8_t crc1, uint8_t crc2, void *p)
 {
         FDC *fdc = (FDC *)p;
 //        rpclog("SectorID %i %i %i %i\n", track, side, sector, size);
@@ -902,7 +875,7 @@ void c82c711_fdc_sectorid(uint8_t track, uint8_t side, uint8_t sector, uint8_t s
         fdc->paramstogo = 7;
 }
 
-void c82c711_fdc_indexpulse(void *p)
+static void c82c711_fdc_indexpulse(void *p)
 {
         FDC *fdc = (FDC *)p;
 
@@ -931,3 +904,17 @@ void c82c711_fdc_dmawrite(uint8_t val, int tc, void *p)
         c82711_fdc_fiq(0, fdc->p);
         fdc->written = 1;
 }
+
+static fdc_funcs_t c82c711_fdc_funcs =
+{
+        .data           = c82c711_fdc_data,
+        .spindown       = c82c711_fdc_spindown,
+        .finishread     = c82c711_fdc_finishread,
+        .notfound       = c82c711_fdc_notfound,
+        .datacrcerror   = c82c711_fdc_datacrcerror,
+        .headercrcerror = c82c711_fdc_headercrcerror,
+        .writeprotect   = c82c711_fdc_writeprotect,
+        .getdata        = c82c711_fdc_getdata,
+        .sectorid       = c82c711_fdc_sectorid,
+        .indexpulse     = c82c711_fdc_indexpulse
+};

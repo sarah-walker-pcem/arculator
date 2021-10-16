@@ -10,6 +10,10 @@
 #include "disc_apd.h"
 #include "disc_mfm_common.h"
 
+static disc_funcs_t apd_disc_funcs;
+
+static void apd_seek(int drive, int track);
+
 static inline unsigned long gzgetil(gzFile *f)
 {
         unsigned long temp = gzgetc(*f);
@@ -53,7 +57,7 @@ void apd_load(int drive, char *fn)
         
         rpclog("apd_load\n");
         
-        writeprot[drive] = fwriteprot[drive] = 1;
+        writeprot[drive] = 1;
         apd[drive].f = gzopen(fn, "rb");
         if (!apd[drive].f)
                 return;
@@ -83,19 +87,13 @@ void apd_load(int drive, char *fn)
         apd[drive].lasttrack = 83;
         apd[drive].mfm.write_protected = 1;
 //        rpclog("Last track %i\n",apdlasttrack[drive]);
-        drives[drive].seek        = apd_seek;
-        drives[drive].readsector  = apd_readsector;
-        drives[drive].writesector = apd_writesector;
-        drives[drive].readaddress = apd_readaddress;
-        drives[drive].poll        = apd_poll;
-        drives[drive].format      = apd_format;
-        drives[drive].stop        = apd_stop;
+        drive_funcs[drive] = &apd_disc_funcs;
         rpclog("Loaded as apd\n");
 
         apd_seek(drive, disc_get_current_track(drive));
 }
 
-void apd_close(int drive)
+static void apd_close(int drive)
 {
         if (apd[drive].f)
                 gzclose(apd[drive].f);
@@ -133,7 +131,7 @@ static void upsample_track(uint8_t *data, int size)
         }
 }
 
-void apd_seek(int drive, int track)
+static void apd_seek(int drive, int track)
 {
         mfm_t *mfm = &apd[drive].mfm;
 
@@ -178,41 +176,48 @@ void apd_seek(int drive, int track)
 //        rpclog("DD Track %i Len %i %i\n", track, mfm->track_len[0][1], mfm->track_len[1][1]);
 }
 
-void apd_writeback(int drive, int track)
-{
-        return;
-}
-
-void apd_readsector(int drive, int sector, int track, int side, int density)
+static void apd_readsector(int drive, int sector, int track, int side, int density)
 {
         apd_drive = drive;
         mfm_readsector(&apd[drive].mfm, drive, sector, track, side, density);
 }
 
-void apd_writesector(int drive, int sector, int track, int side, int density)
+static void apd_writesector(int drive, int sector, int track, int side, int density)
 {
         apd_drive = drive;
         mfm_writesector(&apd[drive].mfm, drive, sector, track, side, density);
 }
 
-void apd_readaddress(int drive, int track, int side, int density)
+static void apd_readaddress(int drive, int track, int side, int density)
 {
         apd_drive = drive;
         mfm_readaddress(&apd[drive].mfm, drive, track, side, density);
 }
 
-void apd_format(int drive, int track, int side, int density)
+static void apd_format(int drive, int track, int side, int density)
 {
         apd_drive = drive;
         mfm_format(&apd[drive].mfm, drive, track, side, density);
 }
 
-void apd_stop()
+static void apd_stop()
 {
         mfm_stop(&apd[apd_drive].mfm);
 }
 
-void apd_poll()
+static void apd_poll()
 {
         mfm_common_poll(&apd[apd_drive].mfm);
 }
+
+static disc_funcs_t apd_disc_funcs =
+{
+        .seek        = apd_seek,
+        .readsector  = apd_readsector,
+        .writesector = apd_writesector,
+        .readaddress = apd_readaddress,
+        .poll        = apd_poll,
+        .format      = apd_format,
+        .stop        = apd_stop,
+        .close       = apd_close
+};

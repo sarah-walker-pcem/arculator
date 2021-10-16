@@ -19,25 +19,24 @@
 #include "ioc.h"
 #include "timer.h"
 
-static emu_timer_t disc_timer;
-
-int disc_drivesel = 0;
-
+char discname[4][512];
+int defaultwriteprot = 0;
 int disc_noise_gain;
 
-DRIVE drives[4];
+static emu_timer_t disc_timer;
 
-char discname[4][512];
+disc_funcs_t *drive_funcs[4];
+
+int disc_drivesel = 0;
+static int disc_notfound = 0;
+
 int curdrive = 0;
 int discchange[4];
-uint8_t disc[4][2][80][16][1024]; /*Disc - E format (2 sides, 80 tracks, 5 sectors, 1024 bytes)*/
 int fdctype;
 int readflash[4];
-int fastdisc;
+int motoron;
 
-char discfns[4][260] = {"", ""};
-int defaultwriteprot = 0;
-
+static int disc_current_track[4] = {0, 0, 0, 0};
 
 static uint64_t disc_poll_time;
 static const int disc_poll_times[4] =
@@ -48,49 +47,30 @@ static const int disc_poll_times[4] =
         8   /*Extended density - supported by SuperIO but never used on the Arc*/
 };
 
-int fdc_ready;
-
-static int drive_empty[4] = {1, 1, 1, 1};
-
-int motorspin;
-int motoron;
-
-int fdc_indexcount = 52;
-
-void (*fdc_data)(uint8_t dat, void *p);
-void (*fdc_spindown)(void *p);
-void (*fdc_finishread)(void *p);
-void (*fdc_notfound)(void *p);
-void (*fdc_datacrcerror)(void *p);
-void (*fdc_headercrcerror)(void *p);
-void (*fdc_writeprotect)(void *p);
-int  (*fdc_getdata)(int last, void *p);
-void (*fdc_sectorid)(uint8_t track, uint8_t side, uint8_t sector, uint8_t size, uint8_t crc1, uint8_t crc2, void *p);
-void (*fdc_indexpulse)(void *p);
+fdc_funcs_t *fdc_funcs;
 void *fdc_p;
-int fdc_overridden;
-
 emu_timer_t *fdc_timer;
+int fdc_overridden;
+int fdc_ready;
 
 static struct
 {
         char *ext;
         void (*load)(int drive, char *fn);
-        void (*close)(int drive);
         int size;
 }
 loaders[]=
 {
-        {"SSD", ssd_load,       ssd_close,   80*10* 256},
-        {"DSD", dsd_load,       ssd_close, 2*80*10* 256},
-        {"ADF", adf_load,       adf_close,   80*16* 256},
-        {"ADF", adf_arcdd_load, adf_close, 2*80* 5*1024},
-        {"ADF", adf_archd_load, adf_close, 2*80*10*1024},
-        {"ADL", adl_load,       adf_close, 2*80*16* 256},
-        {"FDI", fdi_load,       fdi_close, -1},
-        {"APD", apd_load,       apd_close, -1},
-        {"HFE", hfe_load,       hfe_close, -1},
-//        {"JFD", jfd_load,       jfd_close, -1},
+        {"SSD", ssd_load,         80*10* 256},
+        {"DSD", dsd_load,       2*80*10* 256},
+        {"ADF", adf_load,         80*16* 256},
+        {"ADF", adf_arcdd_load, 2*80* 5*1024},
+        {"ADF", adf_archd_load, 2*80*10*1024},
+        {"ADL", adl_load,       2*80*16* 256},
+        {"FDI", fdi_load,       -1},
+        {"APD", apd_load,       -1},
+        {"HFE", hfe_load,       -1},
+//        {"JFD", jfd_load,       -1},
         {0,0,0}
 };
 
@@ -120,7 +100,6 @@ void disc_load(int drive, char *fn)
                         rpclog("Loading as %s\n", p);
                         driveloaders[drive] = c;
                         loaders[c].load(drive, fn);
-                        drive_empty[drive] = 0;
                         return;
                 }
                 c++;
@@ -128,7 +107,6 @@ void disc_load(int drive, char *fn)
 //        printf("Couldn't load %s %s\n",fn,p);
         /*No extension match, so guess based on image size*/
         rpclog("Size %i\n", size);
-        drive_empty[drive] = 0;
         if (size == (1680*1024)) /*1680k DOS - 80*2*21*512*/
         {
                 driveloaders[drive] = 3;
@@ -177,7 +155,6 @@ void disc_load(int drive, char *fn)
                 loaders[1].load(drive, fn);
                 return;
         }
-        drive_empty[drive] = 1;
 }
 
 void disc_new(int drive, char *fn)
@@ -234,27 +211,22 @@ void disc_new(int drive, char *fn)
 void disc_close(int drive)
 {
         rpclog("disc_close %i\n", drive);
-        if (!drive_empty[drive])
+        if (drive_funcs[drive])
         {
-                if (loaders[driveloaders[drive]].close)
-                        loaders[driveloaders[drive]].close(drive);
-                drive_empty[drive] = 1;
+                drive_funcs[drive]->close(drive);
+                drive_funcs[drive] = NULL;
         }
         disc_stop(drive);
 }
 
 int disc_empty(int drive)
 {
-        return drive_empty[drive];
+        return !drive_funcs[drive];
 }
-
-int disc_notfound=0;
 
 void disc_init()
 {
-        drives[0].poll = drives[1].poll = 0;
-        drives[0].seek = drives[1].seek = 0;
-        drives[0].readsector = drives[1].readsector = 0;
+        memset(drive_funcs, 0, sizeof(drive_funcs));
 }
 
 void disc_reset()
@@ -266,72 +238,70 @@ void disc_reset()
 void disc_poll(void *p)
 {
         timer_advance_u64(&disc_timer, disc_poll_time);
-        if (!drive_empty[disc_drivesel])
+        if (drive_funcs[disc_drivesel])
         {
-                if (drives[disc_drivesel].poll)
-                        drives[disc_drivesel].poll();
+                if (drive_funcs[disc_drivesel]->poll)
+                        drive_funcs[disc_drivesel]->poll();
                 if (disc_notfound)
                 {
                         disc_notfound--;
                         if (!disc_notfound)
-                                fdc_notfound(fdc_p);
+                                fdc_funcs->notfound(fdc_p);
                 }
         }
 }
 
-int oldtrack[4] = {0, 0, 0, 0};
-
 int disc_get_current_track(int drive)
 {
-        return oldtrack[drive];
+        return disc_current_track[drive];
 }
 
-void disc_seek(int drive, int track)
+void disc_seek(int drive, int new_track)
 {
-        if (drives[drive].seek)
-                drives[drive].seek(drive, track);
-        if (track != oldtrack[drive] && !disc_empty(drive))
+        if (drive_funcs[drive] && drive_funcs[drive]->seek)
+                drive_funcs[drive]->seek(drive, new_track);
+        if (new_track != disc_current_track[drive] && !disc_empty(drive))
                 ioc_discchange_clear(drive);
-        ddnoise_seek(track - oldtrack[drive]);
-        oldtrack[drive] = track;
+        ddnoise_seek(new_track - disc_current_track[drive]);
+        disc_current_track[drive] = new_track;
 }
 
 void disc_readsector(int drive, int sector, int track, int side, int density)
 {
-        if (drives[drive].readsector)
-           drives[drive].readsector(drive, sector, track, side, density);
+        if (drive_funcs[drive] && drive_funcs[drive]->readsector)
+                drive_funcs[drive]->readsector(drive, sector, track, side, density);
         else
-           disc_notfound = 10000;
+                disc_notfound = 10000;
 }
 
 void disc_writesector(int drive, int sector, int track, int side, int density)
 {
-        if (drives[drive].writesector)
-           drives[drive].writesector(drive, sector, track, side, density);
+        if (drive_funcs[drive] && drive_funcs[drive]->writesector)
+                drive_funcs[drive]->writesector(drive, sector, track, side, density);
         else
-           disc_notfound = 10000;
+                disc_notfound = 10000;
 }
 
 void disc_readaddress(int drive, int track, int side, int density)
 {
-        if (drives[drive].readaddress)
-           drives[drive].readaddress(drive, track, side, density);
+        if (drive_funcs[drive] && drive_funcs[drive]->readaddress)
+                drive_funcs[drive]->readaddress(drive, track, side, density);
         else
-           disc_notfound = 10000;
+                disc_notfound = 10000;
 }
 
 void disc_format(int drive, int track, int side, int density)
 {
-        if (drives[drive].format)
-           drives[drive].format(drive, track, side, density);
+        if (drive_funcs[drive] && drive_funcs[drive]->format)
+                drive_funcs[drive]->format(drive, track, side, density);
         else
-           disc_notfound = 10000;
+                disc_notfound = 10000;
 }
 
 void disc_stop(int drive)
 {
-        if (drives[drive].stop)
-           drives[drive].stop();
+        if (drive_funcs[drive] && drive_funcs[drive]->stop)
+                drive_funcs[drive]->stop();
 }
 
 void disc_set_motor(int enable)

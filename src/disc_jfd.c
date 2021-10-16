@@ -10,6 +10,10 @@
 #include "disc.h"
 #include "disc_jfd.h"
 
+static disc_funcs_t jfd_disc_funcs;
+
+static void jfd_seek(int drive, int track);
+
 static struct
 {
         struct
@@ -113,7 +117,7 @@ void jfd_load(int drive, char *fn)
 {
         rpclog("jfd_load\n");
         
-        writeprot[drive] = fwriteprot[drive] = 1;
+        writeprot[drive] = 1;
         jfd_f[drive] = gzopen(fn, "rb");
         if (!jfd_f[drive]) return;
         
@@ -128,23 +132,17 @@ void jfd_load(int drive, char *fn)
         gzseek(jfd_f[drive], jfd[drive].header.offset_track, SEEK_SET);
         gzread(jfd_f[drive], jfd[drive].track_offset, jfd[drive].num_tracks * 4);
         
-        drives[drive].seek        = jfd_seek;
-        drives[drive].readsector  = jfd_readsector;
-        drives[drive].writesector = jfd_writesector;
-        drives[drive].readaddress = jfd_readaddress;
-        drives[drive].poll        = jfd_poll;
-        drives[drive].format      = jfd_format;
-        drives[drive].stop        = jfd_stop;
+        drive_funcs[drive] = &jfd_disc_funcs;
         rpclog("Loaded as jfd\n");
 }
 
-void jfd_close(int drive)
+static void jfd_close(int drive)
 {
         if (jfd_f[drive]) gzclose(jfd_f[drive]);
         jfd_f[drive] = NULL;
 }
 
-void jfd_seek(int drive, int track)
+static void jfd_seek(int drive, int track)
 {
         int head, sector;
         if (!jfd_f[drive]) return;
@@ -201,12 +199,7 @@ void jfd_seek(int drive, int track)
         }
 }
 
-void jfd_writeback(int drive, int track)
-{
-        return;
-}
-
-void jfd_readsector(int drive, int sector, int track, int side, int density)
+static void jfd_readsector(int drive, int sector, int track, int side, int density)
 {
         jfd_revs = 0;
         jfd_sector  = sector;
@@ -227,7 +220,7 @@ void jfd_readsector(int drive, int sector, int track, int side, int density)
         jfd_state   = JFD_FIND_SECTOR;
 }
 
-void jfd_writesector(int drive, int sector, int track, int side, int density)
+static void jfd_writesector(int drive, int sector, int track, int side, int density)
 {
         jfd_revs = 0;
         jfd_sector = sector;
@@ -247,7 +240,7 @@ void jfd_writesector(int drive, int sector, int track, int side, int density)
         jfd_state   = JFD_FIND_SECTOR;
 }
 
-void jfd_readaddress(int drive, int track, int side, int density)
+static void jfd_readaddress(int drive, int track, int side, int density)
 {
         jfd_revs = 0;
         jfd_track   = track;
@@ -261,7 +254,7 @@ void jfd_readaddress(int drive, int track, int side, int density)
         jfd_state      = JFD_FIND_SECTOR;
 }
 
-void jfd_format(int drive, int track, int side, int density)
+static void jfd_format(int drive, int track, int side, int density)
 {
         jfd_revs = 0;
         jfd_track   = track;
@@ -277,7 +270,7 @@ void jfd_format(int drive, int track, int side, int density)
 static int jfd_nextsector=0;
 static int ddidbitsleft=0;
 
-void jfd_stop()
+static void jfd_stop()
 {
         jfd_inread = jfd_inwrite = jfd_inreadaddr = 0;
         jfd_nextsector = ddidbitsleft = 0;
@@ -286,7 +279,7 @@ void jfd_stop()
 
 static int jfd_pos_us = 0;
 
-void jfd_poll()
+static void jfd_poll()
 {
         int c;
         int old_pos_us = jfd_pos_us;
@@ -299,7 +292,7 @@ void jfd_poll()
         if (jfd_pos_us == 191808)
         {
 //                rpclog("index pulse\n");
-                fdc_indexpulse(fdc_p);
+                fdc_funcs->indexpulse(fdc_p);
         }
                 
         switch (jfd_state)
@@ -319,10 +312,10 @@ void jfd_poll()
                                 rpclog("%06i : Found sector %i %08X %i %i\n", jfd_pos_us, c, header, old_pos_us, time_us);
                                 if (jfd_inreadaddr)
                                 {
-                                        rpclog("jfd_inreadaddr %i %i %i\n", fdc_sectorid, (header >> 16) & 0xf, jfd_density);
-                                        if (fdc_sectorid && ((header >> 16) & 0xf) == jfd_density)
+                                        rpclog("jfd_inreadaddr %i %i %i\n", fdc_funcs->sectorid, (header >> 16) & 0xf, jfd_density);
+                                        if (fdc_funcs->sectorid && ((header >> 16) & 0xf) == jfd_density)
                                         {
-                                                fdc_sectorid(jfd_track, jfd_side, header >> 8 & 0xff, header & 3, 0, 0, fdc_p);
+                                                fdc_funcs->sectorid(jfd_track, jfd_side, header >> 8 & 0xff, header & 3, 0, 0, fdc_p);
                                                 jfd_inreadaddr = 0;
                                                 jfd_state = JFD_IDLE;
                                         }
@@ -334,7 +327,7 @@ void jfd_poll()
                                         {
                                                 if (header & CRC_ID_INVALID)
                                                 {
-                                                        fdc_headercrcerror(fdc_p);
+                                                        fdc_funcs->headercrcerror(fdc_p);
                                                         jfd_state = JFD_IDLE;
                                                 }
                                                 else
@@ -352,14 +345,14 @@ void jfd_poll()
                 
                 case JFD_READ_SECTOR:
 //                rpclog("JFD_READ_SECTOR : %04i %02X\n", jfd_readpos, jfd[jfd_drive].sector_data[jfd_side][jfd_realsector][jfd_readpos]);
-                fdc_data(jfd[jfd_drive].sector_data[jfd_side][jfd_realsector][jfd_readpos], fdc_p);
+                fdc_funcs->data(jfd[jfd_drive].sector_data[jfd_side][jfd_realsector][jfd_readpos], fdc_p);
                 jfd_readpos++;
                 if (jfd_readpos == (128 << (jfd[jfd_drive].sector_table[jfd_side][jfd_realsector].header & 3)))
                 {
 //                        rpclog("Read %i bytes\n", jfd_readpos);
-                        fdc_finishread(fdc_p);
+                        fdc_funcs->finishread(fdc_p);
                         if (jfd[jfd_drive].sector_table[jfd_side][jfd_realsector].header & CRC_DATA_INVALID)
-                                fdc_datacrcerror(fdc_p);
+                                fdc_funcs->datacrcerror(fdc_p);
                         jfd_inread = 0;
                         jfd_state = JFD_IDLE;
                 }
@@ -369,3 +362,15 @@ void jfd_poll()
                 break;
         }
 }
+
+static disc_funcs_t jfd_disc_funcs =
+{
+        .seek        = jfd_seek,
+        .readsector  = jfd_readsector,
+        .writesector = jfd_writesector,
+        .readaddress = jfd_readaddress,
+        .poll        = jfd_poll,
+        .format      = jfd_format,
+        .stop        = jfd_stop,
+        .close       = jfd_close
+};

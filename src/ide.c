@@ -25,7 +25,7 @@ ide_t ide_internal;
 
 static void ide_update_irq(ide_t *ide)
 {
-        if (ide->irq_active[ide->drive] && ide->irq_enabled[ide->drive])
+        if (ide->irq_active[ide->drive] && ide->irq_enabled)
         {
                 if (ide->irq_raise)
                         ide->irq_raise(ide);
@@ -240,7 +240,7 @@ void writeide(ide_t *ide, uint32_t addr, uint8_t val)
 //                        rpclog("IDE Reset\n");
                 }
                 ide->fdisk=val;
-                ide->irq_enabled[ide->drive] = !(val & 2);
+                ide->irq_enabled = !(val & 2);
                 ide_update_irq(ide);
                 return;
         }

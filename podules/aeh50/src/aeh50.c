@@ -1,14 +1,19 @@
-/*Acorn Ethernet III podule (AEH50)
+/*Acorn Ethernet II podule (AEH50)
 
   IOC address map :
-    0000-3fff - ROM (read)
-                ROM page (write)
+    0000-1fff - ROM (read)
+    2000-2fff - IRQ status (read)
+                bit 0 - IRQ active
+    3000-3fff - Page register (write)
+                bits 0-8 - ROM page (not used with default ROM)
+                bit 14 - Remote DMA port access direction (1=read, 0=write)
+                bit 15 - DP8390 reset (active low)
 
   MEMC address map :
-    0000-3fff - SEEQ 8005
-    		SEEQ A0 not connected (16-bit config)
-    		Arc A6-8 connected to SEEQ A1-3
-    		Card width test relies on byte writes duplicating the data in both lanes
+    2000-2fff - Remote DMA transfer port
+                Used with both byte and word accesses
+    3000-3fff - DP8390 registers
+                Arc A2-A5 connected to A0-A3
 */
 
 #ifdef WIN32

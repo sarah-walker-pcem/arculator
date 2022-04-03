@@ -1,0 +1,27 @@
+VPATH = . ..\..\common\net ..\..\common\net\slirp
+CPP  = g++.exe
+CC   = gcc.exe
+OBJ  = aeh50.o ne2000.o net_slirp.o
+LIBSLIRP_OBJ = bootp.o        cksum.o        debug.o        if.o           ip_icmp.o		\
+	ip_input.o     ip_output.o    mbuf.o         misc.o         queue.o		\
+	sbuf.o         slirp.o        socket.o       tcp_input.o    tcp_output.o	\
+	tcp_subr.o     tcp_timer.o    tftp.o         udp.o
+
+LIBS = --no-export-all-symbols --add-stdcall-alias -lwsock32 -liphlpapi -lkernel32 -lpthread
+CFLAGS = $(INCS) -DBUILDING_DLL=1 -I..\..\..\src -I..\..\common\net -I..\..\common\net\slirp
+
+all: aeh50.dll
+
+clean:
+	rm *.o
+	rm *.dll
+
+DLLWRAP=dllwrap.exe
+DEFFILE=libaeh50.def
+STATICLIB=libaeh50.a
+
+aeh50.dll: $(OBJ) $(LIBSLIRP_OBJ)
+	$(DLLWRAP) $(OBJ) $(LIBSLIRP_OBJ) $(LIBS) -o aeh50.dll
+
+%.o: %.c
+	$(CC) $(CFLAGS) -c $<

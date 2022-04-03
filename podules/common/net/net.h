@@ -17,6 +17,7 @@ typedef struct
 	void (*close)(struct net_t *net);
 	int (*read)(struct net_t *net, packet_t *packet);
 	void (*write)(struct net_t *net, uint8_t *data, int size);
+	void (*free)(struct net_t *net, packet_t *packet);
 
 	void *p;
 } net_t;

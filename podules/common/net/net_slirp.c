@@ -66,6 +66,12 @@ static void net_slirp_write(net_t *net, uint8_t *data, int size)
 	slirp_input(data, size);
 }
 
+static void net_slirp_free(net_t *net, packet_t *packet)
+{
+	packet->data = NULL;
+	free(packet->p);
+}
+
 
 void slirp_output(const unsigned char *pkt, int pkt_len)
 {
@@ -107,6 +113,7 @@ net_t *net_init(void)
 	net->close = net_slirp_close;
 	net->read = net_slirp_read;
 	net->write = net_slirp_write;
+	net->free = net_slirp_free;
 	net->p = slirp;
 
         rc = slirp_init();

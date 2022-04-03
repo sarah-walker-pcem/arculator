@@ -554,5 +554,6 @@ void seeq8005_poll(seeq8005_t *seeq8005)
 			else
 				receive_packet(seeq8005, packet.data, packet.len);
 		}
+		seeq8005->net->free(seeq8005->net, &packet);
 	}
 }

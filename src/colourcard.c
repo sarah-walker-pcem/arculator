@@ -12,7 +12,7 @@
         bit 0 - IRQ (cleared on read?)
   3000 - Control register
         bit 2 - !VIDC passthrough (?)
-        bit 6 - IRQ enable (?)
+        bit 7 - IRQ enable (?)
         others - unknown
         Set to 41 when VIDC driving display, cc when G332 driving
 
@@ -137,7 +137,8 @@ static void colourcard_irq_callback(void *p, int state)
         if (state)
         {
                 colourcard->irq_status |= 1;
-                podule_callbacks->set_irq(colourcard->podule, 1);
+                if (colourcard->control & 0x80)
+                        podule_callbacks->set_irq(colourcard->podule, 1);
         }
 }
 
@@ -212,6 +213,10 @@ static void colourcard_write_b(struct podule_t *podule, podule_io_type type, uin
                 case 0x3000:
                 colourcard->control = val;
 //                rpclog("CC control=%02x\n", val);
+                if ((colourcard->irq_status & 1) && (val & 0x80))
+                        podule_callbacks->set_irq(colourcard->podule, 1);
+                else
+                        podule_callbacks->set_irq(colourcard->podule, 0);
                 vidc_output_enable(!(val & 4));
                 g332_output_enable(&colourcard->g332, val & 4);
                 break;

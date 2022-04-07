@@ -299,6 +299,9 @@ void wd33c93a_write(wd33c93a_t *wd, uint32_t addr, uint8_t val)
                         aka31_log("Tried to start new command while old in progress\n");
                         return;
                 }
+                wd->aux_status &= ~AUX_STATUS_INT;
+                aka31_sbic_int_clear(wd->podule);
+
 //                aka31_log("Start command %02x\n", val);
                 wd->aux_status |= AUX_STATUS_CIP;
                 wd->command = val;

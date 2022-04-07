@@ -188,8 +188,7 @@ uint8_t ioc_read(uint32_t addr)
                 LOG_KB_MOUSE("keyboard_read %02X\n", temp);
                 return temp;
                 case 0x10: 
-                temp = ioc.irqa; 
-                return temp;
+                return ioc.irqa | 0x80;
                 case 0x14: 
                 return (ioc.irqa | 0x80) & ioc.mska;
                 case 0x18:

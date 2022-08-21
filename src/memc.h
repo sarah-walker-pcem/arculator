@@ -20,3 +20,6 @@ extern uint64_t memc_dma_video_req_start_ts;
 extern uint64_t memc_dma_video_req_period;
 extern int memc_dma_cursor_req;
 extern uint64_t memc_dma_cursor_req_ts;
+
+void memc_debug_print(char *s);
+void memc_debug_print_cam(void);

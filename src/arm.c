@@ -6,6 +6,7 @@
 #include "arc.h"
 #include "arm.h"
 #include "cp15.h"
+#include "debugger.h"
 #include "disc.h"
 #include "fpa.h"
 #include "hostfs.h"
@@ -503,7 +504,7 @@ int fpaena=0;
 
 int irq;
 uint8_t flaglookup[16][16];
-static uint32_t rotatelookup[4096];
+uint32_t rotatelookup[4096];
 int timetolive=0;
 int inscount;
 int armirq=0;
@@ -1148,7 +1149,14 @@ static void exception(uint32_t vector, int new_mode, int pc_offset)
         refillpipeline();
 }
 
-#define EXCEPTION_UNDEFINED()  exception(0x08, SUPERVISOR, -4)
+#define EXCEPTION_UNDEFINED()                                 \
+        do                                                    \
+        {                                                     \
+                if (debugon)                                  \
+                        debug_trap(DEBUG_TRAP_UNDEF, opcode); \
+                exception(0x08, SUPERVISOR, -4); \
+        } while (0)
+
 #define EXCEPTION_SWI()        exception(0x0c, SUPERVISOR, -4)
 #define EXCEPTION_PREF_ABORT() exception(0x10, SUPERVISOR, 0)
 #define EXCEPTION_DATA_ABORT() exception(0x14, SUPERVISOR, 0)
@@ -1223,6 +1231,9 @@ void execarm(int cycles_to_execute)
                 }
                 cache_read_timing(PC, ((PC & 0xc) && !promote_fetch_to_n) ? 0 : 1, promote_fetch_to_n);
                 promote_fetch_to_n = PROMOTE_NONE;
+
+                if (debugon && !prefabort)
+                        debugger_do();
 
                 if (flaglookup[opcode >> 28][armregs[15] >> 28] && !prefabort)
                 {
@@ -2676,6 +2687,9 @@ void execarm(int cycles_to_execute)
                                 case 0xF4: case 0xF5: case 0xF6: case 0xF7:
                                 case 0xF8: case 0xF9: case 0xFA: case 0xFB:
                                 case 0xFC: case 0xFD: case 0xFE: case 0xFF:
+                                if (debugon)
+                                        debug_trap(DEBUG_TRAP_SWI, opcode);
+
                                 if (mousehack)
                                 {
                                         if ((opcode&0x1FFFF)==7 && armregs[0]==0x15 && (readmemb(armregs[1])==1))
@@ -2727,16 +2741,22 @@ void execarm(int cycles_to_execute)
                 {
                         if (prefabort)       /*Prefetch abort*/
                         {
+                                if (debugon)
+                                        debug_trap(DEBUG_TRAP_PREF_ABORT, opcode);
                                 prefabort = 0;
                                 EXCEPTION_PREF_ABORT();
                         }
                         else if (databort == 1)     /*Data abort*/
                         {
+                                if (debugon)
+                                        debug_trap(DEBUG_TRAP_DATA_ABORT, opcode);
                                 databort = 0;
                                 EXCEPTION_DATA_ABORT();
                         }
                         else if (databort == 2) /*Address Exception*/
                         {
+                                if (debugon)
+                                        debug_trap(DEBUG_TRAP_ADDR_EXCEP, opcode);
                                 databort = 0;
                                 EXCEPTION_ADDRESS();
                         }

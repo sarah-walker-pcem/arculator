@@ -21,11 +21,13 @@
 
 #include "wx-config.h"
 #include "wx-config_sel.h"
+#include "wx-console.h"
 
 extern "C"
 {
         #include "arc.h"
         #include "config.h"
+        #include "debugger.h"
         #include "disc.h"
         #include "plat_joystick.h"
         #include "plat_video.h"
@@ -120,7 +122,11 @@ void Frame::Quit(bool stop_emulator)
 
 void Frame::OnStopEmulationEvent(wxCommandEvent &event)
 {
+        CloseConsoleWindow();
         arc_stop_main_thread();
+
+        debug_end();
+
         if (!ShowConfigSelection())
                 arc_start_main_thread(this, this->menu);
         else
@@ -196,6 +202,9 @@ void Frame::UpdateMenu(wxMenu *menu)
         item = ((wxMenu*)menu)->FindItem(XRCID("IDM_DRIVER_SOFTWARE"));
         item->Enable(video_renderer_available(RENDERER_SOFTWARE) ? true : false);
         item->Check((selected_video_renderer == RENDERER_SOFTWARE) ? true : false);
+
+        item = ((wxMenu*)menu)->FindItem(XRCID("IDM_DEBUGGER_ENABLE"));
+        item->Check(debug);
 }
 
 void Frame::OnPopupMenuEvent(PopupMenuEvent &event)
@@ -466,6 +475,32 @@ void Frame::OnMenuCommand(wxCommandEvent &event)
                 item->Check(true);
 
                 arc_set_dblscan(1);
+        }
+        else if (event.GetId() == XRCID("IDM_DEBUGGER_ENABLE"))
+        {
+                wxMenuItem *item = ((wxMenu*)menu)->FindItem(event.GetId());
+
+                if (!debugon)
+                {
+                        arc_pause_main_thread();
+                        debugon = 1;
+                        debug = 1;
+                        debug_start();
+                        ShowConsoleWindow(this);
+                        arc_resume_main_thread();
+                }
+                else
+                {
+                        debug = 0;
+                        CloseConsoleWindow();
+                        debug_end();
+                }
+
+                item->Check(debugon);
+        }
+        else if (event.GetId() == XRCID("IDM_DEBUGGER_BREAK"))
+        {
+                debug = 1;
         }
 }
 

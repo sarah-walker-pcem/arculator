@@ -5,12 +5,19 @@ int flybacklines;
 #include <stdio.h>
 #include <string.h>
 #include "arc.h"
+#include "debugger.h"
 #include "ioc.h"
 #include "mem.h"
 #include "memc.h"
 #include "soundopenal.h"
 #include "timer.h"
 #include "vidc.h"
+
+static struct
+{
+        uint32_t logical_addr;
+        uint8_t ppl;
+} memc_cam[512];
 
 int memc_videodma_enable;
 int memc_refreshon;
@@ -94,7 +101,9 @@ void writememc(uint32_t a)
                 ioc_irqb(IOC_IRQB_SOUND_BUFFER);
                 nextvalid=0;
                 return;
-                case 7: osmode=(a&0x1000)?1:0; /*MEMC ctrl*/
+                case 7: /*MEMC ctrl*/
+                memctrl = a & 0x3ffc;
+                osmode=(a&0x1000)?1:0;
                 sdmaena=(a&0x800)?1:0;
                 pagesize=(a&0xC)>>2;
                 resetpagesize(pagesize);
@@ -125,7 +134,7 @@ void writememc(uint32_t a)
 
 void writecam(uint32_t a)
 {
-        int page,access,logical,c;
+        int page = 0, access = 0, logical = 0, c;
 //        rpclog("Write CAM %08X pagesize %i %i\n",a,pagesize,ins);
         switch (pagesize)
         {
@@ -203,10 +212,91 @@ void writecam(uint32_t a)
                 break;
         }
 //        memcpermissions[logical]=access;
+        memc_cam[page].logical_addr = logical << 12;
+        memc_cam[page].ppl = access;
 }
 
 void initmemc()
 {
         int c;
         for (c=0;c<0x2000;c++) memstat[c]=0;
+}
+
+static const char *page_sizes[4] =
+{
+        "4k", "8k", "16k", "32k"
+};
+
+static const char *rom_speeds[4] =
+{
+        "450ns", "325ns", "200ns", "200ns w/60ns nibble mode"
+};
+
+static const char *refresh_modes[4] =
+{
+        "Disabled", "Vblank only", "Disabled", "Continuous"
+};
+
+void memc_debug_print(char *s)
+{
+        sprintf(s, "MEMC registers :\n"
+                   "Control=%04x\n"
+                   "  Page size=%s\n"
+                   "  Low ROM area (5th column) speed=%s (at 8 MHz)\n"
+                   "  High ROM area (OS) speed=%s (at 8 MHz)\n"
+                   "  DRAM refresh=%s\n"
+                   "  Video DMA=%s\n"
+                   "  Sound DMA=%s\n"
+                   "  OS mode=%s\n\n"
+                   "DMA register values :\n"
+                   "  Vinit=%05x Vstart=%05x Vend=%05x Cinit=%05x\n"
+                   "  Sstart=%05x SendN=%05x\n\n"
+                   "DMA current values :\n"
+                   "  Vaddr=%05x Caddr=%05x Saddr=%05x Send=%05x\n\n",
+                   memctrl,
+                   page_sizes[pagesize],
+                   rom_speeds[(memctrl >> 4) & 3],
+                   rom_speeds[(memctrl >> 6) & 3],
+                   refresh_modes[(memctrl >> 8) & 3],
+                   (memctrl & (1 << 10)) ? "Enabled" : "Disabled",
+                   (memctrl & (1 << 11)) ? "Enabled" : "Disabled",
+                   (memctrl & (1 << 12)) ? "Enabled" : "Disabled",
+                   vinit << 2, vstart << 2, vend << 2, cinit << 2,
+                   sstart << 2, sendN << 2,
+                   vidc_get_current_vaddr() << 2,
+                   vidc_get_current_caddr() << 2,
+                   spos, ssend);
+}
+
+void memc_debug_print_cam(void)
+{
+        int nr_memcs = memsize / 4096;
+
+        if (!nr_memcs)
+                nr_memcs = 1;
+
+        for (int j = 0; j < nr_memcs; j++)
+        {
+                char s[256];
+
+                if (nr_memcs > 1)
+                {
+                        sprintf(s, "MEMC #%i :\n", j);
+                        debug_out(s);
+                }
+
+                for (int i = 0; i < 128/4; i++)
+                {
+                        int offset = j*128 + i;
+
+                        sprintf(s, " [%02x] addr=%07x ppl=%i   [%02x] addr=%07x ppl=%i   [%02x] addr=%07x ppl=%i   [%02x] addr=%07x ppl=%i\n",
+                                i, memc_cam[offset].logical_addr, memc_cam[offset].ppl,
+                                i+32, memc_cam[offset+32].logical_addr, memc_cam[offset+32].ppl,
+                                i+64, memc_cam[offset+64].logical_addr, memc_cam[offset+64].ppl,
+                                i+96, memc_cam[offset+96].logical_addr, memc_cam[offset+96].ppl);
+
+                        debug_out(s);
+                }
+                debug_out("\n");
+        }
 }

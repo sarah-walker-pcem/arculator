@@ -28,6 +28,8 @@ extern void ioc_fiqc(uint8_t num);
 extern void ioc_discchange(int drive);
 extern void ioc_discchange_clear(int drive);
 
+void ioc_debug_print(char *s);
+
 extern void initjoy();
 extern void polljoy();
 extern uint8_t readjoy(int addr);

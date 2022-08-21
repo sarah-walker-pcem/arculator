@@ -320,3 +320,18 @@ void keycallback2()
         iockey=tempkey;
         ioc_irqb(IOC_IRQB_KEYBOARD_RX);
 }
+
+void ioc_debug_print(char *s)
+{
+        sprintf(s, "IOC registers:\n"
+                   "IRQ status A=%02x  IRQ status B=%02x  FIQ status=%02x\n"
+                   "IRQ mask A  =%02x  IRQ mask B  =%02x  FIQ mask  =%02x\n"
+                   "T0 count=%04x  T1 count=%04x  T2 count=%04x  T3 count=%04x\n"
+                   "T0 latch=%04x  T1 latch=%04x  T2 latch=%04x  T2 latch=%04x\n"
+                   "Control=%02x\n",
+                   ioc.irqa, ioc.irqb, ioc.fiq,
+                   ioc.mska, ioc.mskb, ioc.mskf,
+                   read_timer(0), read_timer(1), read_timer(2), read_timer(3),
+                   ioc.timerl[0], ioc.timerl[1], ioc.timerl[2], ioc.timerl[3],
+                   ioc.ctrl);
+}

@@ -280,6 +280,16 @@
 				<label>_Configure machine...</label>
 			</object>
 		</object>
+		<object class="wxMenu">
+			<label>_Debugger</label>
+			<object class="wxMenuItem" name="IDM_DEBUGGER_ENABLE">
+				<label>_Enable debugger</label>
+				<checkable>1</checkable>
+			</object>
+			<object class="wxMenuItem" name="IDM_DEBUGGER_BREAK">
+				<label>_Break</label>
+			</object>
+		</object>
 	</object>
 
 	<object class="wxDialog" name="ConfigureDlg">

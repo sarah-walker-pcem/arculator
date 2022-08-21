@@ -11,6 +11,7 @@
 #include "arc.h"
 #include "arm.h"
 #include "config.h"
+#include "debugger.h"
 #include "ioc.h"
 #include "keyboard.h"
 #include "mem.h"
@@ -377,7 +378,7 @@ void writevidc(uint32_t v)
                         case 14: v = 0x38000626; break;
                         case 15: v = 0x3C000737; break;
                 }*/
-                vidcr[v>>26]=v;
+                vidcr[v >> 26] = v & 0x1fff;
                 r.b=(v&0xF00)>>6;
                 r.g=(v&0xF0)>>2;
                 r.r=(v&0xF)<<2;
@@ -398,6 +399,7 @@ void writevidc(uint32_t v)
                         if (c < 0x100)
                                 vidc.pal8[c] = makecol((r.r<<4)|r.r, (r.g<<4)|r.g, (r.b<<4)|r.b) | ((v & 0x1000) << 12);
                 }
+                return;
         }
         vidcr[v>>26]=v;
         if ((v>>24)==0x80)
@@ -456,7 +458,7 @@ void writevidc(uint32_t v)
         }
         if ((v>>24)==0x94) vidc.hbend=(((v&0xFFFFFF)>>14)<<1)+1;
         if ((v>>24)==0x98) { vidc.cx=((v&0xFFE000)>>13)+6; vidc.cxh=((v&0xFFF800)>>11)+24; }
-        if ((v>>24)==0x9C) vidc.inter=(v&0xFFFFFF);
+        if ((v>>24)==0x9C) vidc.inter = (v & 0xffc000) >> 13;
         if ((v>>24)==0xA4)
         {
                 if (vidc.vsync != ((v >> 14) & 0x3FF) + 1)
@@ -494,7 +496,7 @@ void writevidc(uint32_t v)
         }
         if ((v>>24)==0xE0)
         {
-                vidc.cr = v & 0xffffff;
+                vidc.cr = v & 0x00c1ff;
                 recalcse();
                 vidc_redovideotiming();
                 LOG_VIDC_REGISTERS("VIDC write ctrl %08X\n", vidc.cr);
@@ -1324,4 +1326,76 @@ void vidc_attach(void (*vidc_data)(uint8_t *data, int pixels, int hsync_length, 
 void vidc_output_enable(int ena)
 {
         vidc.output_enable = ena;
+}
+
+uint32_t vidc_get_current_vaddr(void)
+{
+        return vidc.addr;
+}
+uint32_t vidc_get_current_caddr(void)
+{
+        return vidc.caddr;
+}
+
+static const int pixel_rates[4] = {8, 12, 16, 24};
+static const char *stereo_images[8] =
+{
+        "Undefined ", "100% left ", "83% left  ", "67% left  ",
+        "Centre    ", "67% right ", "83% right ", "100% right"
+};
+
+void vidc_debug_print(char *s)
+{
+        sprintf(s, "VIDC registers :\n"
+                   " Horizontal cycle        =%4i   Vertical cycle        =%4i\n"
+                   " Horizontal sync width   =%4i   Vertical sync width   =%4i\n"
+                   " Horizontal border start =%4i   Vertical border start =%4i\n"
+                   " Horizontal display start=%4i   Vertical display start=%4i\n"
+                   " Horizontal display end  =%4i   Vertical display end  =%4i\n"
+                   " Horizontal border end   =%4i   Vertical border end   =%4i\n"
+                   " Horizontal cursor start =%4i   Vertical cursor start =%4i\n"
+                   "                                 Vertical cursor end   =%4i\n"
+                   " Interlace=%4i\n"
+                   " Sound period=%i  frequency=%i kHz\n"
+                   " Control=%x\n"
+                   "   Pixel rate=%g MHz\n"
+                   "   Bits per pixel=%i\n"
+                   "   DMA request=end of word %i,%i\n"
+                   "   Interlace sync %s\n"
+                   "   %s sync\n"
+                   " Input clock=%g MHz\n\n",
+                   vidc.htot*2 + 2, vidc.vtot,
+                   vidc.sync*2 + 2, vidc.vsync,
+                   vidc.hbstart, vidc.vbstart,
+                   vidc.hdstart, vidc.vdstart,
+                   vidc.hdend, vidc.vdend,
+                   vidc.hbend, vidc.vbend,
+                   vidc.cx, vidc.cys >> 14,
+                   vidc.cye >> 14,
+                   vidc.inter,
+                   (vidcr[0xc0 >> 2] & 0xff) + 2,
+                   ((vidc.clock * 1000) / 24) / ((vidcr[0xc0 >> 2] & 0xff) + 2),
+                   vidc.cr,
+                   (double)((vidc.clock * pixel_rates[vidc.cr & 3]) / 24) / 1000.0,
+                   1 << ((vidc.cr >> 2) & 3),
+                   (vidc.cr >> 4) & 3, 4 + ((vidc.cr >> 4) & 3),
+                   (vidc.cr & (1 << 6)) ? "on" : "off",
+                   (vidc.cr & (1 << 7)) ? "Composite" : "Vertical",
+                   (double)vidc.clock / 1000.0);
+        debug_out(s);
+
+        sprintf(s, "Palette :\n"
+                   " [0]=%04x [1]=%04x [2]=%04x [3]=%04x [4]=%04x [5]=%04x [6]=%04x [7]=%04x\n"
+                   " [8]=%04x [9]=%04x [a]=%04x [b]=%04x [c]=%04x [d]=%04x [e]=%04x [f]=%04x\n"
+                   " Border=%04x  Cursor[1]=%04x  Cursor[2]=%04x  Cursor[3]=%04x\n\n"
+                   "Stereo images :\n"
+                   " [0]=%s [1]=%s [2]=%s [3]=%s\n"
+                   " [4]=%s [5]=%s [6]=%s [7]=%s\n\n",
+                   vidcr[0], vidcr[1], vidcr[2], vidcr[3], vidcr[4], vidcr[5], vidcr[6], vidcr[7],
+                   vidcr[8], vidcr[9], vidcr[10], vidcr[11], vidcr[12], vidcr[13], vidcr[14], vidcr[15],
+                   vidcr[16], vidcr[17], vidcr[18], vidcr[19],
+                   stereo_images[stereoimages[0]], stereo_images[stereoimages[1]],
+                   stereo_images[stereoimages[2]], stereo_images[stereoimages[3]],
+                   stereo_images[stereoimages[4]], stereo_images[stereoimages[5]],
+                   stereo_images[stereoimages[6]], stereo_images[stereoimages[7]]);
 }

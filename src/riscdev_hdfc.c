@@ -52,9 +52,6 @@ static int hdfc_init(struct podule_t *podule)
 {
         FILE *f;
         char fn[512];
-        char hd4_fn[512] = {0}, hd5_fn[512] = {0};
-        int hd_spt[2], hd_hpc[2], hd_cyl[2];
-        const char *p;
 
         hdfc_t *hdfc = malloc(sizeof(hdfc_t));
         memset(hdfc, 0, sizeof(hdfc_t));
@@ -145,8 +142,6 @@ static uint8_t hdfc_read_b(struct podule_t *podule, podule_io_type type, uint32_
 
 static uint16_t hdfc_read_w(struct podule_t *podule, podule_io_type type, uint32_t addr)
 {
-        hdfc_t *hdfc = podule->p;
-
         if (type != PODULE_IO_TYPE_IOC)
         {
                 rpclog("hdfc_read_w: MEMC %08x\n", addr);
@@ -208,8 +203,6 @@ static void hdfc_write_b(struct podule_t *podule, podule_io_type type, uint32_t 
 
 static void hdfc_write_w(struct podule_t *podule, podule_io_type type, uint32_t addr, uint16_t val)
 {
-        hdfc_t *hdfc = podule->p;
-
         if (type != PODULE_IO_TYPE_IOC)
         {
                 rpclog("hdfc_write_w: MEMC %08x %04x\n", addr, val);

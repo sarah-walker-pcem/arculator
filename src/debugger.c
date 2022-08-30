@@ -2,6 +2,7 @@
 #include "arc.h"
 #include "arm.h"
 #include "debugger.h"
+#include "debugger_swis.h"
 #include "ioc.h"
 #include "mem.h"
 #include "memc.h"
@@ -369,8 +370,18 @@ static void debug_disassemble(void)
         }
         else if ((opcode & 0x0f000000) == 0x0f000000) /*SWI*/
         {
-                sprintf(s, "SWI%s %06x", cond, opcode & 0xffffff);
-                debug_out(s);
+                const char *swi_name = debugger_swi_lookup(opcode);
+
+                if (swi_name)
+                {
+                        sprintf(s, "SWI%s %s%s", cond, (opcode & 0x20000) ? "X" : "", swi_name);
+                        debug_out(s);
+                }
+                else
+                {
+                        sprintf(s, "SWI%s %06x", cond, opcode & 0xffffff);
+                        debug_out(s);
+                }
         }
         else
         {
@@ -397,7 +408,18 @@ void debug_trap(int trap, uint32_t opcode)
                 uint32_t pc = (PC - 8) & 0x3fffffc;
                 char s[256];
                 
-                sprintf(s, "%s at %07x\n", trap_names[trap], pc);
+                if (trap == DEBUG_TRAP_SWI)
+                {
+                        const char *swi_name = debugger_swi_lookup(opcode);
+
+                        if (swi_name)
+                                sprintf(s, "%s %s at %07x\n", trap_names[trap], swi_name, pc);
+                        else
+                                sprintf(s, "%s %06x at %07x\n", trap_names[trap], opcode & 0xffffff, pc);
+                }
+                else
+                        sprintf(s, "%s at %07x\n", trap_names[trap], pc);
+
                 debug_out(s);
                 
                 debug = 1;

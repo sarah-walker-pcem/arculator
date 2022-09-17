@@ -177,7 +177,10 @@ static int new_drive_close(void *window_p)
                 new_cylinders = cylinders;
                 new_heads = heads;
                 new_sectors = sectors;
-                strncpy(new_fn, temp_s, sizeof(new_fn));
+
+                int len = strnlen(temp_s, sizeof(new_fn) - 1);
+                memcpy(new_fn, temp_s, len);
+                new_fn[len] = 0;
                 new_drive_valid = 1;
         }
 

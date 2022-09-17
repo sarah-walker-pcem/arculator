@@ -551,7 +551,11 @@ ConfigDialog::ConfigDialog(wxWindow *parent, bool is_running)
         UpdateList(config_cpu, config_mem, config_memc, config_fpu, config_io);
 
         for (c = 0; c < 4; c++)
-                strncpy(config_podules[c], podule_names[c], 15);
+        {
+                int len = strnlen(podule_names[c], sizeof(config_podules[c]) - 1);
+                memcpy(config_podules[c], podule_names[c], len);
+                config_podules[c][len] = 0;
+        }
 
         PopulatePoduleLists();
         Update5thColumn();
@@ -910,7 +914,9 @@ void ConfigDialog::OnOK(wxCommandEvent &event)
                 c++;
         }
 
-        strncpy(machine, presets[config_preset].config_name, sizeof(machine));
+        int len = strnlen(presets[config_preset].config_name, sizeof(machine) - 1);
+        memcpy(machine, presets[config_preset].config_name, len);
+        machine[len] = 0;
 
         tctrl = (wxTextCtrl *)this->FindWindow(XRCID("IDC_EDIT_5THCOL"));
         strcpy(_5th_column_fn, tctrl->GetValue().mb_str());

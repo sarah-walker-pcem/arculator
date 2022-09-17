@@ -368,7 +368,11 @@ static section_t *create_section(const char *name, int is_global)
         list_t *head = is_global ? &global_config_head : &machine_config_head;
         
         memset(new_section, 0, sizeof(section_t));
-        strncpy(new_section->name, name, 256);
+        if (name)
+        {
+                strncpy(new_section->name, name, sizeof(new_section->name) - 1);
+                new_section->name[sizeof(new_section->name) - 1] = 0;
+        }
         list_add(&new_section->list, head);
         
         return new_section;
@@ -378,7 +382,8 @@ static entry_t *create_entry(section_t *section, const char *name)
 {
         entry_t *new_entry = (entry_t *)malloc(sizeof(entry_t));
         memset(new_entry, 0, sizeof(entry_t));
-        strncpy(new_entry->name, name, 256);
+        strncpy(new_entry->name, name, sizeof(new_entry->name) - 1);
+        new_entry->name[sizeof(new_entry->name) - 1] = 0;
         list_add(&new_entry->list, &section->entry_head);
         
         return new_entry;
@@ -495,7 +500,7 @@ void config_set_string(int is_global, const char *head, const char *name, char *
         if (!entry)
                 entry = create_entry(section, name);
 
-        strncpy(entry->data, val, 256);
+        strncpy(entry->data, val, sizeof(entry->data) - 1);
 }
 
 void config_save(int is_global, char *fn)
@@ -762,22 +767,37 @@ void loadconfig()
         selected_video_renderer = video_renderer_get_id(p);
         p = (char *)config_get_string(CFG_MACHINE, NULL, "podule_0", NULL);
         if (p)
-                strncpy(podule_names[0], p, 15);
+        {
+                int len = strnlen(p, sizeof(podule_names[0]) - 1);
+                memcpy(podule_names[0], p, len);
+                podule_names[0][len] = 0;
+        }
         else
                 strcpy(podule_names[0], "");
         p = (char *)config_get_string(CFG_MACHINE, NULL, "podule_1", NULL);
         if (p)
-                strncpy(podule_names[1], p, 15);
+        {
+                int len = strnlen(p, sizeof(podule_names[1]) - 1);
+                memcpy(podule_names[1], p, len);
+                podule_names[1][len] = 0;
+        }
         else
                 strcpy(podule_names[1], "");
         p = (char *)config_get_string(CFG_MACHINE, NULL, "podule_2", NULL);
         if (p)
-                strncpy(podule_names[2], p, 15);
+        {
+                int len = strnlen(p, sizeof(podule_names[2]) - 1);
+                memcpy(podule_names[2], p, len);
+                podule_names[2][len] = 0;        }
         else
                 strcpy(podule_names[2], "");
         p = (char *)config_get_string(CFG_MACHINE, NULL, "podule_3", NULL);
         if (p)
-                strncpy(podule_names[3], p, 15);
+        {
+                int len = strnlen(p, sizeof(podule_names[3]) - 1);
+                memcpy(podule_names[3], p, len);
+                podule_names[3][len] = 0;
+        }
         else
                 strcpy(podule_names[3], "");
 

@@ -3,6 +3,7 @@
 #include <math.h>
 #include <string.h>
 #include "arc.h"
+#include "arm.h"
 #include "config.h"
 #include "ioc.h"
 #include "memc.h"
@@ -199,6 +200,7 @@ static void pollsound(void *p)
                 memcpy(in_samples, &ram[(spos & 0x7fff0) >> 2], 16);
                 memc_dma_sound_req_ts = tsc;
                 memc_dma_sound_req = 1;
+                recalc_min_timer();
 //                rpclog("pollsound: spos=%05x   %02x %02x %02x %02x  samp_wp=%i\n", spos, in_samples[0], in_samples[1], in_samples[2], in_samples[3], samp_wp);
         }
         else

@@ -27,6 +27,9 @@ uint64_t mem_speed[16384][2];
 int mem_dorefresh;
 
 uint64_t mem_spd_multi;
+uint64_t mem_spd_multi_2;
+uint64_t mem_spd_multi_5;
+uint64_t mem_spd_multi_32;
 
 static int mem_romspeed_n, mem_romspeed_s;
 
@@ -47,6 +50,15 @@ uint32_t *mempoint[0x4000];
 uint8_t *mempointb[0x4000];
 int memstat[0x4000];
 int memmode;
+
+static void mem_recalc_mem_spd_multi(void)
+{
+        mem_spd_multi = arm_has_cp15 ? (((uint64_t)speed_mhz << 32) / arm_mem_speed) : (1ull << 32);
+        /*This is very Not Nice, but avoids extremely frequent 64-bit multiplies in run_dma().*/
+        mem_spd_multi_2 = 2 * mem_spd_multi;
+        mem_spd_multi_5 = 5 * mem_spd_multi;
+        mem_spd_multi_32 = 32 * mem_spd_multi;
+}
 
 void initmem(int memsize)
 {
@@ -73,7 +85,7 @@ void initmem(int memsize)
         for (c=0;c<0x4000;c++) mempointb[c]=(uint8_t *)mempoint[c];
         realmemsize=memsize;
 
-        mem_spd_multi = arm_has_cp15 ? (((uint64_t)speed_mhz << 32) / arm_mem_speed) : (1ull << 32);
+        mem_recalc_mem_spd_multi();
         for (c = 0; c < 0x3000; c++)
         {
                 mem_speed[c][0] = 1 * mem_spd_multi;
@@ -101,7 +113,7 @@ void mem_setromspeed(int n, int s)
                 s -= (s >> 1);
                 if (!s) s = 1;
         }*/
-        mem_spd_multi = arm_has_cp15 ? (((uint64_t)speed_mhz << 32) / arm_mem_speed) : (1ull << 32);
+        mem_recalc_mem_spd_multi();
         for (c = 0x3800; c < 0x4000; c++)
         {
                 mem_speed[c][0] = s * mem_spd_multi;
@@ -115,7 +127,7 @@ void mem_updatetimings()
 {
         int c;
 
-        mem_spd_multi = arm_has_cp15 ? (((uint64_t)speed_mhz << 32) / arm_mem_speed) : (1ull << 32);
+        mem_recalc_mem_spd_multi();
 
         for (c = 0; c < 0x3000; c++)
         {

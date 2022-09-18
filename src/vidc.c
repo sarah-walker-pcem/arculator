@@ -595,6 +595,7 @@ static void vidc_poll(void *__p)
                 timer_advance_u64(&vidc.timer, vidc.back_porch_length * vidc.pixel_time);
                 /*Delay next fetch until display starts again*/
                 memc_dma_video_req_ts += ((vidc.back_porch_length + vidc.hsync_length + vidc.front_porch_length) * vidc.pixel_time);
+                recalc_min_timer();
                 vidc.in_display = 0;
                 break;
                 
@@ -630,6 +631,7 @@ static void vidc_poll(void *__p)
                         memc_dma_video_req = 2;
                         vidc.cursor_lines = 2;
                         vidc.first_line = 1;
+                        recalc_min_timer();
                         
                         vidc.displayon = vidc_displayon = 1;
                         vidc.fetch_count = vidc.cycles_per_fetch;

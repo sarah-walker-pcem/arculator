@@ -91,84 +91,86 @@ enum
         DMA_CURSOR,
         DMA_VIDEO
 };
+static uint64_t min_timer;
+static int next_dma_source;
+void recalc_min_timer(void)
+{
+        min_timer = refresh_ts;
+        next_dma_source = DMA_REFRESH;
+
+        if (memc_dma_sound_req && TIMER_VAL_LESS_THAN_VAL_64(memc_dma_sound_req_ts, min_timer))
+        {
+                min_timer = memc_dma_sound_req_ts;
+                next_dma_source = DMA_SOUND;
+        }
+        if (memc_videodma_enable && memc_dma_cursor_req && TIMER_VAL_LESS_THAN_VAL_64(memc_dma_cursor_req_ts, min_timer))
+        {
+                min_timer = memc_dma_cursor_req_ts;
+                next_dma_source = DMA_CURSOR;
+        }
+        if (memc_videodma_enable && memc_dma_video_req && TIMER_VAL_LESS_THAN_VAL_64(memc_dma_video_req_ts, min_timer))
+        {
+                min_timer = memc_dma_video_req_ts;
+                next_dma_source = DMA_VIDEO;
+        }
+}
+
 static void run_dma(int update_tsc)
 {
-        while (1)
-        {
-                uint64_t min_timer = refresh_ts;
-                int dma_source = DMA_REFRESH;
-                
-                if (memc_dma_sound_req && TIMER_VAL_LESS_THAN_VAL_64(memc_dma_sound_req_ts, min_timer))
-                {
-                        min_timer = memc_dma_sound_req_ts;
-                        dma_source = DMA_SOUND;
-                }
-                if (memc_videodma_enable && memc_dma_cursor_req && TIMER_VAL_LESS_THAN_VAL_64(memc_dma_cursor_req_ts, min_timer))
-                {
-                        min_timer = memc_dma_cursor_req_ts;
-                        dma_source = DMA_CURSOR;
-                }
-                if (memc_videodma_enable && memc_dma_video_req && TIMER_VAL_LESS_THAN_VAL_64(memc_dma_video_req_ts, min_timer))
-                {
-                        min_timer = memc_dma_video_req_ts;
-                        dma_source = DMA_VIDEO;
-                }
-                if (TIMER_VAL_LESS_THAN_VAL_64(min_timer, tsc))
-                {
-                        switch (dma_source)
-                        {
-                                case DMA_REFRESH:
-//                                if (output) rpclog("Refresh DMA %i\n", mem_dorefresh);
-                                if (mem_dorefresh)
-                                {
-                                        if (TIMER_VAL_LESS_THAN_VAL_64(refresh_ts, mem_available_ts))
-                                                mem_available_ts += 2 * mem_spd_multi;
-                                        else
-                                                mem_available_ts = refresh_ts + 2 * mem_spd_multi;
-                                }
-                                refresh_ts += 32 * mem_spd_multi;
-                                break;
-                                case DMA_SOUND:
-//                                if (output) rpclog("Sound DMA\n");
-                                if (TIMER_VAL_LESS_THAN_VAL_64(memc_dma_sound_req_ts, mem_available_ts))
-                                        mem_available_ts += 5 * mem_spd_multi;
-                                else
-                                        mem_available_ts = memc_dma_sound_req_ts + 5 * mem_spd_multi;
-                                memc_dma_sound_req = 0;
-                                break;
-                                case DMA_CURSOR:
-//                                if (output) rpclog("Cursor DMA\n");
-                                if (TIMER_VAL_LESS_THAN_VAL_64(memc_dma_cursor_req_ts, mem_available_ts))
-                                        mem_available_ts += 5 * mem_spd_multi;
-                                else
-                                        mem_available_ts = memc_dma_cursor_req_ts + 5 * mem_spd_multi;
-                                memc_dma_cursor_req = 0;
-                                break;
-                                case DMA_VIDEO:
-//                                if (output) rpclog("Video fetch %i\n", memc_dma_video_req);
-                                if (TIMER_VAL_LESS_THAN_VAL_64(memc_dma_video_req_ts, mem_available_ts))
-                                        mem_available_ts += memc_dma_video_req * 5 * mem_spd_multi;
-                                else
-                                        mem_available_ts = memc_dma_video_req_ts + memc_dma_video_req * 5 * mem_spd_multi;
-                                if (memc_dma_video_req == 2)
-                                {
-                                        memc_dma_video_req_ts = memc_dma_video_req_start_ts;
-                                        memc_dma_video_req = 1;
-                                }
-                                else
-                                        memc_dma_video_req_ts += memc_dma_video_req_period;
-                                break;
-                        }
-                        if (update_tsc && TIMER_VAL_LESS_THAN_VAL_64(tsc, mem_available_ts))
-                        {
-                                tsc = mem_available_ts;
-                                if (TIMER_VAL_LESS_THAN_VAL(timer_target, tsc >> 32))
-                                	timer_process();
-                        }
-                }
-                else
-                        break;
-        }
+	while (TIMER_VAL_LESS_THAN_VAL_64(min_timer, tsc))
+	{
+		switch (next_dma_source)
+		{
+			case DMA_REFRESH:
+//                        if (output) rpclog("Refresh DMA %i\n", mem_dorefresh);
+			if (mem_dorefresh)
+			{
+				if (TIMER_VAL_LESS_THAN_VAL_64(refresh_ts, mem_available_ts))
+					mem_available_ts += mem_spd_multi_2;
+				else
+					mem_available_ts = refresh_ts + mem_spd_multi_2;
+			}
+			refresh_ts += mem_spd_multi_32;
+			break;
+			case DMA_SOUND:
+//                        if (output) rpclog("Sound DMA\n");
+			if (TIMER_VAL_LESS_THAN_VAL_64(memc_dma_sound_req_ts, mem_available_ts))
+				mem_available_ts += mem_spd_multi_5;
+			else
+				mem_available_ts = memc_dma_sound_req_ts + mem_spd_multi_5;
+			memc_dma_sound_req = 0;
+			break;
+			case DMA_CURSOR:
+//                        if (output) rpclog("Cursor DMA\n");
+			if (TIMER_VAL_LESS_THAN_VAL_64(memc_dma_cursor_req_ts, mem_available_ts))
+				mem_available_ts += mem_spd_multi_5;
+			else
+				mem_available_ts = memc_dma_cursor_req_ts + mem_spd_multi_5;
+			memc_dma_cursor_req = 0;
+			break;
+			case DMA_VIDEO:
+//                        if (output) rpclog("Video fetch %i\n", memc_dma_video_req);
+			if (TIMER_VAL_LESS_THAN_VAL_64(memc_dma_video_req_ts, mem_available_ts))
+				mem_available_ts += memc_dma_video_req * mem_spd_multi_5;
+			else
+				mem_available_ts = memc_dma_video_req_ts + memc_dma_video_req * mem_spd_multi_5;
+			if (memc_dma_video_req == 2)
+			{
+				memc_dma_video_req_ts = memc_dma_video_req_start_ts;
+				memc_dma_video_req = 1;
+			}
+			else
+				memc_dma_video_req_ts += memc_dma_video_req_period;
+			break;
+		}
+		if (update_tsc && TIMER_VAL_LESS_THAN_VAL_64(tsc, mem_available_ts))
+		{
+			tsc = mem_available_ts;
+			if (TIMER_VAL_LESS_THAN_VAL(timer_target, tsc >> 32))
+				timer_process();
+		}
+		recalc_min_timer();
+	}
 }
 
 static void sync_to_mclk(void)

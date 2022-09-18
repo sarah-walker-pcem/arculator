@@ -699,6 +699,7 @@ void resetarm()
         ins = 0;
 	tsc = 0;
 	mem_available_ts = 0;
+	refresh_ts = 0;
 	clock_domain = DOMAIN_MCLK;
 	pending_reads = 0;
 	promote_fetch_to_n = PROMOTE_NONE;

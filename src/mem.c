@@ -253,12 +253,16 @@ uint8_t readmemfb(uint32_t a)
                 printf("Read %04X %08X %02X\n",a,PC,mempointb[((a)>>15)&0x7FF][(a)&0x7FFF]);
                 return mempointb[((a)>>15)&0x7FF][(a)&0x7FFF];
         }*/
+
         switch (a>>20)
         {
                 case 0x30:
                 case 0x31:
                 case 0x32: /*IOC*/
                 case 0x33:
+                if (memmode != MEMMODE_SUPER)
+                        goto data_abort;
+
                 if (!(a & ((1 << 16) | (1 << 17) | (1 << 21)))) /*MEMC podule space*/
                         return podule_memc_read_b((a & 0xc000) >> 14, a & 0x3fff);
 
@@ -343,6 +347,7 @@ uint8_t readmemfb(uint32_t a)
                 return 0xff;
         }
 //        rpclog("Data abort b %07X\n",a);
+data_abort:
         databort=1;
         LOG_DATABORT("Dat abort readb %07X %07X\n",a,PC);
         return 0xef;
@@ -368,6 +373,7 @@ uint32_t readmemfl(uint32_t a)
                 return mempoint[((a)>>15)&0x7FF][((a)&0x7FFF)>>2];
         }*/
         a &= 0x3ffffff;
+
         switch (a>>20)
         {
 #if 0
@@ -387,6 +393,9 @@ uint32_t readmemfl(uint32_t a)
                 case 0x31:
                 case 0x32: /*IOC*/
                 case 0x33:
+                if (memmode != MEMMODE_SUPER)
+                        goto data_abort;
+
                 if (!(a & ((1 << 16) | (1 << 17) | (1 << 21)))) /*MEMC podule space*/
                         return podule_memc_read_w((a & 0xc000) >> 14, a & 0x3fff);
 
@@ -470,6 +479,7 @@ uint32_t readmemfl(uint32_t a)
                 return (rom_arcrom[(a >> 2) & 0xffff] << 24) | 0xffffff;
         }
 //        rpclog("Data abort l %07X\n",a);
+data_abort:
         databort=1;
         LOG_DATABORT("Dat abort readl %07X %07X\n",a,PC);
         return 0xdeadbeef;
@@ -496,6 +506,7 @@ void writememfb(uint32_t a,uint8_t v)
         int bank;
 
         a &= 0x3ffffff;
+
         switch (a>>20)
         {
 #if 0
@@ -516,6 +527,9 @@ void writememfb(uint32_t a,uint8_t v)
                 case 0x31:
                 case 0x32: /*IOC*/
                 case 0x33:
+                if (memmode != MEMMODE_SUPER)
+                        goto data_abort;
+
                 if (!(a & ((1 << 16) | (1 << 17) | (1 << 21)))) /*MEMC podule space*/
                 {
                         podule_memc_write_b((a & 0xc000) >> 14, a & 0x3fff, v);
@@ -609,6 +623,8 @@ void writememfb(uint32_t a,uint8_t v)
                 }
                 return;
         }
+
+data_abort:
         LOG_DATABORT("Dat abort writeb %07X %07X %08X %i %i\n",a,PC, memstat[((a)>>12)&0x3FFF], modepritablew[memmode][memstat[((a)>>12)&0x3FFF]], modepritablew[memmode][memstat[((a)>>12)&0x3FFF]] && !((a)>>26));
         databort=1;
 }
@@ -636,6 +652,7 @@ void writememfl(uint32_t a,uint32_t v)
 //                output=1; timetolive=50;
                 return;
         }*/
+
         switch (a>>20)
         {
 #if 0
@@ -655,6 +672,9 @@ void writememfl(uint32_t a,uint32_t v)
                 case 0x31:
                 case 0x32: /*IOC*/
                 case 0x33:
+                if (memmode != MEMMODE_SUPER)
+                        goto data_abort;
+
                 if (!(a & ((1 << 16) | (1 << 17) | (1 << 21)))) /*MEMC podule space*/
                 {
                         podule_memc_write_w((a & 0xc000) >> 14, a & 0x3fff, v);
@@ -749,18 +769,29 @@ void writememfl(uint32_t a,uint32_t v)
                 }
                 return;
                 case 0x34: case 0x35: /*VIDC*/
+                if (memmode != MEMMODE_SUPER)
+                        goto data_abort;
+
 		LOG_VIDC_REGISTERS("Write VIDC %08X %08X %07X %08X\n",a,v,PC,armregs[15]);
                 writevidc(v);
                 return;
                 case 0x36: /*MEMC*/
+                if (memmode != MEMMODE_SUPER)
+                        goto data_abort;
+
                 writememc(a);
                 return;
                 case 0x38: case 0x39: case 0x3A: case 0x3B: /*CAM*/
                 case 0x3C: case 0x3D: case 0x3E: case 0x3F:
+                if (memmode != MEMMODE_SUPER)
+                        goto data_abort;
+
                 writecam(a);
                 return;
 //                case 0x35: return; /*??? - Fire & Ice writes here*/
         }
+
+data_abort:
         LOG_DATABORT("Dat abort writel %07X %07X\n",a,PC);
         databort=1;
 //        rpclog("Dat abort writel %07X %07X\n",a,PC);

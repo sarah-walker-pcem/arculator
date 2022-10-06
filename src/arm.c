@@ -591,7 +591,7 @@ void updatemode(int m)
         {
                 case USER:
                 for (c=8;c<15;c++) armregs[c]=userregs[c];
-                memmode=osmode;
+                memmode = osmode ? MEMMODE_OS : MEMMODE_USER;
                 for (c=0;c<15;c++) usrregs[c]=&armregs[c];
                 break;
                 case IRQ:
@@ -600,13 +600,13 @@ void updatemode(int m)
                 armregs[14]=irqregs[1];
                 for (c=0;c<13;c++) usrregs[c]=&armregs[c];
                 for (c=13;c<15;c++) usrregs[c]=&userregs[c];
-                memmode=2;
+                memmode = MEMMODE_SUPER;
                 break;
                 case FIQ:
                 for (c=8;c<15;c++) armregs[c]=fiqregs[c];
                 for (c=0;c<8;c++)  usrregs[c]=&armregs[c];
                 for (c=8;c<15;c++) usrregs[c]=&userregs[c];
-                memmode=2;
+                memmode = MEMMODE_SUPER;
                 break;
                 case SUPERVISOR:
                 for (c=8;c<13;c++) armregs[c]=userregs[c];
@@ -614,7 +614,7 @@ void updatemode(int m)
                 armregs[14]=superregs[1];
                 for (c=0;c<13;c++) usrregs[c]=&armregs[c];
                 for (c=13;c<15;c++) usrregs[c]=&userregs[c];
-                memmode=2;
+                memmode = MEMMODE_SUPER;
                 break;
         }
 }
@@ -688,7 +688,7 @@ void resetarm()
 
         armregs[15]=0x0C00000B;
         mode=3;
-        memmode=2;
+        memmode = MEMMODE_SUPER;
         memstat[0]=1;
         mempoint[0]=rom;
         refillpipeline2();
@@ -720,7 +720,7 @@ void dumpregs()
         if (indumpregs) return;
         indumpregs=1;
         
-        memmode=2;
+        memmode = MEMMODE_SUPER;
         
         f=fopen("modules.dmp","wb");
         for (c=0x0000;c<0x100000;c+=4)
@@ -2097,7 +2097,7 @@ void execarm(int cycles_to_execute)
                                         addr += addr2;
                                 CHECK_ADDR_EXCEPTION(addr);
                                 templ = memmode;
-                                memmode = 0;
+                                memmode = osmode ? MEMMODE_OS : MEMMODE_USER;
                                 templ2 = readmemb(addr);
                                 memmode = templ;
                                 if (databort)
@@ -2154,7 +2154,7 @@ void execarm(int cycles_to_execute)
                                         addr2 = opcode & 0xFFF;
                                 CHECK_ADDR_EXCEPTION(addr);
                                 templ = memmode;
-                                memmode = 0;
+                                memmode = osmode ? MEMMODE_OS : MEMMODE_USER;
                                 templ2 = ldrresult(readmeml(addr), addr);
                                 memmode = templ;
                                 if (databort)
@@ -2208,7 +2208,7 @@ void execarm(int cycles_to_execute)
                                         addr2 = opcode & 0xFFF;
                                 CHECK_ADDR_EXCEPTION(addr);
                                 templ = memmode;
-                                memmode = 0;
+                                memmode = osmode ? MEMMODE_OS : MEMMODE_USER;
                                 if (RD == 15) { writememl(addr,armregs[RD]+4); }
                                 else          { writememl(addr,armregs[RD]); }
                                 memmode = templ;
@@ -2288,7 +2288,7 @@ void execarm(int cycles_to_execute)
                                 CHECK_ADDR_EXCEPTION(addr);
                                 writememb(addr, armregs[RD]);
                                 templ = memmode;
-                                memmode = 0;
+                                memmode = osmode ? MEMMODE_OS : MEMMODE_USER;
                                 if (databort)
                                         break;
                                 cache_write_timing(addr, 1);
@@ -2722,7 +2722,7 @@ void execarm(int cycles_to_execute)
 
                         		state.Reg = armregs;
                         		templ = memmode;
-                        		memmode = 2;
+                                        memmode = MEMMODE_SUPER;
                         		hostfs(&state);
                         		memmode = templ;
                         	}

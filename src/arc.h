@@ -104,6 +104,12 @@ extern uint8_t *mempointb[0x4000];
 extern int memstat[0x4000];
 extern uint32_t *ram,*rom;
 extern uint8_t *romb;
+
+enum {
+	MEMMODE_USER,
+	MEMMODE_OS,
+	MEMMODE_SUPER
+};
 extern int memmode;
 
 extern void initmem(int memsize);

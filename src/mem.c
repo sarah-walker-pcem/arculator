@@ -72,8 +72,7 @@ void initmem(int memsize)
         romb = (uint8_t *)rom;
         rom_5th_column = (uint8_t *)malloc(0x20000);
         for (c=0;c<0x4000;c++) memstat[c]=0;
-        for (c=0x2000;c<0x3000;c++) memstat[c]=3;
-        for (c=0x2000;c<0x3000;c++) mempoint[c]=&ram[(c&d)<<10];
+	resetpagesize(0);
         for (c=0x3800;c<0x3fc0;c++) memstat[c]=5;
         for (c=0x3800;c<0x4000;c++) mempoint[c]=&rom[(c&0x1FF)<<10];
         for (c = 0x3fc0; c < 0x4000; c++) /*Map support ROM at end of address space*/
@@ -84,6 +83,7 @@ void initmem(int memsize)
         mempoint[0]=rom;
         for (c=0;c<0x4000;c++) mempointb[c]=(uint8_t *)mempoint[c];
         realmemsize=memsize;
+
 
         mem_recalc_mem_spd_multi();
         for (c = 0; c < 0x3000; c++)
@@ -145,10 +145,12 @@ void resizemem(int memsize) /*memsize is 4096,8192,16384*/
         rpclog("resizemem %i\n", memsize);
         free(ram);
         ram=(uint32_t *)malloc(memsize*1024);
-        for (c=0x2000;c<0x3000;c++) mempoint[c]=&ram[(c&d)<<10];
-        for (c=0x2000;c<0x3000;c++) mempointb[c]=(uint8_t *)mempoint[c];
+
         memset(ram,0,memsize*1024);
         realmemsize=memsize;
+
+	resetpagesize(0);
+
         for (c=0;c<0x4000;c++) mempointb[c]=(uint8_t *)mempoint[c];
 
         for (c = 0x3fc0; c < 0x4000; c++) /*Map support ROM at end of address space*/
@@ -191,7 +193,24 @@ void resetpagesize(int pagesize)
         }
         else
         {
-                for (c=0x2000;c<0x3000;c++) mempoint[c]=&ram[(c&d)<<10];
+		if (memsize == 12*1024)
+		{
+			for (c = 0x2000; c < 0x2c00; c++)
+			{
+				memstat[c] = 3;
+				mempoint[c] = &ram[(c & 0xfff) << 10];
+			}
+			for (c = 0x2c00; c < 0x3000; c++)
+				memstat[c] = 0;
+		}
+		else
+		{
+			for (c = 0x2000; c < 0x3000; c++)
+			{
+				mempoint[c] = &ram[(c & d) << 10];
+				memstat[c] = 3;
+			}
+		}
                 for (c=0x2000;c<0x3000;c++) mempointb[c]=(uint8_t *)mempoint[c];
         }
 }
@@ -256,6 +275,15 @@ uint8_t readmemfb(uint32_t a)
 
         switch (a>>20)
         {
+                /*Unmapped physical RAM (A540 only)*/
+                case 0x20: case 0x21: case 0x22: case 0x23:
+                case 0x24: case 0x25: case 0x26: case 0x27:
+                case 0x28: case 0x29: case 0x2a: case 0x2b:
+                case 0x2c: case 0x2d: case 0x2e: case 0x2f:
+                if (memmode != MEMMODE_SUPER)
+                        goto data_abort;
+                return 0xff;
+
                 case 0x30:
                 case 0x31:
                 case 0x32: /*IOC*/
@@ -388,6 +416,15 @@ uint32_t readmemfl(uint32_t a)
                 databort=1;
                 return 0xdeadbeef;
 #endif
+
+                /*Unmapped physical RAM (A540 only)*/
+                case 0x20: case 0x21: case 0x22: case 0x23:
+                case 0x24: case 0x25: case 0x26: case 0x27:
+                case 0x28: case 0x29: case 0x2a: case 0x2b:
+                case 0x2c: case 0x2d: case 0x2e: case 0x2f:
+                if (memmode != MEMMODE_SUPER)
+                        goto data_abort;
+                return 0xffffffff;
 
                 case 0x30:
                 case 0x31:
@@ -522,6 +559,15 @@ void writememfb(uint32_t a,uint8_t v)
                 return;
 #endif
 //                case 0x1F: return; if (a>=0x1f08000 && a<=0x1f0ffff) return; break;
+
+                /*Unmapped physical RAM (A540 only)*/
+                case 0x20: case 0x21: case 0x22: case 0x23:
+                case 0x24: case 0x25: case 0x26: case 0x27:
+                case 0x28: case 0x29: case 0x2a: case 0x2b:
+                case 0x2c: case 0x2d: case 0x2e: case 0x2f:
+                if (memmode != MEMMODE_SUPER)
+                        goto data_abort;
+                return;
 
                 case 0x30:
                 case 0x31:
@@ -667,6 +713,15 @@ void writememfl(uint32_t a,uint32_t v)
                 databort=1;
                 return;
 #endif
+
+                /*Unmapped physical RAM (A540 only)*/
+                case 0x20: case 0x21: case 0x22: case 0x23:
+                case 0x24: case 0x25: case 0x26: case 0x27:
+                case 0x28: case 0x29: case 0x2a: case 0x2b:
+                case 0x2c: case 0x2d: case 0x2e: case 0x2f:
+                if (memmode != MEMMODE_SUPER)
+                        goto data_abort;
+                return;
 
                 case 0x30:
                 case 0x31:

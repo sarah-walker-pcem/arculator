@@ -133,6 +133,7 @@ enum
         MEM_2M,
         MEM_4M,
         MEM_8M,
+        MEM_12M,
         MEM_16M,
         MEM_MAX
 };
@@ -144,6 +145,7 @@ const char *mem_names[] =
         "2 MB",
         "4 MB",
         "8 MB",
+        "12 MB",
         "16 MB"
 };
 
@@ -154,6 +156,7 @@ enum
         MEM_MASK_2M   = (1 << MEM_2M),
         MEM_MASK_4M   = (1 << MEM_4M),
         MEM_MASK_8M   = (1 << MEM_8M),
+        MEM_MASK_12M   = (1 << MEM_12M),
         MEM_MASK_16M  = (1 << MEM_16M)
 };
 
@@ -165,7 +168,7 @@ enum
 
 #define MEM_MIN_2M (MEM_MASK_2M | MEM_MASK_4M | MEM_MASK_8M | MEM_MASK_16M)
 
-#define MEM_MIN_4M (MEM_MASK_4M | MEM_MASK_8M | MEM_MASK_16M)
+#define MEM_MIN_4M (MEM_MASK_4M | MEM_MASK_8M | MEM_MASK_12M | MEM_MASK_16M)
 
 #define MEM_1M_4M  (MEM_MASK_1M | MEM_MASK_2M | MEM_MASK_4M)
 #define MEM_2M_4M  (MEM_MASK_2M | MEM_MASK_4M)
@@ -543,6 +546,9 @@ ConfigDialog::ConfigDialog(wxWindow *parent, bool is_running)
                 case   8192:
                 config_mem = MEM_8M;
                 break;
+                case   12288:
+                config_mem = MEM_12M;
+                break;
                 case   16384:
                 config_mem = MEM_16M;
                 break;
@@ -868,6 +874,9 @@ void ConfigDialog::OnOK(wxCommandEvent &event)
                 break;
                 case MEM_8M:
                 memsize = 8192;
+                break;
+                case MEM_12M:
+                memsize = 12288;
                 break;
                 case MEM_16M:
                 memsize = 16384;

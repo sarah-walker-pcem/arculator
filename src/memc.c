@@ -189,6 +189,8 @@ void writecam(uint32_t a)
                 page=((a>>3)&0xf) | ((a&1)<<4) | ((a&2)<<5) | ((a&4)<<3);
                 if (a&0x80) page|=0x80;
                 if (a&0x1000) page|=0x100;
+                if ((page * 32) >= memsize)
+                        return;
                 access=(a>>8)&3;
                 logical=(a>>15)&0xFF;
                 logical|=(a>>2)&0x300;
@@ -219,7 +221,13 @@ void writecam(uint32_t a)
 void initmemc()
 {
         int c;
-        for (c=0;c<0x2000;c++) memstat[c]=0;
+
+        for (c = 0; c < 0x2000; c++)
+        {
+                memstat[c] = 0;
+                mempoint[c] = NULL;
+                mempointb[c] = NULL;
+        }
 }
 
 static const char *page_sizes[4] =

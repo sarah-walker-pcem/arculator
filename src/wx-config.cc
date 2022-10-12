@@ -36,6 +36,8 @@ enum
         CPU_ARM3_33,
         CPU_ARM3_35,
         CPU_ARM3_24,
+        CPU_ARM3_36,
+        CPU_ARM3_40,
         CPU_MAX
 };
 
@@ -49,7 +51,9 @@ const char *cpu_names[] =
         "ARM3 @ 30 MHz",
         "ARM3 @ 33 MHz",
         "ARM3 @ 35 MHz",
-        "ARM3 @ 24 MHz"
+        "ARM3 @ 24 MHz",
+        "ARM3 @ 36 MHz",
+        "ARM3 @ 40 MHz"
 };
 
 enum
@@ -62,22 +66,24 @@ enum
         CPU_MASK_ARM3_30 = (1 << CPU_ARM3_30),
         CPU_MASK_ARM3_33 = (1 << CPU_ARM3_33),
         CPU_MASK_ARM3_35 = (1 << CPU_ARM3_35),
-        CPU_MASK_ARM3_24 = (1 << CPU_ARM3_24)
+        CPU_MASK_ARM3_24 = (1 << CPU_ARM3_24),
+        CPU_MASK_ARM3_36 = (1 << CPU_ARM3_36),
+        CPU_MASK_ARM3_40 = (1 << CPU_ARM3_40)
 };
 
 #define CPU_ARM2_AND_LATER (CPU_MASK_ARM2 | CPU_MASK_ARM3_20 | CPU_MASK_ARM3_25 | \
                 CPU_MASK_ARM3_26 | CPU_MASK_ARM3_30 | CPU_MASK_ARM3_33 | \
-                CPU_MASK_ARM3_35)
+                CPU_MASK_ARM3_35 | CPU_MASK_ARM3_36 | CPU_MASK_ARM3_40)
 
 #define CPU_ARM250_ONLY (CPU_MASK_ARM250)
 
 #define CPU_ARM3_25_AND_LATER (CPU_MASK_ARM3_25 | CPU_MASK_ARM3_26 | \
-                CPU_MASK_ARM3_30 | CPU_MASK_ARM3_33 | CPU_MASK_ARM3_35)
+                CPU_MASK_ARM3_30 | CPU_MASK_ARM3_33 | CPU_MASK_ARM3_35 | CPU_MASK_ARM3_36 | CPU_MASK_ARM3_40)
 
 #define CPU_ARM3_26_AND_LATER (CPU_MASK_ARM3_26 | CPU_MASK_ARM3_30 | \
-                CPU_MASK_ARM3_33 | CPU_MASK_ARM3_35)
+                CPU_MASK_ARM3_33 | CPU_MASK_ARM3_35 | CPU_MASK_ARM3_36 | CPU_MASK_ARM3_40)
 
-#define CPU_ARM3_33_AND_LATER (CPU_MASK_ARM3_33 | CPU_MASK_ARM3_35)
+#define CPU_ARM3_33_AND_LATER (CPU_MASK_ARM3_33 | CPU_MASK_ARM3_35 | CPU_MASK_ARM3_36 | CPU_MASK_ARM3_40)
 
 #define CPU_ARM3_24_ONLY (CPU_MASK_ARM3_24)
 
@@ -94,6 +100,8 @@ enum
         MEMC_MEMC1A_8,
         MEMC_MEMC1A_12,
         MEMC_MEMC1A_16,
+        MEMC_MEMC1A_20,
+        MEMC_MEMC1A_24,
         MEMC_MAX
 };
 
@@ -102,7 +110,9 @@ const char *memc_names[] =
         "MEMC1",
         "MEMC1a (8 MHz)",
         "MEMC1a (12 MHz)",
-        "MEMC1a (16 MHz - overclocked)"
+        "MEMC1a (16 MHz - overclocked)",
+        "MEMC1a (20 MHz - overclocked)",
+        "MEMC1a (24 MHz - overclocked)"
 };
 
 enum
@@ -110,14 +120,18 @@ enum
         MEMC_MASK_MEMC1     = (1 << MEMC_MEMC1),
         MEMC_MASK_MEMC1A_8  = (1 << MEMC_MEMC1A_8),
         MEMC_MASK_MEMC1A_12 = (1 << MEMC_MEMC1A_12),
-        MEMC_MASK_MEMC1A_16 = (1 << MEMC_MEMC1A_16)
+        MEMC_MASK_MEMC1A_16 = (1 << MEMC_MEMC1A_16),
+        MEMC_MASK_MEMC1A_20 = (1 << MEMC_MEMC1A_20),
+        MEMC_MASK_MEMC1A_24 = (1 << MEMC_MEMC1A_24)
 };
 
 #define MEMC_MIN_MEMC1     (MEMC_MASK_MEMC1 | MEMC_MASK_MEMC1A_8 | \
-                MEMC_MASK_MEMC1A_12 | MEMC_MASK_MEMC1A_16)
+                MEMC_MASK_MEMC1A_12 | MEMC_MASK_MEMC1A_16 | MEMC_MASK_MEMC1A_20 | \
+                MEMC_MASK_MEMC1A_24)
 #define MEMC_MIN_MEMC1A    (MEMC_MASK_MEMC1A_8 | MEMC_MASK_MEMC1A_12 | \
-                MEMC_MASK_MEMC1A_16)
-#define MEMC_MIN_MEMC1A_12 (MEMC_MASK_MEMC1A_12 | MEMC_MASK_MEMC1A_16)
+                MEMC_MASK_MEMC1A_16 | MEMC_MASK_MEMC1A_20 | MEMC_MASK_MEMC1A_24)
+#define MEMC_MIN_MEMC1A_12 (MEMC_MASK_MEMC1A_12 | MEMC_MASK_MEMC1A_16 | \
+                MEMC_MASK_MEMC1A_20 | MEMC_MASK_MEMC1A_24)
 
 enum
 {
@@ -846,6 +860,14 @@ void ConfigDialog::OnOK(wxCommandEvent &event)
                 case CPU_ARM3_35:
                 arm_has_swp = arm_has_cp15 = 1;
                 arm_cpu_speed = 35;
+                break;
+                case CPU_ARM3_36:
+                arm_has_swp = arm_has_cp15 = 1;
+                arm_cpu_speed = 36;
+                break;
+                case CPU_ARM3_40:
+                arm_has_swp = arm_has_cp15 = 1;
+                arm_cpu_speed = 40;
                 break;
         }
         arm_cpu_type = config_cpu;

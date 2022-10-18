@@ -616,7 +616,7 @@ void podule_config_set_current(void *window_p, int id, void *val)
                 case CONFIG_SELECTION:
                 {
                         wxComboBox *cbox = dynamic_cast<wxComboBox *>(window);
-                        cbox->SetSelection((int)val);
+                        cbox->SetSelection((int)(uintptr_t)val);
                         break;
                 }
 

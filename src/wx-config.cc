@@ -1162,7 +1162,8 @@ void ConfigDialog::OnHDEject(wxCommandEvent &event)
 void ConfigDialog::OnComboPodule(wxCommandEvent &event)
 {
         wxComboBox *cbox = (wxComboBox *)this->FindWindow(event.GetId());
-        const char *sel_s = cbox->GetStringSelection().c_str();
+        wxString ws = cbox->GetStringSelection();
+        const char *sel_s = ws.c_str();
         wxButton *config_button;
         int slot_nr;
 

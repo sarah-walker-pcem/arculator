@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #ifdef WIN32
 #include <windows.h>
 #endif
@@ -243,6 +244,20 @@ void cmos_init()
         systemtime.day = real_time.wDay;
         systemtime.mon = real_time.wMonth;
         systemtime.year = real_time.wYear;
+#else
+	struct tm *cur_time_tm;
+	time_t cur_time;
+
+	time(&cur_time);
+	cur_time_tm = localtime(&cur_time);
+
+        systemtime.msec = 0;
+        systemtime.sec = cur_time_tm->tm_sec;
+        systemtime.min = cur_time_tm->tm_min;
+        systemtime.hour = cur_time_tm->tm_hour;
+        systemtime.day = cur_time_tm->tm_mday;
+        systemtime.mon = cur_time_tm->tm_mon;
+        systemtime.year = cur_time_tm->tm_year + 1900;
 #endif
 
         timer_add(&cmos.timer, cmos_tick, NULL, 1);

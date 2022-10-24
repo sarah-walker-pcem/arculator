@@ -10,6 +10,7 @@ typedef struct disc_funcs_t
         void (*stop)();
         void (*poll)();
         void (*close)(int drive);
+        int high_res_poll;
 } disc_funcs_t;
 
 extern disc_funcs_t *drive_funcs[4];

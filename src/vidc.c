@@ -22,9 +22,6 @@
 #include "video.h"
 #include "plat_video.h"
 
-#define MIN(a, b) (((a) < (b)) ? (a) : (b))
-#define MAX(a, b) (((a) > (b)) ? (a) : (b))
-
 /*RISC OS 3 sets a total of 832 horizontal and 288 vertical for MODE 12. We use
   768x576 to get a 4:3 aspect ratio. This also allows MODEs 33-36 to display
   correctly*/

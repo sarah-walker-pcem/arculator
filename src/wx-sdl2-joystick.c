@@ -8,8 +8,6 @@
 #include "joystick.h"
 #include "plat_joystick.h"
 
-#define MIN(a, b) (((a) < (b)) ? (a) : (b))
-
 int joysticks_present;
 joystick_t joystick_state[MAX_JOYSTICKS];
 

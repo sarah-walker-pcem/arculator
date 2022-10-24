@@ -12,6 +12,7 @@
 #include "disc_fdi.h"
 #include "disc_hfe.h"
 #include "disc_jfd.h"
+#include "disc_scp.h"
 
 #include "ddnoise.h"
 
@@ -70,6 +71,7 @@ loaders[]=
         {"FDI", fdi_load,       -1},
         {"APD", apd_load,       -1},
         {"HFE", hfe_load,       -1},
+        {"SCP", scp_load,       -1},
 //        {"JFD", jfd_load,       -1},
         {0,0,0}
 };
@@ -237,7 +239,10 @@ void disc_reset()
 
 void disc_poll(void *p)
 {
-        timer_advance_u64(&disc_timer, disc_poll_time);
+        if (drive_funcs[disc_drivesel] && drive_funcs[disc_drivesel]->high_res_poll)
+                timer_advance_u64(&disc_timer, disc_poll_time >> 4);
+        else
+                timer_advance_u64(&disc_timer, disc_poll_time);
         if (drive_funcs[disc_drivesel])
         {
                 if (drive_funcs[disc_drivesel]->poll)
@@ -314,5 +319,5 @@ void disc_set_motor(int enable)
 
 void disc_set_density(int density)
 {
-        disc_poll_time = disc_poll_times[density] * TIMER_USEC;
+        disc_poll_time = (disc_poll_times[density] * TIMER_USEC);
 }

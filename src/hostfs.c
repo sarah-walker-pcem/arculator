@@ -110,8 +110,6 @@ typedef struct {
 #define STREQ(x,y)     (strcmp(x,y) == 0)
 #define STRCASEEQ(x,y) (strcasecmp(x,y) == 0)
 
-#define MIN(x,y) (((x) < (y)) ? (x) : (y))
-
 #define MAX_OPEN_FILES 255
 
 #define NOT_IMPLEMENTED 255

@@ -9,8 +9,6 @@
 #include "vidc.h"
 #include "plat_video.h"
 
-#define MIN(a, b) (((a) < (b)) ? (a) : (b))
-
 /*for mode 27, VDSR=1ff, VDLR=ed, HDSR=6e4, HDLR=50*/
 /*LICR=7d2*/
 /*Nominal video timings - pixel rate 24 MHz, horizontal 1192 pixels, vertical 485 lines, H 20.134Hz, V 41.51Hz*/

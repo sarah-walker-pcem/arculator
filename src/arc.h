@@ -70,6 +70,9 @@ extern void fatal(const char *format, ...);
 
 #define nr_elems(array) (int)(sizeof(array) / sizeof(array[0]))
 
+#define MAX(x, y) ((x) > (y) ? (x) : (y))
+#define MIN(x, y) ((x) < (y) ? (x) : (y))
+
 extern void arc_set_cpu(int cpu, int memc);
 extern void updatewindowsize(int x, int y);
 

@@ -2,6 +2,7 @@
 #define _NET_H_
 
 #include <stdint.h>
+#include "podule_api.h"
 
 typedef struct
 {
@@ -22,6 +23,9 @@ typedef struct
 	void *p;
 } net_t;
 
-net_t *net_init(void);
+#define NETWORK_DEVICE_DEFAULT "slirp"
+
+net_t *net_init(const char *network_device, uint8_t *mac_addr);
+podule_config_selection_t *net_get_networks(void);
 
 #endif /* _NET_H_ */

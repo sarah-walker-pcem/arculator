@@ -810,7 +810,7 @@ void ne2000_write(uint16_t address, uint8_t value, void *p)
                                 pclog("CR write - tx start, tx bytes == 0\n");
 #endif
                         // Send the packet to the system driver
-			ne2000->net->write(ne2000->net, &ne2000->mem[ne2000->tx_page_start*256 - BX_NE2K_MEMSTART], ne2000->tx_bytes);
+			ne2000->net->write((struct net_t *)ne2000->net, &ne2000->mem[ne2000->tx_page_start*256 - BX_NE2K_MEMSTART], ne2000->tx_bytes);
 #ifdef NE2000_DEBUG
                         pclog("ne2000 slirp sending packet\n");
 #endif
@@ -1420,11 +1420,11 @@ void ne2000_poll(void *p)
         ne2000_t *ne2000 = (ne2000_t *)p;
         packet_t packet;
 
-	if (!ne2000->net->read(ne2000->net, &packet))
+	if (!ne2000->net->read((struct net_t *)ne2000->net, &packet))
 	{
 		if (!((ne2000->DCR.loop == 0) || (ne2000->TCR.loop_cntl != 0)))
 			ne2000_rx_frame(ne2000, packet.data, packet.len);
-		ne2000->net->free(ne2000->net, &packet);
+		ne2000->net->free((struct net_t *)ne2000->net, &packet);
 	}
 }
 

@@ -37,7 +37,7 @@ extern __declspec(dllexport) const podule_header_t *podule_probe(const podule_ca
 #define APIENTRY
 #endif
 
-const podule_callbacks_t *podule_callbacks;
+static const podule_callbacks_t *podule_callbacks;
 static char podule_path[512];
 
 typedef struct aeh50_t
@@ -254,7 +254,8 @@ static int aeh50_init(struct podule_t *podule)
         aeh50->podule = podule;
         podule->p = aeh50;
 
-	aeh50->net = net_init();
+	const char *network_device = podule_callbacks->config_get_string(podule, "network_device", NETWORK_DEVICE_DEFAULT);
+	aeh50->net = net_init(network_device, &aeh50->rom[0x100]);
 
 	aeh50->ne2000 = ne2000_init(aeh50_set_irq, aeh50, aeh50->net);
 
@@ -266,7 +267,7 @@ static void aeh50_close(struct podule_t *podule)
 {
         aeh50_t *aeh50 = podule->p;
 
-	aeh50->net->close(aeh50->net);
+	aeh50->net->close((struct net_t *)aeh50->net);
 
 	ne2000_close(&aeh50->ne2000);
 
@@ -284,6 +285,23 @@ static int aeh50_run(struct podule_t *podule, int timeslice_us)
         return 1000;
 }
 
+static podule_config_t aeh50_podule_config =
+{
+        .items =
+        {
+                {
+                        .name = "network_device",
+                        .description = "Network",
+                        .type = CONFIG_SELECTION_STRING,
+                        .selection = 0,
+                        .default_string = NETWORK_DEVICE_DEFAULT,
+                },
+                {
+                        .type = -1
+                }
+        }
+};
+
 static const podule_header_t aeh50_podule_header =
 {
         .version = PODULE_API_VERSION,
@@ -300,7 +318,8 @@ static const podule_header_t aeh50_podule_header =
                 .write_b = aeh50_write_b,
                 .write_w = aeh50_write_w,
                 .run = aeh50_run
-        }
+        },
+        .config = &aeh50_podule_config
 };
 
 const podule_header_t *podule_probe(const podule_callbacks_t *callbacks, char *path)
@@ -309,6 +328,8 @@ const podule_header_t *podule_probe(const podule_callbacks_t *callbacks, char *p
 
         podule_callbacks = callbacks;
         strcpy(podule_path, path);
+
+        aeh50_podule_config.items[0].selection = net_get_networks();
 
         return &aeh50_podule_header;
 }

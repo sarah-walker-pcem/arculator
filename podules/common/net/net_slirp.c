@@ -1,5 +1,6 @@
 #include <pthread.h>
 #include "net.h"
+#include "net_slirp.h"
 
 #include "slirp/slirp.h"
 #include "slirp/queue.h"
@@ -100,7 +101,7 @@ void net_slirp_close(net_t *net)
 	free(net);
 }
 
-net_t *net_init(void)
+net_t *slirp_net_init(void)
 {
 	struct in_addr myaddr;
 	int rc;

@@ -12,6 +12,4 @@
 void aeh54_log(const char *format, ...);
 void aeh54_fatal(const char *format, ...);
 
-extern const podule_callbacks_t *podule_callbacks;
-
 #endif /* _DLL_H_ */

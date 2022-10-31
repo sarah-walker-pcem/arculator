@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
-#include <winbase.h>
 #include "net.h"
 #include "podule_api.h"
 #include "seeq8005.h"

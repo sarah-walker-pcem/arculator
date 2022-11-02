@@ -24,16 +24,16 @@
 
 
 /*Memory*/
-uint8_t *ram;
+extern uint8_t *ram;
 
-uint32_t rammask;
+extern uint32_t rammask;
 
-int readlookup[256],readlookupp[256];
-uintptr_t *readlookup2;
-int readlnext;
-int writelookup[256],writelookupp[256];
-uintptr_t *writelookup2;
-int writelnext;
+extern int readlookup[256],readlookupp[256];
+extern uintptr_t *readlookup2;
+extern int readlnext;
+extern int writelookup[256],writelookupp[256];
+extern uintptr_t *writelookup2;
+extern int writelnext;
 
 extern int mmu_perm;
 
@@ -109,7 +109,7 @@ typedef struct PIT
         void (*set_out_funcs[3])(int new_out, int old_out);
 } PIT;
 
-PIT pit, pit2;
+extern PIT pit, pit2;
 void setpitclock(float clock);
 
 float pit_timer0_freq();
@@ -138,7 +138,7 @@ typedef struct dma_t
         uint16_t io_addr;
 } dma_t;
 
-dma_t dma[8];
+extern dma_t dma[8];
 
 
 
@@ -152,19 +152,19 @@ typedef struct PIC_t
         uint8_t level_sensitive;
 } PIC_t;
 
-PIC_t pic,pic2;
+extern PIC_t pic,pic2;
 extern int pic_intpending;
 
 
-int hasfpu;
+extern int hasfpu;
 
 
-int cpuspeed;
+extern int cpuspeed;
 
 
 /*Sound*/
-int ppispeakon;
-int gated,speakval,speakon;
+extern int ppispeakon;
+extern int gated,speakval,speakon;
 
 
 

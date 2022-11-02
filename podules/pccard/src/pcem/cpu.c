@@ -9,11 +9,14 @@
 //#include "codegen.h"
 #include "x87_timings.h"
 
+int hasfpu;
 int fpu_type;
 uint32_t cpu_features;
 
 static int cpu_turbo_speed, cpu_nonturbo_speed;
 static int cpu_turbo = 1;
+
+int cpuspeed;
 
 int isa_cycles;
 int has_vlb;

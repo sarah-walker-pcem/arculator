@@ -28,6 +28,9 @@ void codegen_set_rounding_mode(int mode) { }
 //#include "paths.h"
 const char *logs_path = "e:/devcpp/Arculator/pccard/podules/pccard";
 
+cpu_state_t cpu_state;
+cyrix_t cyrix;
+
 uint64_t xt_cpu_multi;
 int nmi = 0;
 int nmi_auto_clear = 0;
@@ -259,13 +262,13 @@ r16(/r)                    AX    CX    DX    BX    SP    BP    SI    DI
 r32(/r)                    EAX   ECX   EDX   EBX   ESP   EBP   ESI   EDI
 /digit (Opcode)            0     1     2     3     4     5     6     7
 REG =                      000   001   010   011   100   101   110   111
-  ÚÄÄÄAddress
+  \DA\C4\C4\C4Address
 disp8 denotes an 8-bit displacement following the ModR/M byte, to be
 sign-extended and added to the index. disp16 denotes a 16-bit displacement
 following the ModR/M byte, to be added to the index. Default segment
 register is SS for the effective addresses containing a BP index, DS for
 other effective addresses.
-            ÄÄ¿ ÚMod R/M¿ ÚÄÄÄÄÄÄÄÄModR/M Values in HexadecimalÄÄÄÄÄÄÄÄ¿
+            \C4Ä¿ \DAMod R/M\BF \DA\C4\C4\C4\C4\C4\C4\C4\C4ModR/M Values in Hexadecimal\C4\C4\C4\C4\C4\C4\C4Ä¿
 
 [BX + SI]            000   00    08    10    18    20    28    30    38
 [BX + DI]            001   01    09    11    19    21    29    31    39

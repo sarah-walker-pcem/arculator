@@ -21,7 +21,6 @@
 int stimes = 0;
 int dtimes = 0;
 int btimes = 0;
-int is486=1;
 
 uint32_t abrt_error;
 int cgate16,cgate32;

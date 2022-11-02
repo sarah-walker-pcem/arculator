@@ -26,6 +26,15 @@
 
 //#include "xi8088.h"
 
+uint32_t rammask;
+
+int readlookup[256],readlookupp[256];
+uintptr_t *readlookup2;
+int readlnext;
+int writelookup[256],writelookupp[256];
+uintptr_t *writelookup2;
+int writelnext;
+
 page_t *pages;
 page_t **page_lookup;
 

@@ -21,6 +21,11 @@
 //Tyrian writes 4300 or 17512
 int displine;
 
+int ppispeakon;
+int gated,speakval,speakon;
+
+PIT pit, pit2;
+
 uint64_t PITCONST;
 uint64_t CGACONST;
 uint64_t MDACONST;

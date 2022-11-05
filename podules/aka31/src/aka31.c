@@ -338,7 +338,7 @@ static void aka31_reset(struct podule_t *podule)
         aka31->page = 0;
 }
 
-static int aka31_init(struct podule_t *podule)
+static int aka3x_init_common(struct podule_t *podule, const char *fn)
 {
         FILE *f;
         char rom_fn[512];
@@ -346,7 +346,7 @@ static int aka31_init(struct podule_t *podule)
         memset(aka31, 0, sizeof(aka31_t));
 
 //        append_filename(fn,exname,"zidefs",sizeof(fn));
-        sprintf(rom_fn, "%sscsirom", podule_path);
+        sprintf(rom_fn, "%s%s", podule_path, fn);
         aka31_log("SCSIROM %s\n", rom_fn);
         f = fopen(rom_fn, "rb");
         if (!f)
@@ -368,6 +368,15 @@ static int aka31_init(struct podule_t *podule)
 
         podule->p = aka31;
         return 0;
+}
+
+static int aka31_init(struct podule_t *podule)
+{
+        return aka3x_init_common(podule, "scsirom");
+}
+static int aka32_init(struct podule_t *podule)
+{
+        return aka3x_init_common(podule, "aka32.rom");
 }
 
 static void aka31_close(struct podule_t *podule)
@@ -446,24 +455,44 @@ void aka31_tc_int(podule_t *podule)
                 podule_callbacks->set_irq(podule, 1);
 }
 
-static const podule_header_t aka31_podule_header =
+static const podule_header_t aka31_podule_header[] =
 {
-        .version = PODULE_API_VERSION,
-        .flags = PODULE_FLAGS_UNIQUE,
-        .short_name = "aka31",
-        .name = "Acorn AKA31 SCSI Podule",
-        .functions =
         {
-                .init = aka31_init,
-                .close = aka31_close,
-                .reset = aka31_reset,
-                .read_b = aka31_read_b,
-                .read_w = aka31_read_w,
-                .write_b = aka31_write_b,
-                .write_w = aka31_write_w,
-                .run = aka31_run
+                .version = PODULE_API_VERSION,
+                .flags = PODULE_FLAGS_UNIQUE | PODULE_FLAGS_NEXT,
+                .short_name = "aka31",
+                .name = "Acorn AKA31 SCSI Podule",
+                .functions =
+                {
+                        .init = aka31_init,
+                        .close = aka31_close,
+                        .reset = aka31_reset,
+                        .read_b = aka31_read_b,
+                        .read_w = aka31_read_w,
+                        .write_b = aka31_write_b,
+                        .write_w = aka31_write_w,
+                        .run = aka31_run
+                },
+                .config = &scsi_podule_config
         },
-        .config = &scsi_podule_config
+        {
+                .version = PODULE_API_VERSION,
+                .flags = PODULE_FLAGS_UNIQUE,
+                .short_name = "aka32",
+                .name = "Acorn AKA32 SCSI Podule",
+                .functions =
+                {
+                        .init = aka32_init,
+                        .close = aka31_close,
+                        .reset = aka31_reset,
+                        .read_b = aka31_read_b,
+                        .read_w = aka31_read_w,
+                        .write_b = aka31_write_b,
+                        .write_w = aka31_write_w,
+                        .run = aka31_run
+                },
+                .config = &scsi_podule_config
+        },
 };
 
 const podule_header_t *podule_probe(const podule_callbacks_t *callbacks, char *path)
@@ -475,7 +504,7 @@ const podule_header_t *podule_probe(const podule_callbacks_t *callbacks, char *p
 
         scsi_config_init(callbacks);
 
-        return &aka31_podule_header;
+        return aka31_podule_header;
 }
 
 #ifdef WIN32

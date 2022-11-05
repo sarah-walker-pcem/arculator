@@ -2,21 +2,20 @@ VPATH = . ..\..\common\scsi ..\..\common\cdrom ..\..\common\sound ..\..\common\e
 CPP  = g++.exe
 CC   = gcc.exe
 OBJ  = oak_scsi.o ncr5380.o cdrom-windows-ioctl.o hdd_file.o scsi.o scsi_config.o scsi_cd.o scsi_hd.o sound_openal.o 93c06.o
-LIBS = --no-export-all-symbols --add-stdcall-alias -lopenal32  
+LIBS = -lopenal32  
 CFLAGS = $(INCS) -DBUILDING_DLL=1 -I..\..\..\src -I..\..\common\scsi -I..\..\common\cdrom -I..\..\common\sound -I..\..\common\eeprom -g3
 
 all: oak_scsi.dll
 
 clean:
-	del *.o
-	del *.dll
+	rm *.o
+	rm *.dll
 
-DLLWRAP=dllwrap.exe
 DEFFILE=liboak_scsi.def
 STATICLIB=liboak_scsi.a
 
 oak_scsi.dll: $(OBJ)
-	$(DLLWRAP) $(OBJ) $(LIBS) -o oak_scsi.dll
+	$(CC) -o oak_scsi.dll -s -shared $(OBJ) $(LIBS) -Wl,--subsystem,windows
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c $<

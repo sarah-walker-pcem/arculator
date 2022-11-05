@@ -2,21 +2,20 @@ VPATH = . ..\..\common\adc ..\..\common\joystick ..\..\common\misc
 CPP  = g++.exe
 CC   = gcc.exe
 OBJ  = morley_uap.o joystick_sdl2.o d7002c.o 6522.o
-LIBS = --no-export-all-symbols --add-stdcall-alias -lwinmm -lSDL2main -lSDL2
+LIBS = -lwinmm -lSDL2main -lSDL2
 CFLAGS = $(INCS) -DBUILDING_DLL=1 -I..\..\..\src -I..\..\common\adc -I..\..\common\joystick -I..\..\common\misc -O3
 
 all: morley_uap.dll
 
 clean:
-	del *.o
-	del *.dll
+	rm *.o
+	rm *.dll
 
-DLLWRAP=dllwrap.exe
 DEFFILE=libmorley_uap.def
 STATICLIB=libmorley_uap.a
 
 morley_uap.dll: $(OBJ)
-	$(DLLWRAP) $(OBJ) $(LIBS) -o morley_uap.dll
+	$(CC) -o morley_uap.dll -s -shared $(OBJ) $(LIBS) -Wl,--subsystem,windows
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c $<

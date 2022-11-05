@@ -4,21 +4,20 @@ CC   = gcc.exe
 OBJ  = pccard_podule.o
 PCEM_OBJ = 808x.o 386.o 386_common.o 386_dynarec.o cpu.o cpu_tables.o diva.o dma.o io.o lpt.o mem.o pc.o pic.o pit.o scamp.o serial.o timer.o x86seg.o x87.o x87_timings.o
 LIBCO_OBJ = libco.o
-LIBS = -s -shared -Wl,--subsystem,windows
+LIBS = 
 CFLAGS = $(INCS) -DBUILDING_DLL=1 -I..\..\..\src -O3
 
 all: pccard.dll
 
 clean:
-	del *.o
-	del *.dll
+	rm *.o
+	rm *.dll
 
-DLLWRAP=dllwrap.exe
 DEFFILE=pccard.def
 STATICLIB=pccard.a
 
 pccard.dll: $(OBJ) $(PCEM_OBJ) $(LIBCO_OBJ)
-	$(CC) -o pccard.dll $(OBJ) $(PCEM_OBJ) $(LIBCO_OBJ) $(LIBS)
+	$(CC) -o pccard.dll -s -shared $(OBJ) $(PCEM_OBJ) $(LIBCO_OBJ) $(LIBS) -Wl,--subsystem,windows
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c $<

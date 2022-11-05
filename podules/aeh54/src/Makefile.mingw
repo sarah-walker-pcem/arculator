@@ -16,7 +16,6 @@ clean:
 	rm *.o
 	rm *.dll
 
-DLLWRAP=dllwrap.exe
 DEFFILE=libaeh54.def
 STATICLIB=libaeh54.a
 

@@ -2,21 +2,20 @@ VPATH = . ..\..\common\midi ..\..\common\uart
 CPP  = g++.exe
 CC   = gcc.exe
 OBJ  = aka16.o midi_win.o scc2691.o
-LIBS = --no-export-all-symbols --add-stdcall-alias -lwinmm
+LIBS = -lwinmm
 CFLAGS = $(INCS) -DBUILDING_DLL=1 -I..\..\..\src -I..\..\common\midi  -I..\..\common\uart -O3
 
 all: aka16.dll
 
 clean:
-	del *.o
-	del *.dll
+	rm *.o
+	rm *.dll
 
-DLLWRAP=dllwrap.exe
 DEFFILE=libaka16.def
 STATICLIB=libaka16.a
 
 aka16.dll: $(OBJ)
-	$(DLLWRAP) $(OBJ) $(LIBS) -o aka16.dll
+	$(CC) -o aka16.dll -s -shared $(OBJ) $(LIBS) -Wl,--subsystem,windows
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c $<

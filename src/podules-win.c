@@ -91,7 +91,15 @@ void opendlls(void)
                         goto nextdll;
                 }
                 rpclog("podule_probe returned %p\n", header);
-                podule_add(header);
+
+                uint32_t flags;
+                do
+                {
+                        flags = header->flags;
+                        podule_add(header);
+                        header++;
+                } while (flags & PODULE_FLAGS_NEXT);
+
                 dll->next = dll_head;
                 dll_head = dll;
 

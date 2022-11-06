@@ -478,7 +478,7 @@ void debugger_do()
         while (1)
         {
                 char command[256];
-                char param1[256], param2[256];
+                char param1[256], param2[256], param3[256];
                 int ret;
                 
                 d = debug_disaddr;
@@ -506,7 +506,7 @@ void debugger_do()
                 debug_out(ins);
                 debug_out("\n");
 
-                params = sscanf(ins, "%s %s %s", command, param1, param2);
+                params = sscanf(ins, "%s %s %s %s", command, param1, param2, param3);
                 if (params <= 0)
                 {
                         strcpy(command, debug_lastcommand);
@@ -616,14 +616,45 @@ void debugger_do()
                         }
                         break;
                         case 's': case 'S':
-                        if (params)
-                                sscanf(param1, "%i", &debug_step_count);
-                        else
-                                debug_step_count = 1;
-                        strcpy(debug_lastcommand, command);
-                        indebug = 0;
-                        console_input_disable();
-                        return;
+			if (!strncasecmp(command, "save", 4))
+			{
+				if (params == 3)
+				{
+					uint32_t addr, size;
+
+					sscanf(param2, "%X", (unsigned int *)&addr);
+					sscanf(param3, "%X", (unsigned int *)&size);
+
+					if (addr >= 0x4000000 || size == 0 || size >= 0x4000000 || (addr + size) > 0x4000000)
+					{
+						debug_out("Address or size out of range\n");
+						break;
+					}
+
+					FILE *f = fopen(param1, "wb");
+					for (int i = 0; i < size; i++)
+					{
+						uint32_t data = readmemf_debug(addr & ~3);
+						putc(data >> (addr & 3) * 8, f);
+						addr++;
+					}
+					fclose(f);
+				}
+				else
+					debug_out("Syntax: save <fn> <addr> <size>\n");
+			}
+			else
+			{
+				if (params)
+					sscanf(param1, "%i", &debug_step_count);
+				else
+					debug_step_count = 1;
+				strcpy(debug_lastcommand, command);
+				indebug = 0;
+				console_input_disable();
+				return;
+			}
+                        break;
                         case 'b': case 'B':
                         if (!strncasecmp(command, "break", 5))
                         {
@@ -724,23 +755,24 @@ void debugger_do()
                         break;
                         case 'h': case 'H': case '?':
                         debug_out("\n    Debugger commands :\n\n");
-                        debug_out("    bclear <n>/<addr> - clear breakpoint n or breakpoint at addr\n");
-                        debug_out("    blist             - list current breakpoints\n");
-                        debug_out("    break <addr>      - set a breakpoint at addr\n");
-                        debug_out("    c                 - continue running indefinitely\n");
-                        debug_out("    d [addr]          - disassemble from address addr\n");
-                        debug_out("    m [addr]          - memory dump from address addr, in words\n");
-                        debug_out("    mb [addr]         - memory dump from address addr, in bytes\n");
-                        debug_out("    r                 - print ARM registers\n");
-                        debug_out("    r ioc             - print IOC registers\n");
-                        debug_out("    r memc            - print MEMC registers\n");
-                        debug_out("    r memc_cam        - print MEMC CAM mappings\n");
-                        debug_out("    r vidc            - print VIDC registers\n");
-                        debug_out("    s [n]             - step n instructions (or 1 if no parameter)\n\n");
-                        debug_out("    t disable <type>  - disable trap\n");
-                        debug_out("    t enable <type>   - enable trap\n");
-                        debug_out("                        Available traps are prefabort, dataabort, addrexcep,\n");
-                        debug_out("                        undefins and swi\n\n");
+                        debug_out("    bclear <n>/<addr>       - clear breakpoint n or breakpoint at addr\n");
+                        debug_out("    blist                   - list current breakpoints\n");
+                        debug_out("    break <addr>            - set a breakpoint at addr\n");
+                        debug_out("    c                       - continue running indefinitely\n");
+                        debug_out("    d [addr]                - disassemble from address addr\n");
+                        debug_out("    m [addr]                - memory dump from address addr, in words\n");
+                        debug_out("    mb [addr]               - memory dump from address addr, in bytes\n");
+                        debug_out("    r                       - print ARM registers\n");
+                        debug_out("    r ioc                   - print IOC registers\n");
+                        debug_out("    r memc                  - print MEMC registers\n");
+                        debug_out("    r memc_cam              - print MEMC CAM mappings\n");
+                        debug_out("    r vidc                  - print VIDC registers\n");
+                        debug_out("    s [n]                   - step n instructions (or 1 if no parameter)\n");
+			debug_out("    save <fn> <addr> <size> - save memory area to disc\n");
+                        debug_out("    t disable <type>        - disable trap\n");
+                        debug_out("    t enable <type>         - enable trap\n");
+                        debug_out("                              Available traps are prefabort, dataabort, addrexcep,\n");
+                        debug_out("                              undefins and swi\n\n");
                         break;
                 }
                 strcpy(debug_lastcommand, command);

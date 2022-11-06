@@ -6,6 +6,7 @@
 #include <string.h>
 #include <wx/defs.h>
 #include "arc.h"
+#include "debugger.h"
 #include "disc.h"
 #include "ioc.h"
 #include "plat_input.h"
@@ -259,9 +260,11 @@ void arc_resume_main_thread()
 
 void arc_do_reset()
 {
+        debugger_start_reset();
         SDL_LockMutex(main_thread_mutex);
         arc_reset();
         SDL_UnlockMutex(main_thread_mutex);
+        debugger_end_reset();
 }
 
 void arc_disc_change(int drive, char *fn)

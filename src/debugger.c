@@ -31,6 +31,7 @@ void debug_out(char *s)
 int debug = 0;
 int debugon = 0;
 int indebug = 0;
+int debugger_in_reset = 0;
 
 static uint32_t debug_memaddr=0;
 static uint32_t debug_disaddr=0;
@@ -450,6 +451,9 @@ void debugger_do()
         char outs[65536];
         char ins[256];
         
+        if (debugger_in_reset)
+                return;
+
         for (c = 0; c < 8; c++)
         {
                 if (breakpoints[c] == pc)
@@ -484,13 +488,18 @@ void debugger_do()
                 debug_out("\n");
 
                 ret = console_input_get(ins);
-                if (ret == -1) /*Debugger console has been closed*/
+                if (ret == CONSOLE_INPUT_GET_ERROR_WINDOW_CLOSED) /*Debugger console has been closed*/
                 {
                         debug = 0;
                         debugon = 0;
                         indebug = 0;
                         return;
                 }
+		if (ret == CONSOLE_INPUT_GET_ERROR_IN_RESET) /*UI thread is trying to reset emulation, get out of the way*/
+		{
+			indebug = 0;
+			return;
+		}
                 
                 d = strlen(ins);
                 debug_out("> ");
@@ -738,4 +747,13 @@ void debugger_do()
         }
         console_input_disable();
         indebug = 0;
+}
+
+void debugger_start_reset(void)
+{
+        debugger_in_reset = 1;
+}
+void debugger_end_reset(void)
+{
+        debugger_in_reset = 0;
 }

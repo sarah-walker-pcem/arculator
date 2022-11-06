@@ -10,6 +10,7 @@
 extern "C"
 {
         #include "arc.h"
+        #include "debugger.h"
 }
 
 static bool console_window_enabled = false;
@@ -167,7 +168,9 @@ extern "C" int console_input_get(char *s)
         while (!ret)
         {
                 if (!console_window_enabled)
-                        return -1;
+                        return CONSOLE_INPUT_GET_ERROR_WINDOW_CLOSED;
+                if (debugger_in_reset)
+                        return CONSOLE_INPUT_GET_ERROR_IN_RESET;
 
                 ret = console_window->GetInput(s);
 

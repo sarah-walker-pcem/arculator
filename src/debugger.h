@@ -16,9 +16,16 @@ void debugger_do();
 void debug_out(char *s);
 void debug_trap(int trap, uint32_t opcode);
 
+void debugger_start_reset(void);
+void debugger_end_reset(void);
+
 extern int debug, debugon;
+extern int debugger_in_reset;
 
 void console_output(char *s);
 int console_input_get(char *s);
 void console_input_disable();
 void console_input_enable();
+
+#define CONSOLE_INPUT_GET_ERROR_WINDOW_CLOSED -1
+#define CONSOLE_INPUT_GET_ERROR_IN_RESET -2

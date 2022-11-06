@@ -753,6 +753,26 @@ void debugger_do()
                                 }
                         }
                         break;
+			case 'w': case 'W':
+			if (!strncasecmp(command, "write", 5))
+			{
+				if (params != 2)
+				{
+					debug_out("Syntax: write[b] <addr> <data>\n");
+					break;
+				}
+
+				uint32_t addr, data;
+
+				sscanf(param1, "%X", (unsigned int *)&addr);
+				sscanf(param2, "%X", (unsigned int *)&data);
+
+				if (!strncasecmp(command, "writeb", 6))
+					writememfb_debug(addr, data);
+				else
+					writememfl_debug(addr, data);
+			}
+			break;
                         case 'h': case 'H': case '?':
                         debug_out("\n    Debugger commands :\n\n");
                         debug_out("    bclear <n>/<addr>       - clear breakpoint n or breakpoint at addr\n");
@@ -772,7 +792,9 @@ void debugger_do()
                         debug_out("    t disable <type>        - disable trap\n");
                         debug_out("    t enable <type>         - enable trap\n");
                         debug_out("                              Available traps are prefabort, dataabort, addrexcep,\n");
-                        debug_out("                              undefins and swi\n\n");
+                        debug_out("                              undefins and swi\n");
+			debug_out("    write <addr> <data>     - Write word to memory\n");
+			debug_out("    writeb <addr> <data>    - Write byte to memory\n\n");
                         break;
                 }
                 strcpy(debug_lastcommand, command);

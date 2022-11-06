@@ -536,6 +536,21 @@ uint32_t readmemf_debug(uint32_t a)
         return 0xffffffff;
 }
 
+void writememfb_debug(uint32_t a, uint8_t v)
+{
+        a &= 0x3FFFFFC;
+
+        if (mempoint[a >> 12])
+                ((uint8_t *)mempoint[a >> 12])[a & 0xfff] = v;
+}
+void writememfl_debug(uint32_t a, uint32_t v)
+{
+        a &= 0x3FFFFFC;
+
+        if (mempoint[a >> 12])
+                mempoint[a >> 12][(a & 0xfff) >> 2] = v;
+}
+
 int f42count=0;
 
 void writememfb(uint32_t a,uint8_t v)

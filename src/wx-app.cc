@@ -340,13 +340,13 @@ void Frame::OnMenuCommand(wxCommandEvent &event)
                 sound_filter = 2;
                 sound_update_filter();
         }
-        else if (event.GetId() == XRCID("IDM_SETTINGS_CONFIGURE"))
+        else if (event.GetId() == XRCID("IDM_SETTINGS_CONFIGURE") && !indebug)
         {
                 arc_pause_main_thread();
                 ShowConfig(true);
                 arc_resume_main_thread();
         }
-        else if (event.GetId() == XRCID("IDM_VIDEO_FULLSCR"))
+        else if (event.GetId() == XRCID("IDM_VIDEO_FULLSCR") && !indebug)
         {
                 if (firstfull)
                 {

@@ -363,23 +363,31 @@ void arc_renderer_reset()
 
 void arc_set_display_mode(int new_display_mode)
 {
-        SDL_LockMutex(main_thread_mutex);
+        int is_indebug = indebug;
+
+        if (!is_indebug)
+                SDL_LockMutex(main_thread_mutex);
 
         display_mode = new_display_mode;
         clearbitmap();
         setredrawall();
 
-        SDL_UnlockMutex(main_thread_mutex);
+        if (!is_indebug)
+                SDL_UnlockMutex(main_thread_mutex);
 }
 
 void arc_set_dblscan(int new_dblscan)
 {
-        SDL_LockMutex(main_thread_mutex);
+        int is_indebug = indebug;
+
+        if (!is_indebug)
+                SDL_LockMutex(main_thread_mutex);
 
         dblscan = new_dblscan;
         clearbitmap();
 
-        SDL_UnlockMutex(main_thread_mutex);
+        if (!is_indebug)
+                SDL_UnlockMutex(main_thread_mutex);
 }
 
 #define TIMER_1SEC 1

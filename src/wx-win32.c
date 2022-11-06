@@ -318,29 +318,37 @@ void arc_do_reset()
 
 void arc_disc_change(int drive, char *fn)
 {
+        int is_indebug = indebug;
+
         rpclog("arc_disc_change: drive=%i fn=%s\n", drive, fn);
 
-        SDL_LockMutex(main_thread_mutex);
+        if (!is_indebug)
+                SDL_LockMutex(main_thread_mutex);
 
         disc_close(drive);
         strcpy(discname[drive], fn);
         disc_load(drive, discname[drive]);
         ioc_discchange(drive);
 
-        SDL_UnlockMutex(main_thread_mutex);
+        if (!is_indebug)
+                SDL_UnlockMutex(main_thread_mutex);
 }
 
 void arc_disc_eject(int drive)
 {
+        int is_indebug = indebug;
+
         rpclog("arc_disc_eject: drive=%i\n", drive);
 
-        SDL_LockMutex(main_thread_mutex);
+        if (!is_indebug)
+                SDL_LockMutex(main_thread_mutex);
 
         ioc_discchange(drive);
         disc_close(drive);
         discname[drive][0] = 0;
 
-        SDL_UnlockMutex(main_thread_mutex);
+        if (!is_indebug)
+                SDL_UnlockMutex(main_thread_mutex);
 }
 
 void arc_enter_fullscreen()

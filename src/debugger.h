@@ -21,6 +21,7 @@ void debugger_end_reset(void);
 
 extern int debug, debugon;
 extern int debugger_in_reset;
+extern int indebug;
 
 void console_output(char *s);
 int console_input_get(char *s);

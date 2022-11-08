@@ -7,6 +7,8 @@
 #include <wx/xrc/xmlres.h>
 #include "wx/vscroll.h"
 
+#include <deque>
+
 extern "C"
 {
         #include "arc.h"
@@ -18,12 +20,16 @@ static bool console_window_enabled = false;
 class ConsoleWindow;
 static ConsoleWindow *console_window = NULL;
 
+#define SCROLLBACK_MAX_SIZE 500
+
 class ConsoleInput: public wxTextCtrl
 {
 public:
         ConsoleInput(wxWindow *parent)
-                : wxTextCtrl(parent, wxID_ANY, "", wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER)
+                : wxTextCtrl(parent, wxID_ANY, "", wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER),
+                  scrollback_pos(0)
         {
+		scrollback.push_back("");
         }
 
         void OnTextEnter(wxCommandEvent &event)
@@ -33,9 +39,45 @@ public:
                         pending_s = GetValue();
                         if (pending_s.empty())
                                 pending_s = last_s.Clone();
+
+			if (scrollback.size() == SCROLLBACK_MAX_SIZE+1)
+				scrollback.pop_front();
+
+			scrollback_pos = scrollback.size();
+			scrollback[scrollback_pos-1] = pending_s.Clone();
+			scrollback.push_back("");
+
                         Clear();
                 }
         }
+
+	void OnKeyDown(wxKeyEvent &event)
+	{
+		if (event.GetKeyCode() == WXK_UP)
+		{
+			if (scrollback_pos > 0)
+			{
+				if (scrollback_pos == scrollback.size() - 1)
+					scrollback[scrollback_pos] = GetValue().Clone();
+				scrollback_pos--;
+				SetValue(scrollback[scrollback_pos]);
+				SetInsertionPointEnd();
+			}
+		}
+		else if (event.GetKeyCode() == WXK_DOWN)
+		{
+			if ((scrollback_pos + 1) < scrollback.size())
+			{
+				if (scrollback_pos == scrollback.size() - 1)
+					scrollback[scrollback_pos] = GetValue().Clone();
+				scrollback_pos++;
+				SetValue(scrollback[scrollback_pos]);
+				SetInsertionPointEnd();
+			}
+		}
+		else
+			event.Skip();
+	}
 
         int GetInput(char *s)
         {
@@ -53,10 +95,14 @@ private:
         
         wxString last_s;
         wxString pending_s;
+
+	std::deque<wxString> scrollback;
+	int scrollback_pos;
 };
 
 wxBEGIN_EVENT_TABLE(ConsoleInput, wxTextCtrl)
     EVT_TEXT_ENTER(wxID_ANY, ConsoleInput::OnTextEnter)
+    EVT_KEY_DOWN(ConsoleInput::OnKeyDown)
 wxEND_EVENT_TABLE()
 
 

@@ -1,14 +1,14 @@
 typedef struct
 {
-        const char *name;
-        const char *config_name;
-        void *(*init)();
-        void (*close)(void *p);
-        const int axis_count, button_count, pov_count;
-        const int max_joysticks;
-        const char *axis_names[8];
-        const char *button_names[32];
-        const char *pov_names[4];
+	const char *name;
+	const char *config_name;
+	void *(*init)();
+	void (*close)(void *p);
+	const int axis_count, button_count, pov_count;
+	const int max_joysticks;
+	const char *axis_names[8];
+	const char *button_names[32];
+	const char *pov_names[4];
 } joystick_if_t;
 
 extern int joystick_type;

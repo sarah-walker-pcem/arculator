@@ -2,115 +2,115 @@
 
 
 #define ILLEGAL_ON(cond)                \
-        do                              \
-        {                               \
-                if ((cond))             \
-                {                       \
-                        cpu_state.pc = cpu_state.oldpc;     \
-                        x86illegal();   \
-                        return 0;       \
-                }                       \
-        } while (0)
+	do                              \
+	{                               \
+		if ((cond))             \
+		{                       \
+			cpu_state.pc = cpu_state.oldpc;     \
+			x86illegal();   \
+			return 0;       \
+		}                       \
+	} while (0)
 
 static inline void PUSH_W(uint16_t val)
 {
-        if (stack32)
-        {
-                writememw(ss, ESP - 2, val);              if (cpu_state.abrt) return;
-                ESP -= 2;
-        }
-        else
-        {
-                writememw(ss, (SP - 2) & 0xFFFF, val);    if (cpu_state.abrt) return;
-                SP -= 2;
-        }
+	if (stack32)
+	{
+		writememw(ss, ESP - 2, val);              if (cpu_state.abrt) return;
+		ESP -= 2;
+	}
+	else
+	{
+		writememw(ss, (SP - 2) & 0xFFFF, val);    if (cpu_state.abrt) return;
+		SP -= 2;
+	}
 }
 
 static inline void PUSH_L(uint32_t val)
 {
-        if (stack32)
-        {
-                writememl(ss, ESP - 4, val);              if (cpu_state.abrt) return;
-                ESP -= 4;
-        }
-        else
-        {
-                writememl(ss, (SP - 4) & 0xFFFF, val);    if (cpu_state.abrt) return;
-                SP -= 4;
-        }
+	if (stack32)
+	{
+		writememl(ss, ESP - 4, val);              if (cpu_state.abrt) return;
+		ESP -= 4;
+	}
+	else
+	{
+		writememl(ss, (SP - 4) & 0xFFFF, val);    if (cpu_state.abrt) return;
+		SP -= 4;
+	}
 }
 
 static inline uint16_t POP_W()
 {
-        uint16_t ret;
-        if (stack32)
-        {
-                ret = readmemw(ss, ESP);                        if (cpu_state.abrt) return 0;
-                ESP += 2;
-        }
-        else
-        {
-                ret = readmemw(ss, SP);                         if (cpu_state.abrt) return 0;
-                SP += 2;
-        }
-        return ret;
+	uint16_t ret;
+	if (stack32)
+	{
+		ret = readmemw(ss, ESP);                        if (cpu_state.abrt) return 0;
+		ESP += 2;
+	}
+	else
+	{
+		ret = readmemw(ss, SP);                         if (cpu_state.abrt) return 0;
+		SP += 2;
+	}
+	return ret;
 }
 
 static inline uint32_t POP_L()
 {
-        uint32_t ret;
-        if (stack32)
-        {
-                ret = readmeml(ss, ESP);                        if (cpu_state.abrt) return 0;
-                ESP += 4;
-        }
-        else
-        {
-                ret = readmeml(ss, SP);                         if (cpu_state.abrt) return 0;
-                SP += 4;
-        }
-        return ret;
+	uint32_t ret;
+	if (stack32)
+	{
+		ret = readmeml(ss, ESP);                        if (cpu_state.abrt) return 0;
+		ESP += 4;
+	}
+	else
+	{
+		ret = readmeml(ss, SP);                         if (cpu_state.abrt) return 0;
+		SP += 4;
+	}
+	return ret;
 }
 
 static inline uint16_t POP_W_seg(uint32_t seg)
 {
-        uint16_t ret;
-        if (stack32)
-        {
-                ret = readmemw(seg, ESP);                       if (cpu_state.abrt) return 0;
-                ESP += 2;
-        }
-        else
-        {
-                ret = readmemw(seg, SP);                        if (cpu_state.abrt) return 0;
-                SP += 2;
-        }
-        return ret;
+	uint16_t ret;
+	if (stack32)
+	{
+		ret = readmemw(seg, ESP);                       if (cpu_state.abrt) return 0;
+		ESP += 2;
+	}
+	else
+	{
+		ret = readmemw(seg, SP);                        if (cpu_state.abrt) return 0;
+		SP += 2;
+	}
+	return ret;
 }
 
 static inline uint32_t POP_L_seg(uint32_t seg)
 {
-        uint32_t ret;
-        if (stack32)
-        {
-                ret = readmeml(seg, ESP);                       if (cpu_state.abrt) return 0;
-                ESP += 4;
-        }
-        else
-        {
-                ret = readmeml(seg, SP);                        if (cpu_state.abrt) return 0;
-                SP += 4;
-        }
-        return ret;
+	uint32_t ret;
+	if (stack32)
+	{
+		ret = readmeml(seg, ESP);                       if (cpu_state.abrt) return 0;
+		ESP += 4;
+	}
+	else
+	{
+		ret = readmeml(seg, SP);                        if (cpu_state.abrt) return 0;
+		SP += 4;
+	}
+	return ret;
 }
 
 static int ILLEGAL(uint32_t fetchdat)
 {
-        cpu_state.pc = cpu_state.oldpc;
+	cpu_state.pc = cpu_state.oldpc;
 
 //        fatal("Illegal instruction %08X\n", fetchdat);
-        x86illegal();
-        return 0;
+	x86illegal();
+	return 0;
 }
 
 #include "x86_ops_arith.h"
@@ -145,40 +145,40 @@ static int ILLEGAL(uint32_t fetchdat)
 
 static int op0F_w_a16(uint32_t fetchdat)
 {
-        int opcode = fetchdat & 0xff;
-        cpu_state.pc++;
-        PREFETCH_PREFIX();
+	int opcode = fetchdat & 0xff;
+	cpu_state.pc++;
+	PREFETCH_PREFIX();
 
-        return x86_opcodes_0f[opcode](fetchdat >> 8);
+	return x86_opcodes_0f[opcode](fetchdat >> 8);
 }
 static int op0F_l_a16(uint32_t fetchdat)
 {
-        int opcode = fetchdat & 0xff;
-        cpu_state.pc++;
-        PREFETCH_PREFIX();
+	int opcode = fetchdat & 0xff;
+	cpu_state.pc++;
+	PREFETCH_PREFIX();
 
-        return x86_opcodes_0f[opcode | 0x100](fetchdat >> 8);
+	return x86_opcodes_0f[opcode | 0x100](fetchdat >> 8);
 }
 static int op0F_w_a32(uint32_t fetchdat)
 {
-        int opcode = fetchdat & 0xff;
-        cpu_state.pc++;
-        PREFETCH_PREFIX();
+	int opcode = fetchdat & 0xff;
+	cpu_state.pc++;
+	PREFETCH_PREFIX();
 
-        return x86_opcodes_0f[opcode | 0x200](fetchdat >> 8);
+	return x86_opcodes_0f[opcode | 0x200](fetchdat >> 8);
 }
 static int op0F_l_a32(uint32_t fetchdat)
 {
-        int opcode = fetchdat & 0xff;
-        cpu_state.pc++;
-        PREFETCH_PREFIX();
+	int opcode = fetchdat & 0xff;
+	cpu_state.pc++;
+	PREFETCH_PREFIX();
 
-        return x86_opcodes_0f[opcode | 0x300](fetchdat >> 8);
+	return x86_opcodes_0f[opcode | 0x300](fetchdat >> 8);
 }
 
 OpFn OP_TABLE(386_0f)[1024] =
 {
-        /*16-bit data, 16-bit addr*/
+	/*16-bit data, 16-bit addr*/
 /*      00              01              02              03              04              05              06              07              08              09              0a              0b              0c              0d              0e              0f*/
 /*00*/  op0F00_a16,     op0F01_w_a16,   opLAR_w_a16,    opLSL_w_a16,    ILLEGAL,        ILLEGAL,        opCLTS,         opLOADALL386,   opINVD,         opWBINVD,       ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,
 /*10*/  ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,
@@ -200,7 +200,7 @@ OpFn OP_TABLE(386_0f)[1024] =
 /*e0*/  ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,
 /*f0*/  ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,
 
-        /*32-bit data, 16-bit addr*/
+	/*32-bit data, 16-bit addr*/
 /*      00              01              02              03              04              05              06              07              08              09              0a              0b              0c              0d              0e              0f*/
 /*00*/  op0F00_a16,     op0F01_l_a16,   opLAR_l_a16,    opLSL_l_a16,    ILLEGAL,        ILLEGAL,        opCLTS,         opLOADALL386,   opINVD,         opWBINVD,       ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,
 /*10*/  ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,
@@ -222,7 +222,7 @@ OpFn OP_TABLE(386_0f)[1024] =
 /*e0*/  ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,
 /*f0*/  ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,
 
-        /*16-bit data, 32-bit addr*/
+	/*16-bit data, 32-bit addr*/
 /*      00              01              02              03              04              05              06              07              08              09              0a              0b              0c              0d              0e              0f*/
 /*00*/  op0F00_a32,     op0F01_w_a32,   opLAR_w_a32,    opLSL_w_a32,    ILLEGAL,        ILLEGAL,        opCLTS,         opLOADALL386,   opINVD,         opWBINVD,       ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,
 /*10*/  ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,
@@ -244,7 +244,7 @@ OpFn OP_TABLE(386_0f)[1024] =
 /*e0*/  ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,
 /*f0*/  ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,
 
-        /*32-bit data, 32-bit addr*/
+	/*32-bit data, 32-bit addr*/
 /*      00              01              02              03              04              05              06              07              08              09              0a              0b              0c              0d              0e              0f*/
 /*00*/  op0F00_a32,     op0F01_l_a32,   opLAR_l_a32,    opLSL_l_a32,    ILLEGAL,        ILLEGAL,        opCLTS,         opLOADALL386,   opINVD,         opWBINVD,       ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,
 /*10*/  ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,        ILLEGAL,
@@ -269,7 +269,7 @@ OpFn OP_TABLE(386_0f)[1024] =
 
 OpFn OP_TABLE(386)[1024] =
 {
-        /*16-bit data, 16-bit addr*/
+	/*16-bit data, 16-bit addr*/
 /*      00              01              02              03              04              05              06              07              08              09              0a              0b              0c              0d              0e              0f*/
 /*00*/  opADD_b_rmw_a16,opADD_w_rmw_a16,opADD_b_rm_a16, opADD_w_rm_a16, opADD_AL_imm,   opADD_AX_imm,   opPUSH_ES_w,    opPOP_ES_w,     opOR_b_rmw_a16, opOR_w_rmw_a16, opOR_b_rm_a16,  opOR_w_rm_a16,  opOR_AL_imm,    opOR_AX_imm,    opPUSH_CS_w,    op0F_w_a16,
 /*10*/  opADC_b_rmw_a16,opADC_w_rmw_a16,opADC_b_rm_a16, opADC_w_rm_a16, opADC_AL_imm,   opADC_AX_imm,   opPUSH_SS_w,    opPOP_SS_w,     opSBB_b_rmw_a16,opSBB_w_rmw_a16,opSBB_b_rm_a16, opSBB_w_rm_a16, opSBB_AL_imm,   opSBB_AX_imm,   opPUSH_DS_w,    opPOP_DS_w,
@@ -291,7 +291,7 @@ OpFn OP_TABLE(386)[1024] =
 /*e0*/  opLOOPNE_w,     opLOOPE_w,      opLOOP_w,       opJCXZ,         opIN_AL_imm,    opIN_AX_imm,    opOUT_AL_imm,   opOUT_AX_imm,   opCALL_r16,     opJMP_r16,      opJMP_far_a16,  opJMP_r8,       opIN_AL_DX,     opIN_AX_DX,     opOUT_AL_DX,    opOUT_AX_DX,
 /*f0*/  opLOCK,         opINT1,         opREPNE,        opREPE,         opHLT,          opCMC,          opF6_a16,       opF7_w_a16,     opCLC,          opSTC,          opCLI,          opSTI,          opCLD,          opSTD,          opINCDEC_b_a16, opFF_w_a16,
 
-        /*32-bit data, 16-bit addr*/
+	/*32-bit data, 16-bit addr*/
 /*      00              01              02              03              04              05              06              07              08              09              0a              0b              0c              0d              0e              0f*/
 /*00*/  opADD_b_rmw_a16,opADD_l_rmw_a16,opADD_b_rm_a16, opADD_l_rm_a16, opADD_AL_imm,   opADD_EAX_imm,  opPUSH_ES_l,    opPOP_ES_l,     opOR_b_rmw_a16, opOR_l_rmw_a16, opOR_b_rm_a16,  opOR_l_rm_a16,  opOR_AL_imm,    opOR_EAX_imm,   opPUSH_CS_l,    op0F_l_a16,
 /*10*/  opADC_b_rmw_a16,opADC_l_rmw_a16,opADC_b_rm_a16, opADC_l_rm_a16, opADC_AL_imm,   opADC_EAX_imm,  opPUSH_SS_l,    opPOP_SS_l,     opSBB_b_rmw_a16,opSBB_l_rmw_a16,opSBB_b_rm_a16, opSBB_l_rm_a16, opSBB_AL_imm,   opSBB_EAX_imm,  opPUSH_DS_l,    opPOP_DS_l,
@@ -313,7 +313,7 @@ OpFn OP_TABLE(386)[1024] =
 /*e0*/  opLOOPNE_w,     opLOOPE_w,      opLOOP_w,       opJCXZ,         opIN_AL_imm,    opIN_EAX_imm,   opOUT_AL_imm,   opOUT_EAX_imm,  opCALL_r32,     opJMP_r32,      opJMP_far_a32,  opJMP_r8,       opIN_AL_DX,     opIN_EAX_DX,    opOUT_AL_DX,    opOUT_EAX_DX,
 /*f0*/  opLOCK,         opINT1,         opREPNE,        opREPE,         opHLT,          opCMC,          opF6_a16,       opF7_l_a16,     opCLC,          opSTC,          opCLI,          opSTI,          opCLD,          opSTD,          opINCDEC_b_a16, opFF_l_a16,
 
-        /*16-bit data, 32-bit addr*/
+	/*16-bit data, 32-bit addr*/
 /*      00              01              02              03              04              05              06              07              08              09              0a              0b              0c              0d              0e              0f*/
 /*00*/  opADD_b_rmw_a32,opADD_w_rmw_a32,opADD_b_rm_a32, opADD_w_rm_a32, opADD_AL_imm,   opADD_AX_imm,   opPUSH_ES_w,    opPOP_ES_w,     opOR_b_rmw_a32, opOR_w_rmw_a32, opOR_b_rm_a32,  opOR_w_rm_a32,  opOR_AL_imm,    opOR_AX_imm,    opPUSH_CS_w,    op0F_w_a32,
 /*10*/  opADC_b_rmw_a32,opADC_w_rmw_a32,opADC_b_rm_a32, opADC_w_rm_a32, opADC_AL_imm,   opADC_AX_imm,   opPUSH_SS_w,    opPOP_SS_w,     opSBB_b_rmw_a32,opSBB_w_rmw_a32,opSBB_b_rm_a32, opSBB_w_rm_a32, opSBB_AL_imm,   opSBB_AX_imm,   opPUSH_DS_w,    opPOP_DS_w,
@@ -335,7 +335,7 @@ OpFn OP_TABLE(386)[1024] =
 /*e0*/  opLOOPNE_l,     opLOOPE_l,      opLOOP_l,       opJECXZ,        opIN_AL_imm,    opIN_AX_imm,    opOUT_AL_imm,   opOUT_AX_imm,   opCALL_r16,     opJMP_r16,      opJMP_far_a16,  opJMP_r8,       opIN_AL_DX,     opIN_AX_DX,     opOUT_AL_DX,    opOUT_AX_DX,
 /*f0*/  opLOCK,         opINT1,         opREPNE,        opREPE,         opHLT,          opCMC,          opF6_a32,       opF7_w_a32,     opCLC,          opSTC,          opCLI,          opSTI,          opCLD,          opSTD,          opINCDEC_b_a32, opFF_w_a32,
 
-        /*32-bit data, 32-bit addr*/
+	/*32-bit data, 32-bit addr*/
 /*      00              01              02              03              04              05              06              07              08              09              0a              0b              0c              0d              0e              0f*/
 /*00*/  opADD_b_rmw_a32,opADD_l_rmw_a32,opADD_b_rm_a32, opADD_l_rm_a32, opADD_AL_imm,   opADD_EAX_imm,  opPUSH_ES_l,    opPOP_ES_l,     opOR_b_rmw_a32, opOR_l_rmw_a32, opOR_b_rm_a32,  opOR_l_rm_a32,  opOR_AL_imm,    opOR_EAX_imm,   opPUSH_CS_l,    op0F_l_a32,
 /*10*/  opADC_b_rmw_a32,opADC_l_rmw_a32,opADC_b_rm_a32, opADC_l_rm_a32, opADC_AL_imm,   opADC_EAX_imm,  opPUSH_SS_l,    opPOP_SS_l,     opSBB_b_rmw_a32,opSBB_l_rmw_a32,opSBB_b_rm_a32, opSBB_l_rm_a32, opSBB_AL_imm,   opSBB_EAX_imm,  opPUSH_DS_l,    opPOP_DS_l,
@@ -360,7 +360,7 @@ OpFn OP_TABLE(386)[1024] =
 
 OpFn OP_TABLE(REPE)[1024] =
 {
-        /*16-bit data, 16-bit addr*/
+	/*16-bit data, 16-bit addr*/
 /*      00              01              02              03              04              05              06              07              08              09              0a              0b              0c              0d              0e              0f*/
 /*00*/  0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,
 /*10*/  0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,
@@ -382,7 +382,7 @@ OpFn OP_TABLE(REPE)[1024] =
 /*e0*/  0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,
 /*f0*/  0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,
 
-        /*32-bit data, 16-bit addr*/
+	/*32-bit data, 16-bit addr*/
 /*      00              01              02              03              04              05              06              07              08              09              0a              0b              0c              0d              0e              0f*/
 /*00*/  0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,
 /*10*/  0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,
@@ -404,7 +404,7 @@ OpFn OP_TABLE(REPE)[1024] =
 /*e0*/  0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,
 /*f0*/  0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,
 
-        /*16-bit data, 32-bit addr*/
+	/*16-bit data, 32-bit addr*/
 /*      00              01              02              03              04              05              06              07              08              09              0a              0b              0c              0d              0e              0f*/
 /*00*/  0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,
 /*10*/  0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,
@@ -426,7 +426,7 @@ OpFn OP_TABLE(REPE)[1024] =
 /*e0*/  0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,
 /*f0*/  0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,
 
-        /*32-bit data, 32-bit addr*/
+	/*32-bit data, 32-bit addr*/
 /*      00              01              02              03              04              05              06              07              08              09              0a              0b              0c              0d              0e              0f*/
 /*00*/  0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,
 /*10*/  0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,
@@ -451,7 +451,7 @@ OpFn OP_TABLE(REPE)[1024] =
 
 OpFn OP_TABLE(REPNE)[1024] =
 {
-        /*16-bit data, 16-bit addr*/
+	/*16-bit data, 16-bit addr*/
 /*      00              01              02              03              04              05              06              07              08              09              0a              0b              0c              0d              0e              0f*/
 /*00*/  0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,
 /*10*/  0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,
@@ -473,7 +473,7 @@ OpFn OP_TABLE(REPNE)[1024] =
 /*e0*/  0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,
 /*f0*/  0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,
 
-        /*32-bit data, 16-bit addr*/
+	/*32-bit data, 16-bit addr*/
 /*      00              01              02              03              04              05              06              07              08              09              0a              0b              0c              0d              0e              0f*/
 /*00*/  0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,
 /*10*/  0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,
@@ -495,7 +495,7 @@ OpFn OP_TABLE(REPNE)[1024] =
 /*e0*/  0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,
 /*f0*/  0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,
 
-        /*16-bit data, 32-bit addr*/
+	/*16-bit data, 32-bit addr*/
 /*      00              01              02              03              04              05              06              07              08              09              0a              0b              0c              0d              0e              0f*/
 /*00*/  0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,
 /*10*/  0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,
@@ -517,7 +517,7 @@ OpFn OP_TABLE(REPNE)[1024] =
 /*e0*/  0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,
 /*f0*/  0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,
 
-        /*32-bit data, 32-bit addr*/
+	/*32-bit data, 32-bit addr*/
 /*      00              01              02              03              04              05              06              07              08              09              0a              0b              0c              0d              0e              0f*/
 /*00*/  0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,
 /*10*/  0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,              0,

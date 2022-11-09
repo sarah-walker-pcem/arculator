@@ -31,14 +31,14 @@
 void ncr5380_init(ncr5380_t *ncr, podule_t *podule, const podule_callbacks_t *podule_callbacks, struct scsi_bus_t *bus)
 {
 	memset(ncr, 0, sizeof(ncr));
-        ncr->podule = podule;
-        ncr->bus = bus;
-        scsi_bus_init(ncr->bus, podule, podule_callbacks);
+	ncr->podule = podule;
+	ncr->bus = bus;
+	scsi_bus_init(ncr->bus, podule, podule_callbacks);
 }
 
 static int get_bus_host(ncr5380_t *ncr, int match)
 {
-        int bus_host = 0;
+	int bus_host = 0;
 
 	if (ncr->icr & ICR_DBP)
 		bus_host |= BUS_DBP;
@@ -46,7 +46,7 @@ static int get_bus_host(ncr5380_t *ncr, int match)
 		bus_host |= BUS_SEL;
 	if ((ncr->mode & MODE_TARGET) || match)
 	{
-	        if (ncr->tcr & TCR_IO)
+		if (ncr->tcr & TCR_IO)
 			bus_host |= BUS_IO;
 		if (ncr->tcr & TCR_CD)
 			bus_host |= BUS_CD;
@@ -60,14 +60,14 @@ static int get_bus_host(ncr5380_t *ncr, int match)
 	if (ncr->icr & ICR_ACK)
 		bus_host |= BUS_ACK;
 	if (ncr->mode & MODE_ARBITRATE)
-	        bus_host |= BUS_ARB;
+		bus_host |= BUS_ARB;
 
 	return bus_host | BUS_SETDATA(ncr->output_data);
 }
 
 void ncr5380_write(ncr5380_t *ncr, uint32_t addr, uint8_t val)
 {
-        int bus_host = 0;
+	int bus_host = 0;
 
 //	scsi_log("ncr5380_write: addr=%06x val=%02x\n", addr, val);
 	switch (addr & 7)
@@ -112,14 +112,14 @@ void ncr5380_write(ncr5380_t *ncr, uint32_t addr, uint8_t val)
 		scsi_fatal("Bad NCR5380 write %06x %02x\n", addr, val);
 	}
 
-        bus_host = get_bus_host(ncr, 0);
+	bus_host = get_bus_host(ncr, 0);
 
 	scsi_bus_update(ncr->bus, bus_host);
 }
 
 uint8_t ncr5380_read(ncr5380_t *ncr, uint32_t addr)
 {
-        int bus = 0;
+	int bus = 0;
 	uint8_t temp;
 
 	//scsi_log("ncr5380_read: addr=%06x\n", addr);
@@ -139,7 +139,7 @@ uint8_t ncr5380_read(ncr5380_t *ncr, uint32_t addr)
 		temp = get_bus_host(ncr, 0);
 		bus = scsi_bus_read(ncr->bus);
 //		scsi_log("Current SCSI Bus Status: temp=%02x bus=%02x\n", temp, bus & 0xff);
-        	temp |= (bus & 0xff);
+		temp |= (bus & 0xff);
 		return temp;
 
 		case 5: /*Bus and Status Register*/
@@ -148,10 +148,10 @@ uint8_t ncr5380_read(ncr5380_t *ncr, uint32_t addr)
 		if (scsi_bus_match(ncr->bus, bus))
 			temp |= 8;
 		bus = scsi_bus_read(ncr->bus);
-                if (bus & BUS_ACK)
-                        temp |= STATUS_ACK;
-                if ((bus & BUS_REQ) && (ncr->mode & MODE_DMA))
-                        temp |= STATUS_DRQ;
+		if (bus & BUS_ACK)
+			temp |= STATUS_ACK;
+		if ((bus & BUS_REQ) && (ncr->mode & MODE_DMA))
+			temp |= STATUS_DRQ;
 		return temp;
 
 		case 7: /*Reset Parity/Interrupt*/

@@ -50,7 +50,7 @@ hostfs_adfs2host_time(uint32_t load, uint32_t exec)
  */
 void
 hostfs_read_object_info_platform(const char *host_pathname,
-                                 risc_os_object_info *object_info)
+				 risc_os_object_info *object_info)
 {
 	struct stat info;
 	uint32_t low, high;
@@ -70,8 +70,8 @@ hostfs_read_object_info_platform(const char *host_pathname,
 		default:
 			/* Other error */
 			fprintf(stderr,
-			        "hostfs_read_object_info_platform() could not stat() \'%s\': %s %d\n",
-			        host_pathname, strerror(errno), errno);
+				"hostfs_read_object_info_platform() could not stat() \'%s\': %s %d\n",
+				host_pathname, strerror(errno), errno);
 			object_info->type = OBJECT_TYPE_NOT_FOUND;
 			break;
 		}

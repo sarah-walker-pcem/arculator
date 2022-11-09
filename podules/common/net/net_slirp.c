@@ -9,8 +9,8 @@ static queueADT *g_slirpq;
 typedef struct net_slirp_t
 {
 	pthread_t poll_thread;
-        volatile int exit_poll;
-        queueADT slirpq;
+	volatile int exit_poll;
+	queueADT slirpq;
 } net_slirp_t;
 
 static void *slirp_poll_thread(void *p)
@@ -20,12 +20,12 @@ static void *slirp_poll_thread(void *p)
 
 	while (!slirp->exit_poll)
 	{
-	        int ret2, nfds;
-	        struct timeval tv;
-	        fd_set rfds, wfds, xfds;
-	        int timeout;
+		int ret2, nfds;
+		struct timeval tv;
+		fd_set rfds, wfds, xfds;
+		int timeout;
 
-	        nfds = -1;
+		nfds = -1;
 		FD_ZERO(&rfds);
 		FD_ZERO(&wfds);
 		FD_ZERO(&xfds);
@@ -76,17 +76,17 @@ static void net_slirp_free(net_t *net, packet_t *packet)
 
 void slirp_output(const unsigned char *pkt, int pkt_len)
 {
-        struct queuepacket *p;
-        p = (struct queuepacket *)malloc(sizeof(struct queuepacket));
-        p->len = pkt_len;
-        memcpy(p->data, pkt, pkt_len);
-        QueueEnter(*g_slirpq, p);
+	struct queuepacket *p;
+	p = (struct queuepacket *)malloc(sizeof(struct queuepacket));
+	p->len = pkt_len;
+	memcpy(p->data, pkt, pkt_len);
+	QueueEnter(*g_slirpq, p);
 //        aeh54_log("slirp_output %d @%d\n",pkt_len,p);
 }
 int slirp_can_output(void)
 {
 //        aeh54_log("slirp_can_output\n");
-        return 1;
+	return 1;
 }
 
 
@@ -117,13 +117,13 @@ net_t *slirp_net_init(void)
 	net->free = net_slirp_free;
 	net->p = slirp;
 
-        rc = slirp_init();
+	rc = slirp_init();
 //        aeh54_log("ne2000 slirp_init returned: %d\n",rc);
-        if (rc)
-        {
+	if (rc)
+	{
 		free(slirp);
 		free(net);
-        	return NULL;
+		return NULL;
 	}
 
 //	aeh54_log("ne2000 slirp initalized!\n");
@@ -141,8 +141,8 @@ net_t *slirp_net_init(void)
 	slirp->slirpq = QueueCreate();
 	g_slirpq = &slirp->slirpq;
 
-        pthread_create(&slirp->poll_thread, 0, slirp_poll_thread, net);
+	pthread_create(&slirp->poll_thread, 0, slirp_poll_thread, net);
 
-        return net;
+	return net;
 }
 

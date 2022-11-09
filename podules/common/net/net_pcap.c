@@ -48,34 +48,34 @@ static int (*_pcap_datalink)(pcap_t *);
 
 static int get_network_name(char *dev_name, char *regval)
 {
-        if (dev_name[strlen( "\\Device\\NPF_" )] == '{')
-        {
-                char regkey[2048];
-                HKEY reghnd;
-                                                
-                sprintf(regkey, "SYSTEM\\CurrentControlSet\\Control\\Network\\"
-                        "{4D36E972-E325-11CE-BFC1-08002BE10318}\\%s\\Connection", dev_name+
-                        strlen("\\Device\\NPF_"));
+	if (dev_name[strlen( "\\Device\\NPF_" )] == '{')
+	{
+		char regkey[2048];
+		HKEY reghnd;
 
-                if (RegOpenKeyExA(HKEY_LOCAL_MACHINE, regkey, 0, KEY_QUERY_VALUE, &reghnd) == ERROR_SUCCESS)
-                {
-                        DWORD reglen = 2048;
-                        DWORD regtype;
+		sprintf(regkey, "SYSTEM\\CurrentControlSet\\Control\\Network\\"
+			"{4D36E972-E325-11CE-BFC1-08002BE10318}\\%s\\Connection", dev_name+
+			strlen("\\Device\\NPF_"));
 
-                        if (RegQueryValueExA(reghnd, "Name", NULL, &regtype, (LPBYTE)regval, &reglen) == ERROR_SUCCESS)
-                        {
-                                RegCloseKey (reghnd);
-                                
-                                if ((regtype != REG_SZ) || (reglen > 2048))
-                                        return -1;
+		if (RegOpenKeyExA(HKEY_LOCAL_MACHINE, regkey, 0, KEY_QUERY_VALUE, &reghnd) == ERROR_SUCCESS)
+		{
+			DWORD reglen = 2048;
+			DWORD regtype;
 
-                                /*Name now in regval*/
-                                return 0;
-                        }
-                        RegCloseKey (reghnd);
-                }
-        }
-        return -1;
+			if (RegQueryValueExA(reghnd, "Name", NULL, &regtype, (LPBYTE)regval, &reglen) == ERROR_SUCCESS)
+			{
+				RegCloseKey (reghnd);
+
+				if ((regtype != REG_SZ) || (reglen > 2048))
+					return -1;
+
+				/*Name now in regval*/
+				return 0;
+			}
+			RegCloseKey (reghnd);
+		}
+	}
+	return -1;
 }
 
 static int pcap_open_library(void)
@@ -85,7 +85,7 @@ static int pcap_open_library(void)
 	{
 		//aeh54_log("ne2000 Failed to load %s\n",net_lib_name);
 		return -1;
-        }
+	}
 
 	_pcap_lib_version  = (PCAP_LIB_VERSION)GetProcAddress(net_hLib, "pcap_lib_version");
 	_pcap_open_live = (PCAP_OPEN_LIVE)GetProcAddress(net_hLib, "pcap_open_live");
@@ -114,10 +114,10 @@ static int net_pcap_read(net_t *net, packet_t *packet)
 	struct pcap_pkthdr h;
 	unsigned char *data;
 
-        data = _pcap_next(pcap->pcap, &h);
+	data = _pcap_next(pcap->pcap, &h);
 //	if (data)
 //		aeh54_log("net_pcap_read: data=%x\n", data);
-        if (data)
+	if (data)
 	{
 		packet->data = data;
 		packet->len = h.caplen;
@@ -155,7 +155,7 @@ static void net_pcap_close(net_t *net)
 
 net_t *pcap_net_init(const char *network_device, uint8_t *mac_addr)
 {
-        char errbuf[PCAP_ERRBUF_SIZE];
+	char errbuf[PCAP_ERRBUF_SIZE];
 	pcap_if_t *alldevs;
 	int rc;
 
@@ -201,17 +201,17 @@ net_t *pcap_net_init(const char *network_device, uint8_t *mac_addr)
 			rc = _pcap_getnonblock(pcap->pcap, errbuf);
 			//if (rc == 1)
 				//aeh54_log("..!", rc);
-                        //else
-                                //aeh54_log("\tunable to set pcap into non-blocking mode!\nContinuining without pcap.\n");
+			//else
+				//aeh54_log("\tunable to set pcap into non-blocking mode!\nContinuining without pcap.\n");
 		}
 		else
-                        //aeh54_log("There was an unexpected error of [%s]\n\nexiting.\n",errbuf);
+			//aeh54_log("There was an unexpected error of [%s]\n\nexiting.\n",errbuf);
 		//aeh54_log("\n");
 		break;
-                case 1:
+		case 1:
 		//aeh54_log("non blocking\n");
 		break;
-                default:
+		default:
 		//aeh54_log("this isn't right!!!\n");
 		break;
 	}
@@ -220,7 +220,7 @@ net_t *pcap_net_init(const char *network_device, uint8_t *mac_addr)
 	{
 		struct bpf_program fp;
 		char filter_exp[255];
-                                
+
 		//aeh54_log("ne2000 Building packet filter...");
 		sprintf(filter_exp,"( ((ether dst ff:ff:ff:ff:ff:ff) or (ether dst %02x:%02x:%02x:%02x:%02x:%02x)) and not (ether src %02x:%02x:%02x:%02x:%02x:%02x) )",
 			pcap->mac[0], pcap->mac[1], pcap->mac[2], pcap->mac[3], pcap->mac[4], pcap->mac[5],
@@ -258,7 +258,7 @@ err_out:
 
 int pcap_net_get_devs(podule_config_selection_t *config, int max_devs)
 {
-        char errbuf[PCAP_ERRBUF_SIZE];
+	char errbuf[PCAP_ERRBUF_SIZE];
 	pcap_if_t *alldevs;
 	int nr_devs = 0;
 
@@ -270,13 +270,13 @@ int pcap_net_get_devs(podule_config_selection_t *config, int max_devs)
 
 	if (_pcap_findalldevs(&alldevs, errbuf) != -1)
 	{
-        	pcap_if_t *dev;
+		pcap_if_t *dev;
 
 		for (dev = alldevs; dev; dev = dev->next)
 		{
 			pcap_t *conn = _pcap_open_live(dev->name, ETH_MAX_PACKET, ETH_PROMISC, PCAP_READ_TIMEOUT, errbuf);
 			int datalink = 0;
-                                        
+
 			if (conn)
 			{
 				datalink = _pcap_datalink(conn);

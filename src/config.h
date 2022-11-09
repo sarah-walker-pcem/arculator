@@ -1,50 +1,50 @@
 enum
 {
-        FDC_WD1770,
-        FDC_82C711,
-        FDC_WD1793_A500
+	FDC_WD1770,
+	FDC_82C711,
+	FDC_WD1793_A500
 };
 
 extern int fdctype;
 
 enum
 {
-        ROM_ARTHUR_030,
-        ROM_ARTHUR_120,
-        ROM_RISCOS_200,
-        ROM_RISCOS_201,
-        ROM_RISCOS_300,
-        ROM_RISCOS_310,
-        ROM_RISCOS_311,
-        ROM_RISCOS_319,
-        
-        ROM_ARTHUR_120_A500,
-        ROM_RISCOS_200_A500,
-        ROM_RISCOS_310_A500,
+	ROM_ARTHUR_030,
+	ROM_ARTHUR_120,
+	ROM_RISCOS_200,
+	ROM_RISCOS_201,
+	ROM_RISCOS_300,
+	ROM_RISCOS_310,
+	ROM_RISCOS_311,
+	ROM_RISCOS_319,
 
-        ROM_MAX
+	ROM_ARTHUR_120_A500,
+	ROM_RISCOS_200_A500,
+	ROM_RISCOS_310_A500,
+
+	ROM_MAX
 };
 
 extern int romset_available_mask;
 
 char *config_get_romset_name(int romset);
 char *config_get_cmos_name(int romset, int fdctype);
-        
+
 enum
 {
-        MONITOR_STANDARD,
-        MONITOR_MULTISYNC,
-        MONITOR_VGA,
-        MONITOR_MONO,
-        MONITOR_LCD
+	MONITOR_STANDARD,
+	MONITOR_MULTISYNC,
+	MONITOR_VGA,
+	MONITOR_MONO,
+	MONITOR_LCD
 };
 
 extern int monitor_type;
 
 enum
 {
-        MACHINE_TYPE_NORMAL,
-        MACHINE_TYPE_A4
+	MACHINE_TYPE_NORMAL,
+	MACHINE_TYPE_A4
 };
 
 extern int machine_type;

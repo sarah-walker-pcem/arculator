@@ -33,7 +33,7 @@ void timer_enable(emu_timer_t *timer)
 	{
 		timer_head = timer;
 		timer->next = timer->prev = NULL;
-        	timer_target = timer_head->ts_integer;
+		timer_target = timer_head->ts_integer;
 		return;
 	}
 
@@ -53,7 +53,7 @@ void timer_enable(emu_timer_t *timer)
 			{
 				timer_head = timer;
 				timer_target = timer_head->ts_integer;
-                        }
+			}
 			return;
 		}
 
@@ -97,7 +97,7 @@ static void timer_remove_head()
 //		rpclog("timer_remove_head %p %p\n", timer_head, timer_head->next);
 		timer_head = timer->next;
 		if (timer_head)
-        		timer_head->prev = NULL;
+			timer_head->prev = NULL;
 		timer->next = timer->prev = NULL;
 		timer->enabled = 0;
 	}
@@ -127,13 +127,13 @@ void timer_reset()
 	rpclog("timer_reset\n");
 	timer_target = 0;
 	timer_head = NULL;
-        TIMER_USEC = (uint64_t)speed_mhz << 32;
+	TIMER_USEC = (uint64_t)speed_mhz << 32;
 }
 
 void timer_add(emu_timer_t *timer, void (*callback)(void *p), void *p, int start_timer)
 {
-        memset(timer, 0, sizeof(emu_timer_t));
-        
+	memset(timer, 0, sizeof(emu_timer_t));
+
 	timer->callback = callback;
 	timer->p = p;
 	timer->enabled = 0;

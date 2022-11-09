@@ -14,8 +14,8 @@ typedef struct ncr5380_t
 
 	uint8_t bus_status;
 
-        podule_t *podule;
-        struct scsi_bus_t *bus;
+	podule_t *podule;
+	struct scsi_bus_t *bus;
 } ncr5380_t;
 
 void ncr5380_init(ncr5380_t *ncr, podule_t *podule, const podule_callbacks_t *podule_callbacks, struct scsi_bus_t *bus);

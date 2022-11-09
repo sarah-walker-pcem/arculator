@@ -27,7 +27,7 @@ void timer_enable(pc_timer_t *timer)
 	{
 		timer_head = timer;
 		timer->next = timer->prev = NULL;
-        	timer_target = timer_head->ts_integer;
+		timer_target = timer_head->ts_integer;
 		return;
 	}
 
@@ -47,7 +47,7 @@ void timer_enable(pc_timer_t *timer)
 			{
 				timer_head = timer;
 				timer_target = timer_head->ts_integer;
-                        }
+			}
 			return;
 		}
 
@@ -124,7 +124,7 @@ void timer_reset()
 
 void timer_add(pc_timer_t *timer, void (*callback)(void *p), void *p, int start_timer)
 {
-        memset(timer, 0, sizeof(pc_timer_t));
+	memset(timer, 0, sizeof(pc_timer_t));
 
 	timer->callback = callback;
 	timer->p = p;

@@ -27,20 +27,20 @@ extern void hostfs_reset(void);
 
 static inline uint32_t ARMul_LoadWordS(ARMul_State *state, ARMword address)
 {
-        return readmeml(address);
+	return readmeml(address);
 }
 static inline uint8_t ARMul_LoadByte(ARMul_State *state, ARMword address)
 {
-        return readmemb(address);
+	return readmemb(address);
 }
 
 static inline void ARMul_StoreWordS(ARMul_State *state, ARMword address, uint32_t data)
 {
-        writememl(address, data);
+	writememl(address, data);
 }
 static inline void ARMul_StoreByte(ARMul_State *state, ARMword address, uint8_t data)
 {
-        writememb(address, data);
+	writememb(address, data);
 }
 
 #define UNIMPLEMENTED(section, format, args...) do { } while (0)

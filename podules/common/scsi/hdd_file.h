@@ -1,7 +1,7 @@
 typedef struct hdd_file_t
 {
-        FILE *f;
-        int sectors;
+	FILE *f;
+	int sectors;
 } hdd_file_t;
 
 void hdd_load(hdd_file_t *hdd, const char *fn, int sectors);

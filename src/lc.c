@@ -46,46 +46,46 @@
 
 static struct
 {
-        /*Real A4 uses 2x 64kx4 to store post-dithered 1 bpp image (or so I
-          believe). As we don't perform LC dithering, quadruple the array and
-          store 4 bpp instead*/
-        uint8_t ram[0x10000 * 4];
+	/*Real A4 uses 2x 64kx4 to store post-dithered 1 bpp image (or so I
+	  believe). As we don't perform LC dithering, quadruple the array and
+	  store 4 bpp instead*/
+	uint8_t ram[0x10000 * 4];
 
-        uint32_t wp;
+	uint32_t wp;
 
-        uint32_t vdsr, vdlr, hdsr, hdlr;
-        uint32_t licr;
+	uint32_t vdsr, vdlr, hdsr, hdlr;
+	uint32_t licr;
 
-        int v_delay, v_display, vc;
+	int v_delay, v_display, vc;
 
-        uint32_t pal[16];
+	uint32_t pal[16];
 
-        BITMAP *lc_buffer;
+	BITMAP *lc_buffer;
 
-        int has_updated;
-        emu_timer_t blank_timer;
+	int has_updated;
+	emu_timer_t blank_timer;
 } lc;
 
 /*Grey levels taken from patent GB 2245743*/
 static const uint32_t lc_palette[16] =
 {
-        0x000000,
-        0x1c1c1c, //11.5%, 28
-        0x333333, //20.0%, 51
-        0x444444, //26.7%, 68
-        0x555555, //33.3%, 85
-        0x666666, //40.0%, 102
-        0x717171, //44.4%, 113
-        0x808080, //50.0%, 128
+	0x000000,
+	0x1c1c1c, //11.5%, 28
+	0x333333, //20.0%, 51
+	0x444444, //26.7%, 68
+	0x555555, //33.3%, 85
+	0x666666, //40.0%, 102
+	0x717171, //44.4%, 113
+	0x808080, //50.0%, 128
 
-        0xffffff, //100.0%, 255
-        0xe3e3e3, //88.9%, 227
-        0xcccccc, //80.0%, 204
-        0xbbbbbb, //73.3%, 187
-        0xaaaaaa, //66.7%, 170
-        0x999999, //60.0%, 153
-        0x8e8e8e, //55.6%, 142
-        0x808080, //50.0%, 128
+	0xffffff, //100.0%, 255
+	0xe3e3e3, //88.9%, 227
+	0xcccccc, //80.0%, 204
+	0xbbbbbb, //73.3%, 187
+	0xaaaaaa, //66.7%, 170
+	0x999999, //60.0%, 153
+	0x8e8e8e, //55.6%, 142
+	0x808080, //50.0%, 128
 };
 
 static void lc_vidc_data(uint8_t *data, int pixels, int hsync_length, int resolution, void *p);
@@ -94,111 +94,111 @@ static void blank_timer_callback(void *p);
 
 void lc_init(void)
 {
-        lc.vdsr = 0;
-        lc.vdlr = 0;
-        lc.hdsr = 0;
-        lc.hdlr = 0;
-        lc.licr = 0;
-        if (!lc.lc_buffer)
-                lc.lc_buffer = create_bitmap(640, 480);
-        vidc_attach(lc_vidc_data, lc_vidc_vsync, NULL);
+	lc.vdsr = 0;
+	lc.vdlr = 0;
+	lc.hdsr = 0;
+	lc.hdlr = 0;
+	lc.licr = 0;
+	if (!lc.lc_buffer)
+		lc.lc_buffer = create_bitmap(640, 480);
+	vidc_attach(lc_vidc_data, lc_vidc_vsync, NULL);
 
-        if (monitor_type == MONITOR_LCD)
-        {
-                vidc_output_enable(0);
+	if (monitor_type == MONITOR_LCD)
+	{
+		vidc_output_enable(0);
 
-                updatewindowsize(640, 480);
-                video_renderer_update(lc.lc_buffer, 0, 0, 0, 0, 640, 480);
-                video_renderer_present(0, 0, 640, 480, 0);
+		updatewindowsize(640, 480);
+		video_renderer_update(lc.lc_buffer, 0, 0, 0, 0, 640, 480);
+		video_renderer_present(0, 0, 640, 480, 0);
 
-                timer_add(&lc.blank_timer, blank_timer_callback, NULL, 1);
-        }
+		timer_add(&lc.blank_timer, blank_timer_callback, NULL, 1);
+	}
 }
 
 static void lc_vidc_data(uint8_t *data, int pixels, int hsync_length, int resolution, void *p)
 {
-        int c;
+	int c;
 
-        if (lc.v_delay)
-        {
-                lc.v_delay--;
-                return;
-        }
+	if (lc.v_delay)
+	{
+		lc.v_delay--;
+		return;
+	}
 
-        if (lc.vc < lc.v_display*2)
-        {
-                /*Copy data from VIDC*/
-                if ((lc.licr & LICR_CLOCK_MASK) != LICR_CLOCK_CRYS2)
-                {
-                        int pixels_to_copy = MIN(pixels, lc.hdlr*8);
-                        int h_offset = 2047 - lc.hdsr;
+	if (lc.vc < lc.v_display*2)
+	{
+		/*Copy data from VIDC*/
+		if ((lc.licr & LICR_CLOCK_MASK) != LICR_CLOCK_CRYS2)
+		{
+			int pixels_to_copy = MIN(pixels, lc.hdlr*8);
+			int h_offset = 2047 - lc.hdsr;
 
 //                rpclog("LC %03i: write %05x pixels_to_copy=%i\n", lc.vc, lc.wp, pixels_to_copy);
-                        for (c = 0; c < pixels_to_copy; c += 2)
-                        {
-                                lc.ram[lc.wp] = data[c+h_offset] | (data[c+h_offset+1] << 4);
-                                lc.wp = (lc.wp + 1) & 0x3ffff;
-                        }
-                }
-                else
-                {
-                        /*Pixel doubling*/
-                        int pixels_to_copy = MIN(pixels, lc.hdlr*4);
-                        int h_offset = (2047 - lc.hdsr)/2;
+			for (c = 0; c < pixels_to_copy; c += 2)
+			{
+				lc.ram[lc.wp] = data[c+h_offset] | (data[c+h_offset+1] << 4);
+				lc.wp = (lc.wp + 1) & 0x3ffff;
+			}
+		}
+		else
+		{
+			/*Pixel doubling*/
+			int pixels_to_copy = MIN(pixels, lc.hdlr*4);
+			int h_offset = (2047 - lc.hdsr)/2;
 
 //                        rpclog("LC double %03i: write %05x pixels_to_copy=%i\n", lc.vc, lc.wp, pixels_to_copy);
-                        for (c = 0; c < pixels_to_copy; c += 2)
-                        {
-                                lc.ram[lc.wp] = data[c+h_offset] | (data[c+h_offset] << 4);
-                                lc.wp = (lc.wp + 1) & 0x3ffff;
-                                lc.ram[lc.wp] = data[c+h_offset+1] | (data[c+h_offset+1] << 4);
-                                lc.wp = (lc.wp + 1) & 0x3ffff;
-                        }
-                }
-        }
+			for (c = 0; c < pixels_to_copy; c += 2)
+			{
+				lc.ram[lc.wp] = data[c+h_offset] | (data[c+h_offset] << 4);
+				lc.wp = (lc.wp + 1) & 0x3ffff;
+				lc.ram[lc.wp] = data[c+h_offset+1] | (data[c+h_offset+1] << 4);
+				lc.wp = (lc.wp + 1) & 0x3ffff;
+			}
+		}
+	}
 
-        lc.vc++;
-        if (lc.vc == lc.v_display || lc.vc == lc.v_display*2)
-        {
-                uint32_t rp = 0;
-                int y;
+	lc.vc++;
+	if (lc.vc == lc.v_display || lc.vc == lc.v_display*2)
+	{
+		uint32_t rp = 0;
+		int y;
 
-                for (y = 0; y < 480; y++)
-                {
-                        uint32_t *wp = (uint32_t *)lc.lc_buffer->line[y];
-                        int width = MIN(640, lc.hdlr*8);
+		for (y = 0; y < 480; y++)
+		{
+			uint32_t *wp = (uint32_t *)lc.lc_buffer->line[y];
+			int width = MIN(640, lc.hdlr*8);
 
 //                        rpclog("LC %03i: read %05x width=%i\n", lc.vc, lc.rp, width);
-                        for (c = 0; c < width; c += 2)
-                        {
-                                uint8_t data = lc.ram[rp];
-                                rp = (rp + 1) & 0x3ffff;
+			for (c = 0; c < width; c += 2)
+			{
+				uint8_t data = lc.ram[rp];
+				rp = (rp + 1) & 0x3ffff;
 
-                                *wp++ = lc.pal[data & 0xf];
-                                *wp++ = lc.pal[data >> 4];
-                        }
-                }
+				*wp++ = lc.pal[data & 0xf];
+				*wp++ = lc.pal[data >> 4];
+			}
+		}
 
-                if (monitor_type == MONITOR_LCD)
-                {
-                        updatewindowsize(640, 480);
-                        video_renderer_update(lc.lc_buffer, 0, 0, 0, 0, 640, 480);
-                        video_renderer_present(0, 0, 640, 480, 0);
-                        lc.has_updated = 1;
-                }
-        }
+		if (monitor_type == MONITOR_LCD)
+		{
+			updatewindowsize(640, 480);
+			video_renderer_update(lc.lc_buffer, 0, 0, 0, 0, 640, 480);
+			video_renderer_present(0, 0, 640, 480, 0);
+			lc.has_updated = 1;
+		}
+	}
 }
 
 static void lc_vidc_vsync(void *p, int state)
 {
-        if (state)
-        {
-                lc.wp = 0;
+	if (state)
+	{
+		lc.wp = 0;
 
-                lc.vc = 0;
-                lc.v_delay = 512 - lc.vdsr;
-                lc.v_display = lc.vdlr + 3;
-        }
+		lc.vc = 0;
+		lc.v_delay = 512 - lc.vdsr;
+		lc.v_display = lc.vdlr + 3;
+	}
 //        rpclog("LC: v_delay=%i v_display=%i hdlr=%i\n", lc.v_delay, lc.v_display, lc.hdlr);
 }
 
@@ -206,129 +206,129 @@ static void lc_vidc_vsync(void *p, int state)
   during initial boot*/
 static void blank_timer_callback(void *p)
 {
-        timer_advance_u64(&lc.blank_timer, TIMER_USEC * 100 * 1000);
+	timer_advance_u64(&lc.blank_timer, TIMER_USEC * 100 * 1000);
 
-        if (!lc.has_updated)
-        {
-                clear(lc.lc_buffer);
+	if (!lc.has_updated)
+	{
+		clear(lc.lc_buffer);
 
-                updatewindowsize(640, 480);
-                video_renderer_update(lc.lc_buffer, 0, 0, 0, 0, 640, 480);
-                video_renderer_present(0, 0, 640, 480, 0);
-        }
-        else
-                lc.has_updated = 0;
+		updatewindowsize(640, 480);
+		video_renderer_update(lc.lc_buffer, 0, 0, 0, 0, 640, 480);
+		video_renderer_present(0, 0, 640, 480, 0);
+	}
+	else
+		lc.has_updated = 0;
 }
 
 uint8_t lc_read(uint32_t addr)
 {
-        uint8_t ret = 0xff;
+	uint8_t ret = 0xff;
 
-        switch (addr & 0x7c)
-        {
-                case LC_LICR_L:
-                ret = lc.licr & 0xf;
-                break;
-                case LC_LICR_M:
-                ret = (lc.licr >> 4) & 0xf;
-                break;
-                case LC_LICR_H:
-                ret = (lc.licr >> 8) & 0xf;
-                break;
+	switch (addr & 0x7c)
+	{
+		case LC_LICR_L:
+		ret = lc.licr & 0xf;
+		break;
+		case LC_LICR_M:
+		ret = (lc.licr >> 4) & 0xf;
+		break;
+		case LC_LICR_H:
+		ret = (lc.licr >> 8) & 0xf;
+		break;
 
-                case LC_RESET:
-                ret = 4;
-                break;
-        }
+		case LC_RESET:
+		ret = 4;
+		break;
+	}
 
 //        rpclog("lc_read: addr=%07x val=%02x PC=%07x\n", addr, ret, PC);
 
-        return ret;
+	return ret;
 }
 
 void lc_write(uint32_t addr, uint8_t val)
 {
-        switch (addr & 0x7c)
-        {
-                case LC_VDSR_L:
-                lc.vdsr = (lc.vdsr & 0xff0) | (val & 0xf);
-                rpclog("LC VDSR=%03x\n", lc.vdsr);
-                break;
-                case LC_VDSR_M:
-                lc.vdsr = (lc.vdsr & 0xf0f) | ((val & 0xf) << 4);
-                rpclog("LC VDSR=%03x\n", lc.vdsr);
-                break;
-                case LC_VDSR_H:
-                lc.vdsr = (lc.vdsr & 0x0ff) | ((val & 0xf) << 8);
-                rpclog("LC VDSR=%03x\n", lc.vdsr);
-                break;
+	switch (addr & 0x7c)
+	{
+		case LC_VDSR_L:
+		lc.vdsr = (lc.vdsr & 0xff0) | (val & 0xf);
+		rpclog("LC VDSR=%03x\n", lc.vdsr);
+		break;
+		case LC_VDSR_M:
+		lc.vdsr = (lc.vdsr & 0xf0f) | ((val & 0xf) << 4);
+		rpclog("LC VDSR=%03x\n", lc.vdsr);
+		break;
+		case LC_VDSR_H:
+		lc.vdsr = (lc.vdsr & 0x0ff) | ((val & 0xf) << 8);
+		rpclog("LC VDSR=%03x\n", lc.vdsr);
+		break;
 
-                case LC_VDLR_L:
-                lc.vdlr = (lc.vdlr & 0xff0) | (val & 0xf);
-                rpclog("LC VDLR=%03x\n", lc.vdlr);
-                break;
-                case LC_VDLR_M:
-                lc.vdlr = (lc.vdlr & 0xf0f) | ((val & 0xf) << 4);
-                rpclog("LC VDLR=%03x\n", lc.vdlr);
-                break;
-                case LC_VDLR_H:
-                lc.vdlr = (lc.vdlr & 0x0ff) | ((val & 0xf) << 8);
-                rpclog("LC VDLR=%03x\n", lc.vdlr);
-                break;
+		case LC_VDLR_L:
+		lc.vdlr = (lc.vdlr & 0xff0) | (val & 0xf);
+		rpclog("LC VDLR=%03x\n", lc.vdlr);
+		break;
+		case LC_VDLR_M:
+		lc.vdlr = (lc.vdlr & 0xf0f) | ((val & 0xf) << 4);
+		rpclog("LC VDLR=%03x\n", lc.vdlr);
+		break;
+		case LC_VDLR_H:
+		lc.vdlr = (lc.vdlr & 0x0ff) | ((val & 0xf) << 8);
+		rpclog("LC VDLR=%03x\n", lc.vdlr);
+		break;
 
-                case LC_HDSR_L:
-                lc.hdsr = (lc.hdsr & 0xff0) | (val & 0xf);
-                rpclog("LC HDSR=%03x\n", lc.hdsr);
-                break;
-                case LC_HDSR_M:
-                lc.hdsr = (lc.hdsr & 0xf0f) | ((val & 0xf) << 4);
-                rpclog("LC HDSR=%03x\n", lc.hdsr);
-                break;
-                case LC_HDSR_H:
-                lc.hdsr = (lc.hdsr & 0x0ff) | ((val & 0xf) << 8);
-                rpclog("LC HDSR=%03x\n", lc.hdsr);
-                break;
+		case LC_HDSR_L:
+		lc.hdsr = (lc.hdsr & 0xff0) | (val & 0xf);
+		rpclog("LC HDSR=%03x\n", lc.hdsr);
+		break;
+		case LC_HDSR_M:
+		lc.hdsr = (lc.hdsr & 0xf0f) | ((val & 0xf) << 4);
+		rpclog("LC HDSR=%03x\n", lc.hdsr);
+		break;
+		case LC_HDSR_H:
+		lc.hdsr = (lc.hdsr & 0x0ff) | ((val & 0xf) << 8);
+		rpclog("LC HDSR=%03x\n", lc.hdsr);
+		break;
 
-                case LC_HDLR_L:
-                lc.hdlr = (lc.hdlr & 0xff0) | (val & 0xf);
-                rpclog("LC HDLR=%03x\n", lc.hdlr);
-                break;
-                case LC_HDLR_M:
-                lc.hdlr = (lc.hdlr & 0xf0f) | ((val & 0xf) << 4);
-                rpclog("LC HDLR=%03x\n", lc.hdlr);
-                break;
-                case LC_HDLR_H:
-                lc.hdlr = (lc.hdlr & 0x0ff) | ((val & 0xf) << 8);
-                rpclog("LC HDLR=%03x\n", lc.hdlr);
-                break;
+		case LC_HDLR_L:
+		lc.hdlr = (lc.hdlr & 0xff0) | (val & 0xf);
+		rpclog("LC HDLR=%03x\n", lc.hdlr);
+		break;
+		case LC_HDLR_M:
+		lc.hdlr = (lc.hdlr & 0xf0f) | ((val & 0xf) << 4);
+		rpclog("LC HDLR=%03x\n", lc.hdlr);
+		break;
+		case LC_HDLR_H:
+		lc.hdlr = (lc.hdlr & 0x0ff) | ((val & 0xf) << 8);
+		rpclog("LC HDLR=%03x\n", lc.hdlr);
+		break;
 
-                case LC_LICR_L:
-                lc.licr = (lc.licr & 0xff0) | (val & 0xf);
-                rpclog("LC LICR=%03x\n", lc.licr);
-                break;
-                case LC_LICR_M:
-                lc.licr = (lc.licr & 0xf0f) | ((val & 0xf) << 4);
-                rpclog("LC LICR=%03x\n", lc.licr);
-                switch (lc.licr & LICR_CLOCK_MASK)
-                {
-                        case LICR_CLOCK_CRYS:
-                        vidc_setclock_direct(24000);
-                        break;
-                        case LICR_CLOCK_CRYS2:
-                        vidc_setclock_direct(12000);
-                        break;
-                        case LICR_CLOCK_IOEB:
-                        default:
-                        vidc_setclock(ioeb_clock_select);
-                        break;
-                }
-                break;
-                case LC_LICR_H:
-                lc.licr = (lc.licr & 0x0ff) | ((val & 0xf) << 8);
-                rpclog("LC LICR=%03x\n", lc.licr);
-                break;
-        }
-        if (addr & 0x40)
-                lc.pal[(addr >> 2) & 0xf] = lc_palette[val & 0xf];
-        //rpclog("lc_write: addr=%07x val=%02x PC=%07x\n", addr, val, PC);
+		case LC_LICR_L:
+		lc.licr = (lc.licr & 0xff0) | (val & 0xf);
+		rpclog("LC LICR=%03x\n", lc.licr);
+		break;
+		case LC_LICR_M:
+		lc.licr = (lc.licr & 0xf0f) | ((val & 0xf) << 4);
+		rpclog("LC LICR=%03x\n", lc.licr);
+		switch (lc.licr & LICR_CLOCK_MASK)
+		{
+			case LICR_CLOCK_CRYS:
+			vidc_setclock_direct(24000);
+			break;
+			case LICR_CLOCK_CRYS2:
+			vidc_setclock_direct(12000);
+			break;
+			case LICR_CLOCK_IOEB:
+			default:
+			vidc_setclock(ioeb_clock_select);
+			break;
+		}
+		break;
+		case LC_LICR_H:
+		lc.licr = (lc.licr & 0x0ff) | ((val & 0xf) << 8);
+		rpclog("LC LICR=%03x\n", lc.licr);
+		break;
+	}
+	if (addr & 0x40)
+		lc.pal[(addr >> 2) & 0xf] = lc_palette[val & 0xf];
+	//rpclog("lc_write: addr=%07x val=%02x PC=%07x\n", addr, val, PC);
 }

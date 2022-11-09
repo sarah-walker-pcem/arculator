@@ -76,10 +76,10 @@ void scp_init(void)
 
 void scp_load(int drive, char *fn)
 {
-        scp[drive].f = fopen(fn, "rb");
-        if (!scp[drive].f)
-                return;
-        writeprot[drive] = 1;
+	scp[drive].f = fopen(fn, "rb");
+	if (!scp[drive].f)
+		return;
+	writeprot[drive] = 1;
 
 	fread(&scp[drive].header, 16, 1, scp[drive].f);
 
@@ -96,23 +96,23 @@ void scp_load(int drive, char *fn)
 
 	fread(&scp[drive].track_offsets, 4, 168, scp[drive].f);
 
-        scp[drive].mfm.write_protected = writeprot[drive];
-        scp[drive].mfm.writeback = NULL;
+	scp[drive].mfm.write_protected = writeprot[drive];
+	scp[drive].mfm.writeback = NULL;
 	scp[drive].resolution = (scp[drive].header.resolution + 1) * 25;
 
-        drive_funcs[drive] = &scp_disc_funcs;
-        rpclog("Loaded as scp\n");
+	drive_funcs[drive] = &scp_disc_funcs;
+	rpclog("Loaded as scp\n");
 
-        scp_seek(drive, disc_get_current_track(drive));
+	scp_seek(drive, disc_get_current_track(drive));
 }
 
 static void scp_close(int drive)
 {
-        if (scp[drive].f)
-        {
-                fclose(scp[drive].f);
-                scp[drive].f = NULL;
-        }
+	if (scp[drive].f)
+	{
+		fclose(scp[drive].f);
+		scp[drive].f = NULL;
+	}
 }
 
 #define SCP_BITCELL_LENGTH 0xa0 //4us at default 25ns resolution - FM single density
@@ -151,22 +151,22 @@ static void scp_do_read_track(int drive, int track, int side)
 
 static void scp_seek(int drive, int track)
 {
-        mfm_t *mfm = &scp[drive].mfm;
+	mfm_t *mfm = &scp[drive].mfm;
 
 //	rpclog("scp_seek: drive=%i track=%i\n", drive, track);
-        if (!scp[drive].f)
-        {
-                memset(mfm->track_data[0], 0, 65536);
-                memset(mfm->track_data[1], 0, 65536);
-                return;
-        }
+	if (!scp[drive].f)
+	{
+		memset(mfm->track_data[0], 0, 65536);
+		memset(mfm->track_data[1], 0, 65536);
+		return;
+	}
 
-        if (track < 0)
-                track = 0;
-        if (track > 81)
-                track = 81;
+	if (track < 0)
+		track = 0;
+	if (track > 81)
+		track = 81;
 
-        scp->current_track = track;
+	scp->current_track = track;
 
 	scp_do_read_track(drive, track, 0);
 	scp_do_read_track(drive, track, 1);
@@ -176,31 +176,31 @@ static int scp_drive = 0;
 
 static void scp_readsector(int drive, int sector, int track, int side, int density)
 {
-        scp_drive = drive;
-        mfm_readsector(&scp[drive].mfm, drive, sector, track, side, density);
+	scp_drive = drive;
+	mfm_readsector(&scp[drive].mfm, drive, sector, track, side, density);
 }
 
 static void scp_writesector(int drive, int sector, int track, int side, int density)
 {
-        scp_drive = drive;
-        mfm_writesector(&scp[drive].mfm, drive, sector, track, side, density);
+	scp_drive = drive;
+	mfm_writesector(&scp[drive].mfm, drive, sector, track, side, density);
 }
 
 static void scp_readaddress(int drive, int track, int side, int density)
 {
-        scp_drive = drive;
-        mfm_readaddress(&scp[drive].mfm, drive, track, side, density);
+	scp_drive = drive;
+	mfm_readaddress(&scp[drive].mfm, drive, track, side, density);
 }
 
 static void scp_format(int drive, int track, int side, int density)
 {
-        scp_drive = drive;
-        mfm_format(&scp[drive].mfm, drive, track, side, density);
+	scp_drive = drive;
+	mfm_format(&scp[drive].mfm, drive, track, side, density);
 }
 
 static void scp_stop()
 {
-        mfm_stop(&scp[scp_drive].mfm);
+	mfm_stop(&scp[scp_drive].mfm);
 }
 
 static int scp_next_bit_time()
@@ -214,7 +214,7 @@ static int scp_next_bit_time()
 //		rpclog("  scp loop %i %i %i\n", scp[scp_drive].track_pos, scp[scp_drive].track_length[mfm->side][scp[scp_drive].revolution], mfm->side);
 		scp[scp_drive].track_pos = 0;
 		scp[scp_drive].revolution = (scp[scp_drive].revolution + 1) % MIN(scp[scp_drive].header.nr_revolutions, SCP_MAX_REVOLUTIONS);
-		
+
 		mfm_index(mfm, 0);
 	}
 
@@ -275,13 +275,13 @@ static void scp_poll()
 
 static disc_funcs_t scp_disc_funcs =
 {
-        .seek        = scp_seek,
-        .readsector  = scp_readsector,
-        .writesector = scp_writesector,
-        .readaddress = scp_readaddress,
-        .poll        = scp_poll,
-        .format      = scp_format,
-        .stop        = scp_stop,
-        .close       = scp_close,
+	.seek        = scp_seek,
+	.readsector  = scp_readsector,
+	.writesector = scp_writesector,
+	.readaddress = scp_readaddress,
+	.poll        = scp_poll,
+	.format      = scp_format,
+	.stop        = scp_stop,
+	.close       = scp_close,
 	.high_res_poll = 1
   };

@@ -32,10 +32,10 @@ extern char podule_names[4][16];
 
 typedef struct podule_internal_state_t
 {
-        podule_t podule;
-        int irq, fiq;
-        emu_timer_t timer;
-        uint64_t last_callback_tsc;
+	podule_t podule;
+	int irq, fiq;
+	emu_timer_t timer;
+	uint64_t last_callback_tsc;
 } podule_internal_state_t;
 
 void rethinkpoduleints(void);

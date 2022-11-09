@@ -1,27 +1,27 @@
 typedef struct via6522_t
 {
-        uint8_t  ora,   orb,   ira,   irb;
-        uint8_t  ddra,  ddrb;
-        uint8_t  sr;
-        uint32_t t1l,   t2l;
-        int      t1c,   t2c;
-        uint8_t  acr,   pcr,   ifr,   ier;
-        int      t1hit, t2hit;
-        int      ca1,   ca2,   cb1,   cb2;
-        int      intnum;
+	uint8_t  ora,   orb,   ira,   irb;
+	uint8_t  ddra,  ddrb;
+	uint8_t  sr;
+	uint32_t t1l,   t2l;
+	int      t1c,   t2c;
+	uint8_t  acr,   pcr,   ifr,   ier;
+	int      t1hit, t2hit;
+	int      ca1,   ca2,   cb1,   cb2;
+	int      intnum;
 
-        uint8_t  (*read_portA)(void *p);
-        uint8_t  (*read_portB)(void *p);
-        void     (*write_portA)(void *p, uint8_t val);
-        void     (*write_portB)(void *p, uint8_t val);
+	uint8_t  (*read_portA)(void *p);
+	uint8_t  (*read_portB)(void *p);
+	void     (*write_portA)(void *p, uint8_t val);
+	void     (*write_portB)(void *p, uint8_t val);
 
-        void     (*set_ca1)(void *p, int level);
-        void     (*set_ca2)(void *p, int level);
-        void     (*set_cb1)(void *p, int level);
-        void     (*set_cb2)(void *p, int level);
+	void     (*set_ca1)(void *p, int level);
+	void     (*set_ca2)(void *p, int level);
+	void     (*set_cb1)(void *p, int level);
+	void     (*set_cb2)(void *p, int level);
 
-        void (*set_irq)(void *p, int state);
-        void *p;
+	void (*set_irq)(void *p, int state);
+	void *p;
 } via6522_t;
 
 void    via6522_init(via6522_t *v, void (*set_irq)(void *p, int state), void *p);

@@ -7,7 +7,7 @@
   32:32 fixed point format, with the integer part compared against the TSC. The
   fractional part is used when advancing the timestamp to ensure a more accurate
   period.
-  
+
   As the timer only stores 32 bits of integer timestamp, and the TSC is 64 bits,
   the timer period can only be at most 0x7fffffff CPU cycles. To allow room for
   (optimistic) CPU frequency growth, timer period must be at most 1 second.
@@ -131,12 +131,12 @@ static inline uint64_t timer_get_remaining_u64(pc_timer_t *timer)
 /*Set timer callback function*/
 static inline void timer_set_callback(pc_timer_t *timer, void (*callback)(void *p))
 {
-        timer->callback = callback;
+	timer->callback = callback;
 }
 /*Set timer private data*/
 static inline void timer_set_p(pc_timer_t *timer, void *p)
 {
-        timer->p = p;
+	timer->p = p;
 }
 
 #endif /*_TIMER_H_*/

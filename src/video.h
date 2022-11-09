@@ -12,10 +12,10 @@ extern int video_fullscreen_scale;
 
 enum
 {
-        FULLSCR_SCALE_FULL = 0,
-        FULLSCR_SCALE_43,
-        FULLSCR_SCALE_SQ,
-        FULLSCR_SCALE_INT
+	FULLSCR_SCALE_FULL = 0,
+	FULLSCR_SCALE_43,
+	FULLSCR_SCALE_SQ,
+	FULLSCR_SCALE_INT
 };
 
 extern int video_linear_filtering;

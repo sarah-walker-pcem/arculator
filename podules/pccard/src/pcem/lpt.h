@@ -18,10 +18,10 @@ extern char lpt1_device_name[16];
 
 typedef struct
 {
-        char name[80];
-        void *(*init)();
-        void (*close)(void *p);
-        void (*write_data)(uint8_t val, void *p);
-        void (*write_ctrl)(uint8_t val, void *p);
-        uint8_t (*read_status)(void *p);
+	char name[80];
+	void *(*init)();
+	void (*close)(void *p);
+	void (*write_data)(uint8_t val, void *p);
+	void (*write_ctrl)(uint8_t val, void *p);
+	uint8_t (*read_status)(void *p);
 } lpt_device_t;

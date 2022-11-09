@@ -64,9 +64,9 @@ extern void fatal(const char *format, ...);
 
 
 #define container_of(ptr, type, member) ({                      \
-        const typeof( ((type *)0)->member ) *__mptr = (ptr);    \
-        (type *)( (char *)__mptr - offsetof(type,member) );})
-        
+	const typeof( ((type *)0)->member ) *__mptr = (ptr);    \
+	(type *)( (char *)__mptr - offsetof(type,member) );})
+
 
 #define nr_elems(array) (int)(sizeof(array) / sizeof(array[0]))
 

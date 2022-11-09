@@ -14,23 +14,23 @@ struct SERIAL;
 
 typedef struct
 {
-        uint8_t lsr,thr,mctrl,rcr,iir,ier,lcr,msr;
-        uint8_t dlab1,dlab2;
-        uint8_t dat;
-        uint8_t int_status;
-        uint8_t scratch;
-        uint8_t fcr;
-        
-        int irq;
-        uint16_t addr;
+	uint8_t lsr,thr,mctrl,rcr,iir,ier,lcr,msr;
+	uint8_t dlab1,dlab2;
+	uint8_t dat;
+	uint8_t int_status;
+	uint8_t scratch;
+	uint8_t fcr;
 
-        void (*rcr_callback)(struct SERIAL *serial, void *p);
-        void *rcr_callback_p;
-        uint8_t fifo[256];
-        int fifo_read, fifo_write;
-        int has_fifo;
-        
-        pc_timer_t receive_timer;
+	int irq;
+	uint16_t addr;
+
+	void (*rcr_callback)(struct SERIAL *serial, void *p);
+	void *rcr_callback_p;
+	uint8_t fifo[256];
+	int fifo_read, fifo_write;
+	int has_fifo;
+
+	pc_timer_t receive_timer;
 } SERIAL;
 
 void serial_write_fifo(SERIAL *serial, uint8_t dat);

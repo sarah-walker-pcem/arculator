@@ -1,13 +1,13 @@
 typedef struct am7202a_t
 {
-        int rp, wp;
-        uint16_t data[1024];
-        
-        void *p;
-        
-        void (*set_ef)(int state, void *p);
-        void (*set_ff)(int state, void *p);
-        void (*set_hf)(int state, void *p);
+	int rp, wp;
+	uint16_t data[1024];
+
+	void *p;
+
+	void (*set_ef)(int state, void *p);
+	void (*set_ff)(int state, void *p);
+	void (*set_hf)(int state, void *p);
 } am7202a_t;
 
 void am7202a_init(am7202a_t *fifo, void (*set_ef)(int state, void *p), void (*set_ff)(int state, void *p), void (*set_hf)(int state, void *p), void *p);

@@ -5,25 +5,25 @@
 
 typedef struct mem_mapping_t
 {
-        struct mem_mapping_t *prev, *next;
+	struct mem_mapping_t *prev, *next;
 
-        int enable;
-                
-        uint32_t base;
-        uint32_t size;
+	int enable;
 
-        uint8_t  (*read_b)(uint32_t addr, void *priv);
-        uint16_t (*read_w)(uint32_t addr, void *priv);
-        uint32_t (*read_l)(uint32_t addr, void *priv);
-        void (*write_b)(uint32_t addr, uint8_t  val, void *priv);
-        void (*write_w)(uint32_t addr, uint16_t val, void *priv);
-        void (*write_l)(uint32_t addr, uint32_t val, void *priv);
-        
-        uint8_t *exec;
-        
-        uint32_t flags;
-        
-        void *p;
+	uint32_t base;
+	uint32_t size;
+
+	uint8_t  (*read_b)(uint32_t addr, void *priv);
+	uint16_t (*read_w)(uint32_t addr, void *priv);
+	uint32_t (*read_l)(uint32_t addr, void *priv);
+	void (*write_b)(uint32_t addr, uint8_t  val, void *priv);
+	void (*write_w)(uint32_t addr, uint16_t val, void *priv);
+	void (*write_l)(uint32_t addr, uint32_t val, void *priv);
+
+	uint8_t *exec;
+
+	uint32_t flags;
+
+	void *p;
 } mem_mapping_t;
 
 /*Only present on external bus (ISA/PCI)*/
@@ -40,24 +40,24 @@ extern int memspeed[11];
 extern uint32_t biosmask;
 
 void mem_mapping_add(mem_mapping_t *mapping,
-                    uint32_t base, 
-                    uint32_t size, 
-                    uint8_t  (*read_b)(uint32_t addr, void *p),
-                    uint16_t (*read_w)(uint32_t addr, void *p),
-                    uint32_t (*read_l)(uint32_t addr, void *p),
-                    void (*write_b)(uint32_t addr, uint8_t  val, void *p),
-                    void (*write_w)(uint32_t addr, uint16_t val, void *p),
-                    void (*write_l)(uint32_t addr, uint32_t val, void *p),
-                    uint8_t *exec,
-                    uint32_t flags,
-                    void *p);
+		    uint32_t base,
+		    uint32_t size,
+		    uint8_t  (*read_b)(uint32_t addr, void *p),
+		    uint16_t (*read_w)(uint32_t addr, void *p),
+		    uint32_t (*read_l)(uint32_t addr, void *p),
+		    void (*write_b)(uint32_t addr, uint8_t  val, void *p),
+		    void (*write_w)(uint32_t addr, uint16_t val, void *p),
+		    void (*write_l)(uint32_t addr, uint32_t val, void *p),
+		    uint8_t *exec,
+		    uint32_t flags,
+		    void *p);
 void mem_mapping_set_handler(mem_mapping_t *mapping,
-                    uint8_t  (*read_b)(uint32_t addr, void *p),
-                    uint16_t (*read_w)(uint32_t addr, void *p),
-                    uint32_t (*read_l)(uint32_t addr, void *p),
-                    void (*write_b)(uint32_t addr, uint8_t  val, void *p),
-                    void (*write_w)(uint32_t addr, uint16_t val, void *p),
-                    void (*write_l)(uint32_t addr, uint32_t val, void *p));
+		    uint8_t  (*read_b)(uint32_t addr, void *p),
+		    uint16_t (*read_w)(uint32_t addr, void *p),
+		    uint32_t (*read_l)(uint32_t addr, void *p),
+		    void (*write_b)(uint32_t addr, uint8_t  val, void *p),
+		    void (*write_w)(uint32_t addr, uint16_t val, void *p),
+		    void (*write_l)(uint32_t addr, uint32_t val, void *p));
 void mem_mapping_set_p(mem_mapping_t *mapping, void *p);
 void mem_mapping_set_addr(mem_mapping_t *mapping, uint32_t base, uint32_t size);
 void mem_mapping_set_exec(mem_mapping_t *mapping, uint8_t *exec);
@@ -122,23 +122,23 @@ extern uint64_t *byte_code_present_mask;
 #define EVICT_NOT_IN_LIST ((uint32_t)-1)
 typedef struct page_t
 {
-        void (*write_b)(uint32_t addr, uint8_t val, struct page_t *p);
-        void (*write_w)(uint32_t addr, uint16_t val, struct page_t *p);
-        void (*write_l)(uint32_t addr, uint32_t val, struct page_t *p);
-        
-        uint8_t *mem;
-        
-        uint16_t block, block_2;
-        
-        /*Head of codeblock tree associated with this page*/
-        uint16_t head;
-        
-        uint64_t code_present_mask, dirty_mask;
-        
-        uint32_t evict_prev, evict_next;
-        
-        uint64_t *byte_dirty_mask;
-        uint64_t *byte_code_present_mask;
+	void (*write_b)(uint32_t addr, uint8_t val, struct page_t *p);
+	void (*write_w)(uint32_t addr, uint16_t val, struct page_t *p);
+	void (*write_l)(uint32_t addr, uint32_t val, struct page_t *p);
+
+	uint8_t *mem;
+
+	uint16_t block, block_2;
+
+	/*Head of codeblock tree associated with this page*/
+	uint16_t head;
+
+	uint64_t code_present_mask, dirty_mask;
+
+	uint32_t evict_prev, evict_next;
+
+	uint64_t *byte_dirty_mask;
+	uint64_t *byte_code_present_mask;
 } page_t;
 
 extern page_t *pages;
@@ -148,7 +148,7 @@ extern page_t **page_lookup;
 extern uint32_t purgable_page_list_head;
 static inline int page_in_evict_list(page_t *p)
 {
-        return (p->evict_prev != EVICT_NOT_IN_LIST);
+	return (p->evict_prev != EVICT_NOT_IN_LIST);
 }
 void page_remove_from_evict_list(page_t *p);
 void page_add_to_evict_list(page_t *p);
@@ -159,45 +159,45 @@ uint32_t mmutranslate_noabrt(uint32_t addr, int rw);
 extern uint32_t get_phys_virt,get_phys_phys;
 static inline uint32_t get_phys(uint32_t addr)
 {
-        if (!((addr ^ get_phys_virt) & ~0xfff))
-                return get_phys_phys | (addr & 0xfff);
+	if (!((addr ^ get_phys_virt) & ~0xfff))
+		return get_phys_phys | (addr & 0xfff);
 
-        get_phys_virt = addr;
-        
-        if (!(cr0 >> 31))
-        {
-                get_phys_phys = (addr & rammask) & ~0xfff;
-                return addr & rammask;
-        }
-        
-        if (readlookup2[addr >> 12] != -1)
-                get_phys_phys = ((uintptr_t)readlookup2[addr >> 12] + (addr & ~0xfff)) - (uintptr_t)ram;
-        else
-        {
-                get_phys_phys = (mmutranslatereal(addr, 0) & rammask) & ~0xfff;
-                if (!cpu_state.abrt && mem_addr_is_ram(get_phys_phys))
-                        addreadlookup(get_phys_virt, get_phys_phys);
-        }
-                
-        return get_phys_phys | (addr & 0xfff);
+	get_phys_virt = addr;
+
+	if (!(cr0 >> 31))
+	{
+		get_phys_phys = (addr & rammask) & ~0xfff;
+		return addr & rammask;
+	}
+
+	if (readlookup2[addr >> 12] != -1)
+		get_phys_phys = ((uintptr_t)readlookup2[addr >> 12] + (addr & ~0xfff)) - (uintptr_t)ram;
+	else
+	{
+		get_phys_phys = (mmutranslatereal(addr, 0) & rammask) & ~0xfff;
+		if (!cpu_state.abrt && mem_addr_is_ram(get_phys_phys))
+			addreadlookup(get_phys_virt, get_phys_phys);
+	}
+
+	return get_phys_phys | (addr & 0xfff);
 //        return mmutranslatereal(addr, 0) & rammask;
 }
 
 static inline uint32_t get_phys_noabrt(uint32_t addr)
 {
-        uint32_t phys_addr;
-        
-        if (!(cr0 >> 31))
-                return addr & rammask;
-        
-        if (readlookup2[addr >> 12] != -1)
-                return ((uintptr_t)readlookup2[addr >> 12] + addr) - (uintptr_t)ram;
+	uint32_t phys_addr;
 
-        phys_addr = mmutranslate_noabrt(addr, 0) & rammask;
-        if (phys_addr != 0xffffffff && mem_addr_is_ram(phys_addr))
-                addreadlookup(addr, phys_addr);
+	if (!(cr0 >> 31))
+		return addr & rammask;
 
-        return phys_addr;
+	if (readlookup2[addr >> 12] != -1)
+		return ((uintptr_t)readlookup2[addr >> 12] + addr) - (uintptr_t)ram;
+
+	phys_addr = mmutranslate_noabrt(addr, 0) & rammask;
+	if (phys_addr != 0xffffffff && mem_addr_is_ram(phys_addr))
+		addreadlookup(addr, phys_addr);
+
+	return phys_addr;
 }
 
 void mem_invalidate_range(uint32_t start_addr, uint32_t end_addr);

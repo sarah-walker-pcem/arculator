@@ -7,8 +7,8 @@ typedef struct d7002c_t
 
 	int time;
 
-        void (*set_irq)(void *p, int state);
-        void *p;
+	void (*set_irq)(void *p, int state);
+	void *p;
 } d7002c_t;
 
 void d7002c_init(d7002c_t *d7002c, void (*set_irq)(void *p, int state), void *p);

@@ -2,20 +2,20 @@ typedef struct scc2691_t
 {
 	uint8_t isr, imr;
 
-        int tx_irq_pending;
+	int tx_irq_pending;
 
-        uint8_t rx_queue[256];
-        int rx_rp, rx_wp;
-        int rx_pending;
-        uint8_t rx_data;
+	uint8_t rx_queue[256];
+	int rx_rp, rx_wp;
+	int rx_pending;
+	uint8_t rx_data;
 
-        int input_clock;
-        int baud_rate;
+	int input_clock;
+	int baud_rate;
 
-        void (*set_irq)(void *p, int state);
-        void (*tx_data)(void *p, uint8_t val);
-        void (*log)(const char *format, ...);
-        void *p;
+	void (*set_irq)(void *p, int state);
+	void (*tx_data)(void *p, uint8_t val);
+	void (*log)(const char *format, ...);
+	void *p;
 } scc2691_t;
 
 void scc2691_init(scc2691_t *scc2691, int input_clock, void (*set_irq)(void *p, int state), void (*tx_data)(void *p, uint8_t val), void *p, void (*log)(const char *format, ...));

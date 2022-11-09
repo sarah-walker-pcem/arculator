@@ -2,31 +2,31 @@
 
 typedef struct disc_funcs_t
 {
-        void (*seek)(int drive, int track);
-        void (*readsector)(int drive, int sector, int track, int side, int density);
-        void (*writesector)(int drive, int sector, int track, int side, int density);
-        void (*readaddress)(int drive, int track, int side, int density);
-        void (*format)(int drive, int track, int side, int density);
-        void (*stop)();
-        void (*poll)();
-        void (*close)(int drive);
-        int high_res_poll;
+	void (*seek)(int drive, int track);
+	void (*readsector)(int drive, int sector, int track, int side, int density);
+	void (*writesector)(int drive, int sector, int track, int side, int density);
+	void (*readaddress)(int drive, int track, int side, int density);
+	void (*format)(int drive, int track, int side, int density);
+	void (*stop)();
+	void (*poll)();
+	void (*close)(int drive);
+	int high_res_poll;
 } disc_funcs_t;
 
 extern disc_funcs_t *drive_funcs[4];
 
 typedef struct fdc_funcs_t
 {
-        void (*data)(uint8_t dat, void *p);
-        void (*spindown)(void *p);
-        void (*finishread)(void *p);
-        void (*notfound)(void *p);
-        void (*datacrcerror)(void *p);
-        void (*headercrcerror)(void *p);
-        void (*writeprotect)(void *p);
-        int  (*getdata)(int last, void *p);
-        void (*sectorid)(uint8_t track, uint8_t side, uint8_t sector, uint8_t size, uint8_t crc1, uint8_t crc2, void *p);
-        void (*indexpulse)(void *p);
+	void (*data)(uint8_t dat, void *p);
+	void (*spindown)(void *p);
+	void (*finishread)(void *p);
+	void (*notfound)(void *p);
+	void (*datacrcerror)(void *p);
+	void (*headercrcerror)(void *p);
+	void (*writeprotect)(void *p);
+	int  (*getdata)(int last, void *p);
+	void (*sectorid)(uint8_t track, uint8_t side, uint8_t sector, uint8_t size, uint8_t crc1, uint8_t crc2, void *p);
+	void (*indexpulse)(void *p);
 } fdc_funcs_t;
 
 extern fdc_funcs_t *fdc_funcs;

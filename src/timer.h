@@ -8,7 +8,7 @@ extern uint64_t tsc;
   32:32 fixed point format, with the integer part compared against the TSC. The
   fractional part is used when advancing the timestamp to ensure a more accurate
   period.
-  
+
   When a timer callback is called, the timer has been disabled. If the timer is
   to repeat, the callback must call timer_advance_u64().*/
 typedef struct emu_timer_t
@@ -85,7 +85,7 @@ static inline void timer_set_delay_u64(emu_timer_t *timer, uint64_t delay)
 
 static inline uint64_t timer_get_ts(emu_timer_t *timer)
 {
-        return ((uint64_t)timer->ts_integer << 32) | timer->ts_frac;
+	return ((uint64_t)timer->ts_integer << 32) | timer->ts_frac;
 }
 
 /*True if timer currently enabled*/
@@ -135,11 +135,11 @@ static inline uint64_t timer_get_remaining_u64(emu_timer_t *timer)
 /*Set timer callback function*/
 static inline void timer_set_callback(emu_timer_t *timer, void (*callback)(void *p))
 {
-        timer->callback = callback;
+	timer->callback = callback;
 }
 /*Set timer private data*/
 static inline void timer_set_p(emu_timer_t *timer, void *p)
 {
-        timer->p = p;
+	timer->p = p;
 }
 #endif /*_TIMER_H_*/

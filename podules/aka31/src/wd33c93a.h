@@ -2,34 +2,34 @@
 
 typedef struct wd33c93a_t
 {
-        uint8_t aux_status;
-        uint8_t cdb[12];
-        uint8_t command;
-        uint8_t command_phase;
-        uint8_t ctrl;
-        uint8_t destid;
-        uint8_t ownid;
-        uint8_t cdb_size;
-        uint8_t status;
-        uint8_t target_status;
-        uint32_t transfer_count;
+	uint8_t aux_status;
+	uint8_t cdb[12];
+	uint8_t command;
+	uint8_t command_phase;
+	uint8_t ctrl;
+	uint8_t destid;
+	uint8_t ownid;
+	uint8_t cdb_size;
+	uint8_t status;
+	uint8_t target_status;
+	uint32_t transfer_count;
 
-        uint8_t fifo[12];
-        int fifo_read, fifo_write;
+	uint8_t fifo[12];
+	int fifo_read, fifo_write;
 
-        int disconnect_pending;
+	int disconnect_pending;
 
-        uint8_t info;
+	uint8_t info;
 
-        int cdb_idx, cdb_len;
-        uint8_t last_status;
-        int bytes_transferred;
+	int cdb_idx, cdb_len;
+	uint8_t last_status;
+	int bytes_transferred;
 
-        int addr_reg;
-        podule_t *podule;
-        struct d71071l_t *dma;
-        struct scsi_bus_t *bus;
-        scsi_state_t scsi_state;
+	int addr_reg;
+	podule_t *podule;
+	struct d71071l_t *dma;
+	struct scsi_bus_t *bus;
+	scsi_state_t scsi_state;
 } wd33c93a_t;
 
 void wd33c93a_init(wd33c93a_t *wd, podule_t *podule, const podule_callbacks_t *podule_callbacks, d71071l_t *dma, struct scsi_bus_t *bus);

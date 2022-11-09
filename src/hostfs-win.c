@@ -89,7 +89,7 @@ filetime_to_adfs_time(const FILETIME *ft, uint32_t *low, uint32_t *high)
  */
 static void
 hostfs_read_object_info_fallback(const char *host_pathname,
-                                 risc_os_object_info *object_info)
+				 risc_os_object_info *object_info)
 {
 	HANDLE handle;
 	WIN32_FIND_DATA info;
@@ -131,7 +131,7 @@ hostfs_read_object_info_fallback(const char *host_pathname,
  */
 void
 hostfs_read_object_info_platform(const char *host_pathname,
-                                 risc_os_object_info *object_info)
+				 risc_os_object_info *object_info)
 {
 	HANDLE handle;
 	BY_HANDLE_FILE_INFORMATION info;
@@ -142,7 +142,7 @@ hostfs_read_object_info_platform(const char *host_pathname,
 
 	/* Get a handle to the object, but without needing Read/Write permissions */
 	handle = CreateFile(host_pathname, 0, FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE,
-	                    NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
+			    NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
 	if (handle == INVALID_HANDLE_VALUE) {
 		/* Error opening the object */
 		switch (GetLastError()) {
@@ -205,7 +205,7 @@ hostfs_object_set_timestamp_platform(const char *host_path, uint32_t load, uint3
 
 	/* Get a handle to the object, with permission to write attributes */
 	handle = CreateFile(host_path, FILE_WRITE_ATTRIBUTES, FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE,
-	                    NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
+			    NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
 	if (handle != INVALID_HANDLE_VALUE) {
 		SetFileTime(handle, NULL, &ft, &ft);
 		CloseHandle(handle);

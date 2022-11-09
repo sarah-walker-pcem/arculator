@@ -1,19 +1,19 @@
 typedef struct d71071l_t
 {
-        struct
-        {
-                uint32_t addr_base,  addr_cur;
-                int32_t  count_base, count_cur;
+	struct
+	{
+		uint32_t addr_base,  addr_cur;
+		int32_t  count_base, count_cur;
 
-                uint8_t mode;
-        } channel[4];
+		uint8_t mode;
+	} channel[4];
 
-        int base;
-        int selch;
+	int base;
+	int selch;
 
-        uint8_t mask;
-        
-        podule_t *podule;
+	uint8_t mask;
+
+	podule_t *podule;
 } d71071l_t;
 
 void d71071l_init(d71071l_t *dma, podule_t *podule);

@@ -175,7 +175,7 @@ hostfs_ensure_buffer_size(size_t buffer_size_needed)
     buffer = realloc(buffer, buffer_size_needed);
     if (!buffer) {
       fprintf(stderr, "HostFS could not increase buffer size to %lu bytes\n",
-              (unsigned long) buffer_size_needed);
+	      (unsigned long) buffer_size_needed);
       exit(EXIT_FAILURE);
     }
     buffer_size = buffer_size_needed;
@@ -336,7 +336,7 @@ name_host_to_riscos(const char *object_name, size_t len, char *riscos_name)
  */
 static void
 path_construct(const char *old_path, const char *ro_path,
-               char *new_path, size_t len, ARMword load, ARMword exec)
+	       char *new_path, size_t len, ARMword load, ARMword exec)
 {
   const char *ro_leaf;
   char *new_suffix;
@@ -407,13 +407,13 @@ path_construct(const char *old_path, const char *ro_path,
  */
 static void
 hostfs_read_object_info(const char *host_pathname,
-                        char *ro_leaf,
-                        risc_os_object_info *object_info)
+			char *ro_leaf,
+			risc_os_object_info *object_info)
 {
   ARMword file_type;
   bool is_timestamped = true; /* Assume initially it has timestamp/filetype */
   bool truncate_name = false; /* Whether to truncate for leaf
-                                 (because filetype or load-exec found) */
+				 (because filetype or load-exec found) */
   const char *slash, *comma;
 
   assert(host_pathname);
@@ -446,28 +446,28 @@ hostfs_read_object_info(const char *host_pathname,
     if (dash) {
       /* Check the lengths of the portions before and after the dash */
       if ((dash - comma - 1) >= 1 && (dash - comma - 1) <= 8 &&
-          strlen(dash + 1) >= 1 && strlen(dash + 1) <= 8)
+	  strlen(dash + 1) >= 1 && strlen(dash + 1) <= 8)
       {
-        /* Check there is no whitespace present, as sscanf() silently
-           ignores it */
-        const char *whitespace = strpbrk(comma + 1, " \f\n\r\t\v");
+	/* Check there is no whitespace present, as sscanf() silently
+	   ignores it */
+	const char *whitespace = strpbrk(comma + 1, " \f\n\r\t\v");
 
-        if (!whitespace) {
-          ARMword load, exec;
+	if (!whitespace) {
+	  ARMword load, exec;
 
-          if (sscanf(comma + 1, "%8x-%8x", &load, &exec) == 2) {
-            /* Replace timestamp information with load-exec addresses */
-            object_info->load = load;
-            object_info->exec = exec;
-            is_timestamped = false;
-            truncate_name = true;
-          }
-        }
+	  if (sscanf(comma + 1, "%8x-%8x", &load, &exec) == 2) {
+	    /* Replace timestamp information with load-exec addresses */
+	    object_info->load = load;
+	    object_info->exec = exec;
+	    is_timestamped = false;
+	    truncate_name = true;
+	  }
+	}
       }
     } else if (strlen(comma + 1) == 3) {
       if (isxdigit(comma[1]) && isxdigit(comma[2]) && isxdigit(comma[3])) {
-        file_type = (ARMword) strtoul(comma + 1, NULL, 16);
-        truncate_name = true;
+	file_type = (ARMword) strtoul(comma + 1, NULL, 16);
+	truncate_name = true;
       }
     }
   }
@@ -486,7 +486,7 @@ hostfs_read_object_info(const char *host_pathname,
 
     if (truncate_name) {
       /* If a filetype or load-exec was found, we only want the part from after
-         the slash to before the comma */
+	 the slash to before the comma */
       ro_leaf_len = comma - slash - 1;
     } else {
       /* Return everything from after the slash to the end */
@@ -505,9 +505,9 @@ hostfs_read_object_info(const char *host_pathname,
  */
 static void
 hostfs_path_scan(const char *host_dir_path,
-                 const char *object,
-                 char *host_name,
-                 risc_os_object_info *object_info)
+		 const char *object,
+		 char *host_name,
+		 risc_os_object_info *object_info)
 {
   DIR *d;
   struct dirent *entry;
@@ -527,7 +527,7 @@ hostfs_path_scan(const char *host_dir_path,
 
     default:
       fprintf(stderr, "hostfs_path_scan() could not opendir() \'%s\': %s %d\n",
-              host_dir_path, strerror(errno), errno);
+	      host_dir_path, strerror(errno), errno);
       object_info->type = OBJECT_TYPE_NOT_FOUND;
     }
 
@@ -548,11 +548,11 @@ hostfs_path_scan(const char *host_dir_path,
 
     hostfs_read_object_info(entry_path, ro_leaf, object_info);
 
-        for (c=0;c<strlen(ro_leaf);c++)
-        {
-                if (ro_leaf[c]=='/')
-                   ro_leaf[c]='.';
-        }
+	for (c=0;c<strlen(ro_leaf);c++)
+	{
+		if (ro_leaf[c]=='/')
+		   ro_leaf[c]='.';
+	}
 
     /* Ignore entries we can not read information about,
        or which are neither regular files or directories */
@@ -585,8 +585,8 @@ hostfs_path_scan(const char *host_dir_path,
  */
 static enum FILECORE_ERROR
 hostfs_path_process(const char *ro_path,
-                    char *host_pathname,
-                    risc_os_object_info *object_info)
+		    char *host_pathname,
+		    risc_os_object_info *object_info)
 {
   char component_name[PATH_MAX]; /* working Host component */
   char *component;
@@ -651,35 +651,35 @@ hostfs_path_process(const char *ro_path,
 
       hostfs_read_object_info(host_pathname, NULL, object_info);
       if (object_info->type == OBJECT_TYPE_NOT_FOUND) {
-        return FILECORE_ERROR_NOTFOUND;
+	return FILECORE_ERROR_NOTFOUND;
       }
 
       break;
 
     case '.':
       if (component_name[0] != '\0') {
-        /* only if not first dot, i.e. "$." */
+	/* only if not first dot, i.e. "$." */
 
-        char host_name[PATH_MAX];
+	char host_name[PATH_MAX];
 
-        *component = '\0'; /* add terminator */
+	*component = '\0'; /* add terminator */
 
-        hostfs_path_scan(host_pathname, component_name,
-                         host_name, object_info);
-        if (object_info->type == OBJECT_TYPE_NOT_FOUND) {
-          /* This component of the path is invalid */
-          /* Return what we have of the host_pathname */
+	hostfs_path_scan(host_pathname, component_name,
+			 host_name, object_info);
+	if (object_info->type == OBJECT_TYPE_NOT_FOUND) {
+	  /* This component of the path is invalid */
+	  /* Return what we have of the host_pathname */
 
-          return FILECORE_ERROR_NOTFOUND;
-        }
+	  return FILECORE_ERROR_NOTFOUND;
+	}
 
-        /* Append Host's name for this component to the working Host path */
-        strcat(host_pathname, "/");
-        strcat(host_pathname, host_name);
+	/* Append Host's name for this component to the working Host path */
+	strcat(host_pathname, "/");
+	strcat(host_pathname, host_name);
 
-        /* Reset component name ready for re-use */
-        component = &component_name[0];
-        *component = '\0';
+	/* Reset component name ready for re-use */
+	component = &component_name[0];
+	*component = '\0';
       }
       break;
 
@@ -703,7 +703,7 @@ hostfs_path_process(const char *ro_path,
     *component = '\0'; /* add terminator */
 
     hostfs_path_scan(host_pathname, component_name,
-                     host_name, object_info);
+		     host_name, object_info);
     if (object_info->type == OBJECT_TYPE_NOT_FOUND) {
       /* This component of the path is invalid */
       /* Return what we have of the host_pathname */
@@ -753,7 +753,7 @@ hostfs_open(ARMul_State *state)
   dbug_hostfs("\tr1 = 0x%08x (ptr to pathname)\n", state->Reg[1]);
   dbug_hostfs("\tr3 = %u (FileSwitch handle)\n", state->Reg[3]);
   dbug_hostfs("\tr6 = 0x%08x (pointer to special field if present)\n",
-          state->Reg[6]);
+	  state->Reg[6]);
 
   get_string(state, state->Reg[1], ro_path, sizeof(ro_path));
   dbug_hostfs("\tPATH = %s\n", ro_path);
@@ -801,7 +801,7 @@ hostfs_open(ARMul_State *state)
     switch (errno) {
     case ENOMEM: /* Out of memory */
       fprintf(stderr, "HostFS out of memory in hostfs_open(): \'%s\'\n",
-              strerror(errno));
+	      strerror(errno));
       exit(EXIT_FAILURE);
       break;
 
@@ -811,7 +811,7 @@ hostfs_open(ARMul_State *state)
 
     default:
       dbug_hostfs("HostFS could not open file \'%s\': %s %d\n",
-                  host_pathname, strerror(errno), errno);
+		  host_pathname, strerror(errno), errno);
       state->Reg[1] = 0; /* Signal to RISC OS file not found */
       return;
     }
@@ -824,7 +824,7 @@ hostfs_open(ARMul_State *state)
 
   state->Reg[1] = idx; /* Our filing system's handle */
   state->Reg[2] = 1024; /* Buffer size to use in range 64-1024.
-                           Must be power of 2 */
+			   Must be power of 2 */
   state->Reg[4] = 0; /* Space allocated to file */
 }
 
@@ -842,7 +842,7 @@ hostfs_getbytes(ARMul_State *state)
   dbug_hostfs("\tr2 = 0x%08x (ptr to buffer)\n", state->Reg[2]);
   dbug_hostfs("\tr3 = %u (number of bytes to read)\n", state->Reg[3]);
   dbug_hostfs("\tr4 = %u (file offset from which to get data)\n",
-              state->Reg[4]);
+	      state->Reg[4]);
 
   hostfs_ensure_buffer_size(state->Reg[3]);
 
@@ -869,7 +869,7 @@ hostfs_putbytes(ARMul_State *state)
   dbug_hostfs("\tr2 = 0x%08x (ptr to buffer)\n", state->Reg[2]);
   dbug_hostfs("\tr3 = %u (number of bytes to write)\n", state->Reg[3]);
   dbug_hostfs("\tr4 = %u (file offset at which to put data)\n",
-              state->Reg[4]);
+	      state->Reg[4]);
 
   hostfs_ensure_buffer_size(state->Reg[3]);
 
@@ -900,7 +900,7 @@ hostfs_args_3_write_file_extent(ARMul_State *state)
   /* Flush any pending I/O before moving to low-level I/O functions */
   if (fflush(f)) {
     fprintf(stderr, "hostfs_args_3_write_file_extent() bad fflush(): %s %d\n",
-            strerror(errno), errno);
+	    strerror(errno), errno);
     return;
   }
 
@@ -908,7 +908,7 @@ hostfs_args_3_write_file_extent(ARMul_State *state)
   fd = fileno(f);
   if (fd < 0) {
     fprintf(stderr, "hostfs_args_3_write_file_extent() bad fd: %s %d\n",
-            strerror(errno), errno);
+	    strerror(errno), errno);
     return;
   }
 
@@ -916,7 +916,7 @@ hostfs_args_3_write_file_extent(ARMul_State *state)
   /* FIXME Not defined if file is increased in size */
   if (ftruncate(fd, (off_t) state->Reg[2])) {
     fprintf(stderr, "hostfs_args_3_write_file_extent() bad ftruncate(): %s %d\n",
-            strerror(errno), errno);
+	    strerror(errno), errno);
     return;
   }
 }
@@ -1064,7 +1064,7 @@ hostfs_write_file(ARMul_State *state, bool with_data)
   dbug_hostfs("\tr4 = 0x%08x (ptr to buffer start)\n", state->Reg[4]);
   dbug_hostfs("\tr5 = 0x%08x (ptr to buffer end)\n", state->Reg[5]);
   dbug_hostfs("\tr6 = 0x%08x (pointer to special field if present)\n",
-              state->Reg[6]);
+	      state->Reg[6]);
 
   length = state->Reg[5] - state->Reg[4];
   ptr = state->Reg[4];
@@ -1084,20 +1084,20 @@ hostfs_write_file(ARMul_State *state, bool with_data)
     }
     strcat(host_pathname, "/");
     path_construct(host_pathname, ro_path,
-                   new_pathname, sizeof(new_pathname),
-                   state->Reg[2], state->Reg[3]);
+		   new_pathname, sizeof(new_pathname),
+		   state->Reg[2], state->Reg[3]);
     break;
 
   case OBJECT_TYPE_FILE:
     /* If the hostfs_path_process() reported object found,
        rename to the new name */
     path_construct(host_pathname, ro_path,
-                   new_pathname, sizeof(new_pathname),
-                   state->Reg[2], state->Reg[3]);
+		   new_pathname, sizeof(new_pathname),
+		   state->Reg[2], state->Reg[3]);
     if (rename(host_pathname, new_pathname)) {
       fprintf(stderr, "hostfs_file_7_create_file(): could not rename \'%s\'"
-              " to \'%s\': %s %d\n", host_pathname, new_pathname,
-              strerror(errno), errno);
+	      " to \'%s\': %s %d\n", host_pathname, new_pathname,
+	      strerror(errno), errno);
       return;
     }
     break;
@@ -1113,7 +1113,7 @@ hostfs_write_file(ARMul_State *state, bool with_data)
   if (!f) {
     /* TODO handle errors */
     fprintf(stderr, "HostFS could not create file \'%s\': %s %d\n",
-            new_pathname, strerror(errno), errno);
+	    new_pathname, strerror(errno), errno);
     return;
   }
 
@@ -1132,8 +1132,8 @@ hostfs_write_file(ARMul_State *state, bool with_data)
 
       /* Copy the correct amount of data into the buffer */
       for (i = 0; i < buffer_amount; i++) {
-        buffer[i] = ARMul_LoadByte(state, ptr);
-        ptr++;
+	buffer[i] = ARMul_LoadByte(state, ptr);
+	ptr++;
       }
     }
 
@@ -1170,12 +1170,12 @@ hostfs_file_1_write_cat_info(ARMul_State *state)
 
   dbug_hostfs("\tWrite catalogue information\n");
   dbug_hostfs("\tr1 = 0x%08x (ptr to wildcarded filename)\n",
-              state->Reg[1]);
+	      state->Reg[1]);
   dbug_hostfs("\tr2 = 0x%08x (new load address)\n", state->Reg[2]);
   dbug_hostfs("\tr3 = 0x%08x (new exec address)\n", state->Reg[3]);
   dbug_hostfs("\tr5 = 0x%08x (new attribs)\n", state->Reg[5]);
   dbug_hostfs("\tr6 = 0x%08x (pointer to special field if present)\n",
-              state->Reg[6]);
+	      state->Reg[6]);
 
   get_string(state, state->Reg[1], ro_path, sizeof(ro_path));
   dbug_hostfs("\tPATH = %s\n", ro_path);
@@ -1195,11 +1195,11 @@ hostfs_file_1_write_cat_info(ARMul_State *state)
       char new_pathname[PATH_MAX];
 
       path_construct(host_pathname, ro_path,
-                     new_pathname, sizeof(new_pathname),
-                     state->Reg[2], state->Reg[3]);
+		     new_pathname, sizeof(new_pathname),
+		     state->Reg[2], state->Reg[3]);
 
       if (rename(host_pathname, new_pathname)) {
-        /* TODO handle error in renaming */
+	/* TODO handle error in renaming */
       }
 
       /* Update timestamp if necessary */
@@ -1230,7 +1230,7 @@ hostfs_file_5_read_cat_info(ARMul_State *state)
   dbug_hostfs("\tRead catalogue information\n");
   dbug_hostfs("\tr1 = 0x%08x (ptr to pathname)\n", state->Reg[1]);
   dbug_hostfs("\tr6 = 0x%08x (pointer to special field if present)\n",
-              state->Reg[6]);
+	      state->Reg[6]);
 
   get_string(state, state->Reg[1], ro_path, sizeof(ro_path));
   dbug_hostfs("\tPATH = %s\n", ro_path);
@@ -1258,7 +1258,7 @@ hostfs_file_6_delete(ARMul_State *state)
   dbug_hostfs("\tDelete object\n");
   dbug_hostfs("\tr1 = 0x%08x (ptr to pathname)\n", state->Reg[1]);
   dbug_hostfs("\tr6 = 0x%08x (pointer to special field if present)\n",
-              state->Reg[6]);
+	      state->Reg[6]);
 
   get_string(state, state->Reg[1], ro_path, sizeof(ro_path));
   dbug_hostfs("\tPATH = %s\n", ro_path);
@@ -1283,7 +1283,7 @@ hostfs_file_6_delete(ARMul_State *state)
     if (unlink(host_pathname)) {
       /* Error while deleting the file */
       fprintf(stderr, "HostFS: Error deleting file \'%s\': %s %d\n",
-              host_pathname, strerror(errno), errno);
+	      host_pathname, strerror(errno), errno);
     }
     break;
 
@@ -1293,13 +1293,13 @@ hostfs_file_6_delete(ARMul_State *state)
       switch (errno) {
       case EEXIST:
       case ENOTEMPTY: /* POSIX permits either error for directory not empty */
-        state->Reg[9] = FILECORE_ERROR_DIRNOTEMPTY;
-        break;
+	state->Reg[9] = FILECORE_ERROR_DIRNOTEMPTY;
+	break;
 
       default:
-        fprintf(stderr, "HostFS: Error deleting directory \'%s\': %s %d\n",
-                host_pathname, strerror(errno), errno);
-        break;
+	fprintf(stderr, "HostFS: Error deleting directory \'%s\': %s %d\n",
+		host_pathname, strerror(errno), errno);
+	break;
       }
     }
     break;
@@ -1335,7 +1335,7 @@ hostfs_file_8_create_dir(ARMul_State *state)
   dbug_hostfs("\tr3 = 0x%08x (exec address)\n", state->Reg[3]);
   dbug_hostfs("\tr4 = %u (number of entries)\n", state->Reg[4]);
   dbug_hostfs("\tr6 = 0x%08x (pointer to special field if present)\n",
-              state->Reg[6]);
+	      state->Reg[6]);
 
   get_string(state, state->Reg[1], ro_path, sizeof(ro_path));
   dbug_hostfs("\tPATH = %s\n", ro_path);
@@ -1395,7 +1395,7 @@ hostfs_file_8_create_dir(ARMul_State *state)
 
     default:
       fprintf(stderr, "HostFS could not create directory \'%s\': %s\n",
-              host_pathname, strerror(errno));
+	      host_pathname, strerror(errno));
       return;
     }
   }
@@ -1419,7 +1419,7 @@ hostfs_file_255_load_file(ARMul_State *state)
   dbug_hostfs("\tr1 = 0x%08x (ptr to wildcarded filename)\n", state->Reg[1]);
   dbug_hostfs("\tr2 = 0x%08x (address to load at)\n", state->Reg[2]);
   dbug_hostfs("\tr6 = 0x%08x (pointer to special field if present)\n",
-              state->Reg[6]);
+	      state->Reg[6]);
 
   get_string(state, state->Reg[1], ro_path, sizeof(ro_path));
   dbug_hostfs("\tPATH = %s\n", ro_path);
@@ -1435,7 +1435,7 @@ hostfs_file_255_load_file(ARMul_State *state)
   f = fopen(host_pathname, "rb");
   if (!f) {
     fprintf(stderr, "HostFS could not open file (File_255) \'%s\': %s %d\n",
-            host_pathname, strerror(errno), errno);
+	    host_pathname, strerror(errno), errno);
     return;
   }
 
@@ -1520,9 +1520,9 @@ hostfs_func_8_rename(ARMul_State *state)
   dbug_hostfs("\tr1 = 0x%08x (ptr to old name)\n", state->Reg[1]);
   dbug_hostfs("\tr2 = 0x%08x (ptr to new name)\n", state->Reg[2]);
   dbug_hostfs("\tr6 = 0x%08x (pointer to 1st special field if present)\n",
-              state->Reg[6]);
+	      state->Reg[6]);
   dbug_hostfs("\tr7 = 0x%08x (pointer to 2nd special field if present)\n",
-              state->Reg[7]);
+	      state->Reg[7]);
 
   /* TODO When we support multiple virtual disks, check that rename would be
      'simple' */
@@ -1568,8 +1568,8 @@ hostfs_func_8_rename(ARMul_State *state)
   }
 
   path_construct(host_pathname2, ro_path2,
-                 new_pathname, sizeof(new_pathname),
-                 object_info1.load, object_info1.exec);
+		 new_pathname, sizeof(new_pathname),
+		 object_info1.load, object_info1.exec);
 
   dbug_hostfs("\tNEW_PATHNAME = %s\n", new_pathname);
 
@@ -1577,7 +1577,7 @@ hostfs_func_8_rename(ARMul_State *state)
     /* An error occurred */
 
     fprintf(stderr, "HostFS could not rename \'%s\' to \'%s\': %s %d\n",
-            host_pathname1, new_pathname, strerror(errno), errno);
+	    host_pathname1, new_pathname, strerror(errno), errno);
     state->Reg[1] = 1; /* non-zero indicates could not rename */
     return;
   }
@@ -1658,7 +1658,7 @@ hostfs_cache_dir(const char *directory_name)
     strcat(entry_path, entry->d_name);
 
     hostfs_read_object_info(entry_path, ro_leaf,
-                            &cache_entries[entry_ptr].object_info);
+			    &cache_entries[entry_ptr].object_info);
 
     /* Ignore entries we can not read information about,
        or which are neither regular files or directories */
@@ -1674,8 +1674,8 @@ hostfs_cache_dir(const char *directory_name)
       cache_names_capacity *= 2;
       cache_names = realloc(cache_names, cache_names_capacity);
       if (!cache_names) {
-        fprintf(stderr, "hostfs_cache_dir(): Out of memory\n");
-        exit(1);
+	fprintf(stderr, "hostfs_cache_dir(): Out of memory\n");
+	exit(1);
       }
     }
 
@@ -1692,8 +1692,8 @@ hostfs_cache_dir(const char *directory_name)
       cache_entries_capacity *= 2;
       cache_entries = realloc(cache_entries, cache_entries_capacity * sizeof(cache_directory_entry));
       if (!cache_entries) {
-        fprintf(stderr, "hostfs_cache_dir(): Out of memory\n");
-        exit(1);
+	fprintf(stderr, "hostfs_cache_dir(): Out of memory\n");
+	exit(1);
       }
     }
   }
@@ -1702,7 +1702,7 @@ hostfs_cache_dir(const char *directory_name)
 
   /* Sort the directory entries, case-insensitive */
   qsort(cache_entries, entry_ptr, sizeof(cache_directory_entry),
-        hostfs_directory_entry_compare);
+	hostfs_directory_entry_compare);
 
   /* Store the number of directory entries found */
   cache_entries_count = entry_ptr;
@@ -1729,13 +1729,13 @@ hostfs_read_dir(ARMul_State *state, bool with_info, bool with_timestamp)
 
   dbug_hostfs("\tr1 = 0x%08x (ptr to wildcarded dir. name)\n", state->Reg[1]);
   dbug_hostfs("\tr2 = 0x%08x (ptr to buffer for returned data)\n",
-              state->Reg[2]);
+	      state->Reg[2]);
   dbug_hostfs("\tr3 = %u (number of object names to read)\n", state->Reg[3]);
   dbug_hostfs("\tr4 = %u (offset of first item to read in dir)\n",
-              state->Reg[4]);
+	      state->Reg[4]);
   dbug_hostfs("\tr5 = %u (length of buffer)\n", state->Reg[5]);
   dbug_hostfs("\tr6 = 0x%08x (pointer to special field if present)\n",
-              state->Reg[6]);
+	      state->Reg[6]);
 
   get_string(state, state->Reg[1], ro_path, sizeof(ro_path));
   dbug_hostfs("\tPATH = %s\n", ro_path);
@@ -1767,55 +1767,55 @@ hostfs_read_dir(ARMul_State *state, bool with_info, bool with_timestamp)
       /* Calculate space required to return name and (optionally) info */
       string_space = (unsigned) strlen(cache_names + cache_entries[offset].name_offset) + 1;
       if (with_info) {
-        if (with_timestamp) {
-          /* Space required for info with timestamp:
-             6 words of info, a 5-byte timestamp, and the string, rounded up */
-          entry_space = ROUND_UP_TO_4((6 * sizeof(ARMword)) + 5 + string_space);
-        } else {
-          /* Space required for info:
-             5 words of info, and the string, rounded up */
-          entry_space = ROUND_UP_TO_4((5 * sizeof(ARMword)) + string_space);
-        }
+	if (with_timestamp) {
+	  /* Space required for info with timestamp:
+	     6 words of info, a 5-byte timestamp, and the string, rounded up */
+	  entry_space = ROUND_UP_TO_4((6 * sizeof(ARMword)) + 5 + string_space);
+	} else {
+	  /* Space required for info:
+	     5 words of info, and the string, rounded up */
+	  entry_space = ROUND_UP_TO_4((5 * sizeof(ARMword)) + string_space);
+	}
       } else {
-        entry_space = string_space;
+	entry_space = string_space;
       }
 
       /* See whether there is space left in the buffer to return this entry */
       if (entry_space > buffer_remaining) {
-        break;
+	break;
       }
 
       /* Fill in this entry */
       if (with_info) {
-        ARMul_StoreWordS(state, ptr + 0,  cache_entries[offset].object_info.load);
-        ARMul_StoreWordS(state, ptr + 4,  cache_entries[offset].object_info.exec);
-        ARMul_StoreWordS(state, ptr + 8,  cache_entries[offset].object_info.length);
-        ARMul_StoreWordS(state, ptr + 12, cache_entries[offset].object_info.attribs);
-        ARMul_StoreWordS(state, ptr + 16, cache_entries[offset].object_info.type);
+	ARMul_StoreWordS(state, ptr + 0,  cache_entries[offset].object_info.load);
+	ARMul_StoreWordS(state, ptr + 4,  cache_entries[offset].object_info.exec);
+	ARMul_StoreWordS(state, ptr + 8,  cache_entries[offset].object_info.length);
+	ARMul_StoreWordS(state, ptr + 12, cache_entries[offset].object_info.attribs);
+	ARMul_StoreWordS(state, ptr + 16, cache_entries[offset].object_info.type);
 
-        if (with_timestamp) {
-          ARMul_StoreWordS(state, ptr + 20, 0); /* Always 0 */
-          /* Test if Load and Exec contain timestamp */
-          if ((cache_entries[offset].object_info.load & 0xfff00000u) == 0xfff00000u) {
-            ARMul_StoreWordS(state, ptr + 24,
-                             (cache_entries[offset].object_info.load << 24) |
-                             (cache_entries[offset].object_info.exec >> 8));
-            ARMul_StoreByte(state, ptr + 28,
-                            cache_entries[offset].object_info.exec & 0xff);
-          } else {
-            ARMul_StoreWordS(state, ptr + 24, 0);
-            ARMul_StoreByte(state, ptr + 28, 0);
-          }
-          ptr += 29;
-        } else {
-          ptr += 20;
-        }
+	if (with_timestamp) {
+	  ARMul_StoreWordS(state, ptr + 20, 0); /* Always 0 */
+	  /* Test if Load and Exec contain timestamp */
+	  if ((cache_entries[offset].object_info.load & 0xfff00000u) == 0xfff00000u) {
+	    ARMul_StoreWordS(state, ptr + 24,
+			     (cache_entries[offset].object_info.load << 24) |
+			     (cache_entries[offset].object_info.exec >> 8));
+	    ARMul_StoreByte(state, ptr + 28,
+			    cache_entries[offset].object_info.exec & 0xff);
+	  } else {
+	    ARMul_StoreWordS(state, ptr + 24, 0);
+	    ARMul_StoreByte(state, ptr + 28, 0);
+	  }
+	  ptr += 29;
+	} else {
+	  ptr += 20;
+	}
       }
       put_string(state, ptr, cache_names + cache_entries[offset].name_offset);
 
       ptr += string_space;
       if (with_info) {
-        ptr = ROUND_UP_TO_4(ptr);
+	ptr = ROUND_UP_TO_4(ptr);
       }
       buffer_remaining -= entry_space;
       count ++;

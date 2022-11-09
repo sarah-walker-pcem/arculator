@@ -27,51 +27,51 @@
 
 static struct
 {
-        uint8_t estimate;
+	uint8_t estimate;
 } bmu;
 
 uint8_t bmu_read(int addr)
 {
-        uint8_t ret = 0xff;
+	uint8_t ret = 0xff;
 
-        switch (addr & 0xff)
-        {
-                case BMU_VERSION:
-                ret = 0x03;
-                break;
+	switch (addr & 0xff)
+	{
+		case BMU_VERSION:
+		ret = 0x03;
+		break;
 
-                case BMU_STATUS:
-                ret = BMU_STATUS_CHARGER_CONNECTED |
-                        BMU_STATUS_BATTERY_PRESENT |
-                        BMU_STATUS_CHARGE_STATE_KNOWN |
-                        BMU_STATUS_LID_OPEN;
-                break;
+		case BMU_STATUS:
+		ret = BMU_STATUS_CHARGER_CONNECTED |
+			BMU_STATUS_BATTERY_PRESENT |
+			BMU_STATUS_CHARGE_STATE_KNOWN |
+			BMU_STATUS_LID_OPEN;
+		break;
 
-                case BMU_CAPACITY_USED:
-                ret = 0x40;
-                break;
+		case BMU_CAPACITY_USED:
+		ret = 0x40;
+		break;
 
-                case BMU_CHARGE_ESTIMATE:
-                ret = bmu.estimate;
-                break;
+		case BMU_CHARGE_ESTIMATE:
+		ret = bmu.estimate;
+		break;
 
-                case BMU_COMMAND:
-                ret = 0; /*Command not in progress*/
-                break;
-        }
+		case BMU_COMMAND:
+		ret = 0; /*Command not in progress*/
+		break;
+	}
 //        rpclog("bmu_read: addr=%02x ret=%02x PC=%07x\n", addr, ret, PC);
 
-        return ret;
+	return ret;
 }
 
 void bmu_write(int addr, uint8_t val)
 {
 //        rpclog("bmu_write: addr=%02x val=%02x PC=%07x\n", addr, val, PC);
 
-        switch (addr & 0xff)
-        {
-                case BMU_CHARGE_ESTIMATE:
-                bmu.estimate = val;
-                break;
-        }
+	switch (addr & 0xff)
+	{
+		case BMU_CHARGE_ESTIMATE:
+		bmu.estimate = val;
+		break;
+	}
 }

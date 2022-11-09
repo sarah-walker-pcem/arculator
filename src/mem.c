@@ -62,7 +62,7 @@ static void mem_recalc_mem_spd_multi(void)
 
 void initmem(int memsize)
 {
-        int c,d=(memsize>>2)-1;
+        int c;
 
         rpclog("initmem %i\n", memsize);
         realmemsize=memsize;
@@ -141,7 +141,7 @@ void mem_updatetimings()
 
 void resizemem(int memsize) /*memsize is 4096,8192,16384*/
 {
-        int c,d=(memsize>>2)-1;
+        int c;
         rpclog("resizemem %i\n", memsize);
         free(ram);
         ram=(uint32_t *)malloc(memsize*1024);

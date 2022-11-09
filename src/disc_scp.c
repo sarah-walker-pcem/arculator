@@ -152,7 +152,6 @@ static void scp_do_read_track(int drive, int track, int side)
 static void scp_seek(int drive, int track)
 {
         mfm_t *mfm = &scp[drive].mfm;
-        int c;
 
 //	rpclog("scp_seek: drive=%i track=%i\n", drive, track);
         if (!scp[drive].f)

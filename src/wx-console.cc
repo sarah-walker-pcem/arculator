@@ -97,7 +97,7 @@ private:
         wxString pending_s;
 
 	std::deque<wxString> scrollback;
-	int scrollback_pos;
+	unsigned int scrollback_pos;
 };
 
 wxBEGIN_EVENT_TABLE(ConsoleInput, wxTextCtrl)

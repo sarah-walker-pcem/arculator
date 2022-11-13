@@ -160,7 +160,8 @@ void PoduleConfigDialog::OnCommand(wxCommandEvent &event)
 				{
 				char temp_s[256];
 				wxTextCtrl *text = (wxTextCtrl *)this->FindWindow(id + 1);
-				strncpy(temp_s, (const char *)text->GetValue().mb_str(), sizeof(temp_s));
+				strncpy(temp_s, (const char *)text->GetValue().mb_str(), sizeof(temp_s)-1);
+				temp_s[sizeof(temp_s)-1] = 0;
 
 				val_str = config_get_string(CFG_MACHINE, section_name, get_item_name(item, prefix), item->default_string);
 
@@ -264,7 +265,8 @@ void PoduleConfigDialog::OnCommand(wxCommandEvent &event)
 				{
 				char temp_s[256];
 				wxTextCtrl *text = (wxTextCtrl *)this->FindWindow(id + 1);
-				strncpy(temp_s, (const char *)text->GetValue().mb_str(), sizeof(temp_s));
+				strncpy(temp_s, (const char *)text->GetValue().mb_str(), sizeof(temp_s)-1);
+				temp_s[sizeof(temp_s)-1] = 0;
 
 				config_set_string(CFG_MACHINE, section_name, get_item_name(item, prefix), temp_s);
 

@@ -73,7 +73,8 @@ void HDNewDialog::OnOK(wxCommandEvent &event)
 	temp_s = ((wxTextCtrl *)this->FindWindow(XRCID("IDC_EDIT_SECTORS")))->GetValue();
 	new_sectors = atoi(temp_s);
 	temp_s = ((wxTextCtrl *)this->FindWindow(XRCID("IDC_EDIT_FN")))->GetValue();
-	strncpy(new_fn, temp_s, sizeof(new_fn));
+	strncpy(new_fn, temp_s, sizeof(new_fn)-1);
+	new_fn[sizeof(new_fn)-1] = 0;
 
 	int total_sectors = new_cylinders * new_heads * new_sectors;
 	FILE *f = fopen(new_fn, "wb");

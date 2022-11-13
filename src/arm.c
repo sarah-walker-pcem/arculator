@@ -239,9 +239,16 @@ void arm_clock_i(int i_cycles)
 		CLOCK_I();
 }
 
-static void cache_line_fill(uint32_t addr, int byte_offset, int bit_offset)
+static void cache_line_fill(uint32_t addr)
 {
+	int byte_offset = addr >> (4+3);
+	int bit_offset = (addr >> 4) & 7;
 	int set = (addr >> 4) & 3;
+
+#ifndef RELEASE_BUILD
+	if (addr & ~0x3ffffff)
+		fatal("cache_line_fill outside of valid range %08x\n", addr);
+#endif
 
 	if (arm3_cache_tag[set][arm3_slot] != TAG_INVALID)
 	{
@@ -255,7 +262,7 @@ static void cache_line_fill(uint32_t addr, int byte_offset, int bit_offset)
 	arm3_cache[byte_offset] |= (1 << bit_offset);
 	sync_to_mclk();
 
-	mem_available_ts = tsc + mem_speed[(addr >> 12) & 0x3fff][1] + 3*mem_speed[(addr >> 12) & 0x3fff][0];
+	mem_available_ts = tsc + mem_speed[addr >> 12][1] + 3*mem_speed[addr >> 12][0];
 
 	/*ARM3 will start to clock the CPU again once the requested word has been
 	  read. So only 'charge' the emulated CPU up to that point, and promote
@@ -291,10 +298,10 @@ static int cache_was_on = 0;
 static int promote_fetch_to_n = PROMOTE_NONE;
 void cache_read_timing(uint32_t addr, int is_n_cycle, int is_merged_fetch)
 {
-	int bit_offset = (addr >> 4) & 7;
-	int byte_offset = ((addr & 0x3ffffff) >> (4+3));
-
-	addr &= 0x3ffffff;
+#ifndef RELEASE_BUILD
+	if (addr & ~0x3ffffff)
+		fatal("cache_read_timing outside of valid range %08x\n", addr);
+#endif
 
   //      if (output) rpclog("Read %c-cycle %07x\n", is_n_cycle?'N':'S', addr);
 	if (is_n_cycle)
@@ -320,6 +327,9 @@ void cache_read_timing(uint32_t addr, int is_n_cycle, int is_merged_fetch)
 			  cache lookup*/
 			sync_to_fclk();
 
+			int bit_offset = (addr >> 4) & 7;
+			int byte_offset = addr >> (4+3);
+
 			if (arm3_cache[byte_offset] & (1 << bit_offset))
 			{
 				cache_was_on = 1;
@@ -334,7 +344,7 @@ void cache_read_timing(uint32_t addr, int is_n_cycle, int is_merged_fetch)
 			else
 			{
 				/*Data not in cache; perform cache fill*/
-				cache_line_fill(addr, byte_offset, bit_offset);
+				cache_line_fill(addr);
 			}
 		}
 		else
@@ -370,9 +380,14 @@ void cache_read_timing(uint32_t addr, int is_n_cycle, int is_merged_fetch)
 #endif
 				CLOCK_S(addr);
 			}
-			else if (cache_was_on && (arm3_cache[byte_offset] & (1 << bit_offset)))
+			else if (cache_was_on)
 			{
 #ifndef RELEASE_BUILD
+				int bit_offset = (addr >> 4) & 7;
+				int byte_offset = ((addr & 0x3ffffff) >> (4+3));
+
+				if (!(arm3_cache[byte_offset] & (1 << bit_offset)))
+					fatal("S-cycle - cache_was_on but data not in cache %08x\n", addr);
 				if ((clock_domain != DOMAIN_FCLK) && ((addr & ~0xf) != cache_fill_addr))
 					fatal("Data in cache - clock_domain != FCLK %08x\n", addr);
 #endif
@@ -390,7 +405,7 @@ void cache_read_timing(uint32_t addr, int is_n_cycle, int is_merged_fetch)
 			}
 			else
 			{
-				cache_line_fill(addr, byte_offset, bit_offset);
+				cache_line_fill(addr);
 //                                sync_to_fclk();
 //                                fatal("Data not in cache for S cycle - should not be currently possible  %08x\n", addr);
 			}
@@ -422,6 +437,9 @@ void cache_flush()
 			}
 		}
 	}
+
+	cache_was_on = 0;
+
 /*	for (set = 0; set < (((1 << 26) >> 4) >> 3); set++)
 	{
 		if (arm3_cache[set])
@@ -803,7 +821,7 @@ static inline uint32_t shift_long(uint32_t opcode)
 	uint32_t shiftamount=(opcode>>7)&31;
 	uint32_t temp;
 	int cflag=CFSET;
-	if (!(opcode&0xFF0)) return armregs[RM];
+
 	if (opcode&0x10)
 	{
 		shiftamount=armregs[(opcode>>8)&15]&0xFF;
@@ -895,49 +913,44 @@ static inline uint32_t shift_long(uint32_t opcode)
 }
 static inline uint32_t shift_long_noflags(uint32_t opcode)
 {
-	int shiftmode=(opcode>>5)&3;
-	int shiftamount=(opcode>>7)&31;
-	uint32_t temp;
-	int cflag=CFSET;
+	const int shiftmode = (opcode >> 5) & 3;
+	int shiftamount = (opcode >> 7) & 31;
+	const uint32_t temp = armregs[RM];
 
-	if (!(opcode&0xFF0)) return armregs[RM];
-	if (opcode&0x10)
+	if (opcode & 0x10)
 	{
-		shiftamount=armregs[(opcode>>8)&15]&0xFF;
-		if (shiftmode==3)
-		   shiftamount&=0x1F;
+		shiftamount = armregs[(opcode >> 8) & 15] & 0xFF;
 		merge_timing(PC+4);
 	}
-	temp=armregs[RM];
-//        if (RM==15) temp+=4;
+
 	switch (shiftmode)
 	{
 		case 0: /*LSL*/
-		if (!shiftamount)    return temp;
-		if (shiftamount>=32) return 0;
-		return temp<<shiftamount;
+		if (!shiftamount)
+			return temp;
+		if (shiftamount>=32)
+			return 0;
+		return temp << shiftamount;
 
 		case 1: /*LSR*/
-		if (!shiftamount && !(opcode&0x10))    return 0;
-		if (shiftamount>=32) return 0;
-		return temp>>shiftamount;
+		if ((!shiftamount && !(opcode & 0x10)) || (shiftamount >= 32))
+			return 0;
+		return temp >> shiftamount;
 
 		case 2: /*ASR*/
-		if (!shiftamount && !(opcode&0x10)) shiftamount=32;
-		if (shiftamount>=32)
-		{
-			if (temp&0x80000000)
-			   return 0xFFFFFFFF;
-			return 0;
-		}
-		return (int)temp>>shiftamount;
+		if ((!shiftamount && !(opcode & 0x10)) || (shiftamount >= 32))
+			return (int32_t)temp >> 31;
+		return (int32_t)temp >> shiftamount;
 
 		case 3: /*ROR*/
-		if (!shiftamount && !(opcode&0x10)) return (((cflag)?1:0)<<31)|(temp>>1);
-		if (!shiftamount)                   return temp;
-		return (temp>>shiftamount)|(temp<<(32-shiftamount));
-		break;
+		shiftamount &= 0x1f;
+		if (!shiftamount && !(opcode & 0x10))
+			return (((CFSET) ? 1 : 0) << 31) | (temp >> 1);
+		if (!shiftamount)
+			return temp;
+		return (temp >> shiftamount) | (temp << (32 - shiftamount));
 	}
+
 	return 0;
 }
 
@@ -958,40 +971,36 @@ static inline uint32_t rotate(uint32_t data)
 
 static inline uint32_t shift_mem(uint32_t opcode)
 {
-	int shiftmode=(opcode>>5)&3;
-	int shiftamount=(opcode>>7)&31;
-	uint32_t temp;
-	int cflag=CFSET;
+	const int shiftmode = (opcode >> 5) & 3;
+	const int shiftamount = (opcode >> 7) & 31;
+	const uint32_t temp = armregs[RM];
 
-	if (!(opcode&0xFF0)) return armregs[RM];
 #ifndef RELEASE_BUILD
 	if (opcode&0x10)
 		fatal("Shift by register on memory shift!!! %08X\n",PC);
 #endif
-	temp=armregs[RM];
+
 	switch (shiftmode)
 	{
 		case 0: /*LSL*/
-		if (!shiftamount)    return temp;
-		return temp<<shiftamount;
+		if (!shiftamount)
+			return temp;
+		return temp << shiftamount;
 
 		case 1: /*LSR*/
-		if (!shiftamount)    return 0;
-		return temp>>shiftamount;
+		if (!shiftamount)
+			return 0;
+		return temp >> shiftamount;
 
 		case 2: /*ASR*/
 		if (!shiftamount)
-		{
-			if (temp&0x80000000)
-			   return 0xFFFFFFFF;
-			return 0;
-		}
-		return (int)temp>>shiftamount;
+			return (int32_t)temp >> 31;
+		return (int32_t)temp >> shiftamount;
 
 		case 3: /*ROR*/
-		if (!shiftamount) return (((cflag)?1:0)<<31)|(temp>>1);
-		return (temp>>shiftamount)|(temp<<(32-shiftamount));
-		break;
+		if (!shiftamount)
+			return (((CFSET) ? 1 : 0) << 31) | (temp >> 1);
+		return (temp >> shiftamount) | (temp << (32 - shiftamount));
 	}
 	return 0;
 }
@@ -1033,7 +1042,7 @@ void refillpipeline()
 	prefabort = prefabort_next;
 	readmemfff(addr,opcode3);
 
-	cache_read_timing(PC-4, 1, 0);
+	cache_read_timing((PC-4) & 0x3fffffc, 1, 0);
 	cache_read_timing(PC, !(PC & 0xc), 0);
 }
 
@@ -1047,8 +1056,8 @@ void refillpipeline2()
 	prefabort = prefabort_next;
 	readmemfff(addr,opcode3);
 
-	cache_read_timing(PC-8, 1, 0);
-	cache_read_timing(PC-4, !((PC-4) & 0xc), 0);
+	cache_read_timing((PC-8) & 0x3fffffc, 1, 0);
+	cache_read_timing((PC-4) & 0x3fffffc, !((PC-4) & 0xc), 0);
 }
 
 /*Booth's algorithm implementation taken from Steve Furber's ARM System-On-Chip
@@ -2461,7 +2470,7 @@ void execarm(int cycles_to_execute)
 					templ = readmeml(addr); if (!databort) armregs[c] = templ; \
 					cache_read_timing(addr, first_access || !(addr & 0xc), 0); \
 					first_access = 0; \
-					addr+=4; \
+					addr = (addr + 4) & 0x3fffffc; \
 				} \
 				mask<<=1; \
 			} \
@@ -2469,7 +2478,6 @@ void execarm(int cycles_to_execute)
 			{ \
 				templ = readmeml(addr); \
 				cache_read_timing(addr, first_access || !(addr & 0xc), 0); \
-				addr += 4; \
 				if (!databort) armregs[15] = (armregs[15] & 0xFC000003) | ((templ+4) & 0x3FFFFFC); \
 				refillpipeline(); \
 			}
@@ -2486,13 +2494,12 @@ void execarm(int cycles_to_execute)
 						templ = readmeml(addr); if (!databort) armregs[c] = templ; \
 						cache_read_timing(addr, first_access || !(addr & 0xc), 0); \
 						first_access = 0; \
-						addr += 4; \
+						addr = (addr + 4) & 0x3fffffc; \
 					} \
 					mask <<= 1; \
 				} \
 				templ = readmeml(addr); \
 				cache_read_timing(addr, first_access || !(addr & 0xc), 0); \
-				addr += 4; \
 				if (!databort) \
 				{ \
 					if (armregs[15] & 3) armregs[15] = (templ + 4); \
@@ -2509,7 +2516,7 @@ void execarm(int cycles_to_execute)
 						templ = readmeml(addr); if (!databort) *usrregs[c] = templ; \
 						cache_read_timing(addr, first_access || !(addr & 0xc), 0); \
 						first_access = 0; \
-						addr += 4; \
+						addr = (addr + 4) & 0x3fffffc; \
 					} \
 					mask <<= 1; \
 				} \

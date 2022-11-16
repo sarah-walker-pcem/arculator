@@ -1219,16 +1219,12 @@ static void opANDreg(uint32_t opcode)
 	}
 	else
 	{
+		uint32_t templ = shift_noflags(opcode);
+
 		if (RD == 15)
-		{
-			uint32_t templ = shift_noflags(opcode);
 			LOAD_R15(GETADDR(RN) & templ);
-		}
 		else
-		{
-			uint32_t templ = shift_noflags(opcode);
 			armregs[RD] = GETADDR(RN) & templ;
-		}
 	}
 }
 
@@ -1263,16 +1259,12 @@ static void opEORreg(uint32_t opcode)
 	}
 	else
 	{
+		uint32_t templ = shift_noflags(opcode);
+
 		if (RD == 15)
-		{
-			uint32_t templ = shift_noflags(opcode);
 			LOAD_R15(GETADDR(RN) ^ templ);
-		}
 		else
-		{
-			uint32_t templ = shift_noflags(opcode);
 			armregs[RD] = GETADDR(RN) ^ templ;
-		}
 	}
 }
 
@@ -1301,25 +1293,20 @@ static void opEORregS(uint32_t opcode)
 
 static void opSUBreg(uint32_t opcode)
 {
+	uint32_t templ = shift_noflags(opcode);
+
 	if (RD == 15)
-	{
-		uint32_t templ = shift_noflags(opcode);
 		LOAD_R15(GETADDR(RN) - templ);
-	}
 	else
-	{
-		uint32_t templ = shift_noflags(opcode);
 		armregs[RD] = GETADDR(RN) - templ;
-	}
 }
 
 static void opSUBregS(uint32_t opcode)
 {
+	uint32_t templ = shift_noflags(opcode);
+
 	if (RD == 15)
-	{
-		uint32_t templ = shift_noflags(opcode);
 		LOAD_R15_S(GETADDR(RN) - templ);
-	}
 	else
 	{
 		uint32_t templ = shift_noflags(opcode);
@@ -1330,28 +1317,22 @@ static void opSUBregS(uint32_t opcode)
 
 static void opRSBreg(uint32_t opcode)
 {
+	uint32_t templ = shift_noflags(opcode);
+
 	if (RD == 15)
-	{
-		uint32_t templ = shift_noflags(opcode);
 		LOAD_R15(templ - GETADDR(RN));
-	}
 	else
-	{
-		uint32_t templ = shift_noflags(opcode);
 		armregs[RD] = templ - GETADDR(RN);
-	}
 }
 
 static void opRSBregS(uint32_t opcode)
 {
+	uint32_t templ = shift_noflags(opcode);
+
 	if (RD == 15)
-	{
-		uint32_t templ = shift_noflags(opcode);
 		LOAD_R15_S(templ - GETADDR(RN));
-	}
 	else
 	{
-		uint32_t templ = shift_noflags(opcode);
 		setsub(templ, GETADDR(RN), templ - GETADDR(RN));
 		armregs[RD] = templ - GETADDR(RN);
 	}
@@ -1359,29 +1340,22 @@ static void opRSBregS(uint32_t opcode)
 
 static void opADDreg(uint32_t opcode)
 {
+	uint32_t templ = shift_noflags(opcode);
+
 	if (RD == 15)
-	{
-		uint32_t templ = shift_noflags(opcode);
 		LOAD_R15(GETADDR(RN) + templ);
-	}
 	else
-	{
-		uint32_t templ = shift_noflags(opcode);
 		armregs[RD] = GETADDR(RN) + templ;
-	}
 }
 
 static void opADDregS(uint32_t opcode)
 {
+	uint32_t templ = shift_noflags(opcode);
+
 	if (RD == 15)
-	{
-		uint32_t templ = shift_noflags(opcode);
 		LOAD_R15_S(GETADDR(RN) + templ);
-		refillpipeline();
-	}
 	else
 	{
-		uint32_t templ = shift_noflags(opcode);
 		setadd(GETADDR(RN), templ, GETADDR(RN) + templ);
 		armregs[RD] = GETADDR(RN) + templ;
 	}
@@ -1389,32 +1363,24 @@ static void opADDregS(uint32_t opcode)
 
 static void opADCreg(uint32_t opcode)
 {
+	uint32_t templ2 = CFSET;
+	uint32_t templ = shift_noflags(opcode);
+
 	if (RD == 15)
-	{
-		uint32_t templ2 = CFSET;
-		uint32_t templ = shift_noflags(opcode);
 		LOAD_R15(GETADDR(RN) + templ + templ2);
-	}
 	else
-	{
-		uint32_t templ2 = CFSET;
-		uint32_t templ = shift_noflags(opcode);
 		armregs[RD] = GETADDR(RN) + templ + templ2;
-	}
 }
 
 static void opADCregS(uint32_t opcode)
 {
+	uint32_t templ2 = CFSET;
+	uint32_t templ = shift_noflags(opcode);
+
 	if (RD == 15)
-	{
-		uint32_t templ2 = CFSET;
-		uint32_t templ = shift_noflags(opcode);
 		LOAD_R15_S(GETADDR(RN) + templ + templ2);
-	}
 	else
 	{
-		uint32_t templ2 = CFSET;
-		uint32_t templ = shift_noflags(opcode);
 		setadc(GETADDR(RN), templ, GETADDR(RN) + templ + templ2);
 		armregs[RD] = GETADDR(RN) + templ + templ2;
 	}
@@ -1422,30 +1388,24 @@ static void opADCregS(uint32_t opcode)
 
 static void opSBCreg(uint32_t opcode)
 {
-	uint32_t templ2 = (CFSET) ? 0 : 1;
+	uint32_t templ2 = CFSET ? 0 : 1;
+	uint32_t templ = shift_noflags(opcode);
+
 	if (RD == 15)
-	{
-		uint32_t templ = shift_noflags(opcode);
 		LOAD_R15(GETADDR(RN) - (templ + templ2));
-	}
 	else
-	{
-		uint32_t templ = shift_noflags(opcode);
 		armregs[RD] = GETADDR(RN) - (templ + templ2);
-	}
 }
 
 static void opSBCregS(uint32_t opcode)
 {
-	uint32_t templ2 = (CFSET) ? 0 : 1;
+	uint32_t templ2 = CFSET ? 0 : 1;
+	uint32_t templ = shift_noflags(opcode);
+
 	if (RD == 15)
-	{
-		uint32_t templ = shift_noflags(opcode);
 		LOAD_R15_S(GETADDR(RN) - (templ + templ2));
-	}
 	else
 	{
-		uint32_t templ = shift_noflags(opcode);
 		setsbc(GETADDR(RN), templ, GETADDR(RN) - (templ + templ2));
 		armregs[RD] = GETADDR(RN) - (templ + templ2);
 	}
@@ -1453,30 +1413,24 @@ static void opSBCregS(uint32_t opcode)
 
 static void opRSCreg(uint32_t opcode)
 {
-	uint32_t templ2 = (CFSET) ? 0 : 1;
+	uint32_t templ2 = CFSET ? 0 : 1;
+	uint32_t templ = shift_noflags(opcode);
+
 	if (RD == 15)
-	{
-		uint32_t templ = shift_noflags(opcode);
 		LOAD_R15(templ - (GETADDR(RN) + templ2));
-	}
 	else
-	{
-		uint32_t templ = shift_noflags(opcode);
 		armregs[RD] = templ - (GETADDR(RN) + templ2);
-	}
 }
 
 static void opRSCregS(uint32_t opcode)
 {
-	uint32_t templ2 = (CFSET) ? 0 : 1;
+	uint32_t templ2 = CFSET ? 0 : 1;
+	uint32_t templ = shift_noflags(opcode);
+
 	if (RD == 15)
-	{
-		uint32_t templ = shift_noflags(opcode);
 		LOAD_R15_S(templ - (GETADDR(RN) + templ2));
-	}
 	else
 	{
-		uint32_t templ = shift_noflags(opcode);
 		setsbc(templ, GETADDR(RN), templ - (GETADDR(RN) + templ2));
 		armregs[RD] = templ - (GETADDR(RN) + templ2);
 	}
@@ -1512,42 +1466,42 @@ static void opTSTreg(uint32_t opcode)
 {
 	if (RD == 15)
 	{
+		uint32_t src_data = shift_noflags(opcode);
+
 		if (armregs[15] & 3)
 		{
 			uint32_t templ = armregs[15] & 0x3FFFFFC;
-			armregs[15] = ((GETADDR(RN) & shift_noflags(opcode)) & 0xFC000003)|templ;
+			armregs[15] = ((GETADDR(RN) & src_data) & 0xFC000003) | templ;
 		}
 		else
 		{
 			uint32_t templ = armregs[15] & 0x0FFFFFFF;
-			armregs[15] = ((GETADDR(RN) & shift_noflags(opcode))&0xF0000000)|templ;
+			armregs[15] = ((GETADDR(RN) & src_data) & 0xF0000000) | templ;
 		}
 	}
 	else
-	{
 		setzn(GETADDR(RN) & shift(opcode));
-	}
 }
 
 static void opTEQreg(uint32_t opcode)
 {
 	if (RD == 15)
 	{
+		uint32_t src_data = shift_noflags(opcode);
+
 		if (armregs[15] & 3)
 		{
 			uint32_t templ = armregs[15] & 0x3FFFFFC;
-			armregs[15] = ((GETADDR(RN) ^ shift_noflags(opcode)) & 0xFC000003) | templ;
+			armregs[15] = ((GETADDR(RN) ^ src_data) & 0xFC000003) | templ;
 		}
 		else
 		{
 			uint32_t templ = armregs[15] & 0x0FFFFFFF;
-			armregs[15] = ((GETADDR(RN) ^ shift_noflags(opcode)) & 0xF0000000) | templ;
+			armregs[15] = ((GETADDR(RN) ^ src_data) & 0xF0000000) | templ;
 		}
 	}
 	else
-	{
 		setzn(GETADDR(RN) ^ shift(opcode));
-	}
 }
 
 static void opSWPB(uint32_t opcode)
@@ -1578,54 +1532,54 @@ static void opSWPB(uint32_t opcode)
 
 static void opCMPreg(uint32_t opcode)
 {
+	uint32_t src_data = shift_noflags(opcode);
+
 	if (RD == 15)
 	{
 		if (armregs[15] & 3)
 		{
 			uint32_t templ = armregs[15] & 0x3FFFFFC;
-			armregs[15] = ((GETADDR(RN) - shift_noflags(opcode)) & 0xFC000003) | templ;
+			armregs[15] = ((GETADDR(RN) - src_data) & 0xFC000003) | templ;
 		}
 		else
 		{
 			uint32_t templ = armregs[15] & 0x0FFFFFFF;
-			armregs[15] = ((GETADDR(RN) - shift_noflags(opcode)) & 0xF0000000) | templ;
+			armregs[15] = ((GETADDR(RN) - src_data) & 0xF0000000) | templ;
 		}
 	}
 	else
-		setsub(GETADDR(RN), shift(opcode), GETADDR(RN) - shift_noflags(opcode));
+		setsub(GETADDR(RN), src_data, GETADDR(RN) - src_data);
 }
 
 static void opCMNreg(uint32_t opcode)
 {
+	uint32_t src_data = shift_noflags(opcode);
+
 	if (RD == 15)
 	{
 		if (armregs[15] & 3)
 		{
 			uint32_t templ = armregs[15] & 0x3FFFFFC;
-			armregs[15] = ((GETADDR(RN) + shift_noflags(opcode)) & 0xFC000003) | templ;
+			armregs[15] = ((GETADDR(RN) + src_data) & 0xFC000003) | templ;
 		}
 		else
 		{
 			uint32_t templ = armregs[15] & 0x0FFFFFFF;
-			armregs[15] = ((GETADDR(RN) + shift_noflags(opcode)) & 0xF0000000) | templ;
+			armregs[15] = ((GETADDR(RN) + src_data) & 0xF0000000) | templ;
 		}
 	}
 	else
-		setadd(GETADDR(RN), shift_noflags(opcode), GETADDR(RN) + shift_noflags(opcode));
+		setadd(GETADDR(RN), src_data, GETADDR(RN) + src_data);
 }
 
 static void opORRreg(uint32_t opcode)
 {
+	uint32_t templ = shift_noflags(opcode);
+
 	if (RD == 15)
-	{
-		uint32_t templ = shift_noflags(opcode);
 		LOAD_R15(GETADDR(RN) | templ);
-	}
 	else
-	{
-		uint32_t templ = shift_noflags(opcode);
 		armregs[RD] = GETADDR(RN) | templ;
-	}
 }
 
 static void opORRregS(uint32_t opcode)
@@ -1664,16 +1618,12 @@ static void opMOVregS(uint32_t opcode)
 
 static void opBICreg(uint32_t opcode)
 {
+	uint32_t templ = shift_noflags(opcode);
+
 	if (RD == 15)
-	{
-		uint32_t templ = shift_noflags(opcode);
 		LOAD_R15(GETADDR(RN) & ~templ);
-	}
 	else
-	{
-		uint32_t templ = shift_noflags(opcode);
 		armregs[RD] = GETADDR(RN) & ~templ;
-	}
 }
 
 static void opBICregS(uint32_t opcode)
@@ -1712,16 +1662,12 @@ static void opMVNregS(uint32_t opcode)
 
 static void opANDimm(uint32_t opcode)
 {
+	uint32_t templ = rotate_noflags(opcode);
+
 	if (RD == 15)
-	{
-		uint32_t templ = rotate_noflags(opcode);
 		LOAD_R15(GETADDR(RN) & templ);
-	}
 	else
-	{
-		uint32_t templ = rotate_noflags(opcode);
 		armregs[RD] = GETADDR(RN) & templ;
-	}
 }
 
 static void opANDimmS(uint32_t opcode)
@@ -1741,16 +1687,12 @@ static void opANDimmS(uint32_t opcode)
 
 static void opEORimm(uint32_t opcode)
 {
+	uint32_t templ = rotate_noflags(opcode);
+
 	if (RD == 15)
-	{
-		uint32_t templ = rotate_noflags(opcode);
 		LOAD_R15(GETADDR(RN) ^ templ);
-	}
 	else
-	{
-		uint32_t templ = rotate_noflags(opcode);
 		armregs[RD] = GETADDR(RN) ^ templ;
-	}
 }
 
 static void opEORimmS(uint32_t opcode)
@@ -1770,28 +1712,22 @@ static void opEORimmS(uint32_t opcode)
 
 static void opSUBimm(uint32_t opcode)
 {
+	uint32_t templ = rotate_noflags(opcode);
+
 	if (RD == 15)
-	{
-		uint32_t templ = rotate_noflags(opcode);
 		LOAD_R15(GETADDR(RN) - templ);
-	}
 	else
-	{
-		uint32_t templ = rotate_noflags(opcode);
 		armregs[RD] = GETADDR(RN) - templ;
-	}
 }
 
 static void opSUBimmS(uint32_t opcode)
 {
+	uint32_t templ = rotate_noflags(opcode);
+
 	if (RD == 15)
-	{
-		uint32_t templ = rotate_noflags(opcode);
 		LOAD_R15_S(GETADDR(RN) - templ);
-	}
 	else
 	{
-		uint32_t templ = rotate_noflags(opcode);
 		setsub(GETADDR(RN), templ, GETADDR(RN) - templ);
 		armregs[RD] = GETADDR(RN) - templ;
 	}
@@ -1799,28 +1735,22 @@ static void opSUBimmS(uint32_t opcode)
 
 static void opRSBimm(uint32_t opcode)
 {
+	uint32_t templ = rotate_noflags(opcode);
+
 	if (RD == 15)
-	{
-		uint32_t templ = rotate_noflags(opcode);
 		LOAD_R15(templ - GETADDR(RN));
-	}
 	else
-	{
-		uint32_t templ = rotate_noflags(opcode);
 		armregs[RD] = templ - GETADDR(RN);
-	}
 }
 
 static void opRSBimmS(uint32_t opcode)
 {
+	uint32_t templ = rotate_noflags(opcode);
+
 	if (RD == 15)
-	{
-		uint32_t templ = rotate_noflags(opcode);
 		LOAD_R15_S(templ - GETADDR(RN));
-	}
 	else
 	{
-		uint32_t templ = rotate_noflags(opcode);
 		setsub(templ, GETADDR(RN), templ - GETADDR(RN));
 		armregs[RD] = templ - GETADDR(RN);
 	}
@@ -1828,28 +1758,22 @@ static void opRSBimmS(uint32_t opcode)
 
 static void opADDimm(uint32_t opcode)
 {
+	uint32_t templ = rotate_noflags(opcode);
+
 	if (RD == 15)
-	{
-		uint32_t templ = rotate_noflags(opcode);
 		LOAD_R15(GETADDR(RN) + templ);
-	}
 	else
-	{
-		uint32_t templ = rotate_noflags(opcode);
 		armregs[RD] = GETADDR(RN) + templ;
-	}
 }
 
 static void opADDimmS(uint32_t opcode)
 {
+	uint32_t templ = rotate_noflags(opcode);
+
 	if (RD == 15)
-	{
-		uint32_t templ = rotate_noflags(opcode);
 		LOAD_R15_S(GETADDR(RN) + templ);
-	}
 	else
 	{
-		uint32_t templ = rotate_noflags(opcode);
 		setadd(GETADDR(RN), templ, GETADDR(RN) + templ);
 		armregs[RD] = GETADDR(RN) + templ;
 	}
@@ -1861,13 +1785,9 @@ static void opADCimm(uint32_t opcode)
 	uint32_t templ = rotate_noflags(opcode);
 
 	if (RD == 15)
-	{
 		LOAD_R15(GETADDR(RN) + templ + templ2);
-	}
 	else
-	{
 		armregs[RD] = GETADDR(RN) + templ + templ2;
-	}
 }
 
 static void opADCimmS(uint32_t opcode)
@@ -1876,9 +1796,7 @@ static void opADCimmS(uint32_t opcode)
 	uint32_t templ = rotate_noflags(opcode);
 
 	if (RD == 15)
-	{
 		LOAD_R15_S(GETADDR(RN) + templ + templ2);
-	}
 	else
 	{
 		setadc(GETADDR(RN), templ,GETADDR(RN) + templ + templ2);
@@ -1888,28 +1806,22 @@ static void opADCimmS(uint32_t opcode)
 
 static void opSBCimm(uint32_t opcode)
 {
-	uint32_t templ2 = (CFSET) ? 0 : 1;
+	uint32_t templ2 = CFSET ? 0 : 1;
 	uint32_t templ = rotate_noflags(opcode);
 
 	if (RD == 15)
-	{
 		LOAD_R15(GETADDR(RN) - (templ + templ2));
-	}
 	else
-	{
 		armregs[RD] = GETADDR(RN) - (templ + templ2);
-	}
 }
 
 static void opSBCimmS(uint32_t opcode)
 {
-	uint32_t templ2 = (CFSET) ? 0 : 1;
+	uint32_t templ2 = CFSET ? 0 : 1;
 	uint32_t templ = rotate_noflags(opcode);
 
 	if (RD == 15)
-	{
 		LOAD_R15_S(GETADDR(RN) - (templ + templ2));
-	}
 	else
 	{
 		setsbc(GETADDR(RN), templ, GETADDR(RN) - (templ + templ2));
@@ -1919,28 +1831,22 @@ static void opSBCimmS(uint32_t opcode)
 
 static void opRSCimm(uint32_t opcode)
 {
-	uint32_t templ2 = (CFSET) ? 0 : 1;
+	uint32_t templ2 = CFSET ? 0 : 1;
 	uint32_t templ = rotate_noflags(opcode);
 
 	if (RD == 15)
-	{
 		LOAD_R15(templ - (GETADDR(RN) + templ2));
-	}
 	else
-	{
 		armregs[RD] = templ - (GETADDR(RN) + templ2);
-	}
 }
 
 static void opRSCimmS(uint32_t opcode)
 {
-	uint32_t templ2 = (CFSET) ? 0 : 1;
+	uint32_t templ2 = CFSET ? 0 : 1;
 	uint32_t templ = rotate_noflags(opcode);
 
 	if (RD == 15)
-	{
 		LOAD_R15_S(templ - (GETADDR(RN) + templ2));
-	}
 	else
 	{
 		setsbc(templ, GETADDR(RN), templ - (GETADDR(RN) + templ2));
@@ -1952,99 +1858,94 @@ static void opTSTimm(uint32_t opcode)
 {
 	if (RD == 15)
 	{
+		uint32_t src_data = rotate_noflags(opcode);
+
 		if (armregs[15] & 3)
 		{
 			uint32_t templ = armregs[15] & 0x3FFFFFC;
-			armregs[15] = ((GETADDR(RN) & rotate_noflags(opcode)) & 0xFC000003) | templ;
+			armregs[15] = ((GETADDR(RN) & src_data) & 0xFC000003) | templ;
 		}
 		else
 		{
 			uint32_t templ = armregs[15] & 0x0FFFFFFF;
-			armregs[15] = ((GETADDR(RN) & rotate_noflags(opcode)) & 0xF0000000) | templ;
+			armregs[15] = ((GETADDR(RN) & src_data) & 0xF0000000) | templ;
 		}
 	}
 	else
-	{
 		setzn(GETADDR(RN) & rotate(opcode));
-	}
 }
 
 static void opTEQimm(uint32_t opcode)
 {
 	if (RD == 15)
 	{
-		opcode &= ~0x100000;
+		uint32_t src_data = rotate_noflags(opcode);
+
 		if (armregs[15] & 3)
 		{
 			uint32_t templ = armregs[15] & 0x3FFFFFC;
-			armregs[15] = ((GETADDR(RN) ^ rotate_noflags(opcode)) & 0xFC000003) | templ;
+			armregs[15] = ((GETADDR(RN) ^ src_data) & 0xFC000003) | templ;
 		}
 		else
 		{
 			uint32_t templ = armregs[15] & 0x0FFFFFFF;
-			armregs[15] = ((GETADDR(RN) ^ rotate_noflags(opcode)) & 0xF0000000) | templ;
+			armregs[15] = ((GETADDR(RN) ^ src_data) & 0xF0000000) | templ;
 		}
 	}
 	else
-	{
 		setzn(GETADDR(RN) ^ rotate(opcode));
-	}
 }
 
 static void opCMPimm(uint32_t opcode)
 {
+	uint32_t src_data = rotate_noflags(opcode);
+
 	if (RD == 15)
 	{
 		if (armregs[15] & 3)
 		{
 			uint32_t templ = armregs[15] & 0x3FFFFFC;
-			armregs[15] = ((GETADDR(RN) - rotate_noflags(opcode)) & 0xFC000003) | templ;
+			armregs[15] = ((GETADDR(RN) - src_data) & 0xFC000003) | templ;
 		}
 		else
 		{
 			uint32_t templ = armregs[15] & 0x0FFFFFFF;
-			armregs[15] = ((GETADDR(RN) - rotate_noflags(opcode)) & 0xF0000000) | templ;
+			armregs[15] = ((GETADDR(RN) - src_data) & 0xF0000000) | templ;
 		}
 	}
 	else
-	{
-		setsub(GETADDR(RN), rotate_noflags(opcode), GETADDR(RN) - rotate_noflags(opcode));
-	}
+		setsub(GETADDR(RN), src_data, GETADDR(RN) - src_data);
 }
 
 static void opCMNimm(uint32_t opcode)
 {
+	uint32_t src_data = rotate_noflags(opcode);
+
 	if (RD == 15)
 	{
 		if (armregs[15] & 3)
 		{
 			uint32_t templ = armregs[15] & 0x3FFFFFC;
-			armregs[15] = ((GETADDR(RN) + rotate_noflags(opcode)) & 0xFC000003) | templ;
+			armregs[15] = ((GETADDR(RN) + src_data) & 0xFC000003) | templ;
 		}
 		else
 		{
 			uint32_t templ = armregs[15] & 0x0FFFFFFF;
-			armregs[15] = ((GETADDR(RN) + rotate_noflags(opcode)) & 0xF0000000) | templ;
+			armregs[15] = ((GETADDR(RN) + src_data) & 0xF0000000) | templ;
 		}
 	}
 	else
-	{
-		setadd(GETADDR(RN), rotate_noflags(opcode), GETADDR(RN) + rotate_noflags(opcode));
-	}
+		setadd(GETADDR(RN), src_data, GETADDR(RN) + src_data);
 }
 
 static void opORRimm(uint32_t opcode)
 {
+	uint32_t templ = rotate_noflags(opcode);
+
 	if (RD == 15)
-	{
-		uint32_t templ = rotate_noflags(opcode);
 		LOAD_R15(GETADDR(RN) | templ);
-	}
 	else
-	{
-		uint32_t templ = rotate_noflags(opcode);
 		armregs[RD] = GETADDR(RN) | templ;
-	}
 }
 
 static void opORRimmS(uint32_t opcode)
@@ -2083,16 +1984,12 @@ static void opMOVimmS(uint32_t opcode)
 
 static void opBICimm(uint32_t opcode)
 {
+	uint32_t templ = rotate_noflags(opcode);
+
 	if (RD == 15)
-	{
-		uint32_t templ = rotate_noflags(opcode);
 		LOAD_R15(GETADDR(RN) & ~templ);
-	}
 	else
-	{
-		uint32_t templ = rotate_noflags(opcode);
 		armregs[RD] = GETADDR(RN) & ~templ;
-	}
 }
 
 static void opBICimmS(uint32_t opcode)

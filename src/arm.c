@@ -2026,6 +2026,165 @@ static void opMVNimmS(uint32_t opcode)
 	}
 }
 
+#define opLDR(_op)								\
+	static void opLDR##_op(uint32_t opcode)					\
+	{									\
+		uint32_t addr, offset;						\
+		uint32_t templ;							\
+		int old_memmode = memmode;					\
+		const uint8_t op = 0x##_op;					\
+										\
+		addr = GETADDR(RN);						\
+		if (op & 0x20)							\
+		{								\
+			if (opcode & 0x10) /*Shift by register*/		\
+			{							\
+				EXCEPTION_UNDEFINED();				\
+				return;						\
+			}							\
+			offset = shift_mem(opcode);				\
+		}								\
+		else								\
+			offset = opcode & 0xFFF;				\
+		if (!(op & 0x8))						\
+			offset = -offset;					\
+		if (op & 0x10)							\
+			addr += offset;						\
+		CHECK_ADDR_EXCEPTION(addr);					\
+		if ((op & 0x12) == 0x02)					\
+			memmode = osmode ? MEMMODE_OS : MEMMODE_USER;		\
+		if (!(op & 0x04))						\
+		{								\
+			templ = readmeml(addr);					\
+			templ = ldrresult(templ, addr);				\
+		}								\
+		else								\
+			templ = readmemb(addr);					\
+		if ((op & 0x12) == 0x02)					\
+			memmode = old_memmode;					\
+		if (!databort)							\
+		{								\
+			cache_read_timing(addr, 1, 0);				\
+			if (!(op & 0x10))					\
+				armregs[RN] = addr + offset;			\
+			else if (op & 0x2)					\
+				armregs[RN] = addr;				\
+			LOADREG(RD, templ);					\
+			merge_timing(PC + 4);					\
+		}								\
+	}
+
+opLDR(41)
+opLDR(43)
+opLDR(45)
+opLDR(47)
+opLDR(49)
+opLDR(4b)
+opLDR(4d)
+opLDR(4f)
+opLDR(51)
+opLDR(53)
+opLDR(55)
+opLDR(57)
+opLDR(59)
+opLDR(5b)
+opLDR(5d)
+opLDR(5f)
+opLDR(61)
+opLDR(63)
+opLDR(65)
+opLDR(67)
+opLDR(69)
+opLDR(6b)
+opLDR(6d)
+opLDR(6f)
+opLDR(71)
+opLDR(73)
+opLDR(75)
+opLDR(77)
+opLDR(79)
+opLDR(7b)
+opLDR(7d)
+opLDR(7f)
+
+#define opSTR(_op)								\
+	static void opSTR##_op(uint32_t opcode)					\
+	{									\
+		uint32_t addr, offset;						\
+		uint32_t templ;							\
+		int old_memmode = memmode;					\
+		const uint8_t op = 0x##_op;					\
+										\
+		addr = GETADDR(RN);						\
+		if (op & 0x20)							\
+		{								\
+			if (opcode & 0x10) /*Shift by register*/		\
+			{							\
+				EXCEPTION_UNDEFINED();				\
+				return;						\
+			}							\
+			offset = shift_mem(opcode);				\
+		}								\
+		else								\
+			offset = opcode & 0xFFF;				\
+		if (!(op & 0x8))						\
+			offset = -offset;					\
+		if (op & 0x10)							\
+			addr += offset;						\
+		CHECK_ADDR_EXCEPTION(addr);					\
+		templ = (RD != 15) ? armregs[RD] : armregs[RD] + 4;		\
+		if ((op & 0x12) == 0x02)					\
+			memmode = osmode ? MEMMODE_OS : MEMMODE_USER;		\
+		if (!(op & 0x04))						\
+			writememl(addr, templ);					\
+		else								\
+			writememb(addr, templ);					\
+		if ((op & 0x12) == 0x02)					\
+			memmode = old_memmode;					\
+		if (!databort)							\
+		{								\
+			cache_write_timing(addr, 1);				\
+			if (!(op & 0x10))					\
+				armregs[RN] = addr + offset;			\
+			else if (op & 0x2)					\
+				armregs[RN] = addr;				\
+			promote_fetch_to_n = PROMOTE_NOMERGE;			\
+		}								\
+	}
+
+opSTR(40)
+opSTR(42)
+opSTR(44)
+opSTR(46)
+opSTR(48)
+opSTR(4a)
+opSTR(4c)
+opSTR(4e)
+opSTR(50)
+opSTR(52)
+opSTR(54)
+opSTR(56)
+opSTR(58)
+opSTR(5a)
+opSTR(5c)
+opSTR(5e)
+opSTR(60)
+opSTR(62)
+opSTR(64)
+opSTR(66)
+opSTR(68)
+opSTR(6a)
+opSTR(6c)
+opSTR(6e)
+opSTR(70)
+opSTR(72)
+opSTR(74)
+opSTR(76)
+opSTR(78)
+opSTR(7a)
+opSTR(7c)
+opSTR(7e)
+
 #define STMfirst()      int c; \
 			mask=1; \
 			CHECK_ADDR_EXCEPTION(addr); \
@@ -2357,366 +2516,6 @@ static void opSWI(uint32_t opcode)
 		EXCEPTION_SWI();
 }
 
-
-static void opLDRBT(uint32_t opcode)
-{
-	uint32_t addr = GETADDR(RN);
-	uint32_t addr2;
-	uint32_t templ, templ2;
-
-	if (opcode & 0x2000000)
-	{
-		if (opcode & 0x10) /*Shift by register*/
-		{
-			EXCEPTION_UNDEFINED();
-			return;
-		}
-		addr2 = shift_mem(opcode);
-	}
-	else
-		addr2 = opcode & 0xFFF;
-	if (!(opcode & 0x800000))
-		addr2 = -addr2;
-	if (opcode & 0x1000000)
-		addr += addr2;
-	CHECK_ADDR_EXCEPTION(addr);
-	templ = memmode;
-	memmode = osmode ? MEMMODE_OS : MEMMODE_USER;
-	templ2 = readmemb(addr);
-	memmode = templ;
-	if (databort)
-		return;
-	cache_read_timing(addr, 1, 0);
-	LOADREG(RD, templ2);
-	if (!(opcode & 0x1000000))
-	{
-		addr += addr2;
-		armregs[RN] = addr;
-	}
-	else if (opcode & 0x200000)
-		armregs[RN] = addr;
-	merge_timing(PC+4);
-}
-
-static void opLDRpost(uint32_t opcode)
-{
-	uint32_t addr = GETADDR(RN);
-	uint32_t addr2;
-	uint32_t templ2;
-
-	if (opcode & 0x2000000)
-	{
-		if (opcode & 0x10) /*Shift by register*/
-		{
-			EXCEPTION_UNDEFINED();
-			return;
-		}
-		addr2 = shift_mem(opcode);
-	}
-	else
-		addr2 = opcode & 0xFFF;
-	CHECK_ADDR_EXCEPTION(addr);
-	templ2 = ldrresult(readmeml(addr), addr);
-	if (databort)
-		return;
-	cache_read_timing(addr, 1, 0);
-	LOADREG(RD, templ2);
-	if (opcode & 0x800000)
-		armregs[RN] += addr2;
-	else
-		armregs[RN] -= addr2;
-	merge_timing(PC+4);
-}
-
-static void opLDRT(uint32_t opcode)
-{
-	uint32_t addr = GETADDR(RN);
-	uint32_t addr2;
-	uint32_t templ, templ2;
-
-	if (opcode & 0x2000000)
-	{
-		if (opcode & 0x10) /*Shift by register*/
-		{
-			EXCEPTION_UNDEFINED();
-			return;
-		}
-		addr2 = shift_mem(opcode);
-	}
-	else
-		addr2 = opcode & 0xFFF;
-	CHECK_ADDR_EXCEPTION(addr);
-	templ = memmode;
-	memmode = osmode ? MEMMODE_OS : MEMMODE_USER;
-	templ2 = ldrresult(readmeml(addr), addr);
-	memmode = templ;
-	if (databort)
-		return;
-	cache_read_timing(addr, 1, 0);
-	LOADREG(RD, templ2);
-	if (opcode & 0x800000)
-		armregs[RN] += addr2;
-	else
-		armregs[RN] -= addr2;
-	merge_timing(PC+4);
-}
-
-static void opSTRpost(uint32_t opcode)
-{
-	uint32_t addr = GETADDR(RN);
-	uint32_t addr2;
-
-	if (opcode & 0x2000000)
-	{
-		if (opcode & 0x10) /*Shift by register*/
-		{
-			EXCEPTION_UNDEFINED();
-			return;
-		}
-		addr2 = shift_mem(opcode);
-	}
-	else
-		addr2 = opcode & 0xFFF;
-	CHECK_ADDR_EXCEPTION(addr);
-	if (RD == 15) { writememl(addr, armregs[RD] + 4); }
-	else          { writememl(addr, armregs[RD]); }
-	if (databort)
-		return;
-	cache_write_timing(addr, 1);
-	if (opcode & 0x800000)
-		armregs[RN] += addr2;
-	else
-		armregs[RN] -= addr2;
-	promote_fetch_to_n = PROMOTE_NOMERGE;
-}
-
-static void opSTRT(uint32_t opcode)
-{
-	uint32_t addr = GETADDR(RN);
-	uint32_t addr2;
-	uint32_t templ;
-
-	if (opcode & 0x2000000)
-	{
-		if (opcode & 0x10) /*Shift by register*/
-		{
-			EXCEPTION_UNDEFINED();
-			return;
-		}
-		addr2 = shift_mem(opcode);
-	}
-	else
-		addr2 = opcode & 0xFFF;
-	CHECK_ADDR_EXCEPTION(addr);
-	templ = memmode;
-	memmode = osmode ? MEMMODE_OS : MEMMODE_USER;
-	if (RD == 15) { writememl(addr,armregs[RD]+4); }
-	else          { writememl(addr,armregs[RD]); }
-	memmode = templ;
-	if (databort)
-		return;
-	cache_write_timing(addr, 1);
-	if (opcode & 0x800000)
-		armregs[RN] += addr2;
-	else
-		armregs[RN] -= addr2;
-	promote_fetch_to_n = PROMOTE_NOMERGE;
-}
-
-static void opSTRpre(uint32_t opcode)
-{
-	uint32_t addr, addr2;
-
-	if (opcode & 0x2000000)
-	{
-		if (opcode & 0x10) /*Shift by register*/
-		{
-			EXCEPTION_UNDEFINED();
-			return;
-		}
-		addr2 = shift_mem(opcode);
-	}
-	else
-		addr2 = opcode & 0xFFF;
-	if (opcode & 0x800000)
-		addr = GETADDR(RN) + addr2;
-	else
-		addr = GETADDR(RN) - addr2;
-	CHECK_ADDR_EXCEPTION(addr);
-	if (RD==15) { writememl(addr,armregs[RD]+4); }
-	else        { writememl(addr,armregs[RD]); }
-	if (databort)
-		return;
-	cache_write_timing(addr, 1);
-	if (opcode & 0x200000)
-		armregs[RN] = addr;
-	promote_fetch_to_n = PROMOTE_NOMERGE;
-}
-
-static void opSTRBpost(uint32_t opcode)
-{
-	uint32_t addr, addr2;
-
-	addr = GETADDR(RN);
-	if (opcode & 0x2000000)
-	{
-		if (opcode & 0x10) /*Shift by register*/
-		{
-			EXCEPTION_UNDEFINED();
-			return;
-		}
-		addr2 = shift_mem(opcode);
-	}
-	else
-		addr2 = opcode & 0xFFF;
-	CHECK_ADDR_EXCEPTION(addr);
-	writememb(addr, armregs[RD]);
-	if (databort)
-		return;
-	cache_write_timing(addr, 1);
-	if (opcode & 0x800000)
-		armregs[RN] += addr2;
-	else
-		armregs[RN] -= addr2;
-	promote_fetch_to_n = PROMOTE_NOMERGE;
-}
-
-static void opSTRBT(uint32_t opcode)
-{
-	uint32_t addr, addr2;
-	uint32_t templ;
-
-	addr = GETADDR(RN);
-	if (opcode & 0x2000000)
-	{
-		if (opcode & 0x10) /*Shift by register*/
-		{
-			EXCEPTION_UNDEFINED();
-			return;
-		}
-		addr2 = shift_mem(opcode);
-	}
-	else
-		addr2 = opcode & 0xFFF;
-	CHECK_ADDR_EXCEPTION(addr);
-	writememb(addr, armregs[RD]);
-	templ = memmode;
-	memmode = osmode ? MEMMODE_OS : MEMMODE_USER;
-	if (databort)
-		return;
-	cache_write_timing(addr, 1);
-	memmode = templ;
-	if (opcode & 0x800000)
-		armregs[RN] += addr2;
-	else
-		armregs[RN] -= addr2;
-	promote_fetch_to_n = PROMOTE_NOMERGE;
-}
-
-static void opSTRBpre(uint32_t opcode)
-{
-	uint32_t addr, addr2;
-
-	if (opcode & 0x2000000)
-	{
-		if (opcode & 0x10) /*Shift by register*/
-		{
-			EXCEPTION_UNDEFINED();
-			return;
-		}
-		addr2 = shift_mem(opcode);
-	}
-	else
-		addr2 = opcode & 0xFFF;
-	if (opcode & 0x800000)
-		addr = GETADDR(RN) + addr2;
-	else
-		addr = GETADDR(RN) - addr2;
-	CHECK_ADDR_EXCEPTION(addr);
-	writememb(addr, armregs[RD]);
-	if (databort)
-		return;
-	cache_write_timing(addr, 1);
-	if (opcode & 0x200000)
-		armregs[RN] = addr;
-	promote_fetch_to_n = PROMOTE_NOMERGE;
-}
-
-static void opLDRpre(uint32_t opcode)
-{
-	uint32_t addr, addr2;
-	uint32_t templ;
-
-	addr = GETADDR(RN);
-	if (opcode & 0x2000000)
-	{
-		if (opcode & 0x10) /*Shift by register*/
-		{
-			EXCEPTION_UNDEFINED();
-			return;
-		}
-		addr2 = shift_mem(opcode);
-	}
-	else
-		addr2 = opcode & 0xFFF;
-	if (!(opcode & 0x800000))
-		addr2 = -addr2;
-	if (opcode & 0x1000000)
-		addr += addr2;
-	CHECK_ADDR_EXCEPTION(addr);
-	templ = readmeml(addr);
-	templ = ldrresult(templ, addr);
-	if (databort)
-		return;
-	cache_read_timing(addr, 1, 0);
-	if (!(opcode & 0x1000000))
-	{
-		addr += addr2;
-		armregs[RN] = addr;
-	}
-	else if (opcode & 0x200000)
-		armregs[RN] = addr;
-	LOADREG(RD, templ);
-	merge_timing(PC+4);
-}
-
-static void opLDRB(uint32_t opcode)
-{
-	uint32_t addr, addr2;
-	uint32_t templ;
-
-	addr = GETADDR(RN);
-	if (opcode & 0x2000000)
-	{
-		if (opcode & 0x10) /*Shift by register*/
-		{
-			EXCEPTION_UNDEFINED();
-			return;
-		}
-		addr2 = shift_mem(opcode);
-	}
-	else
-		addr2 = opcode & 0xFFF;
-	if (!(opcode&0x800000))
-		addr2=-addr2;
-	if (opcode&0x1000000)
-		addr+=addr2;
-	CHECK_ADDR_EXCEPTION(addr);
-	templ = readmemb(addr);
-	if (databort)
-		return;
-	cache_read_timing(addr, 1, 0);
-	if (!(opcode & 0x1000000))
-	{
-		addr += addr2;
-		armregs[RN] = addr;
-	}
-	else if (opcode & 0x200000)
-		armregs[RN] = addr;
-	armregs[RD] = templ;
-	merge_timing(PC+4);
-}
-
 static const OpFn opcode_fns[256] =
 {
 /*00*/	opANDreg,	opANDregS,	opEORreg,	opEORregS,	opSUBreg,	opSUBregS,	opRSBreg,	opRSBregS,
@@ -2728,14 +2527,14 @@ static const OpFn opcode_fns[256] =
 /*30*/	opUNDEF,	opTSTimm,	opNULL,		opTEQimm,	opUNDEF,	opCMPimm,	opNULL,		opCMNimm,
 /*38*/	opORRimm,	opORRimmS,	opMOVimm,	opMOVimmS,	opBICimm,	opBICimmS,	opMVNimm,	opMVNimmS,
 
-/*40*/	opSTRpost,	opLDRpost,	opSTRT,		opLDRT,		opSTRBpost,	opLDRB,		opSTRBT,	opLDRBT,
-/*48*/	opSTRpost,	opLDRpost,	opSTRT,		opLDRT,		opSTRBpost,	opLDRB,		opSTRBT,	opLDRBT,
-/*50*/	opSTRpre,	opLDRpre,	opSTRpre,	opLDRpre,	opSTRBpre,	opLDRB,		opSTRBpre,	opLDRB,
-/*58*/	opSTRpre,	opLDRpre,	opSTRpre,	opLDRpre,	opSTRBpre,	opLDRB,		opSTRBpre,	opLDRB,
-/*60*/	opSTRpost,	opLDRpost,	opSTRT,		opLDRT,		opSTRBpost,	opLDRB,		opSTRBT,	opLDRBT,
-/*68*/	opSTRpost,	opLDRpost,	opSTRT,		opLDRT,		opSTRBpost,	opLDRB,		opSTRBT,	opLDRBT,
-/*70*/	opSTRpre,	opLDRpre,	opSTRpre,	opLDRpre,	opSTRBpre,	opLDRB,		opSTRBpre,	opLDRB,
-/*78*/	opSTRpre,	opLDRpre,	opSTRpre,	opLDRpre,	opSTRBpre,	opLDRB,		opSTRBpre,	opLDRB,
+/*40*/	opSTR40,	opLDR41,	opSTR42,	opLDR43,	opSTR44,	opLDR45,	opSTR46,	opLDR47,
+/*48*/	opSTR48,	opLDR49,	opSTR4a,	opLDR4b,	opSTR4c,	opLDR4d,	opSTR4e,	opLDR4f,
+/*50*/	opSTR50,	opLDR51,	opSTR52,	opLDR53,	opSTR54,	opLDR55,	opSTR56,	opLDR57,
+/*58*/	opSTR58,	opLDR59,	opSTR5a,	opLDR5b,	opSTR5c,	opLDR5d,	opSTR5e,	opLDR5f,
+/*60*/	opSTR60,	opLDR61,	opSTR62,	opLDR63,	opSTR64,	opLDR65,	opSTR66,	opLDR67,
+/*68*/	opSTR68,	opLDR69,	opSTR6a,	opLDR6b,	opSTR6c,	opLDR6d,	opSTR6e,	opLDR6f,
+/*70*/	opSTR70,	opLDR71,	opSTR72,	opLDR73,	opSTR74,	opLDR75,	opSTR76,	opLDR77,
+/*78*/	opSTR78,	opLDR79,	opSTR7a,	opLDR7b,	opSTR7c,	opLDR7d,	opSTR7e,	opLDR7f,
 
 /*80*/	opSTMD,		opLDMD,		opSTMD,		opLDMD,		opSTMDS,	opLDMDS,	opSTMDS,	opLDMDS,
 /*88*/	opSTMI,		opLDMI,		opSTMI,		opLDMI,		opSTMIS,	opLDMIS,	opSTMIS,	opLDMIS,

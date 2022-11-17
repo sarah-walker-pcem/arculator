@@ -2559,8 +2559,7 @@ static const OpFn opcode_fns[256] =
   (cycs=80k for an 8MHz ARM2).*/
 void execarm(int cycles_to_execute)
 {
-	uint32_t templ,templ2,mask,addr,addr2;
-	int c;
+	uint32_t templ,templ2;
 	int cyc; /*Number of clock ticks executed in the last loop*/
 
 	int clock_ticks_executed = 0;

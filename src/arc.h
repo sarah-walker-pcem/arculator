@@ -102,8 +102,7 @@ extern void writecp15(int reg, uint32_t val);
 
 /*Memory*/
 extern int modepritabler[3][6],modepritablew[3][6];
-extern uint32_t *mempoint[0x4000];
-extern uint8_t *mempointb[0x4000];
+extern uint8_t *mempoint[0x4000];
 extern int memstat[0x4000];
 extern uint32_t *ram,*rom;
 extern uint8_t *romb;
@@ -120,11 +119,11 @@ extern void resizemem(int memsize);
 extern int loadrom();
 extern void resetpagesize(int pagesize);
 
-#define readmemb(a)    ((modepritabler[memmode][memstat[((a)>>12)&0x3FFF]])?mempointb[((a)>>12)&0x3FFF][(a)&0xFFF]:readmemfb(a))
-#define readmeml(a)    ((modepritabler[memmode][memstat[((a)>>12)&0x3FFF]])?mempoint[((a)>>12)&0x3FFF][((a)&0xFFF)>>2]:readmemfl(a))
-#define writememb(a,v) do { if (modepritablew[memmode][memstat[((a)>>12)&0x3FFF]]) mempointb[((a)>>12)&0x3FFF][(a)&0xFFF]=(v&0xFF); else { writememfb(a,v); } } while (0)
-#define writememl(a,v) do { if (modepritablew[memmode][memstat[((a)>>12)&0x3FFF]]) mempoint[((a)>>12)&0x3FFF][((a)&0xFFF)>>2]=v; else { writememfl(a,v); } } while (0)
-#define readmemff(a)    ((modepritabler[memmode][memstat[((a)>>12)&0x3FFF]])?mempoint[((a)>>12)&0x3FFF][((a)&0xFFF)>>2]:readmemf(a))
+#define readmemb(a)    ((modepritabler[memmode][memstat[((a) >> 12) & 0x3FFF]]) ? mempoint[((a) >> 12) & 0x3FFF][(a) & 0xFFF] : readmemfb(a))
+#define readmeml(a)    ((modepritabler[memmode][memstat[((a) >> 12) & 0x3FFF]]) ? *(uint32_t *)&mempoint[((a) >> 12) & 0x3FFF][(a) & 0xFFC] : readmemfl(a))
+#define writememb(a,v) do { if (modepritablew[memmode][memstat[((a) >> 12) & 0x3FFF]]) mempoint[((a) >> 12) & 0x3FFF][(a) & 0xFFF] = v; else { writememfb(a, v); } } while (0)
+#define writememl(a,v) do { if (modepritablew[memmode][memstat[((a) >> 12) & 0x3FFF]]) *(uint32_t *)&mempoint[((a) >> 12) & 0x3FFF][(a) & 0xFFC] = v; else { writememfl(a, v); } } while (0)
+#define readmemff(a)    ((modepritabler[memmode][memstat[((a) >> 12) & 0x3FFF]]) ? *(uint32_t *)&mempoint[((a) >> 12) & 0x3FFF][(a) & 0xFFC] : readmemf(a))
 
 extern uint32_t readmemf(uint32_t a);
 extern uint8_t readmemfb(uint32_t a);

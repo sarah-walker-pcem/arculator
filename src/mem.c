@@ -46,8 +46,7 @@ uint32_t *ram,*rom;
 uint8_t *rom_5th_column;
 uint8_t *romb;
 uint8_t *rom_arcrom;
-uint32_t *mempoint[0x4000];
-uint8_t *mempointb[0x4000];
+uint8_t *mempoint[0x4000];
 int memstat[0x4000];
 int memmode;
 
@@ -73,15 +72,16 @@ void initmem(int memsize)
 	rom_5th_column = (uint8_t *)malloc(0x20000);
 	for (c=0;c<0x4000;c++) memstat[c]=0;
 	resetpagesize(0);
-	for (c=0x3800;c<0x3fc0;c++) memstat[c]=5;
-	for (c=0x3800;c<0x4000;c++) mempoint[c]=&rom[(c&0x1FF)<<10];
+	for (c = 0x3800; c < 0x3fc0; c++)
+		memstat[c] = 5;
+	for (c = 0x3800; c < 0x4000; c++)
+		mempoint[c] = (uint8_t *)&rom[(c & 0x1FF) << 10];
 	for (c = 0x3fc0; c < 0x4000; c++) /*Map support ROM at end of address space*/
 		memstat[c] = support_rom_enabled ? 0 : 5;
 
 	memset(ram,0,memsize*1024);
 	memstat[0]=1;
-	mempoint[0]=rom;
-	for (c=0;c<0x4000;c++) mempointb[c]=(uint8_t *)mempoint[c];
+	mempoint[0] = (uint8_t *)rom;
 	realmemsize=memsize;
 
 
@@ -151,8 +151,6 @@ void resizemem(int memsize) /*memsize is 4096,8192,16384*/
 
 	resetpagesize(0);
 
-	for (c=0;c<0x4000;c++) mempointb[c]=(uint8_t *)mempoint[c];
-
 	for (c = 0x3fc0; c < 0x4000; c++) /*Map support ROM at end of address space*/
 		memstat[c] = support_rom_enabled ? 0 : 5;
 }
@@ -167,9 +165,8 @@ void resetpagesize(int pagesize)
 		{
 			e=c&1023;
 			e=(e&1)|((e&~3)<<1);
-			mempoint[c]=&ram[((e&0x3FF)<<10)];
+			mempoint[c] = (uint8_t *)&ram[((e & 0x3FF) << 10)];
 		}
-		for (c=0x2000;c<0x3000;c++) mempointb[c]=(uint8_t *)mempoint[c];
 	}
 	else if (pagesize==3 && realmemsize==1024)
 	{
@@ -177,9 +174,8 @@ void resetpagesize(int pagesize)
 		{
 			e=c&511;
 			e=(e&1)|((e&~3)<<1);
-			mempoint[c]=&ram[((e&0x1FF)<<10)];
+			mempoint[c] = (uint8_t *)&ram[((e & 0x1FF) << 10)];
 		}
-		for (c=0x2000;c<0x3000;c++) mempointb[c]=(uint8_t *)mempoint[c];
 	}
 	else if (pagesize==3 && realmemsize==512)
 	{
@@ -187,9 +183,8 @@ void resetpagesize(int pagesize)
 		{
 			e=c&255;
 			e=(e&1)|((e&~3)<<1);
-			mempoint[c]=&ram[((e&0xFF)<<10)];
+			mempoint[c] = (uint8_t *)&ram[((e & 0xFF) << 10)];
 		}
-		for (c=0x2000;c<0x3000;c++) mempointb[c]=(uint8_t *)mempoint[c];
 	}
 	else
 	{
@@ -198,7 +193,7 @@ void resetpagesize(int pagesize)
 			for (c = 0x2000; c < 0x2c00; c++)
 			{
 				memstat[c] = 3;
-				mempoint[c] = &ram[(c & 0xfff) << 10];
+				mempoint[c] = (uint8_t *)&ram[(c & 0xfff) << 10];
 			}
 			for (c = 0x2c00; c < 0x3000; c++)
 				memstat[c] = 0;
@@ -207,11 +202,10 @@ void resetpagesize(int pagesize)
 		{
 			for (c = 0x2000; c < 0x3000; c++)
 			{
-				mempoint[c] = &ram[(c & d) << 10];
+				mempoint[c] = (uint8_t *)&ram[(c & d) << 10];
 				memstat[c] = 3;
 			}
 		}
-		for (c=0x2000;c<0x3000;c++) mempointb[c]=(uint8_t *)mempoint[c];
 	}
 }
 
@@ -531,7 +525,7 @@ uint32_t readmemf_debug(uint32_t a)
 	a &= 0x3FFFFFC;
 
 	if (mempoint[a >> 12])
-		return mempoint[a >> 12][(a & 0xfff) >> 2];
+		return *(uint32_t *)&mempoint[a >> 12][a & 0xfff];
 
 	return 0xffffffff;
 }
@@ -541,14 +535,14 @@ void writememfb_debug(uint32_t a, uint8_t v)
 	a &= 0x3FFFFFC;
 
 	if (mempoint[a >> 12])
-		((uint8_t *)mempoint[a >> 12])[a & 0xfff] = v;
+		mempoint[a >> 12][a & 0xfff] = v;
 }
 void writememfl_debug(uint32_t a, uint32_t v)
 {
 	a &= 0x3FFFFFC;
 
 	if (mempoint[a >> 12])
-		mempoint[a >> 12][(a & 0xfff) >> 2] = v;
+		*(uint32_t *)&mempoint[a >> 12][a & 0xfff] = v;
 }
 
 int f42count=0;

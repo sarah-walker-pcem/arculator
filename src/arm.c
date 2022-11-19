@@ -707,8 +707,8 @@ void resetarm()
 	armregs[15]=0x0C00000B;
 	mode=3;
 	memmode = MEMMODE_SUPER;
-	memstat[0]=1;
-	mempoint[0]=rom;
+	memstat[0] = 1;
+	mempoint[0] = (uint8_t *)rom;
 	refillpipeline2();
 	resetcp15();
 	resetfpa();
@@ -1019,8 +1019,8 @@ int ldrlookup[4]={0,8,16,24};
 				if (modepritabler[memmode][templ]) \
 				{ \
 					pccache=templ2; \
-					pccache2=mempoint[templ2]; \
-					opcode=mempoint[templ2][(addr&0xFFF)>>2]; \
+					pccache2 = (uint32_t *)mempoint[templ2]; \
+					opcode = pccache2[(addr & 0xFFF) >> 2]; \
 					cyc_s = mem_speed[templ2 & 0x3fff][0];  \
 					cyc_n = mem_speed[templ2 & 0x3fff][1];  \
 				} \
@@ -2604,8 +2604,8 @@ void execarm(int cycles_to_execute)
 			if (modepritabler[memmode][templ])
 			{
 				pccache = templ2;
-				pccache2 = mempoint[templ2];
-				opcode3 = mempoint[templ2][(PC & 0xFFF) >> 2];
+				pccache2 = (uint32_t *)mempoint[templ2];
+				opcode3 = pccache2[(PC & 0xFFF) >> 2];
 				cyc_s = mem_speed[templ2 & 0x3fff][0];
 				cyc_n = mem_speed[templ2 & 0x3fff][1];
 			}

@@ -2582,9 +2582,6 @@ static const OpFn opcode_fns[256] =
 void execarm(int cycles_to_execute)
 {
 	uint32_t templ,templ2;
-	int cyc; /*Number of clock ticks executed in the last loop*/
-
-	int clock_ticks_executed = 0;
 
 	LOG_EVENT_LOOP("execarm(%d) total_cycles=%i\n", cycles_to_execute, total_cycles);
 
@@ -2621,11 +2618,14 @@ void execarm(int cycles_to_execute)
 		cache_read_timing(PC, ((PC & 0xc) && !promote_fetch_to_n) ? 0 : 1, promote_fetch_to_n);
 		promote_fetch_to_n = PROMOTE_NONE;
 
-		if (debugon && !prefabort)
-			debugger_do();
+		if (!prefabort)
+		{
+			if (debugon)
+				debugger_do();
 
-		if (flaglookup[opcode >> 28][armregs[15] >> 28] && !prefabort)
-			opcode_fns[(opcode >> 20) & 0xff](opcode);
+			if (flaglookup[opcode >> 28][armregs[15] >> 28])
+				opcode_fns[(opcode >> 20) & 0xff](opcode);
+		}
 
 		if (databort|armirq|prefabort)
 		{
@@ -2670,7 +2670,7 @@ void execarm(int cycles_to_execute)
 			dumpregs();
 			fatal("Mode mismatch\n");
 		}
-#endif
+
 		if (output)
 		{
 			rpclog("%05i : %07X %08X %08X %08X %08X %08X %08X %08X %08X",ins,PC-8,armregs[0],armregs[1],armregs[2],armregs[3],armregs[4],armregs[5],armregs[6],armregs[7]);
@@ -2687,18 +2687,15 @@ void execarm(int cycles_to_execute)
 				}
 			}
 		}
-
-		inscount++;
 		ins++;
+#endif
 
 		if (TIMER_VAL_LESS_THAN_VAL(timer_target, tsc >> 32))
 			timer_process();
 
-		cyc = (int)((tsc - oldcyc) >> 32); /*Number of clock ticks executed*/
-		clock_ticks_executed += cyc;
 		total_cycles -= (tsc - oldcyc);
 
 	}
-	LOG_EVENT_LOOP("execarm() finished; clock ticks=%d, and called pollline() %d times (should be ~160)\n",
-		clock_ticks_executed, pollline_call_count);
+	LOG_EVENT_LOOP("execarm() finished; and called pollline() %d times (should be ~160)\n",
+		pollline_call_count);
 }

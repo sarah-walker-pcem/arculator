@@ -1472,6 +1472,8 @@ static void opTSTreg(uint32_t opcode)
 		{
 			uint32_t templ = armregs[15] & 0x3FFFFFC;
 			armregs[15] = ((GETADDR(RN) & src_data) & 0xFC000003) | templ;
+			if ((armregs[15] & 3) != mode)
+				updatemode(armregs[15] & 3);
 		}
 		else
 		{
@@ -1493,6 +1495,8 @@ static void opTEQreg(uint32_t opcode)
 		{
 			uint32_t templ = armregs[15] & 0x3FFFFFC;
 			armregs[15] = ((GETADDR(RN) ^ src_data) & 0xFC000003) | templ;
+			if ((armregs[15] & 3) != mode)
+				updatemode(armregs[15] & 3);
 		}
 		else
 		{
@@ -1540,6 +1544,8 @@ static void opCMPreg(uint32_t opcode)
 		{
 			uint32_t templ = armregs[15] & 0x3FFFFFC;
 			armregs[15] = ((GETADDR(RN) - src_data) & 0xFC000003) | templ;
+			if ((armregs[15] & 3) != mode)
+				updatemode(armregs[15] & 3);
 		}
 		else
 		{
@@ -1561,6 +1567,8 @@ static void opCMNreg(uint32_t opcode)
 		{
 			uint32_t templ = armregs[15] & 0x3FFFFFC;
 			armregs[15] = ((GETADDR(RN) + src_data) & 0xFC000003) | templ;
+			if ((armregs[15] & 3) != mode)
+				updatemode(armregs[15] & 3);
 		}
 		else
 		{
@@ -1864,6 +1872,8 @@ static void opTSTimm(uint32_t opcode)
 		{
 			uint32_t templ = armregs[15] & 0x3FFFFFC;
 			armregs[15] = ((GETADDR(RN) & src_data) & 0xFC000003) | templ;
+			if ((armregs[15] & 3) != mode)
+				updatemode(armregs[15] & 3);
 		}
 		else
 		{
@@ -1885,6 +1895,8 @@ static void opTEQimm(uint32_t opcode)
 		{
 			uint32_t templ = armregs[15] & 0x3FFFFFC;
 			armregs[15] = ((GETADDR(RN) ^ src_data) & 0xFC000003) | templ;
+			if ((armregs[15] & 3) != mode)
+				updatemode(armregs[15] & 3);
 		}
 		else
 		{
@@ -1906,6 +1918,8 @@ static void opCMPimm(uint32_t opcode)
 		{
 			uint32_t templ = armregs[15] & 0x3FFFFFC;
 			armregs[15] = ((GETADDR(RN) - src_data) & 0xFC000003) | templ;
+			if ((armregs[15] & 3) != mode)
+				updatemode(armregs[15] & 3);
 		}
 		else
 		{
@@ -1927,6 +1941,8 @@ static void opCMNimm(uint32_t opcode)
 		{
 			uint32_t templ = armregs[15] & 0x3FFFFFC;
 			armregs[15] = ((GETADDR(RN) + src_data) & 0xFC000003) | templ;
+			if ((armregs[15] & 3) != mode)
+				updatemode(armregs[15] & 3);
 		}
 		else
 		{
@@ -2285,8 +2301,14 @@ opSTR(7e)
 				cache_read_timing(addr, first_access || !(addr & 0xc), 0); \
 				if (!databort) \
 				{ \
-					if (armregs[15] & 3) armregs[15] = (templ + 4); \
-					else                 armregs[15] = (armregs[15] & 0x0C000003) | ((templ + 4) & 0xF3FFFFFC); \
+					if (armregs[15] & 3) \
+					{ \
+						armregs[15] = (templ + 4); \
+						if ((armregs[15] & 3) != mode) \
+							updatemode(armregs[15] & 3); \
+					} \
+					else \
+						armregs[15] = (armregs[15] & 0x0C000003) | ((templ + 4) & 0xF3FFFFFC); \
 				} \
 				refillpipeline(); \
 			} \
@@ -2642,9 +2664,13 @@ void execarm(int cycles_to_execute)
 		prefabort = prefabort_next;
 		armirq = irq;
 		armregs[15] += 4;
+#ifndef RELEASE_BUILD
 		if ((armregs[15] & 3) != mode)
-			updatemode(armregs[15] & 3);
-
+		{
+			dumpregs();
+			fatal("Mode mismatch\n");
+		}
+#endif
 		if (output)
 		{
 			rpclog("%05i : %07X %08X %08X %08X %08X %08X %08X %08X %08X",ins,PC-8,armregs[0],armregs[1],armregs[2],armregs[3],armregs[4],armregs[5],armregs[6],armregs[7]);

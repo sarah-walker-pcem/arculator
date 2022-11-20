@@ -101,11 +101,10 @@ extern uint32_t readcp15(int reg);
 extern void writecp15(int reg, uint32_t val);
 
 /*Memory*/
-extern int modepritabler[3][6],modepritablew[3][6];
+extern const int modepritabler[3][8],modepritablew[3][8];
 extern uint8_t *mempoint[0x4000];
-extern int memstat[0x4000];
+extern uint8_t memstat[0x4000];
 extern uint32_t *ram,*rom;
-extern uint8_t *romb;
 
 enum {
 	MEMMODE_USER,

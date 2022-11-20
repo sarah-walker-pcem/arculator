@@ -44,10 +44,9 @@ int realmemsize;
 
 uint32_t *ram,*rom;
 uint8_t *rom_5th_column;
-uint8_t *romb;
 uint8_t *rom_arcrom;
 uint8_t *mempoint[0x4000];
-int memstat[0x4000];
+uint8_t memstat[0x4000];
 int memmode;
 
 static void mem_recalc_mem_spd_multi(void)
@@ -68,7 +67,6 @@ void initmem(int memsize)
 	ram=(uint32_t *)malloc(memsize*1024);
 	rom=(uint32_t *)malloc(0x200000);
 	rom_arcrom = malloc(0x10000);
-	romb = (uint8_t *)rom;
 	rom_5th_column = (uint8_t *)malloc(0x20000);
 	for (c=0;c<0x4000;c++) memstat[c]=0;
 	resetpagesize(0);

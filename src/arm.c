@@ -564,17 +564,16 @@ static int mode;
 #define GETADDR(r) ((r==15)?(armregs[15]&0x3FFFFFC):armregs[r])
 #define LOADREG(r,v) if (r==15) { armregs[15]=(armregs[15]&0xFC000003)|((v+4)&0x3FFFFFC); refillpipeline(); } else armregs[r]=v;
 #define GETREG(r) ((r==15) ? armregs[15]+4 : armregs[r])
-#define LDRRESULT(a,v) ((a&3)?(v>>((a&3)<<3))|(v<<(((a&3)^3)<<3)):v)
 
 /*0=i/o, 1=all, 2=r/o, 3=os r/o, 4=super only, 5=read mem, write io*/
 /*0=user, 1=os, 2=super*/
-int modepritabler[3][6]=
+const int modepritabler[3][8]=
 {
 	{0,1,1,0,0,1},
 	{0,1,1,1,0,1},
 	{0,1,1,1,1,1}
 };
-int modepritablew[3][6]=
+const int modepritablew[3][8]=
 {
 	{0,1,0,0,0,0},
 	{0,1,1,0,0,0},
@@ -1005,9 +1004,7 @@ static inline uint32_t shift_mem(uint32_t opcode)
 	return 0;
 }
 
-int ldrlookup[4]={0,8,16,24};
-
-#define ldrresult(v,a) ((v>>ldrlookup[addr&3])|(v<<(32-ldrlookup[addr&3])))
+#define ldrresult(v,a) ((v >> (((a) & 3) << 3)) | (v << (32 - (((a) & 3) << 3))))
 
 #define readmemfff(addr,opcode) \
 			if ((addr>>12)==pccache) \

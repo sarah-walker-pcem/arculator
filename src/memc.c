@@ -158,7 +158,7 @@ void writecam(uint32_t a)
 		{
 			memcpages[logical+c]=page<<13;
 			memstat[logical+c]=access+1;
-			mempoint[logical + c] = (uint8_t *)&ram[(page << 11) + (c << 10)];
+			mempoint[logical + c] = ((uint8_t *)&ram[(page << 11) + (c << 10)]) - ((logical + c) << 12);
 		}
 		break;
 //                #endif
@@ -180,7 +180,7 @@ void writecam(uint32_t a)
 		{
 			memcpages[logical+c]=page<<14;
 			memstat[logical+c]=access+1;
-			mempoint[logical + c] = (uint8_t *)&ram[(page << 12) + (c << 10)];
+			mempoint[logical + c] = ((uint8_t *)&ram[(page << 12) + (c << 10)]) - ((logical + c) << 12);
 		}
 		break;
 		case 3: /*32k*/
@@ -206,7 +206,7 @@ void writecam(uint32_t a)
 		{
 			memcpages[logical+c]=page<<15;
 			memstat[logical+c]=access+1;
-			mempoint[logical + c] = (uint8_t *)&ram[(page << 13) + (c << 10)];
+			mempoint[logical + c] = ((uint8_t *)&ram[(page << 13) + (c << 10)]) - ((logical + c) << 12);
 		}
 		break;
 	}

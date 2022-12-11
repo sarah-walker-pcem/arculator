@@ -1008,7 +1008,7 @@ static inline uint32_t shift_mem(uint32_t opcode)
 
 #define readmemfff(addr,opcode) \
 			if ((addr>>12)==pccache) \
-			   opcode=pccache2[(addr&0xFFF)>>2]; \
+				opcode = pccache2[addr >> 2]; \
 			else \
 			{ \
 				templ2=addr>>12; \
@@ -1016,8 +1016,8 @@ static inline uint32_t shift_mem(uint32_t opcode)
 				if (modepritabler[memmode][templ]) \
 				{ \
 					pccache=templ2; \
-					pccache2 = (uint32_t *)mempoint[templ2]; \
-					opcode = pccache2[(addr & 0xFFF) >> 2]; \
+					pccache2 = (uint32_t *)(mempoint[templ2]); \
+					opcode = pccache2[addr >> 2]; \
 					cyc_s = mem_speed[templ2 & 0x3fff][0];  \
 					cyc_n = mem_speed[templ2 & 0x3fff][1];  \
 				} \
@@ -2149,7 +2149,7 @@ opLDR(7f)
 		if ((op & 0x12) == 0x02)					\
 			memmode = osmode ? MEMMODE_OS : MEMMODE_USER;		\
 		if (!(op & 0x04))						\
-			writememl(addr, templ);					\
+			writememl(addr, templ);				\
 		else								\
 			writememb(addr, templ);					\
 		if ((op & 0x12) == 0x02)					\
@@ -2593,7 +2593,7 @@ void execarm(int cycles_to_execute)
 		opcode = opcode2;
 		opcode2 = opcode3;
 		if ((PC >> 12) == pccache)
-			opcode3 = pccache2[(PC & 0xFFF) >> 2];
+			opcode3 = pccache2[PC >> 2];
 		else
 		{
 			templ2 = PC >> 12;
@@ -2602,7 +2602,7 @@ void execarm(int cycles_to_execute)
 			{
 				pccache = templ2;
 				pccache2 = (uint32_t *)mempoint[templ2];
-				opcode3 = pccache2[(PC & 0xFFF) >> 2];
+				opcode3 = pccache2[PC >> 2];
 				cyc_s = mem_speed[templ2 & 0x3fff][0];
 				cyc_n = mem_speed[templ2 & 0x3fff][1];
 			}

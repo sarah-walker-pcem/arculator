@@ -73,7 +73,7 @@ void initmem(int memsize)
 	for (c = 0x3800; c < 0x3fc0; c++)
 		memstat[c] = 5;
 	for (c = 0x3800; c < 0x4000; c++)
-		mempoint[c] = (uint8_t *)&rom[(c & 0x1FF) << 10];
+		mempoint[c] = ((uint8_t *)&rom[(c & 0x1FF) << 10]) - (c << 12);
 	for (c = 0x3fc0; c < 0x4000; c++) /*Map support ROM at end of address space*/
 		memstat[c] = support_rom_enabled ? 0 : 5;
 
@@ -163,7 +163,7 @@ void resetpagesize(int pagesize)
 		{
 			e=c&1023;
 			e=(e&1)|((e&~3)<<1);
-			mempoint[c] = (uint8_t *)&ram[((e & 0x3FF) << 10)];
+			mempoint[c] = ((uint8_t *)&ram[((e & 0x3FF) << 10)]) - (c << 12);
 		}
 	}
 	else if (pagesize==3 && realmemsize==1024)
@@ -172,7 +172,7 @@ void resetpagesize(int pagesize)
 		{
 			e=c&511;
 			e=(e&1)|((e&~3)<<1);
-			mempoint[c] = (uint8_t *)&ram[((e & 0x1FF) << 10)];
+			mempoint[c] = ((uint8_t *)&ram[((e & 0x1FF) << 10)]) - (c << 12);
 		}
 	}
 	else if (pagesize==3 && realmemsize==512)
@@ -181,7 +181,7 @@ void resetpagesize(int pagesize)
 		{
 			e=c&255;
 			e=(e&1)|((e&~3)<<1);
-			mempoint[c] = (uint8_t *)&ram[((e & 0xFF) << 10)];
+			mempoint[c] = ((uint8_t *)&ram[((e & 0xFF) << 10)]) - (c << 12);
 		}
 	}
 	else
@@ -191,7 +191,7 @@ void resetpagesize(int pagesize)
 			for (c = 0x2000; c < 0x2c00; c++)
 			{
 				memstat[c] = 3;
-				mempoint[c] = (uint8_t *)&ram[(c & 0xfff) << 10];
+				mempoint[c] = ((uint8_t *)&ram[(c & 0xfff) << 10]) - (c << 12);
 			}
 			for (c = 0x2c00; c < 0x3000; c++)
 				memstat[c] = 0;
@@ -200,7 +200,7 @@ void resetpagesize(int pagesize)
 		{
 			for (c = 0x2000; c < 0x3000; c++)
 			{
-				mempoint[c] = (uint8_t *)&ram[(c & d) << 10];
+				mempoint[c] = ((uint8_t *)&ram[(c & d) << 10]) - (c << 12);
 				memstat[c] = 3;
 			}
 		}
@@ -523,7 +523,7 @@ uint32_t readmemf_debug(uint32_t a)
 	a &= 0x3FFFFFC;
 
 	if (mempoint[a >> 12])
-		return *(uint32_t *)&mempoint[a >> 12][a & 0xfff];
+		return *(uint32_t *)&mempoint[a >> 12][a];
 
 	return 0xffffffff;
 }
@@ -533,14 +533,14 @@ void writememfb_debug(uint32_t a, uint8_t v)
 	a &= 0x3FFFFFC;
 
 	if (mempoint[a >> 12])
-		mempoint[a >> 12][a & 0xfff] = v;
+		mempoint[a >> 12][a] = v;
 }
 void writememfl_debug(uint32_t a, uint32_t v)
 {
 	a &= 0x3FFFFFC;
 
 	if (mempoint[a >> 12])
-		*(uint32_t *)&mempoint[a >> 12][a & 0xfff] = v;
+		*(uint32_t *)&mempoint[a >> 12][a] = v;
 }
 
 int f42count=0;

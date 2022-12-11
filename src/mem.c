@@ -530,7 +530,7 @@ uint32_t readmemf_debug(uint32_t a)
 
 void writememfb_debug(uint32_t a, uint8_t v)
 {
-	a &= 0x3FFFFFC;
+	a &= 0x3FFFFFF;
 
 	if (mempoint[a >> 12])
 		mempoint[a >> 12][a] = v;

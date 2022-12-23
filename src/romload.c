@@ -104,7 +104,11 @@ int loadrom()
 	int file=0;
 	int c,d,e;
 	int len,pos=0;
+#ifdef WIN32
+	intptr_t find_file;
+#else
 	int find_file;
+#endif
 //        char s[256];
 	char fn[512];
 	char s[512];

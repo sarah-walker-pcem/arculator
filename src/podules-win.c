@@ -37,7 +37,7 @@ void opendlls(void)
 	char fn[512];
 	char podule_path[512];
 	struct _finddata_t finddata;
-	int file;
+	intptr_t file;
 
 	atexit(closedlls);
 

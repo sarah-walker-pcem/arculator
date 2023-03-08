@@ -50,5 +50,8 @@ int main(int argc, char **argv)
 
 	wxApp::SetInstance(new App());
 	wxEntry(argc, argv);
+
+	al_close();
+
 	return 0;
 }

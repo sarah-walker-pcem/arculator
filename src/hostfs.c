@@ -138,7 +138,8 @@ static HostFSState hostfs_state = HOSTFS_STATE_UNREGISTERED;
 #ifdef NDEBUG
 static inline void dbug_hostfs(const char *format, ...) { NOT_USED(format); }
 #else
-static void
+#define dbug_hostfs rpclog
+/*static void
 dbug_hostfs(const char *format, ...)
 {
   va_list ap;
@@ -146,7 +147,7 @@ dbug_hostfs(const char *format, ...)
   va_start(ap, format);
   vfprintf(stderr, format, ap);
   va_end(ap);
-}
+}*/
 #endif
 
 /**

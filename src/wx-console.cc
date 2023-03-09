@@ -135,8 +135,8 @@ public:
 						wxDefaultSize, wxTE_READONLY | wxTE_MULTILINE | wxTE_DONTWRAP);
 
 
-		console_input->SetFont(wxSystemSettings::GetFont(wxSYS_ANSI_FIXED_FONT));
-		console_output->SetFont(wxSystemSettings::GetFont(wxSYS_ANSI_FIXED_FONT));
+		console_input->SetFont(wxFont(12, wxFONTFAMILY_TELETYPE, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL));
+		console_output->SetFont(wxFont(12, wxFONTFAMILY_TELETYPE, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL));
 
 		main_sizer->Add(console_output, wxSizerFlags(1).Expand());
 		main_sizer->Add(console_input, wxSizerFlags().Expand());

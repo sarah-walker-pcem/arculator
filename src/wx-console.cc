@@ -185,6 +185,7 @@ public:
 	void OnInputEnable(wxCommandEvent &event)
 	{
 		console_input->Enable();
+		console_input->SetFocus();
 	}
 
 private:

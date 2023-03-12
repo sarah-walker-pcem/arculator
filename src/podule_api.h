@@ -1,7 +1,14 @@
 #ifndef PODULE_API_H
 #define PODULE_API_H
 
-#define PODULE_API_VERSION 1
+#define MAKE_PODULE_API_VERSION(major, minor) (((minor) << 16) | (major))
+
+#define PODULE_API_VERSION_GET_MAJOR(version) ((version) & 0xffff)
+#define PODULE_API_VERSION_GET_MINOR(version) ((version) >> 16)
+
+/*v1.1 - add PODULE_FLAGS_NEXT and PODULE_FLAGS_NET.
+  v1.0 - initial version.*/
+#define PODULE_API_VERSION MAKE_PODULE_API_VERSION(1, 1)
 
 struct podule_t;
 
@@ -173,6 +180,11 @@ typedef struct podule_config_t
 #define PODULE_FLAGS_8BIT (1 << 1)
 /*Indicates another podule header is present after this one. Used to support multiple podules in a single library*/
 #define PODULE_FLAGS_NEXT (1 << 2)
+/*Podule is network interface expansion (A3020/A4000)*/
+#define PODULE_FLAGS_NET (1 << 3)
+
+#define PODULE_FLAGS_VALID_VERSION_1_0  (PODULE_FLAGS_UNIQUE | PODULE_FLAGS_8BIT)
+#define PODULE_FLAGS_VALID 		(PODULE_FLAGS_UNIQUE | PODULE_FLAGS_8BIT | PODULE_FLAGS_NEXT | PODULE_FLAGS_NET)
 
 typedef struct podule_header_t
 {

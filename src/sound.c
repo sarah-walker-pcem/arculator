@@ -245,22 +245,27 @@ static void pollsound(void *p)
 
 static signed short convbyte(uint8_t v)
 {
+	int sign, point, chord;
+	signed short temp;
+
 	//                         7C       chord = 3     p = E/14
 	if (fdctype == FDC_WD1793_A500)
 	{
-		signed short temp = 1 << (((v >> 4) & 7) + 4);
-		temp += ((v & 0xF) << ((v >> 4) & 7));
-		if (v & 0x80)
-			temp = -temp;
-		return temp;
+		sign = v & 0x80;
+		point = v & 0xf;
+		chord = (v >> 4) & 7;
 	}
 	else
 	{
-		signed short temp=1<<((v>>5)+4);
-		temp+=(((v>>1)&0xF)<<(v>>5));
-		if (v&1) temp=-temp;
-		return temp;
+		sign = v & 1;
+		point = (v >> 1) & 0xf;
+		chord = v >> 5;
+
 	}
+
+	temp = (1 << (chord + 4)) - (1 << 4);
+	temp += (point << chord);
+	return sign ? - temp : temp;
 }
 
 void sound_init(void)

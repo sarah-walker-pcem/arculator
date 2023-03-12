@@ -206,6 +206,25 @@ void podules_init(void)
 	}
 }
 
+uint32_t podule_validate_and_get_valid_flags(podule_header_t *header)
+{
+	switch (header->version)
+	{
+		case MAKE_PODULE_API_VERSION(1, 1):
+		return PODULE_FLAGS_VALID;
+
+		case MAKE_PODULE_API_VERSION(1, 0):
+		return PODULE_FLAGS_VALID_VERSION_1_0;
+
+		default:
+		rpclog("Failed to validate podule %s - unsupported API version %i.%i\n", header->short_name,
+			PODULE_API_VERSION_GET_MAJOR(header->version),
+			PODULE_API_VERSION_GET_MINOR(header->version));
+		return 0;
+	}
+
+}
+
 void podules_reset(void)
 {
 	int c;

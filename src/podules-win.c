@@ -92,10 +92,25 @@ void opendlls(void)
 		}
 		rpclog("podule_probe returned %p\n", header);
 
+		uint32_t valid_flags = podule_validate_and_get_valid_flags(header);
+		if (!valid_flags)
+		{
+			rpclog("podule_probe failed validation %s\n", finddata.name);
+			FreeLibrary(dll->hinstance);
+			free(dll);
+			continue;
+		}
+
 		uint32_t flags;
 		do
 		{
 			flags = header->flags;
+			if (flags & ~valid_flags)
+			{
+				rpclog("podule_probe: podule header fails flags validation\n");
+				break;
+			}
+
 			podule_add(header);
 			header++;
 		} while (flags & PODULE_FLAGS_NEXT);

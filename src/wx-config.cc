@@ -274,7 +274,8 @@ enum
 {
 	PODULE_NONE = 0,
 	PODULE_16BIT,
-	PODULE_8BIT
+	PODULE_8BIT,
+	PODULE_NET
 };
 
 typedef struct machine_preset_t
@@ -306,8 +307,8 @@ static const machine_preset_t presets[] =
 	{"A5000",            "a5000",  "ARM3/25, 1MB RAM, MEMC1A, New IO, RISC OS 3.0",        MACHINE_TYPE_NORMAL, CPU_ARM3_25_AND_LATER, MEM_MIN_1M,   MEMC_MIN_MEMC1A_12, ROM_RISCOS3,   MONITOR_NO_MONO, CPU_ARM3_25, MEM_2M,   MEMC_MEMC1A_12, IO_NEW,       PODULE_16BIT, PODULE_16BIT, PODULE_16BIT, PODULE_16BIT, 1},
 	{"A4",               "a4",     "ARM3/24, 2MB RAM, MEMC1A, New IO, RISC OS 3.0",        MACHINE_TYPE_A4,     CPU_ARM3_24_ONLY,      MEM_2M_4M,    MEMC_MIN_MEMC1A_12, ROM_RISCOS3,   MONITOR_LCD_A4,  CPU_ARM3_24, MEM_2M,   MEMC_MEMC1A_12, IO_NEW,       PODULE_NONE,  PODULE_NONE,  PODULE_NONE,  PODULE_NONE,  1},
 	{"A3010",            "a3010",  "ARM250, 1MB RAM, MEMC1A, New IO, RISC OS 3.1",         MACHINE_TYPE_NORMAL, CPU_ARM250_ONLY,       MEM_1M_4M,    MEMC_MIN_MEMC1A_12, ROM_RISCOS31,  MONITOR_NO_MONO, CPU_ARM250,  MEM_1M,   MEMC_MEMC1A_12, IO_NEW,       PODULE_NONE,  PODULE_8BIT,  PODULE_NONE,  PODULE_NONE,  0},
-	{"A3020",            "a3020",  "ARM250, 2MB RAM, MEMC1A, New IO, RISC OS 3.1",         MACHINE_TYPE_NORMAL, CPU_ARM250_ONLY,       MEM_2M_4M,    MEMC_MIN_MEMC1A_12, ROM_RISCOS31,  MONITOR_NO_MONO, CPU_ARM250,  MEM_2M,   MEMC_MEMC1A_12, IO_NEW,       PODULE_NONE,  PODULE_8BIT,  PODULE_NONE,  PODULE_NONE,  0},
-	{"A4000",            "a4000",  "ARM250, 2MB RAM, MEMC1A, New IO, RISC OS 3.1",         MACHINE_TYPE_NORMAL, CPU_ARM250_ONLY,       MEM_2M_4M,    MEMC_MIN_MEMC1A_12, ROM_RISCOS31,  MONITOR_NO_MONO, CPU_ARM250,  MEM_2M,   MEMC_MEMC1A_12, IO_NEW,       PODULE_NONE,  PODULE_8BIT,  PODULE_NONE,  PODULE_NONE,  0},
+	{"A3020",            "a3020",  "ARM250, 2MB RAM, MEMC1A, New IO, RISC OS 3.1",         MACHINE_TYPE_NORMAL, CPU_ARM250_ONLY,       MEM_2M_4M,    MEMC_MIN_MEMC1A_12, ROM_RISCOS31,  MONITOR_NO_MONO, CPU_ARM250,  MEM_2M,   MEMC_MEMC1A_12, IO_NEW,       PODULE_NET,   PODULE_8BIT,  PODULE_NONE,  PODULE_NONE,  0},
+	{"A4000",            "a4000",  "ARM250, 2MB RAM, MEMC1A, New IO, RISC OS 3.1",         MACHINE_TYPE_NORMAL, CPU_ARM250_ONLY,       MEM_2M_4M,    MEMC_MIN_MEMC1A_12, ROM_RISCOS31,  MONITOR_NO_MONO, CPU_ARM250,  MEM_2M,   MEMC_MEMC1A_12, IO_NEW,       PODULE_NET,   PODULE_8BIT,  PODULE_NONE,  PODULE_NONE,  0},
 	{"A5000a",           "a5000a", "ARM3/33, 4MB RAM, MEMC1A, New IO, RISC OS 3.1",        MACHINE_TYPE_NORMAL, CPU_ARM3_33_AND_LATER, MEM_MIN_4M,   MEMC_MIN_MEMC1A_12, ROM_RISCOS31,  MONITOR_NO_MONO, CPU_ARM3_33, MEM_4M,   MEMC_MEMC1A_12, IO_NEW,       PODULE_16BIT, PODULE_16BIT, PODULE_16BIT, PODULE_16BIT, 1},
 	{"A500 (prototype)", "a500",   "ARM2, 4MB RAM, MEMC1, Old IO + ST-506 HD, Arthur",     MACHINE_TYPE_NORMAL, CPU_ARM2_AND_LATER,    MEM_4M_ONLY,  MEMC_MIN_MEMC1,     ROM_A500,      MONITOR_ALL,     CPU_ARM2,    MEM_4M,   MEMC_MEMC1,     IO_OLD_ST506, PODULE_16BIT, PODULE_16BIT, PODULE_16BIT, PODULE_16BIT, 0},
 	{"", 0, 0, 0, 0, 0}
@@ -732,8 +733,9 @@ void ConfigDialog::PopulatePoduleList(int slot_nr, wxComboBox *cbox)
 		{
 			uint32_t flags = podule_get_flags(c);
 
-			if ((!(flags & PODULE_FLAGS_8BIT) && slot_type == PODULE_16BIT) ||
-			    ((flags & PODULE_FLAGS_8BIT) && slot_type == PODULE_8BIT))
+			if ((!(flags & (PODULE_FLAGS_8BIT | PODULE_FLAGS_NET)) && slot_type == PODULE_16BIT) ||
+			    ((flags & PODULE_FLAGS_8BIT) && slot_type == PODULE_8BIT) ||
+			    ((flags & PODULE_FLAGS_NET) && slot_type == PODULE_NET))
 			{
 				cbox->Append(podule_get_name(c));
 				if (!strcmp(config_podules[slot_nr], podule_get_short_name(c)))
@@ -767,6 +769,8 @@ wxString ConfigDialog::PoduleGetLabel(int slot_nr)
 		s.Printf("Minipodule %i :", slot_nr);
 	else if (presets[config_preset].podule_type[slot_nr] == PODULE_NONE)
 		s.Printf("Podule %i (N/A)", slot_nr);
+	else if (presets[config_preset].podule_type[slot_nr] == PODULE_NET)
+		s.Printf("Network %i :", slot_nr);
 	else
 		s.Printf("Podule %i :", slot_nr);
 

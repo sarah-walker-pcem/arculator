@@ -1,8 +1,8 @@
 # configure.ac for Arculator
 #
 
-AC_PREREQ([2.61])
-AC_INIT(Arculator, v2.0, Sarah Walker <b-em@bbcmicro.com>, arculator)
+AC_PREREQ([2.71])
+AC_INIT([Arculator],[v2.0],[Sarah Walker <b-em@bbcmicro.com>],[arculator])
 
 AC_CANONICAL_HOST
 
@@ -15,7 +15,7 @@ LT_INIT([disable-static], [shared])
 
 AC_MSG_CHECKING([whether to enable debugging])
 AC_ARG_ENABLE(debug,
-          AC_HELP_STRING([--enable-debug], [build debug executable]))
+          AS_HELP_STRING([--enable-debug],[build debug executable]))
 if test "$enable_debug" = "yes"; then
    CFLAGS="-Wall -O0 -g -D_DEBUG -DDEBUG_LOG"
    CXXFLAGS="-Wall -O0 -g -D_DEBUG -DDEBUG_LOG"
@@ -28,7 +28,7 @@ fi
 
 AC_MSG_CHECKING([whether to build for release])
 AC_ARG_ENABLE(release_build,
-          AC_HELP_STRING([--enable-release-build], [build for release]))
+          AS_HELP_STRING([--enable-release-build],[build for release]))
 if test "$enable_release_build" = "yes"; then
    AC_MSG_RESULT([yes])
    CFLAGS += " -DRELEASE_BUILD"
@@ -39,7 +39,7 @@ AM_CONDITIONAL(RELEASE_BUILD, [test "$enable_release_build" = "yes"])
 
 AC_MSG_CHECKING([whether to build podules])
 AC_ARG_ENABLE(podules,
-          AC_HELP_STRING([--disable-podules], [don't build podules]))
+          AS_HELP_STRING([--disable-podules],[don't build podules]))
 if test "$enable_podules" != "no"; then
    AC_MSG_RESULT([yes])
 else
@@ -120,6 +120,8 @@ AM_CONDITIONAL(OS_MACOSX, [test "$build_macosx" = "yes"])
 
 AM_CONDITIONAL(BUILD_PODULES, [test "$enable_podules" != "no"])
 
-AC_OUTPUT([Makefile src/Makefile])
+AC_CONFIG_FILES([Makefile src/Makefile])
+AC_OUTPUT
 
-AC_OUTPUT([podules/aeh50/src/Makefile podules/aeh54/src/Makefile podules/aka05/src/Makefile podules/aka10/src/Makefile podules/aka12/src/Makefile podules/aka16/src/Makefile podules/aka31/src/Makefile podules/lark/src/Makefile podules/midimax/src/Makefile podules/morley_uap/src/Makefile podules/oak_scsi/src/Makefile podules/pccard/src/Makefile podules/ultimatecdrom/src/Makefile])
+AC_CONFIG_FILES([podules/aeh50/src/Makefile podules/aeh54/src/Makefile podules/aka05/src/Makefile podules/aka10/src/Makefile podules/aka12/src/Makefile podules/aka16/src/Makefile podules/aka31/src/Makefile podules/designit_e200/src/Makefile podules/lark/src/Makefile podules/midimax/src/Makefile podules/morley_uap/src/Makefile podules/oak_scsi/src/Makefile podules/pccard/src/Makefile podules/ultimatecdrom/src/Makefile])
+AC_OUTPUT

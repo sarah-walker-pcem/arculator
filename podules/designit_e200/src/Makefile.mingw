@@ -1,0 +1,26 @@
+VPATH = . ..\..\common\net ..\..\common\net\slirp
+CPP  = g++.exe
+CC   = gcc.exe
+OBJ  = design_e200.o ne2000.o net.o net_pcap.o net_slirp.o
+LIBSLIRP_OBJ = bootp.o        cksum.o        debug.o        if.o           ip_icmp.o		\
+	ip_input.o     ip_output.o    mbuf.o         misc.o         queue.o		\
+	sbuf.o         slirp.o        socket.o       tcp_input.o    tcp_output.o	\
+	tcp_subr.o     tcp_timer.o    tftp.o         udp.o
+
+LIBS = -lwsock32 -liphlpapi -lkernel32 -lpthread
+CFLAGS = $(INCS) -DBUILDING_DLL=1 -I..\..\..\src -I..\..\common\net -I..\..\common\net\slirp
+
+all: design_e200.dll
+
+clean:
+	rm *.o
+	rm *.dll
+
+DEFFILE=libdesign_e200.def
+STATICLIB=libdesign_e200.a
+
+design_e200.dll: $(OBJ) $(LIBSLIRP_OBJ)
+	$(CC) -o design_e200.dll -s -shared $(OBJ) $(LIBSLIRP_OBJ) $(LIBS) -Wl,--subsystem,windows
+
+%.o: %.c
+	$(CC) $(CFLAGS) -c $<

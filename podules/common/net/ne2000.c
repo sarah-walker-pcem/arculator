@@ -398,7 +398,7 @@ uint16_t ne2000_dma_read_w(uint16_t offset, void *p)
 	int retval;
 
 	/* 16 bit access */
-	if (ne2000->remote_bytes == 1)
+	if (ne2000->remote_bytes == 1 || !ne2000->DCR.wdsize)
 	{
 		retval = ne2000_chipmem_read_b(ne2000->remote_dma, ne2000);
 		ne2000_dma_read(1, ne2000);
@@ -451,7 +451,7 @@ void ne2000_dma_write_w(uint16_t offset, uint16_t value, void *p)
 	if (ne2000->remote_bytes == 0)
 		return;
 
-	if (ne2000->remote_bytes == 1)
+	if (ne2000->remote_bytes == 1 || !ne2000->DCR.wdsize)
 	{
 		ne2000_chipmem_write_b(ne2000->remote_dma, value, ne2000);
 		ne2000_dma_write(1, ne2000);

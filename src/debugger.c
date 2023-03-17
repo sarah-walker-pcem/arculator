@@ -38,6 +38,8 @@ static uint32_t debug_disaddr=0;
 static char debug_lastcommand[256];
 
 static int32_t breakpoints[8] = {-1, -1, -1, -1, -1, -1, -1, -1};
+static int32_t write_breakpoints[8] = {-1, -1, -1, -1, -1, -1, -1, -1};
+static int32_t write_watchpoints[8] = {-1, -1, -1, -1, -1, -1, -1, -1};
 static int debug_step_count = 0;
 static uint32_t debug_trap_enable = 0;
 
@@ -442,6 +444,62 @@ static const char *cpu_modes[4] =
 	"supervisor"
 };
 
+static int write_breakpoint_check(uint32_t a)
+{
+	for (int c = 0; c < 8; c++)
+	{
+		if ((write_breakpoints[c] & ~3) == a)
+			return 1;
+	}
+
+	return 0;
+}
+
+static int write_watchpoint_check(uint32_t a)
+{
+	for (int c = 0; c < 8; c++)
+	{
+		if ((write_watchpoints[c] & ~3) == a)
+			return 1;
+	}
+
+	return 0;
+}
+
+void debug_writememb(uint32_t a, uint8_t v)
+{
+	char outs[256];
+
+	if (write_breakpoint_check(a & ~3))
+	{
+		debug = 1;
+		sprintf(outs, "    Break at %07X (write %02X to %07X)\n", PC - 8, v, a);
+		debug_out(outs);
+	}
+	if (write_watchpoint_check(a & ~3))
+	{
+		sprintf(outs, "    Watchpoint at %07X: write %02X to %07X\n", PC - 8, v, a);
+		debug_out(outs);
+	}
+}
+
+void debug_writememl(uint32_t a, uint32_t v)
+{
+	char outs[256];
+
+	if (write_breakpoint_check(a & ~3))
+	{
+		debug = 1;
+		sprintf(outs, "    Break at %07X (write %08X to %07X)\n", PC - 8, v, a);
+		debug_out(outs);
+	}
+	if (write_watchpoint_check(a & ~3))
+	{
+		sprintf(outs, "    Watchpoint at %07X: write %08X to %07X\n", PC - 8, v, a);
+		debug_out(outs);
+	}
+}
+
 void debugger_do()
 {
 	uint32_t pc = (PC - 8) & 0x3fffffc;
@@ -656,7 +714,22 @@ void debugger_do()
 			}
 			break;
 			case 'b': case 'B':
-			if (!strncasecmp(command, "break", 5))
+			if (!strncasecmp(command, "breakw", 6))
+			{
+				if (!params)
+					break;
+				for (c = 0; c < 8; c++)
+				{
+					if (write_breakpoints[c] == -1)
+					{
+						sscanf(param1, "%X", &write_breakpoints[c]);
+						sprintf(outs, "    Write breakpoint %i set to %04X\n", c, write_breakpoints[c]);
+						debug_out(outs);
+						break;
+					}
+				}
+			}
+			else if (!strncasecmp(command, "break", 5))
 			{
 				if (!params)
 					break;
@@ -678,6 +751,14 @@ void debugger_do()
 					if (breakpoints[c] != -1)
 					{
 						sprintf(outs, "    Breakpoint %i : %04X\n", c, breakpoints[c]);
+						debug_out(outs);
+					}
+				}
+				for (c = 0; c < 8; c++)
+				{
+					if (write_breakpoints[c] != -1)
+					{
+						sprintf(outs, "    Write breakpoint %i : %04X\n", c, write_breakpoints[c]);
 						debug_out(outs);
 					}
 				}
@@ -754,6 +835,32 @@ void debugger_do()
 			}
 			break;
 			case 'w': case 'W':
+			if (!strncasecmp(command, "watchw", 6))
+			{
+				if (!params)
+					break;
+				for (c = 0; c < 8; c++)
+				{
+					if (write_watchpoints[c] == -1)
+					{
+						sscanf(param1, "%X", &write_watchpoints[c]);
+						sprintf(outs, "    Write watchpoint %i set to %04X\n", c, write_watchpoints[c]);
+						debug_out(outs);
+						break;
+					}
+				}
+			}
+			if (!strncasecmp(command, "wlist", 5))
+			{
+				for (c = 0; c < 8; c++)
+				{
+					if (write_watchpoints[c] != -1)
+					{
+						sprintf(outs, "    Write watchpoint %i : %04X\n", c, write_watchpoints[c]);
+						debug_out(outs);
+					}
+				}
+			}
 			if (!strncasecmp(command, "write", 5))
 			{
 				if (params != 2)
@@ -778,6 +885,7 @@ void debugger_do()
 			debug_out("    bclear <n>/<addr>       - clear breakpoint n or breakpoint at addr\n");
 			debug_out("    blist                   - list current breakpoints\n");
 			debug_out("    break <addr>            - set a breakpoint at addr\n");
+			debug_out("    breakw <addr>           - set a write breakpoint at addr\n");
 			debug_out("    c                       - continue running indefinitely\n");
 			debug_out("    d [addr]                - disassemble from address addr\n");
 			debug_out("    m [addr]                - memory dump from address addr, in words\n");
@@ -793,6 +901,8 @@ void debugger_do()
 			debug_out("    t enable <type>         - enable trap\n");
 			debug_out("                              Available traps are prefabort, dataabort, addrexcep,\n");
 			debug_out("                              undefins and swi\n");
+			debug_out("    watchw <addr>           - set a write watchpoint at addr\n");
+			debug_out("    wlist                   - list current watchpoints\n");
 			debug_out("    write <addr> <data>     - Write word to memory\n");
 			debug_out("    writeb <addr> <data>    - Write byte to memory\n\n");
 			break;

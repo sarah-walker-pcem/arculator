@@ -1140,7 +1140,7 @@ static void opMUL(uint32_t rn)
 		/*1 (early) merged fetch, cycle_nr-1 N-cycles*/
 		merge_timing(PC+4);
 		for (c = 0; c < cycle_nr-1; c++)
-			CLOCK_N(PC+4);
+			cache_read_timing(PC+4, 1, 0);
 	}
 }
 

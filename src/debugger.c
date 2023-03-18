@@ -186,7 +186,9 @@ static void debug_disassemble(void)
 				RD, RN, RM);
 
 		debug_out(s);
-		debug_print_shift(opcode);
+
+		if ((opcode & 0x0fc000f0) != 0x00000090) /*No shift on MUL/MLA*/
+			debug_print_shift(opcode);
 	}
 	else if ((opcode & 0x0e000000) == 0x02000000) /*Data processing, immediate*/
 	{

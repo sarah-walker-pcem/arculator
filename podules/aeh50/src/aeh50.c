@@ -246,6 +246,7 @@ static int aeh50_init(struct podule_t *podule)
 	if (!f)
 	{
 		aeh50_log("Failed to open EthernetII_ID_ROM.ROM!\n");
+		free(aeh50);
 		return -1;
 	}
 	fread(aeh50->rom, 0x4000, 1, f);

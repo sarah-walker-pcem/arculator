@@ -162,6 +162,7 @@ static int aeh54_init(struct podule_t *podule)
 	if (!f)
 	{
 		aeh54_log("Failed to open ether3.rom!\n");
+		free(aeh54);
 		return -1;
 	}
 	fread(aeh54->rom, 0x20000, 1, f);

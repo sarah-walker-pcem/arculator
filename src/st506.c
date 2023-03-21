@@ -11,6 +11,9 @@
 
 static void st506_callback(void *p);
 
+#define CMD_DELAY_US         5000 /*5ms*/
+#define INTERSECTOR_DELAY_US 500 /*1us*/
+
 #define BUSY            0x80
 #define PARAMREJECT     0x40
 #define COMEND          0x20
@@ -151,7 +154,7 @@ uint8_t st506_readb(st506_t *st506, uint32_t a)
 			{
 				st506->drq = 0;
 				st506_updateinterrupts(st506);
-				timer_set_delay_u64(&st506->timer, 5000 * TIMER_USEC);
+				timer_set_delay_u64(&st506->timer, INTERSECTOR_DELAY_US * TIMER_USEC);
 			}
 //                        rpclog("Read HDC %08X %08X %07X %02X\n",a,temp,PC,ioc.irqb);
 			return temp;
@@ -250,7 +253,7 @@ void st506_writel(st506_t *st506, uint32_t a, uint32_t v)
 				return;
 			fseek(st506->hdfile[st506->drive], (((((st506->lcyl*st506->hpc[st506->drive])+st506->lhead)*st506->spt[st506->drive])+st506->lsect)*256), SEEK_SET);
 //                        rpclog("Seeked to %08X\n",(((((st506->lcyl*8)+st506->lhead)*32)+st506->lsect)*256));
-			timer_set_delay_u64(&st506->timer, 5000 * TIMER_USEC);
+			timer_set_delay_u64(&st506->timer, CMD_DELAY_US * TIMER_USEC);
 			st506->status |= 0x80;
 			return;
 
@@ -270,7 +273,7 @@ void st506_writel(st506_t *st506, uint32_t a, uint32_t v)
 			if (check_chs_params(st506, st506->drive))
 				return;
 			fseek(st506->hdfile[st506->drive], (((((st506->lcyl*st506->hpc[st506->drive])+st506->lhead)*st506->spt[st506->drive])+st506->lsect)*256), SEEK_SET);
-			timer_set_delay_u64(&st506->timer, 5000 * TIMER_USEC);
+			timer_set_delay_u64(&st506->timer, CMD_DELAY_US * TIMER_USEC);
 			st506->status |= 0x80;
 			return;
 
@@ -291,7 +294,7 @@ void st506_writel(st506_t *st506, uint32_t a, uint32_t v)
 				return;
 			fseek(st506->hdfile[st506->drive], (((((st506->lcyl*st506->hpc[st506->drive])+st506->lhead)*st506->spt[st506->drive])+st506->lsect)*256), SEEK_SET);
 //                        rpclog("Seeked to %08X\n",(((((st506->lcyl*8)+st506->lhead)*32)+st506->lsect)*256));
-			timer_set_delay_u64(&st506->timer, 5000 * TIMER_USEC);
+			timer_set_delay_u64(&st506->timer, CMD_DELAY_US * TIMER_USEC);
 			st506->status |= 0x80;
 			st506->first = 1;
 			return;
@@ -312,7 +315,7 @@ void st506_writel(st506_t *st506, uint32_t a, uint32_t v)
 			if (check_chs_params(st506, st506->drive))
 				return;
 			fseek(st506->hdfile[st506->drive], (((((st506->lcyl*st506->hpc[st506->drive])+st506->lhead)*st506->spt[st506->drive])+st506->lsect)*256), SEEK_SET);
-			timer_set_delay_u64(&st506->timer, 5000 * TIMER_USEC);
+			timer_set_delay_u64(&st506->timer, CMD_DELAY_US * TIMER_USEC);
 			st506->status |= 0x80;
 			st506->first = 1;
 			return;
@@ -414,7 +417,7 @@ void st506_writel(st506_t *st506, uint32_t a, uint32_t v)
 			{
 				st506->drq = 0;
 				st506_updateinterrupts(st506);
-				timer_set_delay_u64(&st506->timer, 5000 * TIMER_USEC);
+				timer_set_delay_u64(&st506->timer, INTERSECTOR_DELAY_US * TIMER_USEC);
 			}
 //                        rpclog("Write HDC %08X %08X %i %07X %i %02X  %02X %02X\n",a,temp,st506->p,PC,st506->drq,ioc.irqb,st506->status,st506->OM1);
 			return;
@@ -448,7 +451,7 @@ uint32_t st506_readl(st506_t *st506, uint32_t a)
 			{
 				st506->drq = 0;
 				st506_updateinterrupts(st506);
-				timer_set_delay_u64(&st506->timer, 5000 * TIMER_USEC);
+				timer_set_delay_u64(&st506->timer, INTERSECTOR_DELAY_US * TIMER_USEC);
 			}
 //                        rpclog("Read HDC %08X %08X %i %07X\n",a,temp,st506->rp,PC);
 			return temp;
@@ -554,7 +557,7 @@ static void st506_callback(void *p)
 			if (check_chs_params(st506, st506->drive))
 				break;
 			st506->oplen--;
-			timer_set_delay_u64(&st506->timer, 5000 * TIMER_USEC);
+			timer_set_delay_u64(&st506->timer, INTERSECTOR_DELAY_US * TIMER_USEC);
 //                        rpclog("Check data next callback\n");
 		}
 		else

@@ -172,6 +172,13 @@ static int aeh54_init(struct podule_t *podule)
 	const char *network_device = podule_callbacks->config_get_string(podule, "network_device", NETWORK_DEVICE_DEFAULT);
 	aeh54->net = net_init(network_device, mac);
 
+	if (!aeh54->net)
+	{
+		aeh54_log("Failed to open network device\n");
+		free(aeh54);
+		return -1;
+	}
+
 	seeq8005_init(&aeh54->seeq8005, aeh54_set_irq, aeh54, aeh54->net);
 
 	aeh54_log("aeh54_init: podule=%p\n", podule);

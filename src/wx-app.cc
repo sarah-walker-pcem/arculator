@@ -538,6 +538,18 @@ void Frame::OnUpdateMenuEvent(UpdateMenuEvent &event)
 	UpdateMenu(menu);
 }
 
+extern "C" void arc_print_error(const char *format, ...)
+{
+	char buf[1024];
+	va_list ap;
+
+	va_start(ap, format);
+	vsprintf(buf, format, ap);
+	va_end(ap);
+
+	wxMessageBox(buf, "Arculator", wxOK | wxCENTRE | wxSTAY_ON_TOP | wxICON_ERROR);
+}
+
 #ifdef _WIN32
 static void *wx_getnativewindow(void *window)
 {

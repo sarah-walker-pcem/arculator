@@ -15,6 +15,7 @@
 extern void rpclog(const char *format, ...);
 extern void error(const char *format, ...);
 extern void fatal(const char *format, ...);
+void arc_print_error(const char *format, ...);
 
 #ifdef DEBUG_CMOS
 #define LOG_CMOS rpclog

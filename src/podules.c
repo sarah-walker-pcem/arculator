@@ -193,6 +193,7 @@ void podules_init(void)
 				{
 					/*Podule init failed, clear structs*/
 					rpclog("Failed to init podule %i : %s\n", c, header->short_name);
+					arc_print_error("Failed to initialise podule %i :\n%s", c, header->name);
 					podules[c].podule.header = NULL;
 					podule_functions[c] = NULL;
 				}

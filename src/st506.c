@@ -225,6 +225,12 @@ void st506_writel(st506_t *st506, uint32_t a, uint32_t v)
 				return;
 			}
 			st506->drive = st506->param[0] - 1;
+			if (!st506->hdfile[st506->drive])
+			{
+				st506_error(st506, ERROR_NRY);
+				readdataerror(st506);
+				return;
+			}
 			temp = st506->param[0] & 3;
 			st506->status = 0;
 			st506->param[0] = 0;
@@ -244,6 +250,12 @@ void st506_writel(st506_t *st506, uint32_t a, uint32_t v)
 				return;
 			}
 			st506->drive = st506->param[0] - 1;
+			if (!st506->hdfile[st506->drive])
+			{
+				st506_error(st506, ERROR_NRY);
+				readdataerror(st506);
+				return;
+			}
 			st506->lcyl = (st506->param[2] << 8) | st506->param[3];
 			st506->lhead = st506->param[4];
 			st506->lsect = st506->param[5];
@@ -265,6 +277,12 @@ void st506_writel(st506_t *st506, uint32_t a, uint32_t v)
 				return;
 			}
 			st506->drive = st506->param[0] - 1;
+			if (!st506->hdfile[st506->drive])
+			{
+				st506_error(st506, ERROR_NRY);
+				readdataerror(st506);
+				return;
+			}
 			st506->lcyl = (st506->param[2] << 8) | st506->param[3];
 			st506->lhead = st506->param[4];
 			st506->lsect = st506->param[5];
@@ -285,6 +303,12 @@ void st506_writel(st506_t *st506, uint32_t a, uint32_t v)
 				return;
 			}
 			st506->drive = st506->param[0] - 1;
+			if (!st506->hdfile[st506->drive])
+			{
+				st506_error(st506, ERROR_NRY);
+				readdataerror(st506);
+				return;
+			}
 			st506->lcyl = (st506->param[2] << 8) | st506->param[3];
 			st506->lhead = st506->param[4];
 			st506->lsect = st506->param[5];
@@ -307,6 +331,12 @@ void st506_writel(st506_t *st506, uint32_t a, uint32_t v)
 				return;
 			}
 			st506->drive = st506->param[0] - 1;
+			if (!st506->hdfile[st506->drive])
+			{
+				st506_error(st506, ERROR_NRY);
+				readdataerror(st506);
+				return;
+			}
 			st506->lcyl = st506->track[st506->drive];
 			st506->lhead = st506->param[1];
 			st506->lsect = 0;
@@ -328,6 +358,12 @@ void st506_writel(st506_t *st506, uint32_t a, uint32_t v)
 				return;
 			}
 			st506->drive = st506->param[0] - 1;
+			if (!st506->hdfile[st506->drive])
+			{
+				st506_error(st506, ERROR_NRY);
+				readdataerror(st506);
+				return;
+			}
 			st506->track[st506->drive] = st506->param[3] | (st506->param[2] << 8);
 			rpclog("Seek drive %i to track %i\n",st506->drive, st506->track[st506->drive]);
 			st506->param[0] = 0;
@@ -347,6 +383,12 @@ void st506_writel(st506_t *st506, uint32_t a, uint32_t v)
 				return;
 			}
 			st506->drive = st506->param[0] - 1;
+			if (!st506->hdfile[st506->drive])
+			{
+				st506_error(st506, ERROR_NRY);
+				readdataerror(st506);
+				return;
+			}
 			st506->track[st506->drive] = 0;
 //                        rpclog("Recalibrate : seek to track %i\n",st506->track);
 			st506->status |= STATUS_SEEKEND;

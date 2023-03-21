@@ -527,6 +527,13 @@ static void st506_callback(void *p)
 				st506->lsect = 0;
 				st506->lhead++;
 			}
+
+			st506->param[2] = st506->lcyl >> 8;
+			st506->param[3] = st506->lcyl;
+			st506->param[4] = st506->lhead;
+			st506->param[5] = st506->lsect;
+			st506->param[6] = st506->oplen >> 8;
+			st506->param[7] = st506->oplen;
 		}
 		else
 		{
@@ -548,17 +555,25 @@ static void st506_callback(void *p)
 //                rpclog("Check data %i\n",st506->oplen);
 		if (st506->oplen)
 		{
+			if (check_chs_params(st506, st506->drive))
+				break;
+			st506->oplen--;
+			timer_set_delay_u64(&st506->timer, INTERSECTOR_DELAY_US * TIMER_USEC);
+//                        rpclog("Check data next callback\n");
+
 			st506->lsect++;
 			if (st506->lsect > st506->ns[st506->drive])
 			{
 				st506->lsect = 0;
 				st506->lhead++;
 			}
-			if (check_chs_params(st506, st506->drive))
-				break;
-			st506->oplen--;
-			timer_set_delay_u64(&st506->timer, INTERSECTOR_DELAY_US * TIMER_USEC);
-//                        rpclog("Check data next callback\n");
+
+			st506->param[2] = st506->lcyl >> 8;
+			st506->param[3] = st506->lcyl;
+			st506->param[4] = st506->lhead;
+			st506->param[5] = st506->lsect;
+			st506->param[6] = st506->oplen >> 8;
+			st506->param[7] = st506->oplen;
 		}
 		else
 		{
@@ -612,6 +627,13 @@ static void st506_callback(void *p)
 				st506->drq = 1;
 				st506_updateinterrupts(st506);
 //                                rpclog("Write HDC interrupt part\n");
+
+				st506->param[2] = st506->lcyl >> 8;
+				st506->param[3] = st506->lcyl;
+				st506->param[4] = st506->lhead;
+				st506->param[5] = st506->lsect;
+				st506->param[6] = st506->oplen >> 8;
+				st506->param[7] = st506->oplen;
 			}
 			else
 			{

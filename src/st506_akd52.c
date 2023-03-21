@@ -42,7 +42,7 @@ static int akd52_init(struct podule_t *podule)
 	FILE *f;
 	char fn[512];
 	char hd4_fn[512] = {0}, hd5_fn[512] = {0};
-	int spt[2], hpc[2];
+	int spt[2], hpc[2], cyl[2];
 	const char *p;
 
 	akd52_t *akd52 = malloc(sizeof(akd52_t));
@@ -67,13 +67,15 @@ static int akd52_init(struct podule_t *podule)
 		strcpy(hd4_fn, p);
 	spt[0] = podule_callbacks->config_get_int(podule, "hd4_sectors", 17);
 	hpc[0] = podule_callbacks->config_get_int(podule, "hd4_heads", 8);
+	cyl[0] = podule_callbacks->config_get_int(podule, "hd4_cylinders", 100);
 	p = podule_callbacks->config_get_string(podule, "hd5_fn", "");
 	if (p)
 		strcpy(hd5_fn, p);
 	spt[1] = podule_callbacks->config_get_int(podule, "hd5_sectors", 17);
 	hpc[1] = podule_callbacks->config_get_int(podule, "hd5_heads", 8);
+	cyl[1] = podule_callbacks->config_get_int(podule, "hd5_cylinders", 100);
 
-	st506_init(&akd52->st506, hd4_fn, spt[0], hpc[0], hd5_fn, spt[1], hpc[1], akd52_irq_raise, akd52_irq_clear, podule);
+	st506_init(&akd52->st506, hd4_fn, spt[0], hpc[0], cyl[0], hd5_fn, spt[1], hpc[1], cyl[1], akd52_irq_raise, akd52_irq_clear, podule);
 
 	podule->p = akd52;
 

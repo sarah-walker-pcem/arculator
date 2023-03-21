@@ -215,13 +215,13 @@ static void cmos_tick(void *p)
 				{
 					systemtime.hour = 0;
 					systemtime.day++;
-					if (systemtime.day >= rtc_days_in_month[systemtime.mon])
+					if (systemtime.day > rtc_days_in_month[systemtime.mon])
 					{
-						systemtime.day = 0;
+						systemtime.day = 1;
 						systemtime.mon++;
-						if (systemtime.mon >= 12)
+						if (systemtime.mon > 12)
 						{
-							systemtime.mon = 0;
+							systemtime.mon = 1;
 							systemtime.year++;
 						}
 					}
@@ -256,7 +256,7 @@ void cmos_init()
 	systemtime.min = cur_time_tm->tm_min;
 	systemtime.hour = cur_time_tm->tm_hour;
 	systemtime.day = cur_time_tm->tm_mday;
-	systemtime.mon = cur_time_tm->tm_mon;
+	systemtime.mon = cur_time_tm->tm_mon + 1;
 	systemtime.year = cur_time_tm->tm_year + 1900;
 #endif
 

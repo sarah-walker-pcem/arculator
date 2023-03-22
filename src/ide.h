@@ -12,6 +12,7 @@ typedef struct ide_t
 	int def_spt[2], def_hpc[2], def_cyl[2];
 	/*Parameters in current translation mode*/
 	int spt[2], hpc[2], cyl[2];
+	unsigned int max_sector[2];
 	int reset;
 	FILE *hdfile[2];
 	uint16_t idebuffer[256];

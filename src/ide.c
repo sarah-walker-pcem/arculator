@@ -102,7 +102,8 @@ void resetide(ide_t *ide,
 	ide->def_spt[1] = ide->spt[1] = sec_spt;
 	ide->def_hpc[1] = ide->hpc[1] = sec_hpc;
 	ide->def_cyl[1] = ide->cyl[1] = sec_cyl;
-
+	ide->max_sector[0] = pri_spt * pri_hpc * pri_cyl;
+	ide->max_sector[1] = pri_spt * pri_hpc * pri_cyl;
 //        ide->spt=63;
 //        ide->hpc=16;
 //        ide->spt=16;
@@ -337,6 +338,19 @@ void resetide_drive(ide_t *ide)
 	rpclog("Requested reset\n");
 }
 
+static int ide_check_addr(ide_t *ide)
+{
+	if (ide->cylinder > ide->cyl[ide->drive] || ide->head > ide->hpc[ide->drive] || (ide->sector - 1) > ide->spt[ide->drive] ||
+	    ((((ide->cylinder * ide->hpc[ide->drive]) + ide->head) * ide->spt[ide->drive]) + (ide->sector - 1)) >= ide->max_sector[ide->drive])
+	{
+		ide->atastat = READY_STAT | DSC_STAT | ERR_STAT;
+		ide->error = 0x10;
+		ide_raise_irq(ide);
+		return 1;
+	}
+	return 0;
+}
+
 void callbackide(void *p)
 {
 	ide_t *ide = p;
@@ -377,6 +391,8 @@ void callbackide(void *p)
 			ide->atastat = READY_STAT | DSC_STAT;
 			return;
 		}
+		if (ide_check_addr(ide))
+			return;
 		readflash[0]=1;
 		addr=((((ide->cylinder*ide->hpc[ide->drive])+ide->head)*ide->spt[ide->drive])+(ide->sector))*512;
 		if (!ide->skip512[ide->drive]) addr-=512;
@@ -395,6 +411,8 @@ void callbackide(void *p)
 		return;
 		case 0x30: /*Write sector*/
 		case 0x31: /*Write sector, no retry*/
+		if (ide_check_addr(ide))
+			return;
 		readflash[0]=2;
 		addr=((((ide->cylinder*ide->hpc[ide->drive])+ide->head)*ide->spt[ide->drive])+(ide->sector))*512;
 		if (!ide->skip512[ide->drive]) addr-=512;
@@ -424,12 +442,16 @@ void callbackide(void *p)
 		return;
 		case 0x40: /*Read verify*/
 		case 0x41:
+		if (ide_check_addr(ide))
+			return;
 		ide->pos=0;
 		ide->atastat = READY_STAT | DSC_STAT;
 //                rpclog("Read verify callback %i %i %i offset %08X %i left\n",ide->sector,ide->cylinder,ide->head,addr,ide->secount);
 		ide_raise_irq(ide);
 		return;
 		case 0x50: /*Format track*/
+		if (ide_check_addr(ide))
+			return;
 		addr=(((ide->cylinder*ide->hpc[ide->drive])+ide->head)*ide->spt[ide->drive])*512;
 		if (!ide->skip512[ide->drive]) addr-=512;
 //                rpclog("Format cyl %i head %i offset %08X secount %I\n",ide->cylinder,ide->head,addr,ide->secount);

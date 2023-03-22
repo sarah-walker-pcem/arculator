@@ -46,7 +46,9 @@ int main(int argc, char **argv)
 
 	podule_build_list();
 	opendlls();
+#ifdef _WIN32
 	SDL_SetHint(SDL_HINT_WINDOWS_DISABLE_THREAD_NAMING, "1");
+#endif
 
 	wxApp::SetInstance(new App());
 	wxEntry(argc, argv);

@@ -124,7 +124,7 @@ public:
 	Frame(App* app, const wxString& title, const wxPoint& pos,
 			const wxSize& size);
 
-	virtual ~Frame() {}
+	virtual ~Frame();
 
 	void Start();
 
@@ -135,6 +135,7 @@ private:
 	void OnStopEmulationEvent(wxCommandEvent& event);
 	void OnPopupMenuEvent(PopupMenuEvent& event);
 	void OnUpdateMenuEvent(UpdateMenuEvent& event);
+	void OnPrintErrorEvent(wxCommandEvent& event);
 #ifdef _WIN32
 	void OnWinSendMessageEvent(WinSendMessageEvent &event);
 #endif

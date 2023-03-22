@@ -41,6 +41,7 @@ extern void InitXmlResource();
 wxDEFINE_EVENT(WX_STOP_EMULATION_EVENT, wxCommandEvent);
 wxDEFINE_EVENT(WX_POPUP_MENU_EVENT, PopupMenuEvent);
 wxDEFINE_EVENT(WX_UPDATE_MENU_EVENT, UpdateMenuEvent);
+wxDEFINE_EVENT(WX_PRINT_ERROR_EVENT, wxCommandEvent);
 #ifdef _WIN32
 wxDEFINE_EVENT(WX_WIN_SEND_MESSAGE_EVENT, WinSendMessageEvent);
 #endif
@@ -95,11 +96,17 @@ Frame::Frame(App* app, const wxString& title, const wxPoint& pos,
 	Bind(WX_POPUP_MENU_EVENT, &Frame::OnPopupMenuEvent, this);
 	Bind(WX_UPDATE_MENU_EVENT, &Frame::OnUpdateMenuEvent, this);
 	Bind(WX_STOP_EMULATION_EVENT, &Frame::OnStopEmulationEvent, this);
+	Bind(WX_PRINT_ERROR_EVENT, &Frame::OnPrintErrorEvent, this);
 #ifdef _WIN32
 	Bind(WX_WIN_SEND_MESSAGE_EVENT, &Frame::OnWinSendMessageEvent, this);
 #endif
 
 	CenterOnScreen();
+}
+
+Frame::~Frame()
+{
+	main_frame = NULL;
 }
 
 void Frame::Start()
@@ -131,6 +138,11 @@ void Frame::OnStopEmulationEvent(wxCommandEvent &event)
 		arc_start_main_thread(this, this->menu);
 	else
 		Quit(0);
+}
+
+void Frame::OnPrintErrorEvent(wxCommandEvent &event)
+{
+	wxMessageBox(event.GetString(), "Arculator", wxOK | wxCENTRE | wxSTAY_ON_TOP | wxICON_ERROR, this);
 }
 
 void Frame::UpdateMenu(wxMenu *menu)
@@ -540,6 +552,7 @@ void Frame::OnUpdateMenuEvent(UpdateMenuEvent &event)
 
 extern "C" void arc_print_error(const char *format, ...)
 {
+	wxCommandEvent *event = new wxCommandEvent(WX_PRINT_ERROR_EVENT, wxID_ANY);
 	char buf[1024];
 	va_list ap;
 
@@ -547,7 +560,8 @@ extern "C" void arc_print_error(const char *format, ...)
 	vsprintf(buf, format, ap);
 	va_end(ap);
 
-	wxMessageBox(buf, "Arculator", wxOK | wxCENTRE | wxSTAY_ON_TOP | wxICON_ERROR);
+	event->SetString(wxString(buf));
+	wxQueueEvent((wxWindow *)main_frame, event);
 }
 
 #ifdef _WIN32

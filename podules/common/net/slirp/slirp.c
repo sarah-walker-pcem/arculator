@@ -90,8 +90,12 @@ static int get_dns_addr(struct in_addr *pdns_addr)
     struct in_addr tmp_addr;
     
     f = fopen("/etc/resolv.conf", "r");
-    if (!f)
-        return -1;
+    if (!f) {
+	/* SW: Use localhost for DNS */
+        lprint("No nameservers found, using localhost for DNS");
+        pdns_addr->s_addr = 0x0100007f;
+        return 0;
+    }
 
     lprint("IP address of your DNS(s): ");
     while (fgets(buff, 512, f) != NULL) {
@@ -113,8 +117,11 @@ static int get_dns_addr(struct in_addr *pdns_addr)
         }
     }
     fclose(f);
-    if (!found)
-        return -1;
+    if (!found) {
+	/* SW: Use localhost for DNS */
+        lprint("No nameservers found, using localhost for DNS");
+        pdns_addr->s_addr = 0x0100007f;
+    }
     return 0;
 }
 

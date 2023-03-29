@@ -277,7 +277,7 @@ static void aeh50_close(struct podule_t *podule)
 
 	aeh50->net->close((struct net_t *)aeh50->net);
 
-	ne2000_close(&aeh50->ne2000);
+	ne2000_close(aeh50->ne2000);
 
 	free(aeh50);
 }

@@ -777,6 +777,8 @@ podule_config_selection_t *cdrom_devices_config(void)
 		{
 			if (!strncmp(dp->d_name, "cdrom", 5))
 				nr_drives++;
+			if (!strncmp(dp->d_name, "sr", 2))
+				nr_drives++;
 		}
 
 		closedir(dirp);
@@ -801,7 +803,7 @@ podule_config_selection_t *cdrom_devices_config(void)
 	{
 		while (((dp = readdir(dirp)) != NULL))
 		{
-			if (!strncmp(dp->d_name, "cdrom", 5))
+			if (!strncmp(dp->d_name, "cdrom", 5) || !strncmp(dp->d_name, "sr", 2))
 			{
 				snprintf(s, sizeof(s), "/dev/%s", dp->d_name);
 				strcpy(cdrom_dev_text, s);

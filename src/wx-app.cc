@@ -297,15 +297,23 @@ void Frame::OnMenuCommand(wxCommandEvent &event)
 	{
 		arc_disc_eject(3);
 	}
-	else if (event.GetId() >= XRCID("IDM_DISC_NOISE[0]") && event.GetId() <= XRCID("IDM_DISC_NOISE[4]"))
+	else if (event.GetId() == XRCID("IDM_DISC_NOISE[0]") || event.GetId() == XRCID("IDM_DISC_NOISE[1]") ||
+		 event.GetId() == XRCID("IDM_DISC_NOISE[2]") || event.GetId() == XRCID("IDM_DISC_NOISE[3]") ||
+		 event.GetId() == XRCID("IDM_DISC_NOISE[4]"))
 	{
 		wxMenuItem *item = ((wxMenu*)menu)->FindItem(event.GetId());
 		item->Check(true);
 
 		if (event.GetId() == XRCID("IDM_DISC_NOISE[0]"))
 			disc_noise_gain = DISC_NOISE_DISABLED;
+		else if (event.GetId() == XRCID("IDM_DISC_NOISE[1]"))
+			disc_noise_gain = -2 * 0;
+		else if (event.GetId() == XRCID("IDM_DISC_NOISE[2]"))
+			disc_noise_gain = -2 * 1;
+		else if (event.GetId() == XRCID("IDM_DISC_NOISE[3]"))
+			disc_noise_gain = -2 * 2;
 		else
-			disc_noise_gain = -2 * (event.GetId() - XRCID("IDM_DISC_NOISE[1]"));
+			disc_noise_gain = -2 * 3;
 	}
 	else if (event.GetId() == XRCID("IDM_SOUND_ENABLE"))
 	{
@@ -321,12 +329,35 @@ void Frame::OnMenuCommand(wxCommandEvent &event)
 		wxMenuItem *item = ((wxMenu*)menu)->FindItem(event.GetId());
 		item->Check(stereo);
 	}
-	else if (event.GetId() >= XRCID("IDM_SOUND_GAIN[0]") && event.GetId() <= XRCID("IDM_SOUND_GAIN[9]"))
+	else if (event.GetId() == XRCID("IDM_SOUND_GAIN[0]") || event.GetId() == XRCID("IDM_SOUND_GAIN[1]") ||
+		 event.GetId() == XRCID("IDM_SOUND_GAIN[2]") || event.GetId() == XRCID("IDM_SOUND_GAIN[3]") ||
+		 event.GetId() == XRCID("IDM_SOUND_GAIN[4]") || event.GetId() == XRCID("IDM_SOUND_GAIN[5]") ||
+		 event.GetId() == XRCID("IDM_SOUND_GAIN[6]") || event.GetId() == XRCID("IDM_SOUND_GAIN[7]") ||
+		 event.GetId() == XRCID("IDM_SOUND_GAIN[8]") || event.GetId() == XRCID("IDM_SOUND_GAIN[9]"))
 	{
 		wxMenuItem *item = ((wxMenu*)menu)->FindItem(event.GetId());
 		item->Check(true);
 
-		sound_gain = 2 * (event.GetId() - XRCID("IDM_SOUND_GAIN[0]"));
+		if (event.GetId() == XRCID("IDM_SOUND_GAIN[0]"))
+			sound_gain = 2 * 0;
+		else if (event.GetId() == XRCID("IDM_SOUND_GAIN[1]"))
+			sound_gain = 2 * 1;
+		else if (event.GetId() == XRCID("IDM_SOUND_GAIN[2]"))
+			sound_gain = 2 * 2;
+		else if (event.GetId() == XRCID("IDM_SOUND_GAIN[3]"))
+			sound_gain = 2 * 3;
+		else if (event.GetId() == XRCID("IDM_SOUND_GAIN[4]"))
+			sound_gain = 2 * 4;
+		else if (event.GetId() == XRCID("IDM_SOUND_GAIN[5]"))
+			sound_gain = 2 * 5;
+		else if (event.GetId() == XRCID("IDM_SOUND_GAIN[6]"))
+			sound_gain = 2 * 6;
+		else if (event.GetId() == XRCID("IDM_SOUND_GAIN[7]"))
+			sound_gain = 2 * 7;
+		else if (event.GetId() == XRCID("IDM_SOUND_GAIN[8]"))
+			sound_gain = 2 * 8;
+		else if (event.GetId() == XRCID("IDM_SOUND_GAIN[9]"))
+			sound_gain = 2 * 9;
 	}
 	else if (event.GetId() == XRCID("IDM_FILTER_ORIGINAL"))
 	{
@@ -439,12 +470,30 @@ void Frame::OnMenuCommand(wxCommandEvent &event)
 		video_linear_filtering = 1;
 		arc_renderer_reset();
 	}
-	else if (event.GetId() >= XRCID("IDM_VIDEO_SCALE[0]") && event.GetId() <= XRCID("IDM_VIDEO_SCALE[7]"))
+	else if (event.GetId() == XRCID("IDM_VIDEO_SCALE[0]") || event.GetId() == XRCID("IDM_VIDEO_SCALE[1]") ||
+		 event.GetId() == XRCID("IDM_VIDEO_SCALE[2]") || event.GetId() == XRCID("IDM_VIDEO_SCALE[3]") ||
+		 event.GetId() == XRCID("IDM_VIDEO_SCALE[4]") || event.GetId() == XRCID("IDM_VIDEO_SCALE[5]") ||
+		 event.GetId() == XRCID("IDM_VIDEO_SCALE[6]") || event.GetId() == XRCID("IDM_VIDEO_SCALE[7]"))
 	{
 		wxMenuItem *item = ((wxMenu*)menu)->FindItem(event.GetId());
 		item->Check(true);
 
-		video_scale = event.GetId() - XRCID("IDM_VIDEO_SCALE[0]");
+		if (event.GetId() == XRCID("IDM_VIDEO_SCALE[0]"))
+			video_scale = 0;
+		else if (event.GetId() == XRCID("IDM_VIDEO_SCALE[1]"))
+			video_scale = 1;
+		else if (event.GetId() == XRCID("IDM_VIDEO_SCALE[2]"))
+			video_scale = 2;
+		else if (event.GetId() == XRCID("IDM_VIDEO_SCALE[3]"))
+			video_scale = 3;
+		else if (event.GetId() == XRCID("IDM_VIDEO_SCALE[4]"))
+			video_scale = 4;
+		else if (event.GetId() == XRCID("IDM_VIDEO_SCALE[5]"))
+			video_scale = 5;
+		else if (event.GetId() == XRCID("IDM_VIDEO_SCALE[6]"))
+			video_scale = 6;
+		else if (event.GetId() == XRCID("IDM_VIDEO_SCALE[7]"))
+			video_scale = 7;
 	}
 	else if (event.GetId() == XRCID("IDM_VIDEO_FS_FULL"))
 	{

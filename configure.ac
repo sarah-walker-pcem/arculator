@@ -17,12 +17,10 @@ AC_MSG_CHECKING([whether to enable debugging])
 AC_ARG_ENABLE(debug,
           AS_HELP_STRING([--enable-debug],[build debug executable]))
 if test "$enable_debug" = "yes"; then
-   CFLAGS="-Wall -O0 -g -D_DEBUG -DDEBUG_LOG"
-   CXXFLAGS="-Wall -O0 -g -D_DEBUG -DDEBUG_LOG"
+   CFLAGS_BUILD="-Wall -O0 -g -D_DEBUG -DDEBUG_LOG"
    AC_MSG_RESULT([yes])
 else
-   CFLAGS="-O3"
-   CXXFLAGS="-O3"
+   CFLAGS_BUILD="-O3"
    AC_MSG_RESULT([no])
 fi
 
@@ -31,7 +29,7 @@ AC_ARG_ENABLE(release_build,
           AS_HELP_STRING([--enable-release-build],[build for release]))
 if test "$enable_release_build" = "yes"; then
    AC_MSG_RESULT([yes])
-   CFLAGS += " -DRELEASE_BUILD"
+   CFLAGS_RELEASE=" -DRELEASE_BUILD"
 else
    AC_MSG_RESULT([no])
 fi
@@ -101,6 +99,8 @@ case "$host" in
        ;;
 esac
 
+CFLAGS="$CFLAGS_BUILD $CFLAGS_RELEASE"
+CXXFLAGS="$CFLAGS_BUILD $CFLAGS_RELEASE"
 LIBS="$LIBS $WX_LIBS $SDL_LIBS"
 
 AM_CONDITIONAL(OS_LINUX, [test "$build_linux" = "yes"])

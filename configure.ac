@@ -86,11 +86,27 @@ case "$host" in
        AC_SUBST(SET_MAKE, 'MAKE=mingw32-make')
        ;;
     *-*-linux*)
+       AC_MSG_CHECKING([whether to use PCAP for networking])
+       AC_ARG_ENABLE(pcap,
+           AS_HELP_STRING([--enable-pcap],[build using PCAP]))
+       if test "$enable_pcap" = "yes"; then
+          AC_MSG_RESULT([yes])
+          CFLAGS_PCAP=" -DENABLE_PCAP"
+       else
+          AC_MSG_RESULT([no])
+       fi
+
        if test "$enable_podules" != "no"; then
           AC_CHECK_LIB(asound, snd_pcm_open,
                [],
                [echo "You need to install the ALSA library."
                 exit -1])
+          if test "$enable_pcap" = "yes"; then
+             AC_CHECK_LIB(pcap, pcap_open_live,
+                 [],
+                 [echo "You need to install the PCAP library."
+                  exit -1])
+          fi
        fi
        build_linux="yes"
        ;;
@@ -99,8 +115,8 @@ case "$host" in
        ;;
 esac
 
-CFLAGS="$CFLAGS_BUILD $CFLAGS_RELEASE"
-CXXFLAGS="$CFLAGS_BUILD $CFLAGS_RELEASE"
+CFLAGS="$CFLAGS_BUILD $CFLAGS_RELEASE $CFLAGS_PCAP"
+CXXFLAGS="$CFLAGS_BUILD $CFLAGS_RELEASE $CFLAGS_PCAP"
 LIBS="$LIBS $WX_LIBS $SDL_LIBS"
 
 AM_CONDITIONAL(OS_LINUX, [test "$build_linux" = "yes"])
@@ -109,6 +125,7 @@ AM_CONDITIONAL(OS_OTHER, [test "$build_other" = "yes"])
 AM_CONDITIONAL(OS_MACOSX, [test "$build_macosx" = "yes"])
 
 AM_CONDITIONAL(BUILD_PODULES, [test "$enable_podules" != "no"])
+AM_CONDITIONAL(ENABLE_PCAP, [test "$enable_pcap" = "yes"])
 
 AC_CONFIG_FILES([Makefile src/Makefile])
 AC_OUTPUT

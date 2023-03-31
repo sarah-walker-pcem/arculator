@@ -1,6 +1,8 @@
 #include <pcap.h>
 #include <string.h>
+#ifdef WIN32
 #include <windows.h>
+#endif
 #include "net.h"
 #include "net_pcap.h"
 
@@ -18,6 +20,8 @@ typedef struct net_pcap_t
 #define ETH_PROMISC            1                        /* promiscuous mode = true */
 #define ETH_MAX_PACKET      1514                        /* maximum ethernet packet size */
 #define PCAP_READ_TIMEOUT -1
+
+#ifdef WIN32
 
 static HINSTANCE net_hLib = 0;                      /* handle to DLL */
 static const char *net_lib_name = "wpcap.dll";
@@ -46,8 +50,27 @@ static int (*_pcap_findalldevs)(pcap_if_t **, char *);
 static void (*_pcap_freealldevs)(pcap_if_t *);
 static int (*_pcap_datalink)(pcap_t *);
 
+#else
+
+#define _pcap_lib_version pcap_lib_version
+#define _pcap_open_live pcap_open_live
+#define _pcap_sendpacket pcap_sendpacket
+#define _pcap_setnonblock pcap_setnonblock
+#define _pcap_next pcap_next
+#define _pcap_close pcap_close
+#define _pcap_getnonblock pcap_getnonblock
+#define _pcap_compile pcap_compile
+#define _pcap_setfilter pcap_setfilter
+
+#define _pcap_findalldevs pcap_findalldevs
+#define _pcap_freealldevs pcap_freealldevs
+#define _pcap_datalink pcap_datalink
+
+#endif
+
 static int get_network_name(char *dev_name, char *regval)
 {
+#ifdef WIN32
 	if (dev_name[strlen( "\\Device\\NPF_" )] == '{')
 	{
 		char regkey[2048];
@@ -75,11 +98,13 @@ static int get_network_name(char *dev_name, char *regval)
 			RegCloseKey (reghnd);
 		}
 	}
+#endif
 	return -1;
 }
 
 static int pcap_open_library(void)
 {
+#ifdef WIN32
 	net_hLib = LoadLibraryA(net_lib_name);
 	if(net_hLib==0)
 	{
@@ -99,13 +124,16 @@ static int pcap_open_library(void)
 	_pcap_findalldevs = (void *)GetProcAddress(net_hLib, "pcap_findalldevs");
 	_pcap_freealldevs = (void *)GetProcAddress(net_hLib, "pcap_freealldevs");
 	_pcap_datalink = (void *)GetProcAddress(net_hLib, "pcap_datalink");
+#endif
 
 	return 0;
 }
 
 static void pcap_close_library(void)
 {
+#ifdef WIN32
 	FreeLibrary(net_hLib);
+#endif
 }
 
 static int net_pcap_read(net_t *net, packet_t *packet)

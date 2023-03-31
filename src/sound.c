@@ -7,8 +7,8 @@
 #include "config.h"
 #include "ioc.h"
 #include "memc.h"
+#include "plat_sound.h"
 #include "sound.h"
-#include "soundopenal.h"
 #include "timer.h"
 
 int stereoimages[8];
@@ -151,7 +151,7 @@ static void pollsound_100ms(void *p)
 
 	sound_write_ptr = 0;
 	if (soundena)
-		al_givebuffer(sound_out_buffer);
+		sound_givebuffer(sound_out_buffer);
 //        rpclog("          samp_fp=%i samp_wp=%i samp_rp=%i %08x %08x\n", samp_fp, samp_wp, (samp_rp >> 15) * 2, samp_rp, SAMP_INC);
 }
 

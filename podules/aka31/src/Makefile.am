@@ -21,18 +21,18 @@ noinst_SCRIPTS += ../aka31.dylib
 	cp .libs/libaka31.dylib ../aka31.dylib
 endif
 
-amrefresh:	
+amrefresh:
 
-libaka31_la_SOURCES = aka31.c d71071l.c ../../common/scsi/hdd_file.c ../../common/scsi/scsi.c ../../common/scsi/scsi_cd.c ../../common/scsi/scsi_config.c ../../common/scsi/scsi_hd.c wd33c93a.c ../../common/sound/sound_openal.c
+libaka31_la_SOURCES = aka31.c d71071l.c ../../common/scsi/hdd_file.c ../../common/scsi/scsi.c ../../common/scsi/scsi_cd.c ../../common/scsi/scsi_config.c ../../common/scsi/scsi_hd.c wd33c93a.c ../../common/sound/sound_out_sdl2.c
 
 if OS_WINDOWS
-libaka31_la_SOURCES += ../../common/cdrom/cdrom-windows-ioctl.c 
+libaka31_la_SOURCES += ../../common/cdrom/cdrom-windows-ioctl.c
 endif
 if OS_LINUX
-libaka31_la_SOURCES += ../../common/cdrom/cdrom-linux-ioctl.c 
+libaka31_la_SOURCES += ../../common/cdrom/cdrom-linux-ioctl.c
 endif
 if OS_MACOSX
-libaka31_la_SOURCES += ../../common/cdrom/cdrom-osx-ioctl.c 
+libaka31_la_SOURCES += ../../common/cdrom/cdrom-osx-ioctl.c
 endif
 
 libaka31_la_CFLAGS = -I../../../src -I../../common/cdrom -I../../common/sound -I../../common/scsi

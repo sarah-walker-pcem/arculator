@@ -33,11 +33,11 @@
 #include "memc.h"
 #include "plat_input.h"
 #include "plat_joystick.h"
+#include "plat_sound.h"
 #include "plat_video.h"
 #include "podules.h"
 #include "romload.h"
 #include "sound.h"
-#include "soundopenal.h"
 #include "st506.h"
 #include "timer.h"
 #include "vidc.h"
@@ -184,8 +184,7 @@ int arc_init()
 	fullscreen=0;
 	//mousehack=0;
 	reinitvideo();
-	if (soundena)
-	   al_init();
+	sound_dev_init();
 //        joystick_init();
 
 	c82c711_init();
@@ -364,6 +363,7 @@ void arc_close()
 	disc_close(3);
 	rpclog("ddnoise_close\n");
 	ddnoise_close();
+	sound_dev_close();
 	rpclog("closevideo\n");
 	closevideo();
 	rpclog("arc_close done\n");

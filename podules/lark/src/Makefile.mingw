@@ -1,8 +1,8 @@
 VPATH = . ..\..\common\midi ..\..\common\sound ..\..\common\uart
 CPP  = g++.exe
 CC   = gcc.exe
-OBJ  = 16550.o ad1848.o am7202a.o lark.o midi_win.o sound_openal.o sound_wavein.o
-LIBS = -lopenal32 -lwinmm
+OBJ  = 16550.o ad1848.o am7202a.o lark.o midi_win.o sound_out_sdl2.o sound_wavein.o
+LIBS = -lSDL2 -lwinmm
 CFLAGS = $(INCS) -DBUILDING_DLL=1 -I..\..\..\src -I..\..\common\midi -I..\..\common\sound -I..\..\common\uart -O3
 
 all: lark.dll

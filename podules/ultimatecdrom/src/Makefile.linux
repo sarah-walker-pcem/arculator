@@ -1,8 +1,8 @@
 VPATH = . ../../common/cdrom ../../common/sound
 CPP  = g++
 CC   = gcc
-OBJ  = mitsumi.o ultimatecdrom.o cdrom-linux-ioctl.o sound_openal.o
-LIBS = -shared -lopenal
+OBJ  = mitsumi.o ultimatecdrom.o cdrom-linux-ioctl.o sound_out_sdl2.o
+LIBS = -shared -lSDL2
 CFLAGS = $(INCS) -DBUILDING_DLL=1 -I../../../src -I../../common/cdrom -I../../common/sound -g3 -fPIC
 
 all: ultimatecdrom

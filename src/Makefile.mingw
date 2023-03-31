@@ -5,9 +5,9 @@ WINDRES = windres.exe
 WXVERSION = 31
 WXINCLUDE = E:/mingwget/include/wx-3.0
 CFLAGS = -O3 -fomit-frame-pointer -Wall -Werror -fno-strict-aliasing
-OBJ = 82c711.o 82c711_fdc.o arm.o bmu.o cmos.o colourcard.o config.o cp15.o ddnoise.o debugger.o debugger_swis.o disc.o disc_adf.o disc_apd.o disc_fdi.o disc_hfe.o disc_jfd.o disc_mfm_common.o disc_scp.o ds2401.o eterna.o fdi2raw.o fpa.o g16.o g332.o hostfs.o hostfs-win.o ide.o ide_a3in.o ide_config.o ide_idea.o ide_riscdev.o ide_zidefs.o ide_zidefs_a3k.o input_sdl2.o ioc.o ioeb.o joystick.o keyboard.o lc.o main.o mem.o memc.o podules.o podules-win.o printer.o riscdev_hdfc.o romload.o sound.o soundopenal.o st506.o st506_akd52.o timer.o vidc.o video_sdl2.o wd1770.o wx-app.o wx-config.o wx-config_sel.o wx-hd_conf.o wx-console.o wx-hd_new.o wx-joystick-config.o wx-main.o wx-podule-config.o wx-resources.o wx-sdl2-joystick.o wx-win32.o arculator.res
+OBJ = 82c711.o 82c711_fdc.o arm.o bmu.o cmos.o colourcard.o config.o cp15.o ddnoise.o debugger.o debugger_swis.o disc.o disc_adf.o disc_apd.o disc_fdi.o disc_hfe.o disc_jfd.o disc_mfm_common.o disc_scp.o ds2401.o eterna.o fdi2raw.o fpa.o g16.o g332.o hostfs.o hostfs-win.o ide.o ide_a3in.o ide_config.o ide_idea.o ide_riscdev.o ide_zidefs.o ide_zidefs_a3k.o input_sdl2.o ioc.o ioeb.o joystick.o keyboard.o lc.o main.o mem.o memc.o podules.o podules-win.o printer.o riscdev_hdfc.o romload.o sound.o sound_sdl2.o st506.o st506_akd52.o timer.o vidc.o video_sdl2.o wd1770.o wx-app.o wx-config.o wx-config_sel.o wx-hd_conf.o wx-console.o wx-hd_new.o wx-joystick-config.o wx-main.o wx-podule-config.o wx-resources.o wx-sdl2-joystick.o wx-win32.o arculator.res
 
-LIBS =  -Wl,--subsystem,windows -mthreads -mwindows -lwxmsw31u_xrc -lwxmsw31u_html -lwxmsw31u_adv -lwxbase31u_xml -lwxmsw31u_core -lwxbase31u -lwxtiff -lwxjpeg -lwxpng -lwxzlib -lwxregexu -lwxexpat -lkernel32 -lcomdlg32 -lwinspool -lcomctl32 -lole32 -loleaut32 -luuid -lrpcrt4 -ladvapi32 -lmingw32 -lopengl32 -lopenal32 -lstdc++ -lSDL2main -lSDL2 -lm -ldinput8 -ldxguid -ldxerr8 -luser32 -lgdi32 -lwinmm -limm32 -lole32 -loleaut32 -lshell32 -lversion -luuid -static-libgcc -luxtheme -loleacc -lshlwapi -lz
+LIBS =  -Wl,--subsystem,windows -mthreads -mwindows -lwxmsw31u_xrc -lwxmsw31u_html -lwxmsw31u_adv -lwxbase31u_xml -lwxmsw31u_core -lwxbase31u -lwxtiff -lwxjpeg -lwxpng -lwxzlib -lwxregexu -lwxexpat -lkernel32 -lcomdlg32 -lwinspool -lcomctl32 -lole32 -loleaut32 -luuid -lrpcrt4 -ladvapi32 -lmingw32 -lopengl32 -lstdc++ -lSDL2main -lSDL2 -lm -ldinput8 -ldxguid -ldxerr8 -luser32 -lgdi32 -lwinmm -limm32 -lole32 -loleaut32 -lshell32 -lversion -luuid -static-libgcc -luxtheme -loleacc -lshlwapi -lz
 
 Arculator.exe: $(OBJ)
 	$(CPP) $(OBJ) -o "Arculator.exe" $(LIBS)
@@ -30,4 +30,4 @@ wx-resources.o : arculator.xrc
 	$(CPP) $(CXXFLAGS) -c wx-resources.cc
 
 arculator.res: arculator.rc
-	$(WINDRES) -i arculator.rc --input-format=rc -o arculator.res -O coff 
+	$(WINDRES) -i arculator.rc --input-format=rc -o arculator.res -O coff

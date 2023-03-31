@@ -1,8 +1,8 @@
 VPATH = . ..\..\common\scsi ..\..\common\cdrom ..\..\common\sound ..\..\common\eeprom
 CPP  = g++.exe
 CC   = gcc.exe
-OBJ  = oak_scsi.o ncr5380.o cdrom-windows-ioctl.o hdd_file.o scsi.o scsi_config.o scsi_cd.o scsi_hd.o sound_openal.o 93c06.o
-LIBS = -lopenal32  
+OBJ  = oak_scsi.o ncr5380.o cdrom-windows-ioctl.o hdd_file.o scsi.o scsi_config.o scsi_cd.o scsi_hd.o sound_out_sdl2.o 93c06.o
+LIBS = -lSDL2
 CFLAGS = $(INCS) -DBUILDING_DLL=1 -I..\..\..\src -I..\..\common\scsi -I..\..\common\cdrom -I..\..\common\sound -I..\..\common\eeprom -g3
 
 all: oak_scsi.dll

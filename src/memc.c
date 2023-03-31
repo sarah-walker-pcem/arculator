@@ -9,7 +9,6 @@ int flybacklines;
 #include "ioc.h"
 #include "mem.h"
 #include "memc.h"
-#include "soundopenal.h"
 #include "timer.h"
 #include "vidc.h"
 

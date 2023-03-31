@@ -1,8 +1,8 @@
 VPATH = . ..\..\common\scsi ..\..\common\cdrom ..\..\common\sound
 CPP  = g++.exe
 CC   = gcc.exe
-OBJ  = aka31.o cdrom-windows-ioctl.o d71071l.o hdd_file.o scsi.o scsi_config.o scsi_cd.o scsi_hd.o sound_openal.o wd33c93a.o
-LIBS = -lopenal32
+OBJ  = aka31.o cdrom-windows-ioctl.o d71071l.o hdd_file.o scsi.o scsi_config.o scsi_cd.o scsi_hd.o sound_out_sdl2.o wd33c93a.o
+LIBS = -lSDL2
 CFLAGS = $(INCS) -DBUILDING_DLL=1 -I..\..\..\src -I..\..\common\scsi -I..\..\common\cdrom -I..\..\common\sound -O3
 
 all: aka31.dll

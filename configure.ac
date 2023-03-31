@@ -63,7 +63,7 @@ AM_PATH_WXCONFIG($reqwx, wxWin=1)
 if test "$wxWin" != 1; then
    AC_MSG_ERROR([
       wxWidgets must be installed on your system.
- 
+
       Please check that wx-config is in path, the directory
       where wxWidgets libraries are installed (returned by
       'wx-config --libs' or 'wx-config --static --libs' command)
@@ -81,20 +81,13 @@ build_other="no"
 
 case "$host" in
     *-*-darwin*)
-       LIBS="$LIBS -framework OpenAL"
        build_macosx="yes"
        ;;
     *-*-cygwin* | *-*-mingw32*)
-       AC_CHECK_LIB([openal], [alGetError], [], \
-          [echo "You need to install the OpenAL library."
-           exit -1])
        build_win="yes"
        AC_SUBST(SET_MAKE, 'MAKE=mingw32-make')
        ;;
     *-*-linux*)
-       AC_CHECK_LIB([openal], [alGetError], [], \
-           [echo "You need to install the OpenAL library."
-           exit -1])
        if test "$enable_podules" != "no"; then
           AC_CHECK_LIB(asound, snd_pcm_open,
                [],
@@ -104,9 +97,6 @@ case "$host" in
        build_linux="yes"
        ;;
     *)
-       AC_CHECK_LIB([openal], [alGetError], [], \
-           [echo "You need to install the OpenAL library."
-           exit -1])
        build_other="yes"
        ;;
 esac

@@ -8,6 +8,13 @@ lib_LTLIBRARIES = libaka05.la
 noinst_SCRIPTS =
 CLEANFILES =
 
+if OS_WINDOWS
+CLEANFILES += $(noinst_SCRIPTS)
+noinst_SCRIPTS += ../aka05.dll
+../aka05.dll: libaka05.la
+	cp .libs/libaka05-0.dll ../aka05.dll
+libaka05_la_LDFLAGS = -no-undefined
+endif
 if OS_LINUX
 CLEANFILES += $(noinst_SCRIPTS)
 noinst_SCRIPTS += ../aka05.so

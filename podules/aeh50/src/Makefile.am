@@ -8,6 +8,13 @@ lib_LTLIBRARIES = libaeh50.la
 noinst_SCRIPTS =
 CLEANFILES =
 
+if OS_WINDOWS
+CLEANFILES += $(noinst_SCRIPTS)
+noinst_SCRIPTS += ../aeh50.dll
+../aeh50.dll: libaeh50.la
+	cp .libs/libaeh50-0.dll ../aeh50.dll
+libaeh50_la_LDFLAGS = -no-undefined
+endif
 if OS_LINUX
 CLEANFILES += $(noinst_SCRIPTS)
 noinst_SCRIPTS += ../aeh50.so
@@ -28,5 +35,10 @@ libaeh50_la_SOURCES += ../../common/net/net.c ../../common/net/net_slirp.c ../..
 
 libaeh50_la_CFLAGS = -I../../../src -I../../common/net -I../../common/net/slirp
 libaeh50_la_LIBADD = @LIBS@
+
+if OS_WINDOWS
+libaeh50_la_SOURCES += ../../common/net/net_pcap.c
+libaeh50_la_LIBADD += -lwsock32 -liphlpapi -lkernel32
+endif
 
 endif

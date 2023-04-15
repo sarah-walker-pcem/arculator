@@ -8,6 +8,13 @@ lib_LTLIBRARIES = libdesignit_e200.la
 noinst_SCRIPTS =
 CLEANFILES =
 
+if OS_WINDOWS
+CLEANFILES += $(noinst_SCRIPTS)
+noinst_SCRIPTS += ../designit_e200.dll
+../designit_e200.dll: libdesignit_e200.la
+	cp .libs/libdesignit_e200-0.dll ../designit_e200.dll
+libdesignit_e200_la_LDFLAGS = -no-undefined
+endif
 if OS_LINUX
 CLEANFILES += $(noinst_SCRIPTS)
 noinst_SCRIPTS += ../designit_e200.so
@@ -28,5 +35,10 @@ libdesignit_e200_la_SOURCES += ../../common/net/net.c ../../common/net/net_slirp
 
 libdesignit_e200_la_CFLAGS = -I../../../src -I../../common/net -I../../common/net/slirp
 libdesignit_e200_la_LIBADD = @LIBS@
+
+if OS_WINDOWS
+libdesignit_e200_la_SOURCES += ../../common/net/net_pcap.c
+libdesignit_e200_la_LIBADD += -lwsock32 -liphlpapi -lkernel32
+endif
 
 endif

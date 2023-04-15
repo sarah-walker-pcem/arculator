@@ -8,6 +8,13 @@ lib_LTLIBRARIES = libaka31.la
 noinst_SCRIPTS =
 CLEANFILES =
 
+if OS_WINDOWS
+CLEANFILES += $(noinst_SCRIPTS)
+noinst_SCRIPTS += ../aka31.dll
+../aka31.dll: libaka31.la
+	cp .libs/libaka31-0.dll ../aka31.dll
+libaka31_la_LDFLAGS = -no-undefined
+endif
 if OS_LINUX
 CLEANFILES += $(noinst_SCRIPTS)
 noinst_SCRIPTS += ../aka31.so

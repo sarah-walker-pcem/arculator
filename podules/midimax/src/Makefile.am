@@ -8,6 +8,13 @@ lib_LTLIBRARIES = libmidimax.la
 noinst_SCRIPTS =
 CLEANFILES =
 
+if OS_WINDOWS
+CLEANFILES += $(noinst_SCRIPTS)
+noinst_SCRIPTS += ../midimax.dll
+../midimax.dll: libmidimax.la
+	cp .libs/libmidimax-0.dll ../midimax.dll
+libmidimax_la_LDFLAGS = -no-undefined
+endif
 if OS_LINUX
 CLEANFILES += $(noinst_SCRIPTS)
 noinst_SCRIPTS += ../midimax.so
@@ -36,6 +43,10 @@ libmidimax_la_SOURCES += ../../common/midi/midi_alsa.c
 endif
 if OS_MACOSX
 libmidimax_la_SOURCES += ../../common/midi/midi_null.c 
+endif
+
+if OS_WINDOWS
+libmidimax_la_LIBADD = -lwinmm
 endif
 
 endif

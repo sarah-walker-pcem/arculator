@@ -8,6 +8,13 @@ lib_LTLIBRARIES = liboak_scsi.la
 noinst_SCRIPTS =
 CLEANFILES =
 
+if OS_WINDOWS
+CLEANFILES += $(noinst_SCRIPTS)
+noinst_SCRIPTS += ../oak_scsi.dll
+../oak_scsi.dll: liboak_scsi.la
+	cp .libs/liboak_scsi-0.dll ../oak_scsi.dll
+liboak_scsi_la_LDFLAGS = -no-undefined
+endif
 if OS_LINUX
 CLEANFILES += $(noinst_SCRIPTS)
 noinst_SCRIPTS += ../oak_scsi.so

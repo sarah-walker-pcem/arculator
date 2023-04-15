@@ -8,6 +8,13 @@ lib_LTLIBRARIES = libaka10.la
 noinst_SCRIPTS =
 CLEANFILES =
 
+if OS_WINDOWS
+CLEANFILES += $(noinst_SCRIPTS)
+noinst_SCRIPTS += ../aka10.dll
+../aka10.dll: libaka10.la
+	cp .libs/libaka10-0.dll ../aka10.dll
+libaka10_la_LDFLAGS = -no-undefined
+endif
 if OS_LINUX
 CLEANFILES += $(noinst_SCRIPTS)
 noinst_SCRIPTS += ../aka10.so
@@ -37,5 +44,9 @@ endif
 
 libaka10_la_CFLAGS = -I../../../src -I../../common/adc -I../../common/joystick -I../../common/midi -I../../common/misc -I../../common/uart $(shell sdl2-config --cflags)
 libaka10_la_LIBADD = @LIBS@
+
+if OS_WINDOWS
+libaka10_la_LIBADD += -lwinmm
+endif
 
 endif

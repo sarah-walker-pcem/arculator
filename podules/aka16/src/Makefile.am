@@ -8,6 +8,13 @@ lib_LTLIBRARIES = libaka16.la
 noinst_SCRIPTS =
 CLEANFILES =
 
+if OS_WINDOWS
+CLEANFILES += $(noinst_SCRIPTS)
+noinst_SCRIPTS += ../aka16.dll
+../aka16.dll: libaka16.la
+	cp .libs/libaka16-0.dll ../aka16.dll
+libaka16_la_LDFLAGS = -no-undefined
+endif
 if OS_LINUX
 CLEANFILES += $(noinst_SCRIPTS)
 noinst_SCRIPTS += ../aka16.so
@@ -37,5 +44,9 @@ endif
 
 libaka16_la_CFLAGS = -I../../../src -I../../common/midi -I../../common/uart
 libaka16_la_LIBADD = @LIBS@
+
+if OS_WINDOWS
+libaka16_la_LIBADD += -lwinmm
+endif
 
 endif

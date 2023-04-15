@@ -8,6 +8,13 @@ lib_LTLIBRARIES = liblark.la
 noinst_SCRIPTS =
 CLEANFILES =
 
+if OS_WINDOWS
+CLEANFILES += $(noinst_SCRIPTS)
+noinst_SCRIPTS += ../lark.dll
+../lark.dll: liblark.la
+	cp .libs/liblark-0.dll ../lark.dll
+liblark_la_LDFLAGS = -no-undefined
+endif
 if OS_LINUX
 CLEANFILES += $(noinst_SCRIPTS)
 noinst_SCRIPTS += ../lark.so
@@ -37,5 +44,9 @@ endif
 
 liblark_la_CFLAGS = -I../../../src -I../../common/midi -I../../common/sound -I../../common/uart
 liblark_la_LIBADD = @LIBS@
+
+if OS_WINDOWS
+liblark_la_LIBADD += -lwinmm
+endif
 
 endif

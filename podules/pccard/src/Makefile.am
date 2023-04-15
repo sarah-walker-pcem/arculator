@@ -8,6 +8,13 @@ lib_LTLIBRARIES = libpccard.la
 noinst_SCRIPTS =
 CLEANFILES =
 
+if OS_WINDOWS
+CLEANFILES += $(noinst_SCRIPTS)
+noinst_SCRIPTS += ../pccard.dll
+../pccard.dll: libpccard.la
+	cp .libs/libpccard-0.dll ../pccard.dll
+libpccard_la_LDFLAGS = -no-undefined
+endif
 if OS_LINUX
 CLEANFILES += $(noinst_SCRIPTS)
 noinst_SCRIPTS += ../pccard.so

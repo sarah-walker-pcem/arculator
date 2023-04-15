@@ -8,6 +8,13 @@ lib_LTLIBRARIES = libultimatecdrom.la
 noinst_SCRIPTS =
 CLEANFILES =
 
+if OS_WINDOWS
+CLEANFILES += $(noinst_SCRIPTS)
+noinst_SCRIPTS += ../ultimatecdrom.dll
+../ultimatecdrom.dll: libultimatecdrom.la
+	cp .libs/libultimatecdrom-0.dll ../ultimatecdrom.dll
+libultimatecdrom_la_LDFLAGS = -no-undefined
+endif
 if OS_LINUX
 CLEANFILES += $(noinst_SCRIPTS)
 noinst_SCRIPTS += ../ultimatecdrom.so

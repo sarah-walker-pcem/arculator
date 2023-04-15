@@ -10,7 +10,9 @@ AM_INIT_AUTOMAKE
 AC_PROG_CC
 AC_PROG_CXX
 AM_PROG_CC_C_O
-LT_INIT([disable-static], [shared])
+AC_CACHE_VAL(lt_cv_deplibs_check_method,
+    [lt_cv_deplibs_check_method=pass_all])
+LT_INIT([disable-static], [shared], [win32-dll])
 
 
 AC_MSG_CHECKING([whether to enable debugging])

@@ -8,6 +8,13 @@ lib_LTLIBRARIES = libmorley_uap.la
 noinst_SCRIPTS =
 CLEANFILES =
 
+if OS_WINDOWS
+CLEANFILES += $(noinst_SCRIPTS)
+noinst_SCRIPTS += ../morley_uap.dll
+../morley_uap.dll: libmorley_uap.la
+	cp .libs/libmorley_uap-0.dll ../morley_uap.dll
+libmorley_uap_la_LDFLAGS = -no-undefined
+endif
 if OS_LINUX
 CLEANFILES += $(noinst_SCRIPTS)
 noinst_SCRIPTS += ../morley_uap.so

@@ -35,6 +35,10 @@ arculator_CFLAGS = $(subst -fpermissive,,$(shell $(WX_CONFIG_PATH) --cxxflags) $
 arculator_CXXFLAGS = $(shell $(WX_CONFIG_PATH) --cxxflags) $(shell sdl2-config --cflags)
 arculator_LDADD = @LIBS@
 
+if OS_WINDOWS
+arculator_SOURCES += hostfs-win.c podules-win.c wx-win32.c
+endif
+
 if OS_LINUX
 arculator_SOURCES += hostfs-unix.c podules-linux.c
 arculator_LDADD += -ldl -lX11

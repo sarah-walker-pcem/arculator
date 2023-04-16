@@ -326,10 +326,11 @@ void config_new()
 	fclose(f);
 }
 
+static const char blank[] = "";
+
 static section_t *find_section(const char *name, int is_global)
 {
 	section_t *current_section;
-	char blank[] = "";
 	list_t *head = is_global ? &global_config_head : &machine_config_head;
 
 	current_section = (section_t *)head->next;

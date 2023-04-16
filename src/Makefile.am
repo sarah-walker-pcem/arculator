@@ -5,7 +5,12 @@ bin_PROGRAMS = arculator
 noinst_SCRIPTS =
 CLEANFILES =
 
-if !OS_WINDOWS
+if OS_WINDOWS
+CLEANFILES += $(noinst_SCRIPTS)
+noinst_SCRIPTS += ../arculator.exe
+../arculator.exe: arculator.exe
+	cp .libs/arculator.exe ..
+else
 CLEANFILES += $(noinst_SCRIPTS)
 noinst_SCRIPTS += ../arculator
 ../arculator: arculator

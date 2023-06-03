@@ -765,6 +765,20 @@ void debugger_do()
 					}
 				}
 			}
+			if (!strncasecmp(command, "bclearw", 7))
+			{
+				if (!params)
+					break;
+				sscanf(param1, "%X", &e);
+				for (c = 0; c < 8; c++)
+				{
+					if (write_breakpoints[c] == e)
+						write_breakpoints[c] = -1;
+					if (c == e)
+						write_breakpoints[c] = -1;
+				}
+				break;
+			}
 			if (!strncasecmp(command, "bclear", 6))
 			{
 				if (!params)
@@ -863,6 +877,19 @@ void debugger_do()
 					}
 				}
 			}
+			if (!strncasecmp(command, "wclear", 6))
+			{
+				if (!params)
+					break;
+				sscanf(param1, "%X", &e);
+				for (c = 0; c < 8; c++)
+				{
+					if (write_watchpoints[c] == e)
+						write_watchpoints[c] = -1;
+					if (c == e)
+						write_watchpoints[c] = -1;
+				}
+			}
 			if (!strncasecmp(command, "write", 5))
 			{
 				if (params != 2)
@@ -885,6 +912,7 @@ void debugger_do()
 			case 'h': case 'H': case '?':
 			debug_out("\n    Debugger commands :\n\n");
 			debug_out("    bclear <n>/<addr>       - clear breakpoint n or breakpoint at addr\n");
+			debug_out("    bclearw <n>/<addr>      - clear write breakpoint n or write breakpoint at addr\n");
 			debug_out("    blist                   - list current breakpoints\n");
 			debug_out("    break <addr>            - set a breakpoint at addr\n");
 			debug_out("    breakw <addr>           - set a write breakpoint at addr\n");
@@ -904,6 +932,7 @@ void debugger_do()
 			debug_out("                              Available traps are prefabort, dataabort, addrexcep,\n");
 			debug_out("                              undefins and swi\n");
 			debug_out("    watchw <addr>           - set a write watchpoint at addr\n");
+			debug_out("    wclear <n>/<addr>       - clear watchpoint n or watchpoint at addr\n");
 			debug_out("    wlist                   - list current watchpoints\n");
 			debug_out("    write <addr> <data>     - Write word to memory\n");
 			debug_out("    writeb <addr> <data>    - Write byte to memory\n\n");

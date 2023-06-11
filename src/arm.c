@@ -1202,10 +1202,10 @@ static void opNULL(uint32_t opcode)
 {
 }
 
-static void opUNDEF(uint32_t opcode)
+static void opUNDEFDP(uint32_t opcode)
 {
-	rpclog("Illegal instruction %08X %07X\n", opcode, PC);
-	EXCEPTION_UNDEFINED();
+	if ((opcode & 0xf0) == 0x90)
+		EXCEPTION_UNDEFINED();
 }
 
 static void opANDreg(uint32_t opcode)
@@ -1461,7 +1461,9 @@ static void opSWP(uint32_t opcode)
 
 static void opTSTreg(uint32_t opcode)
 {
-	if (RD == 15)
+	if ((opcode & 0xf0) == 0x90)
+		EXCEPTION_UNDEFINED();
+	else if (RD == 15)
 	{
 		uint32_t src_data = shift_noflags(opcode);
 
@@ -1484,7 +1486,9 @@ static void opTSTreg(uint32_t opcode)
 
 static void opTEQreg(uint32_t opcode)
 {
-	if (RD == 15)
+	if ((opcode & 0xf0) == 0x90)
+		EXCEPTION_UNDEFINED();
+	else if (RD == 15)
 	{
 		uint32_t src_data = shift_noflags(opcode);
 
@@ -1533,6 +1537,12 @@ static void opSWPB(uint32_t opcode)
 
 static void opCMPreg(uint32_t opcode)
 {
+	if ((opcode & 0xf0) == 0x90)
+	{
+		EXCEPTION_UNDEFINED();
+		return;
+	}
+
 	uint32_t src_data = shift_noflags(opcode);
 
 	if (RD == 15)
@@ -1556,6 +1566,12 @@ static void opCMPreg(uint32_t opcode)
 
 static void opCMNreg(uint32_t opcode)
 {
+	if ((opcode & 0xf0) == 0x90)
+	{
+		EXCEPTION_UNDEFINED();
+		return;
+	}
+
 	uint32_t src_data = shift_noflags(opcode);
 
 	if (RD == 15)
@@ -1579,6 +1595,12 @@ static void opCMNreg(uint32_t opcode)
 
 static void opORRreg(uint32_t opcode)
 {
+	if ((opcode & 0xf0) == 0x90)
+	{
+		EXCEPTION_UNDEFINED();
+		return;
+	}
+
 	uint32_t templ = shift_noflags(opcode);
 
 	if (RD == 15)
@@ -1589,7 +1611,9 @@ static void opORRreg(uint32_t opcode)
 
 static void opORRregS(uint32_t opcode)
 {
-	if (RD == 15)
+	if ((opcode & 0xf0) == 0x90)
+		EXCEPTION_UNDEFINED();
+	else if (RD == 15)
 	{
 		uint32_t templ = shift_noflags(opcode);
 		LOAD_R15_S(GETADDR(RN) | templ);
@@ -1604,7 +1628,9 @@ static void opORRregS(uint32_t opcode)
 
 static void opMOVreg(uint32_t opcode)
 {
-	if (RD == 15)
+	if ((opcode & 0xf0) == 0x90)
+		EXCEPTION_UNDEFINED();
+	else if (RD == 15)
 		LOAD_R15(shift_noflags(opcode));
 	else
 		armregs[RD] = shift_noflags(opcode);
@@ -1612,7 +1638,9 @@ static void opMOVreg(uint32_t opcode)
 
 static void opMOVregS(uint32_t opcode)
 {
-	if (RD == 15)
+	if ((opcode & 0xf0) == 0x90)
+		EXCEPTION_UNDEFINED();
+	else if (RD == 15)
 		LOAD_R15_S(shift_noflags(opcode));
 	else
 	{
@@ -1623,6 +1651,12 @@ static void opMOVregS(uint32_t opcode)
 
 static void opBICreg(uint32_t opcode)
 {
+	if ((opcode & 0xf0) == 0x90)
+	{
+		EXCEPTION_UNDEFINED();
+		return;
+	}
+
 	uint32_t templ = shift_noflags(opcode);
 
 	if (RD == 15)
@@ -1633,7 +1667,9 @@ static void opBICreg(uint32_t opcode)
 
 static void opBICregS(uint32_t opcode)
 {
-	if (RD == 15)
+	if ((opcode & 0xf0) == 0x90)
+		EXCEPTION_UNDEFINED();
+	else if (RD == 15)
 	{
 		uint32_t templ = shift_noflags(opcode);
 		LOAD_R15_S(GETADDR(RN) & ~templ);
@@ -1648,7 +1684,9 @@ static void opBICregS(uint32_t opcode)
 
 static void opMVNreg(uint32_t opcode)
 {
-	if (RD == 15)
+	if ((opcode & 0xf0) == 0x90)
+		EXCEPTION_UNDEFINED();
+	else if (RD == 15)
 		LOAD_R15(~shift_noflags(opcode));
 	else
 		armregs[RD] = ~shift_noflags(opcode);
@@ -1656,7 +1694,9 @@ static void opMVNreg(uint32_t opcode)
 
 static void opMVNregS(uint32_t opcode)
 {
-	if (RD == 15)
+	if ((opcode & 0xf0) == 0x90)
+		EXCEPTION_UNDEFINED();
+	else if (RD == 15)
 		LOAD_R15_S(~shift_noflags(opcode));
 	else
 	{
@@ -2539,11 +2579,11 @@ static const OpFn opcode_fns[256] =
 {
 /*00*/	opANDreg,	opANDregS,	opEORreg,	opEORregS,	opSUBreg,	opSUBregS,	opRSBreg,	opRSBregS,
 /*08*/	opADDreg,	opADDregS,	opADCreg,	opADCregS,	opSBCreg,	opSBCregS,	opRSCreg,	opRSCregS,
-/*10*/	opSWP,		opTSTreg,	opNULL,		opTEQreg,	opSWPB,		opCMPreg,	opNULL,		opCMNreg,
+/*10*/	opSWP,		opTSTreg,	opUNDEFDP,	opTEQreg,	opSWPB,		opCMPreg,	opUNDEFDP,	opCMNreg,
 /*18*/	opORRreg,	opORRregS,	opMOVreg,	opMOVregS,	opBICreg,	opBICregS,	opMVNreg,	opMVNregS,
 /*20*/	opANDimm,	opANDimmS,	opEORimm,	opEORimmS,	opSUBimm,	opSUBimmS,	opRSBimm,	opRSBimmS,
 /*28*/	opADDimm,	opADDimmS,	opADCimm,	opADCimmS,	opSBCimm,	opSBCimmS,	opRSCimm,	opRSCimmS,
-/*30*/	opUNDEF,	opTSTimm,	opNULL,		opTEQimm,	opUNDEF,	opCMPimm,	opNULL,		opCMNimm,
+/*30*/	opNULL,		opTSTimm,	opNULL,		opTEQimm,	opNULL,		opCMPimm,	opNULL,		opCMNimm,
 /*38*/	opORRimm,	opORRimmS,	opMOVimm,	opMOVimmS,	opBICimm,	opBICimmS,	opMVNimm,	opMVNimmS,
 
 /*40*/	opSTR40,	opLDR41,	opSTR42,	opLDR43,	opSTR44,	opLDR45,	opSTR46,	opLDR47,

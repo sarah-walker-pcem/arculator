@@ -819,7 +819,7 @@ static inline uint32_t shift_long(uint32_t opcode)
 	uint32_t shiftmode=(opcode>>5)&3;
 	uint32_t shiftamount=(opcode>>7)&31;
 	uint32_t temp;
-	int cflag=CFSET;
+	int cflag = armregs[15] & CFLAG;
 
 	if (opcode&0x10)
 	{

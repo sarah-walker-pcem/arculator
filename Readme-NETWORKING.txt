@@ -24,7 +24,7 @@ You will need a wired network connection. PCAP requires promiscuous mode which i
 
 To find out network settings, open a Command Prompt and run "ipconfig /all". Identify the appropriate Ethernet adapter and note the following settings :
 
-IP address - This should be an address on the same subnet as "IPv4 Address". Eg if ipconfig gives an address of 192.168.1.1, possible addresses would be 192.168.1.2, 192.168.1.3, 192.168.1.50 etc.
+IP address - You should make up an unused address on the same subnet as "IPv4 Address". Eg if ipconfig gives an address of 192.168.1.1, possible addresses would be 192.168.1.2, 192.168.1.3, 192.168.1.50 etc. You may want to configure your router to reserve the chosen address to prevent conflicts with anything else on the network.
 Netmask - This is "Subnet Mask".
 Gateway - This is "Default Gateway".
 DNS - This is "DNS Server(s)". Only one is required, though multiple DNS servers are supported.
@@ -35,13 +35,13 @@ Setting up networking under RISC OS
 
 The recommended option is to use Internet 5. You will need to install UniBoot.
 
-With UniBoot installed, go to !Boot.Resources.Configure and run !InetSetup. Click on Internet then "Enable TCP/IP Protocol Suite".
+With UniBoot installed, go to Apps and run !InetSetup. Click on Internet then "Enable TCP/IP Protocol Suite".
 
-Click on Interfaces, then Configure... for the chosen network card. Select "Manually" for "Obtain IP address". Enter the IP Address and Netmask. Click Set and close the Interfaces window.
+Click on Interfaces, then Configure... for the chosen network card. Set "Obtain IP address" to "Manually". Enter the IP Address and Netmask. Click Set and close the Interfaces window.
 
 Click on Routing. Enter the Gateway, then click Set.
 
-Click on Host Names. Enter a Host Name and Local domain of your choice (these are not optional!). Enter the DNS address under "Primary name server" (and any further addresses under Secondary and Tertiary if desired), then click Set.
+Click on Host Names. Enter a Host Name and Local domain of your choice (these are not optional!). Set "Primary name server" (and Secondary and Tertiary if desired) to the DNS address(s). Click Set.
 
 Click on Close to close the Internet configuration window, then Save to close Network configuration. RISC OS will then reboot.
 

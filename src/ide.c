@@ -103,7 +103,7 @@ void resetide(ide_t *ide,
 	ide->def_hpc[1] = ide->hpc[1] = sec_hpc;
 	ide->def_cyl[1] = ide->cyl[1] = sec_cyl;
 	ide->max_sector[0] = pri_spt * pri_hpc * pri_cyl;
-	ide->max_sector[1] = pri_spt * pri_hpc * pri_cyl;
+	ide->max_sector[1] = sec_spt * sec_hpc * sec_cyl;
 //        ide->spt=63;
 //        ide->hpc=16;
 //        ide->spt=16;

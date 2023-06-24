@@ -1,11 +1,11 @@
-Arculator v2.1 Linux supplement
+Arculator v2.2 Linux supplement
 
 
 You will need the following libraries :
 
 SDL2
 wxWidgets 3.x
-OpenAL
+Zlib
 
 and their dependencies. ALSA is also needed to build podules.
 

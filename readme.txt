@@ -1,18 +1,13 @@
-Arculator 2.1
+Arculator 2.2
 ~~~~~~~~~~~~~
 
 Changes since last release :
-- New podules : Acorn AKA05 ROM Podule, Acorn AKA10 IO Podule (w/AKA15 MIDI Upgrade), Acorn
-  AKA16 MIDI Podule, Aleph One 386PC/486PC Podule, Computer Concepts ColourCard, State Machine
-  G16 Graphics Accelerator, Oak 16 Bit SCSI Interface
-- Minipodule support for A30x0/A4000. Currently included : Acorn AKA12 MIDI/IO Podule, ICS
-  A3INv5 IDE Interface, ZIDEFS IDE Interface
-- Added A4 laptop emulation
-- Added A500 prototype emulation
-- Added HFE disc image support (read/write)
-- Fixed MEMC1 timing
+- New podules: Acorn AEH50 Ethernet II, Acorn AEH54 Ethernet III, Acorn AKA32 SCSI Podule, Design IT Ethernet 200,
+  Morley A3000 User and Analogue Port, Risc Developments High Density Floppy Controller
+- Support for HFE v3 and SCP disc images
+- Integrated debugger
+- Optimisations
 - Bugfixes
-
 
 Configuration
 ~~~~~~~~~~~~~
@@ -88,27 +83,34 @@ podules built in.
 
 The podules supplied are :
 
+- Acorn AEH50 Ethernet II
+	Supported on both RISC OS and RISCiX. See Readme-NETWORKING.txt for setup details.
+
+- Acorn AEH53 Ethernet III
+	Supported on both RISC OS only. See Readme-NETWORKING.txt for setup details.
+
 - Acorn AKA05 ROM Podule
 	Supports up to 5 ROMs per podule, plus up to 2 banks of RAM. Battery backed RAM is not
 	currently emulated.
 
 - Acorn AKA10 IO Podule w/ AKA15 MIDI podule
-	Currently only the MIDI functionality is emulated, and MIDI in has not been well tested.
+	MIDI and analogue functionality are emulated. Analogue is mapped to joysticks. MIDI in
+	has not been well tested.
 
 - Acorn AKA12 MIDI/IO Podule (8-bit)
-	Currently only the MIDI functionality is emulated, and MIDI in has not been well tested.
+	MIDI and analogue functionality are emulated. Analogue is mapped to joysticks. MIDI in
+	has not been well tested.
 
 - Acorn AKA16 MIDI Podule
 	MIDI in/out.
 
-- Acorn AKA31 SCSI Controller
+- Acorn AKA31/AKA32 SCSI Controller
 	Supports hard discs and CD-ROM drives. SCSIFS only supports four hard discs, starting 
 	from ID 0. The current podule emulates a single Toshiba XM-3301 drive, which can be at
 	any ID, and is mapped to a physical or virtual drive.
 
-	There are several versions of the ROM for this podule. I've seen an older version that
-	works on RISC OS 2 and later, and a newer version that requires RISC OS 3 and includes the
-	CDFS modules. There may be other versions.
+	There are several versions of the ROM for this podule. AKA31 works on RISC OS 2 and later.
+	AKA32 requires RISC OS 3 and includes the CDFS modules.
 
 - Acorn AKD52 Hard Disc Controller
 	ST-506 podule, for use with Archimedes 305, 310 and 540 machines. Supports two hard drives.
@@ -132,11 +134,17 @@ The podules supplied are :
 	MIDI in/out, 16-bit sample playback/recording. Sample recording has a few issues, the
 	other functions appear to work okay.
 
+- Design IT Ethernet 200
+	A3020/4000 specific networking. See Readme-NETWORKING.txt for setup details.
+
 - HCCS Ultimate CD-ROM Podule
 	Emulates a single Mitsumi CD-ROM drive, mapped to a physical or virtual drive.
 
 - ICS ideA Hard Disc Interface
 	Supports two hard drives, using IDEFS v3.10.
+
+- Morley A3000 User and Analogue Port
+	Analogue is mapped to joysticks.
 
 - Oak 16-bit SCSI Interface
 	Supports hard discs and CD-ROM drives. SCSIFS only supports four hard discs, starting 
@@ -208,7 +216,9 @@ Sound :
 			muffled but may introduce aliasing noise
 Settings :
 	Configure machine - Configuration of emulated machine
-
+Debugger :
+	Enable debugger - Enable and disable debugger window
+	Break - Trigger an immediate break to disassembler
 	
 
 Compatibility
@@ -224,224 +234,240 @@ RISC OS 3.00
 RISC OS 3.10
 RISC OS 3.11
 RISC OS 3.19
-RISC iX 1.2.1c
+RISCiX 1.21
+
+2067BC
+3D Chess
+Aggressor
+Air Supremacy
+Aldebaran
+Alerion (FDI)
+Alien Invasion
+Aliped
+Alone in the Dark
+Ankh (CD-ROM)
+Apocalypse
+ArcPinball (HFE)
+Axis
+Battle Chess (FDI)
+Big Bang
+Birds of War (HFE)
+Black Angel (HFE)
+Blitz (FDI)
+Block Out
+Bloxed
+Blowpipe
+Bobby Blockhead vs The Dark Planet
+Boogie Buggy (FDI)
+Botkiller
+Botkiller 2
+Brian Clough's Football Fortunes (FDI)
+Bug Hunter
+Bug Hunter in Space
+Burn 'Out (HFE v3)
+Cannon Fodder
+Cataclysm
+Chuck Rock
+Command Ship (HFE)
+Corruption
+Cyber Ape (HFE)
+Cycloids (HFE)
+Darkwood (APD)
+Days of Steam
+Demon's Lair (FDI)
+Diggers
+Doom+
+Dragonball
+Drifter
+Drop Ship
+Dune II
+Dune II (CD-ROM)
+EGO: Repton 4
+Elite
+Empire Soccer 94
+Enigma
+Enter The Realm (HFE)
+E-Type
+Fine Racer
+Fire & Ice (SCP)
+Fireball II
+Fish
+Flashback
+FRED (HFE)
+FTT (HFE)
+Galactic Dan (FDI)
+Global Effect
+Gorm
+Grevious Bodily 'ARM (FDI)
+Guile
+Gyrinus II - Son of Gyrinus
+Hamsters
+Heimdall
+Hero Quest (HFE)
+Holed Out
+Inertia
+Inferno (HFE v3)
+Interdictor
+Interdictor 2
+Iron Lord
+Ixion (HFE)
+Jahangir Kahn's World Championship Squash (HFE)
+James Pond (HFE)
+James Pond 2 : Robocod (HFE)
+Jinxter
+Karma - The Flight Trainer
+Leeds United Champions
+Lemmings
+Lemmings 2 : The Tribes
+Letrouve
+Loopz
+Lotus Turbo Challenge 2 (HFE)
+Mad Professor Mariarti
+Magic Pockets (APD)
+Man At Arms
+Manchester United
+Manchester United Europe
+Master Break (FDI)
+Micro Drive
+MiG-29 Fulcrum
+Mirror Image (HFE)
+Moonquake
+Mr Doo
+Nebulus
+Nevryon (APD)
+No Excuses
+Oh No! More Lemmings (HFE)
+Overload (Clares)
+Overload (Paradise) (HFE v3)
+Pac-Mania
+Pandora's Box (APD)
+Paradroid 2000
+Phaethon (HFE)
+Pipemania
+Poizone
+Populous (HFE)
+Premier Manager (HFE)
+Pushy II
+Repton 3 (HFE)
+Revelation
+Revolver
+Sensible Soccer (HFE)
+Shanghai
+SimCity (HFE)
+SimCity 2000
+Simon The Sorcerer
+Simon The Sorcerer (CD-ROM)
+Silver Ball
+Small
+Speedball 2
+Spheres of Chaos
+Spobbleoid Fantasy (HFE)
+Sporting Triangles
+Star Fighter 3000 (HFE)
+Stunt Racer 2000
+Super Snail
+SWIV
+Syndicate+ (CD-ROM)
+Technodream (FDI)
+The Chaos Engine
+The Crystal Maze
+The Dungeon (APD)
+The Last Ninja (HFE)
+Top Banana
+Tower of Babel
+Twinworld
+Warlocks
+WIMP Chess
+Wolfenstein 3D (HFE)
+Wonderland
+World Championship Boxing Manager
+Xenon II (HFE)
+Zarch (HFE)
+Zool (HFE)
 
 1st Word Plus (v2.01)
 Acorn Advance (v1.01)
 Acorn C/C++
-ArtWorks (v1.7)
+ArtWorks (v1.70)
 AudioWorks (v1.38)
+Browse (v2.01)
+Eureka (v3.00)
 Impression Publisher (v4.09)
 Impression Style (v3.10)
-Music Studio 32 (v1.01)
+Miracle (v0.10)
+Music Studio 32
 Notate
-!PC (r2.06sf)
 PC Emulator (v1.82)
-PenDown (v1.72)
-ProArtisan
-Render Bender (v1.14)
-Rhapsody (v1.20)
-Rhapsody 3 (v3.03)
-Splosh (v1.09)
-Studio24 (v1.10)
-Talking Canvas Jr (v1.04)
+Rhapsody 2
+Rhapsody 3
+Studio 24 (v1.10)
 The Complete Animator (v1.04) (HFE)
 
-10 out of 10 - Junior Essentials
+Albert's House (HFE)
 Crystal Rainforest 2
-Fun School 2 - Under 6
-Fun School 2 - 6-8
-Fun School 3 - Over 7
+Darryl The Dragon (HFE)
+Edwina's Energetic Elephant
+Fun School 2 - Under 6s
+Fun School 3 - Over 7s
+Fun School 4 - 5-7s
+Granny's Garden (HFE)
+Hutchinson Multimedia Encyclopedia (CD-ROM)
+KidPix
 My World 2
-
-3D Chess (FDI)
-Aldebaran
-Alien Invasion (FDI)
-Alone in the Dark
-Alpha-Blockers
-Ankh (CD)
-Apocalypse
-Arcade Soccer
-Asylum
-Axis (FDI)
-Bambuzle
-Battle Chess (FDI)
-Battle Tank (FDI)
-Big Bang (FDI)
-Black Angel (FDI)
-Block Out
-Blowpipe
-Bobby Blockhead vs The Dark Planet
-Boogie Buggy (FDI)
-BotKiller
-BotKiller 2
-Bug Hunter in Space
-Burn 'Out (FDI)
-Cannon Fodder
-Cataclysm
-Chocks Away (FDI)
-Chopper Force (FDI)
-Chuck Rock
-Command Ship (HFE)
-Corruption
-Crystal Maze (FDI)
-Cycloids (HFE)
-Days of Steam (FDI)
-Deeva
-Demon's Lair (FDI)
-Diggers
-DinoSaw
-Doom+
-Drifter
-Dune II
-Dune II (CD)
-EGO : Repton 4
-Elite
-Empire Soccer
-Enter The Realm
-E-Type (FDI)
-Fine Racer
-Fish!
-Flashback
-FTT (HFE)
-Fugitive's Quest
-Galactic Dan (FDI)
-Global Effect
-Gribbly's Day Out
-Grievous Bodily 'ARM
-Gods
-Guile
-Gyrinus II
-Hamsters
-Heimdall
-Hero Quest
-Holed Out
-Hostages
-Inertia (FDI)
-Ixion
-James Pond
-James Pond 2 : Robocod
-Jinxter
-Karma - The Flight Trainer
-Lander
-Lemmings
-Lemmings 2 : The Tribes
-Letrouve (FDI)
-Loopz
-Lotus Turbo Challenge II (FDI)
-Mad Professor Mariarti
-Magic Pockets (FDI)
-Man At Arms (FDI)
-Manchester United Europe (FDI)
-Master Break (FDI)
-Merp (HFE)
-Micro Drive (FDI)
-Mr Doo
-Nebulus
-Nevryon
-No Excuses
-Oh No! More Lemmings (HFE)
-Pacmania
-Phaethon (HFE)
-Poizone
-Populous (APD)
-Premier Manager (APD)
-Psyanki (FDI)
-Repton 3
-Revelation
-Revolver (FDI)
-Quest for Gold
-Saloon Cars (FDI)
-Saloon Cars Deluxe (FDI)
-Sensible Soccer (HFE)
-Silverball
-SimCity
-SimCity 2000
-Simon the Sorcerer
-Simon the Sorcerer (CD)
-Speedball 2
-Star Fighter 3000 (FDI)
-Star Trader (FDI)
-Stranded!
-Stunt Racer 2000 (APD)
-Super Snail
-Superior Golf (FDI)
-SWIV (FDI)
-Sylvia Lane (FDI)
-Syndicate (CD)
-Technodream (FDI)
-The Chaos Engine
-The Last Ninja (APD)
-The Pawn
-Top Banana
-Trivial Pursuit (FDI)
-Twinworld
-Virtual Golf (FDI)
-Warlocks
-White Magic 2 (FDI)
-Wolfenstein 3D (HFE)
-Wonderland
-World Championship Boxing Manager
-Worra Battle
-X-Fire (FDI)
-Xenon 2
-Zarch
-Zelanites (FDI)
-Zool (HFE)
+Playdays (HFE)
+Vikings! (CD-ROM)
 
 Adept - Adept
-Arc Angels - Arc Angels
 Arc Angels - Megademo
 ArcEmpire - Transmortal
 Archiologics - Jojo
-ARM's Tech - Damn!
-ARMageddon - Demo Collection III
-Armaxess - Megademo 2
+Archiologics & Icebird - Ostern Rulez!
+ARM's Tech - Cakehead 2
 Armaxess - Risc Dream
-Armie and Bert - Everybody
 BASS - TNT
 BASS et al - Xtreme
 Bitshifters - Back By Popular Demand
-Brothers In ARM - 0 Borders
-Brothers In ARM - BIA^2
-Brothers In ARM - BIAtris
-Brothers In ARM - Bounce
+Bitshifters - Tipsy Cube
+Brothers in ARM - 0 Borders
+Brothers in ARM - BIAtris
+Brothers in ARM - Bounce
+Brothers in ARM - Demo^2
 Brothers in ARM - Ikosaeder
-Brothers In ARM - Rotate
-Brothers In ARM - Sister
-Byte Pool Productions - Nirvana
-DFI - Fishtank
+Brothers in ARM - Rotate
+Brothers in ARM - Sister
+Desire - Asynchronous
+DHS - Signals
 Expression - Insanity
-Icebird & Archiologics & Slompt - Ostern95
-John Graley - FunkyDemo
-John Graley - FunkyDemo2
-Network 23 - Graffiti Street
+Expression - Signum
+FSG - Funky Demo
+FSG - Funky Demo 2
+Karl Morton - Coppersine
 Nophobia - Come and See
-Progen - Bad Apple
-Progen - Reach
+progen - Bad Apple
+progen - Reach
+progen - I Heard You Like Dithering
 Quantum - Liquid Dreams
-Shifty - Braindead
-Shifty - Sindemo
+Rabenauge & Bitshifters - Chipo Django
+Rabenauge & Bitshifters - Chipo Django 2
+Shifty - Brain Dead
+Shifty - Sine Wave Demo
+SICK - Ba!
 Squoquo - Black Zone
-The Arc Sailor - Adramort
-The Arc Sailor - ARMATAS
-The Arc Sailor - Fantasy Demo
-The Chip Duo - Demo #1
-The Chip Duo - Power Scroll
+Squoquo - Digital Prophecy
+The Chip Duo - Powerscroll
 The Master - Horizon
-The Xperience via The Vision Factory - fakeBlu
+The Xperience - Xcentric
 Xymox Project - Time's Up
 Zarquon - Metamorphosis
-??? - x-Blu
 
 PC card :
+After Dark 3.0
+Civilization for Windows
+Microsoft Arcade
 MS-DOS 6.22
-Windows 3.1
 Windows 95
+Windows for Workgroups 3.11
 Works for Windows 3.0
-Dune
-Scorched Earth
-
 
 Sarah
 b-em@bbcmicro.com

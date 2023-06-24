@@ -1,4 +1,4 @@
-/*Arculator 2.1 by Sarah Walker
+/*Arculator 2.2 by Sarah Walker
   ARM3 CP15 emulation*/
 #include "arc.h"
 #include "arm.h"

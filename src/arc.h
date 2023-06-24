@@ -1,9 +1,9 @@
-/*Arculator 2.1 by Sarah Walker
+/*Arculator 2.2 by Sarah Walker
   Main header file*/
 
 //#define printf rpclog
 
-#define VERSION_STRING "v2.1"
+#define VERSION_STRING "v2.2"
 
 #include <stdio.h>
 #include <stdint.h>

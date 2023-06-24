@@ -1,4 +1,4 @@
-/*Arculator 2.1 by Sarah Walker
+/*Arculator 2.2 by Sarah Walker
   Disc support*/
 #include <stdio.h>
 #include <string.h>

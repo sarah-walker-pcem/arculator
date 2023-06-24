@@ -1,4 +1,4 @@
-/*Arculator 2.1 by Sarah Walker*/
+/*Arculator 2.2 by Sarah Walker*/
 
 /*Acorn AKD52 Hard Disc Controller (ST-506)
 

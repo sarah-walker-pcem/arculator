@@ -1,4 +1,4 @@
-/*Arculator 2.1 by Sarah Walker
+/*Arculator 2.2 by Sarah Walker
   DS2401 unique ID emulation*/
 #include <string.h>
 #include "arc.h"

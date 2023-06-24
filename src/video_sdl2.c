@@ -1,4 +1,4 @@
-/*Arculator 2.1 by Sarah Walker
+/*Arculator 2.2 by Sarah Walker
   SDL2 video handling*/
 #include <SDL2/SDL.h>
 

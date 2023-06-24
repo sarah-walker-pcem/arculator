@@ -2,7 +2,7 @@
 #
 
 AC_PREREQ([2.69])
-AC_INIT([Arculator],[v2.0],[Sarah Walker <b-em@bbcmicro.com>],[arculator])
+AC_INIT([Arculator],[v2.2],[Sarah Walker <b-em@bbcmicro.com>],[arculator])
 
 AC_CANONICAL_HOST
 

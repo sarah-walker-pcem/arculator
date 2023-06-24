@@ -1,4 +1,4 @@
-/*Arculator 2.1 by Sarah Walker*/
+/*Arculator 2.2 by Sarah Walker*/
 
 /*State Machine G8/G16 Graphic Accelerator
 

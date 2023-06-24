@@ -1,4 +1,4 @@
-/*Arculator 2.1 by Sarah Walker
+/*Arculator 2.2 by Sarah Walker
   Podule subsystem*/
 #include <stdlib.h>
 #include <string.h>

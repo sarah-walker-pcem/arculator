@@ -1,0 +1,2 @@
+This directory contains the ROM for the Risc Developments High Density Floppy Controller.
+It is called 'hdfc.rom' and is 64kB long.

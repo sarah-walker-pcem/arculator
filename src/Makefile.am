@@ -36,8 +36,8 @@ arculator_SOURCES = 82c711.c 82c711_fdc.c arm.c bmu.c cmos.c colourcard.c config
  video_sdl2.c wd1770.c wx-app.cc wx-config.cc wx-config_sel.cc wx-hd_conf.cc wx-console.cc wx-hd_new.cc \
  wx-joystick-config.cc wx-main.cc wx-podule-config.cc wx-resources.cc wx-sdl2-joystick.c
 
-arculator_CFLAGS = $(subst -fpermissive,,$(shell $(WX_CONFIG_PATH) --cxxflags) $(shell sdl2-config --cflags))
-arculator_CXXFLAGS = $(shell $(WX_CONFIG_PATH) --cxxflags) $(shell sdl2-config --cflags)
+arculator_CFLAGS = $(subst -fpermissive,,$(shell $(WX_CONFIG_PATH) --cxxflags)) $(SDL_CFLAGS)
+arculator_CXXFLAGS = $(shell $(WX_CONFIG_PATH) --cxxflags) $(SDL_CFLAGS)
 arculator_LDADD = @LIBS@
 
 if OS_WINDOWS

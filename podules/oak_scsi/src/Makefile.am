@@ -42,7 +42,7 @@ if OS_MACOSX
 liboak_scsi_la_SOURCES += ../../common/cdrom/cdrom-osx-ioctl.c
 endif
 
-liboak_scsi_la_CFLAGS = -I../../../src -I../../common/cdrom -I../../common/eeprom -I../../common/sound -I../../common/scsi
+liboak_scsi_la_CFLAGS = $(SDL_CFLAGS) -I../../../src -I../../common/cdrom -I../../common/eeprom -I../../common/sound -I../../common/scsi
 liboak_scsi_la_LIBADD = @LIBS@
 
 endif

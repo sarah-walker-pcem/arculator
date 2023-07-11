@@ -42,7 +42,7 @@ if OS_MACOSX
 libaka31_la_SOURCES += ../../common/cdrom/cdrom-osx-ioctl.c
 endif
 
-libaka31_la_CFLAGS = -I../../../src -I../../common/cdrom -I../../common/sound -I../../common/scsi
+libaka31_la_CFLAGS = $(SDL_CFLAGS) -I../../../src -I../../common/cdrom -I../../common/sound -I../../common/scsi
 libaka31_la_LIBADD = @LIBS@
 
 endif

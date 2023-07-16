@@ -11,6 +11,8 @@ static SDL_AudioStream *ddnoise_stream;
 
 void sound_dev_init(void)
 {
+	SDL_Init(SDL_INIT_AUDIO);
+
 	SDL_AudioSpec audio_spec = {0};
 
 	audio_spec.freq = OUTPUT_FREQ;
@@ -21,6 +23,8 @@ void sound_dev_init(void)
 
 	audio_device = SDL_OpenAudioDevice(NULL, 0, &audio_spec, NULL, 0);
 	rpclog("audio_device=%u\n", audio_device);
+	if (audio_device == 0)
+		 rpclog("sound_sdl2: %s\n", SDL_GetError());
 
 	ddnoise_stream = SDL_NewAudioStream(AUDIO_S16SYS, 1, DDNOISE_FREQ, AUDIO_S16SYS, 2, OUTPUT_FREQ);
 

@@ -32,7 +32,7 @@ amrefresh:
 
 libmorley_uap_la_SOURCES = morley_uap.c ../../common/joystick/joystick_sdl2.c ../../common/adc/d7002c.c ../../common/misc/6522.c
 
-libmorley_uap_la_CFLAGS = -I../../../src -I../../common/adc -I../../common/joystick -I../../common/misc $(shell sdl2-config --cflags)
+libmorley_uap_la_CFLAGS = -I../../../src -I../../common/adc -I../../common/joystick -I../../common/misc $(SDL_CFLAGS)
 libmorley_uap_la_LIBADD = @LIBS@
 
 endif

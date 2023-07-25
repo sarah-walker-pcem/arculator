@@ -42,7 +42,7 @@ if OS_MACOSX
 libaka10_la_SOURCES += ../../common/midi/midi_null.c
 endif
 
-libaka10_la_CFLAGS = -I../../../src -I../../common/adc -I../../common/joystick -I../../common/midi -I../../common/misc -I../../common/uart $(shell sdl2-config --cflags)
+libaka10_la_CFLAGS = -I../../../src -I../../common/adc -I../../common/joystick -I../../common/midi -I../../common/misc -I../../common/uart $(SDL_CFLAGS)
 libaka10_la_LIBADD = @LIBS@
 
 if OS_WINDOWS

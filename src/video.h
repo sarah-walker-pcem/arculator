@@ -19,3 +19,11 @@ enum
 };
 
 extern int video_linear_filtering;
+
+enum
+{
+	BLACK_LEVEL_ACORN = 0, /*Crushed black level*/
+	BLACK_LEVEL_NORMAL
+};
+
+extern int video_black_level;

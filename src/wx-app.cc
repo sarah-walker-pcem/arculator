@@ -198,6 +198,11 @@ void Frame::UpdateMenu(wxMenu *menu)
 	else
 		item = ((wxMenu*)menu)->FindItem(XRCID("IDM_VIDEO_SCALE_NEAREST"));
 	item->Check(true);
+	if (video_black_level == BLACK_LEVEL_ACORN)
+		item = ((wxMenu*)menu)->FindItem(XRCID("IDM_BLACK_ACORN"));
+	else
+		item = ((wxMenu*)menu)->FindItem(XRCID("IDM_BLACK_NORMAL"));
+	item->Check(true);
 	sprintf(menuitem, "IDM_VIDEO_SCALE[%d]", video_scale);
 	item = ((wxMenu*)menu)->FindItem(XRCID(menuitem));
 	item->Check(true);
@@ -536,6 +541,22 @@ void Frame::OnMenuCommand(wxCommandEvent &event)
 		item->Check(true);
 
 		arc_set_dblscan(1);
+	}
+	else if (event.GetId() == XRCID("IDM_BLACK_ACORN"))
+	{
+		wxMenuItem *item = ((wxMenu*)menu)->FindItem(event.GetId());
+		item->Check(true);
+
+		video_black_level = BLACK_LEVEL_ACORN;
+		vidc_redopalette();
+	}
+	else if (event.GetId() == XRCID("IDM_BLACK_NORMAL"))
+	{
+		wxMenuItem *item = ((wxMenu*)menu)->FindItem(event.GetId());
+		item->Check(true);
+
+		video_black_level = BLACK_LEVEL_NORMAL;
+		vidc_redopalette();
 	}
 	else if (event.GetId() == XRCID("IDM_DEBUGGER_ENABLE"))
 	{

@@ -1,9 +1,0 @@
-~$
-\.DS_Store$
-\.hdf$
-HardImage\d+$
-^hostfs/
-^src/\.d$
-^src/.*\.o$
-^(src/)?Arculator$
-^(src/)?arclog.txt$

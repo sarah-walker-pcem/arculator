@@ -13,7 +13,8 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y libsdl2-dev \
+        sudo apt-get install -y automake \
+                                libsdl2-dev \
                                 shtool \
                                 zlib1g-dev
 

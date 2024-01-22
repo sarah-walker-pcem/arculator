@@ -90,7 +90,7 @@
 		<object class="wxMenu">
 			<label>Video</label>
 			<object class="wxMenuItem" name="IDM_VIDEO_FULLSCR">
-				<label>_Fullscreen</label>
+				<label>_Fullscreen\tCTRL+PGDN</label>
 			</object>
 			<object class="wxMenu">
 				<label>_Border size</label>

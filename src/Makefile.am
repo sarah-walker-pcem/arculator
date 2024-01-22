@@ -24,7 +24,7 @@ WINDRES = $(shell $(WX_CONFIG_PATH) --rescomp)
 wx.res: wx.rc
 	$(WINDRES) -i wx.rc --input-format=rc -o wx.res -O coff
 
-wx-resources.cpp : arculator.xrc
+wx-resources.cc : arculator.xrc
 	-wxrc -c arculator.xrc -o wx-resources.cc
 
 # Arculator

@@ -4,6 +4,7 @@
 extern int vidc_displayon;
 
 extern void vidc_redovideotiming();
+void vidc_redopalette(void);
 extern void vidc_setclock(int clock);
 void vidc_setclock_direct(int clock);
 extern int vidc_getclock();
@@ -40,7 +41,7 @@ void destroy_bitmap(BITMAP *b);
 
 typedef struct
 {
-	uint8_t r, g, b;
+	int r, g, b;
 } RGB;
 
 typedef RGB PALETTE[256];

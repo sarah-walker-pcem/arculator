@@ -38,6 +38,7 @@ int display_mode;
 int video_scale;
 int video_fullscreen_scale;
 int video_linear_filtering;
+int video_black_level;
 
 static uint32_t vidcr[64];
 
@@ -341,6 +342,64 @@ void recalcse()
 		vidc.hsync_length, vidc.front_porch_length, vidc.display_length, vidc.back_porch_length);*/
 }
 
+static uint32_t vidc_make_colour(RGB r)
+{
+	if (video_black_level == BLACK_LEVEL_ACORN)
+	{
+		r.r = (MAX(r.r - 3, 0) * 255) / 12;
+		r.g = (MAX(r.g - 3, 0) * 255) / 12;
+		r.b = (MAX(r.b - 3, 0) * 255) / 12;
+	}
+	else
+	{
+		r.r |= r.r << 4;
+		r.g |= r.g << 4;
+		r.b |= r.b << 4;
+	}
+
+	return makecol(r.r, r.g, r.b);
+}
+
+void vidc_redopalette(void)
+{
+	for (int i = 0; i < 20; i++)
+	{
+		uint32_t v = vidcr[i];
+		RGB r =
+		{
+			.b = (v & 0xf00) >> 8,
+			.g = (v & 0xf0) >> 4,
+			.r = v & 0xf
+		};
+
+		vidc.pal[i] = vidc_make_colour(r);
+	}
+
+	for (int i = 0; i < 256; i++)
+	{
+		uint32_t v = vidcr[i & 0xf];
+		RGB r =
+		{
+			.b = (v & 0x700) >> 8,
+			.g = (v & 0x30) >> 4,
+			.r = v & 0x7
+		};
+
+		if (i & 0x10)
+			r.r |= 8;
+		if (i & 0x20)
+			r.g |= 4;
+		if (i & 0x40)
+			r.g |= 8;
+		if (i & 0x80)
+			r.b |= 8;
+
+		vidc.pal8[i] = vidc_make_colour(r);
+	}
+
+	palchange = 1;
+}
+
 void writevidc(uint32_t v)
 {
 //        char s[80];
@@ -376,26 +435,8 @@ void writevidc(uint32_t v)
 			case 15: v = 0x3C000737; break;
 		}*/
 		vidcr[v >> 26] = v & 0x1fff;
-		r.b=(v&0xF00)>>6;
-		r.g=(v&0xF0)>>2;
-		r.r=(v&0xF)<<2;
-		c=vidc.pal[(v>>26)&0x1F];
-		vidc.pal[(v >> 26) & 0x1F] = makecol((r.r<<2)|(r.r>>2), (r.g<<2)|(r.g>>2), (r.b<<2)|(r.b>>2)) | ((v & 0x1000) << 12);
 		LOG_VIDC_REGISTERS("VIDC Write pal %08X %08X %08X\n",c,vidc.pal[(v>>26)&0x1F],v);
-		d=v>>26;
-		palchange=1;
-		for (c=d;c<0x100+d;c+=16)
-		{
-			r.r=vidcr[d&15]&0xF;
-			r.g=(vidcr[d&15]&0xF0)>>4;
-			r.b=(vidcr[d&15]&0xF00)>>8;
-			if (c&0x10) r.r|=8; else r.r&=~8;
-			if (c&0x20) r.g|=4; else r.g&=~4;
-			if (c&0x40) r.g|=8; else r.g&=~8;
-			if (c&0x80) r.b|=8; else r.b&=~8;
-			if (c < 0x100)
-				vidc.pal8[c] = makecol((r.r<<4)|r.r, (r.g<<4)|r.g, (r.b<<4)|r.b) | ((v & 0x1000) << 12);
-		}
+		vidc_redopalette();
 		return;
 	}
 	vidcr[v>>26]=v;

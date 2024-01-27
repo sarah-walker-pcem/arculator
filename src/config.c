@@ -46,7 +46,11 @@ char *get_filename(char *s)
 
 void append_filename(char *dest, const char *s1, const char *s2, int size)
 {
-	sprintf(dest, "%s%s", s1, s2);
+	char *tmp_s1 = strdup(s1);
+	char *tmp_s2 = strdup(s2);
+	snprintf(dest, size, "%s%s", tmp_s1, tmp_s2);
+	free(tmp_s1);
+	free(tmp_s2);
 }
 
 void append_slash(char *s, int size)
@@ -701,6 +705,7 @@ void loadconfig()
 	video_scale = config_get_int(CFG_MACHINE, NULL, "video_scale", 1);
 	video_fullscreen_scale = config_get_int(CFG_MACHINE, NULL, "video_fullscreen_scale", FULLSCR_SCALE_FULL);
 	video_linear_filtering = config_get_int(CFG_MACHINE, NULL, "video_linear_filtering", 0);
+	video_black_level = config_get_int(CFG_MACHINE, NULL, "video_black_level", BLACK_LEVEL_ACORN);
 	fdctype = config_get_int(CFG_MACHINE, NULL, "fdc_type", 1);
 	st506_present = config_get_int(CFG_MACHINE, NULL, "st506_present", 0);
 	stereo = config_get_int(CFG_GLOBAL, NULL, "stereo", 1);
@@ -838,6 +843,7 @@ void saveconfig()
 	config_set_int(CFG_MACHINE, NULL, "video_scale", video_scale);
 	config_set_int(CFG_MACHINE, NULL, "video_fullscreen_scale", video_fullscreen_scale);
 	config_set_int(CFG_MACHINE, NULL, "video_linear_filtering", video_linear_filtering);
+	config_set_int(CFG_MACHINE, NULL, "video_black_level", video_black_level);
 	config_set_int(CFG_MACHINE, NULL, "fdc_type", (fdctype == FDC_82C711) ? 1 : 0);
 	config_set_int(CFG_MACHINE, NULL, "st506_present", st506_present);
 	config_set_string(CFG_MACHINE, NULL, "rom_set", config_get_romset_name(romset));

@@ -289,8 +289,18 @@ static void process_v3_track(mfm_t *mfm, int side)
 				break;
 
 				case HFE_V3_OPCODE_RAND:
-				/*Not currently implemented, just add a byte of zeroes*/
-				wp += 8;
+				{
+					uint8_t data = rand() & 0xFF;
+					int bit;
+
+					/* Insert random byte - used for 'weak sector' protection on e.g. Sherston */
+					for (bit = 0; bit < 8; bit++) {
+						if (data & 0x80)
+							mfm->track_data[side][wp >> 3] |= 0x80 >> (wp & 7);
+						data <<= 1;
+						wp++;
+					}
+				}
 				break;
 
 				default:

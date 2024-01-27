@@ -42,7 +42,7 @@ if OS_MACOSX
 liblark_la_SOURCES += ../../common/midi/midi_null.c ../../common/sound/sound_in_null.c ../../common/sound/sound_out_sdl2.c
 endif
 
-liblark_la_CFLAGS = -I../../../src -I../../common/midi -I../../common/sound -I../../common/uart
+liblark_la_CFLAGS = $(SDL_CFLAGS) -I../../../src -I../../common/midi -I../../common/sound -I../../common/uart
 liblark_la_LIBADD = @LIBS@
 
 if OS_WINDOWS

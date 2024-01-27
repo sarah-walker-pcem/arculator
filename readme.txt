@@ -86,8 +86,8 @@ The podules supplied are :
 - Acorn AEH50 Ethernet II
 	Supported on both RISC OS and RISCiX. See Readme-NETWORKING.txt for setup details.
 
-- Acorn AEH53 Ethernet III
-	Supported on both RISC OS only. See Readme-NETWORKING.txt for setup details.
+- Acorn AEH54 Ethernet III
+	Supported on RISC OS only. See Readme-NETWORKING.txt for setup details.
 
 - Acorn AKA05 ROM Podule
 	Supports up to 5 ROMs per podule, plus up to 2 banks of RAM. Battery backed RAM is not

@@ -69,6 +69,9 @@ void sound_givebuffer(int16_t *buf)
 
 void sound_givebufferdd(int16_t *buf)
 {
+	if (disc_noise_gain == DISC_NOISE_DISABLED)
+		return;
+
 	/*If we're already sufficiently ahead of the audio device then drop this buffer rather than
 	  allowing the queued audio to build up indefinitely*/
 	if (SDL_AudioStreamAvailable(ddnoise_stream) > MAX_DDNOISE_STREAM_SIZE)

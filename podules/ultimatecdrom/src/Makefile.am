@@ -42,7 +42,7 @@ if OS_MACOSX
 libultimatecdrom_la_SOURCES += ../../common/cdrom/cdrom-osx-ioctl.c
 endif
 
-libultimatecdrom_la_CFLAGS = -I../../../src -I../../common/cdrom -I../../common/sound
+libultimatecdrom_la_CFLAGS = $(SDL_CFLAGS) -I../../../src -I../../common/cdrom -I../../common/sound
 libultimatecdrom_la_LIBADD = @LIBS@
 
 endif

@@ -118,6 +118,17 @@
 					<radio>1</radio>
 				</object>
 			</object>
+			<object class="wxMenu">
+				<label>_Black level</label>
+				<object class="wxMenuItem" name="IDM_BLACK_ACORN">
+					<label>_Acorn</label>
+					<radio>1</radio>
+				</object>
+				<object class="wxMenuItem" name="IDM_BLACK_NORMAL">
+					<label>_Normal</label>
+					<radio>1</radio>
+				</object>
+			</object>
 			<object class="separator"/>
 			<object class="wxMenu" name="IDM_VIDEO_RENDER_DRIVER">
 				<label>Render _driver</label>

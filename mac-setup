@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Author: Paolo Fabio Zaino
+# Please report any issue you encounter with this script to the author.
+
 # Check CLI parameters:
 if [ "$1" == "force" ];
 then 
@@ -111,8 +114,6 @@ then
       tar -xzf automake-${am_ver}.tar.gz
 
       pushd automake-${am_ver}
-       
-        export LDFLAGS="${LDFLAGS} -lX11"
 
         ./configure
 
@@ -237,4 +238,3 @@ fi
 echo Done! 
 
 exit $?
-   

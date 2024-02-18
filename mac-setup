@@ -1,0 +1,240 @@
+#!/bin/bash
+
+# Check CLI parameters:
+if [ "$1" == "force" ];
+then 
+    force_reinstall=1
+else
+    force_reinstall=0
+fi
+
+# Configure build requirements:
+# (if you have no homebrew installed then set the following to 1, otherwise keep it to 2!)
+use_config=2
+
+if [ $use_config -eq 1 ];
+then
+    am_ver="1.15"
+    lt_ver="2.4.6"
+    ac_ver="2.69"
+    use_brew_automake="no"
+else
+    am_ver="1.16"
+    lt_ver="2.4.7"
+    ac_ver="2.71"
+    use_brew_automake="yes"
+fi
+
+# support functions:
+
+function check_arch() {
+    arch="$(uname -m)"
+
+    case "${arch}" in
+        arm64)  brew_prefix="/opt/homebrew/Cellar"
+                ;;
+
+            *)  brew_prefix="/usr/local/Cellar"
+                ;;
+    esac
+}
+
+function check_link() {
+    f="$1"
+    if [ -L ${f} ]; then
+        unlink ./${f}
+    fi
+    if [ "${use_brew_automake}" == "no" ];
+    then
+        ln -s /usr/local/share/automake-${am_ver}/${f} ./${f}
+    else
+        ln -s ${brew_prefix}/automake/${am_ver}.*/share/automake-${am_ver}/${f} ./${f}
+        #ln -s ${brew_prefix}/share/automake-${am_ver}/${f} ./${f}
+    fi
+}
+
+############
+# setup:
+############
+
+# Check system Architecture:
+check_arch
+
+# If configured so, install brew based automake, autoconf and libtool:
+if [ "${use_brew_automake}" == "no" ];
+then
+    brew uninstall automake autoconf libtool xquartz
+else
+    if [ $force_reinstall -eq 1 ];
+    then
+        brew reinstall automake autoconf libtool xquartz
+    else
+        brew install automake autoconf libtool xquartz
+    fi
+fi
+
+# Install build dependecies:
+if [ $force_reinstall -eq 1 ];
+then
+    brew reinstall wxwidgets sdl2
+else
+    brew install wxwidgets sdl2
+fi
+
+# We need SDL2 in the default path:
+echo 
+echo Checking if SDL2 is in the clang default path, if not I will need admin privileges to create the symlink there
+echo This operation may require sudo privileges, so it may request for a password.
+echo
+if [ ! -L /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/SDL2 ];
+then
+  sudo ln -s ${brew_prefix}/sdl2/*/include/SDL2 /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/SDL2
+else
+  sudo unlink /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/SDL2
+  sudo ln -s ${brew_prefix}/sdl2/*/include/SDL2 /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/SDL2
+fi
+
+# If configured so, pull down and compile automake, autoconf and libtool:
+if [ "$use_brew_automake" == "no" ];
+then
+  pushd ../
+
+    # add automake
+    am_size=0
+    [ -f ./automake-${am_ver}.tar.gz ] && am_size=$(ls -l ./automake-${am_ver}.tar.gz | awk '{print  $5}')
+
+    if [ ! -f ./automake-${am_ver}.tar.gz ] || [ $am_size -lt 250 ];
+    then
+      [ -f ./automake-${am_ver}.tar.gz ] && rm ./automake-${am_ver}.tar.gz
+      curl -O -L http://ftpmirror.gnu.org/automake/automake-${am_ver}.tar.gz
+
+      tar -xzf automake-${am_ver}.tar.gz
+
+      pushd automake-${am_ver}
+       
+        export LDFLAGS="${LDFLAGS} -lX11"
+
+        ./configure
+
+        make -j4
+
+        sudo make install
+
+      popd
+
+    fi
+
+    # Add libtool
+    lt_size=0
+    [ -f ./libtool-${lt_ver}.tar.gz ] && lt_size=$(ls -l ./libtool-${lt_ver}.tar.gz | awk '{print  $5}')
+
+    if [ ! -f ./libtool-${lt_ver}.tar.gz ] || [ $lt_size -lt 360 ];
+    then
+      [ -f ./libtool-${lt_ver}.tar.gz ] && rm ./libtool-${lt_ver}.tar.gz
+
+      curl -O -L http://ftpmirror.gnu.org/libtool/libtool-${lt_ver}.tar.gz
+
+      tar -xzf libtool-${lt_ver}.tar.gz
+
+      pushd libtool-${lt_ver}
+
+        ./configure
+
+        make
+
+        sudo make install
+
+      popd
+
+    fi
+
+    # Add autoconf
+    ac_size=0
+    [ -f ./autoconf-${ac_ver}.tar.gz ] && ac_size=$(ls -l ./autoconf-${ac_ver}.tar.gz | awk '{print  $5}')
+
+    if [ ! -f ./autoconf-${ac_ver}.tar.gz ] || [ $ac_size -lt 360 ];
+    then
+      [ -f ./autoconf-${ac_ver}.tar.gz ] && rm ./autoconf-${ac_ver}.tar.gz
+
+      curl -O -L http://ftpmirror.gnu.org/autoconf/autoconf-${ac_ver}.tar.gz
+
+      tar -xzf autoconf-${ac_ver}.tar.gz
+
+      pushd autoconf-${ac_ver}
+
+          ./configure
+
+          make
+
+          sudo make install
+
+      popd
+
+    fi
+
+  popd
+
+fi
+
+# Check all the automake symlinks:
+check_link "INSTALL"
+check_link "compile"
+check_link "config.guess"
+check_link "config.sub"
+check_link "depcomp"
+check_link "install-sh"
+check_link "missing"
+
+# We need X11 in the default path so:
+echo Checking if X11 is in the clang default path, if not I will need admin privileges to create the symlink there
+
+if [ ! -L /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/X11 ];
+then
+  sudo ln -s /opt/X11/include/X11 /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/X11
+  rval=$?
+  if [ ! $rval -eq 0 ];
+  then
+    ln -s /opt/X11/include/X11 /usr/local/include/X11
+  fi
+  sudo ln -s /opt/X11/lib/ /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/*/lib/x11
+else
+  sudo unlink /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/X11
+  sudo unlink /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/*/lib/x11
+  sudo ln -s /opt/X11/include/X11 /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/X11
+  rval=$?
+  if [ ! $rval -eq 0 ];
+  then
+    ln -s /opt/X11/include/X11 /usr/local/include/X11
+  fi
+  sudo ln -s /opt/X11/lib/ /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/*/lib/x11  
+fi
+
+echo Dependecies installed.
+
+echo
+
+# Reconfigure Project:
+aclocal -I ${brew_prefix}/wxwidgets/*/share/wx/*/aclocal/ -I ${brew_prefix}/sdl2/*/share/aclocal/ -I /opt/X11/share/aclocal/
+autoconf
+automake --add-missing --force-missing
+autoreconf --force --install -I ${brew_prefix}/wxwidgets/*/share/wx/*/aclocal/ -I ${brew_prefix}/sdl2/*/share/aclocal/ -I /opt/X11/share/aclocal/
+autoupdate
+aclocal -I ${brew_prefix}/wxwidgets/*/share/wx/*/aclocal/ -I ${brew_prefix}/sdl2/*/share/aclocal/ -I /opt/X11/share/aclocal/
+autoconf
+automake --add-missing --force-missing
+
+# Run configure to configure build:
+full_path=$(echo ${brew_prefix}/sdl2/*)
+./configure --with-sdl-prefix=${full_path}
+
+# Clean up possible spurious side effect of configure:
+if [ -d ./arculator ];
+then
+    rm -rf ./arculator
+fi
+
+# We're done!
+echo Done! 
+
+exit $?
+   

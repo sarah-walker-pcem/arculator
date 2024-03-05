@@ -3,7 +3,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <math.h>
-#include <SDL2/SDL.h>
+#include <SDL.h>
 #include "arc.h"
 #include "joystick.h"
 #include "plat_joystick.h"

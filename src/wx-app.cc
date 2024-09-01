@@ -2,7 +2,7 @@
   wxApp implementation
   Menus are also handled here*/
 #include <sstream>
-#include <SDL2/SDL.h>
+#include <SDL.h>
 
 #ifdef _WIN32
 #define BITMAP WINDOWS_BITMAP

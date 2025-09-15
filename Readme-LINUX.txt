@@ -21,5 +21,8 @@ configure options are :
   --enable-debug         : Compile with debugging enabled.
   --disable-podules      : Don't build external podules
 
-The menu is a pop-up menu in the Linux port. Right-click on the main window when mouse is not
-captured.
+The menu is a pop-up menu in the Linux port.  Right-click on the main window
+when mouse is not captured.  If the menu does not pop-up, you may be hitting
+a bug in wxWidgets.  Try re-running with,
+
+GDK_BACKEND=x11 ./arculator

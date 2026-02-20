@@ -232,7 +232,11 @@ static void usage(const char *progname)
 		"  -f, --fullscreen    Start in fullscreen mode\n"
 		"  -h, --help          Show this help message\n"
 		"\n"
-		"While running, press Ctrl+F12 to break into the debugger.\n",
+		"Key bindings:\n"
+		"  RWIN+Q          Quit emulator\n"
+		"  RWIN+Enter      Toggle fullscreen\n"
+		"  Ctrl+End        Release mouse capture\n"
+		"  Ctrl+F12        Break into debugger\n",
 		progname);
 }
 
@@ -425,6 +429,19 @@ int main(int argc, char **argv)
 				/* Consume the key so it doesn't repeat */
 				key[KEY_F12] = 0;
 			}
+			/* RWIN+Q: quit emulator (event-driven for grab mode) */
+			if (e.type == SDL_KEYDOWN
+			    && e.key.keysym.scancode == SDL_SCANCODE_Q
+			    && (e.key.keysym.mod & KMOD_GUI))
+			{
+				arc_stop_emulation();
+			}
+		}
+
+		/* RWIN+Q: quit emulator (poll-based fallback) */
+		if (key[KEY_RWIN] && key[KEY_Q])
+		{
+			arc_stop_emulation();
 		}
 
 		/* Resize window to match screen mode */

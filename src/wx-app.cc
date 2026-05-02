@@ -80,8 +80,8 @@ bool App::OnInit()
 	return true;
 }
 
-static void *main_frame = NULL;
-static void *main_menu = NULL;
+static Frame *main_frame = NULL;
+static wxMenu *main_menu = NULL;
 
 Frame::Frame(App* app, const wxString& title, const wxPoint& pos,
 		const wxSize& size) :
@@ -589,14 +589,14 @@ void Frame::OnMenuCommand(wxCommandEvent &event)
 extern "C" void arc_stop_emulation()
 {
 	wxCommandEvent* event = new wxCommandEvent(WX_STOP_EMULATION_EVENT, wxID_ANY);
-	event->SetEventObject((wxWindow*)main_frame);
-	wxQueueEvent((wxWindow*)main_frame, event);
+	event->SetEventObject(main_frame);
+	wxQueueEvent(main_frame, event);
 }
 
 extern "C" void arc_popup_menu()
 {
-	PopupMenuEvent *event = new PopupMenuEvent((wxWindow *)main_frame, (wxMenu *)main_menu);
-	wxQueueEvent((wxWindow *)main_frame, event);
+	PopupMenuEvent *event = new PopupMenuEvent(main_frame, main_menu);
+	wxQueueEvent(main_frame, event);
 }
 
 extern "C" void *wx_getnativemenu(void *menu)
@@ -609,8 +609,8 @@ extern "C" void *wx_getnativemenu(void *menu)
 
 extern "C" void arc_update_menu()
 {
-	UpdateMenuEvent *event = new UpdateMenuEvent((wxMenu *)main_menu);
-	wxQueueEvent((wxWindow *)main_frame, event);
+	UpdateMenuEvent *event = new UpdateMenuEvent(main_menu);
+	wxQueueEvent(main_frame, event);
 }
 
 void Frame::OnUpdateMenuEvent(UpdateMenuEvent &event)
@@ -631,7 +631,7 @@ extern "C" void arc_print_error(const char *format, ...)
 	va_end(ap);
 
 	event->SetString(wxString(buf));
-	wxQueueEvent((wxWindow *)main_frame, event);
+	wxQueueEvent(main_frame, event);
 }
 
 #ifdef _WIN32

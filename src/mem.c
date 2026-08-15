@@ -65,7 +65,7 @@ void initmem(int memsize)
 	rpclog("initmem %i\n", memsize);
 	realmemsize=memsize;
 	ram=(uint32_t *)malloc(memsize*1024);
-	rom=(uint32_t *)malloc(0x200000);
+	rom=(uint32_t *)malloc(0x400000);
 	rom_arcrom = malloc(0x10000);
 	rom_5th_column = (uint8_t *)malloc(0x20000);
 	for (c=0;c<0x4000;c++) memstat[c]=0;

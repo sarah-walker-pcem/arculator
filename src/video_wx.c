@@ -1,6 +1,7 @@
 /*Arculator 2.2 by Sarah Walker
   SDL2 video handling*/
 #include <stdio.h>
+#include <string.h>
 #include "arc.h"
 #include "plat_video.h"
 #include "vidc.h"

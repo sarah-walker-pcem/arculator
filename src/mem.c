@@ -43,6 +43,7 @@ int fdcside;
 int realmemsize;
 
 uint32_t *ram,*rom;
+size_t romsize;
 uint8_t *rom_5th_column;
 uint8_t *rom_arcrom;
 uint8_t *mempoint[0x4000];
@@ -65,17 +66,30 @@ void initmem(int memsize)
 	rpclog("initmem %i\n", memsize);
 	realmemsize=memsize;
 	ram=(uint32_t *)malloc(memsize*1024);
-	rom=(uint32_t *)malloc(0x200000);
-	rom_arcrom = malloc(0x10000);
+	rom=(uint32_t *)malloc(ROMRGNSZ);  /* RISC OS ROM */
+	romsize = 0;
+	rom_arcrom = malloc(0x10000);  /* support ROM (HostFS) */
 	rom_5th_column = (uint8_t *)malloc(0x20000);
-	for (c=0;c<0x4000;c++) memstat[c]=0;
+
+	/* Map everything as I/O by default */
+	for (c=0;c<0x4000;c++)
+		memstat[c]=0;
 	resetpagesize(0);
+
+	/* Map the RISC OS ROM window (excluding the support ROM) */
 	for (c = 0x3800; c < 0x3fc0; c++)
-		memstat[c] = 5;
-	for (c = 0x3800; c < 0x4000; c++)
-		mempoint[c] = ((uint8_t *)&rom[(c & 0x1FF) << 10]) - (c << 12);
-	for (c = 0x3fc0; c < 0x4000; c++) /*Map support ROM at end of address space*/
+		memstat[c] = 5;  /* read memory, write i/o */
+
+	/* Map the support ROM at the end of the ROM address space, if it's enabled */
+	for (c = 0x3fc0; c < 0x4000; c++)
 		memstat[c] = support_rom_enabled ? 0 : 5;
+
+	/*
+	 * Create an initial RISC OS ROM mapping
+	 * This is technically not needed but remains here for clarity.
+	 * The real map is created when main() calls remaprom() with romsize set.
+	 */
+	remaprom();
 
 	memset(ram,0,memsize*1024);
 	memstat[0]=1;
@@ -95,6 +109,22 @@ void initmem(int memsize)
 		mem_speed[c][0] = mem_speed[c][1] = 4 * mem_spd_multi;
 	mem_romspeed_n = mem_romspeed_s = 4;
 	rpclog("Update2: mem=%i,%i\n", mem_speed[0x1800][0], mem_speed[0x1800][1]);
+}
+
+void remaprom(void)
+{
+	int c;
+
+	/* ROMs smaller than the ROM window will repeat to fill the window */
+	unsigned int rommask =
+		(romsize > 0x400000) ? 0x7FF :  /* 8MB */
+		(romsize > 0x200000) ? 0x3FF :  /* 4MB */
+		(romsize > 0x100000) ? 0x1FF :  /* 2MB */
+			0xFF;  /* 1MB or smaller (what are you running, Arthur?) */
+
+	/* Map the ROM into the 8MB ROM window */
+	for (c = 0x3800; c < 0x4000; c++)
+		mempoint[c] = ((uint8_t *)&rom[(c & rommask) << 10]) - (c << 12);
 }
 
 void mem_setromspeed(int n, int s)

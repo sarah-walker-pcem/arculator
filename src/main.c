@@ -167,6 +167,7 @@ int arc_init()
 
 	if (loadrom())
 		return -1;
+	remaprom();
 	rom_load_5th_column();
 	rom_load_arc_support_extrom();
 

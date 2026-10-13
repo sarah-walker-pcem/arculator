@@ -224,15 +224,16 @@ int loadrom()
 		len=ftell(f)+1;
 		fseek(f,0,SEEK_SET);
 //                rpclog("Loading %s %08X %08X\n",romfns[c],len,pos);
-		if ((pos + len) > 0x200000)
-			len = 0x200000 - pos;
+		if ((pos + len) > ROMRGNSZ)
+			len = ROMRGNSZ - pos;
 		if (len > 0)
 			fread(&romb[pos],len,1,f);
 		fclose(f);
 		pos+=len;
-		if (pos >= 0x200000)
+		if (pos >= ROMRGNSZ)
 			break;
 	}
+	romsize = pos;
 	chdir(olddir);
 //        rpclog("Successfully loaded!\n");
 	return 0;
@@ -245,7 +246,7 @@ int rom_establish_availability()
 {
 	int old_romset = romset;
 
-	rom = malloc(4 * 1024 * 1024);
+	rom = malloc(ROMRGNSZ);
 
 	for (romset = 0; romset < ROM_MAX; romset++)
 	{

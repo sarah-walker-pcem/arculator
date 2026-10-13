@@ -112,6 +112,8 @@ extern const int modepritabler[3][8],modepritablew[3][8];
 extern uint8_t *mempoint[0x4000];
 extern uint8_t memstat[0x4000];
 extern uint32_t *ram,*rom;
+extern size_t romsize;
+#define ROMRGNSZ (8*1024*1024)
 
 enum {
 	MEMMODE_USER,
@@ -123,6 +125,7 @@ extern int memmode;
 extern void initmem(int memsize);
 extern void resizemem(int memsize);
 extern int loadrom();
+extern void remaprom();
 extern void resetpagesize(int pagesize);
 
 #define readmemb(a)    ((modepritabler[memmode][memstat[((a) >> 12) & 0x3FFF]]) ? mempoint[((a) >> 12) & 0x3FFF][(a)] : readmemfb(a))

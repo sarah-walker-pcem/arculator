@@ -118,42 +118,51 @@ const char *podule_get_name(int c)
 {
 	podule_list *current = podule_list_head;
 
+	if (c < 0)
+		return NULL;
+
 	while (c--)
 	{
-		current = current->next;
 		if (!current)
 			return NULL;
+		current = current->next;
 	}
 
-	return current->header->name;
+	return current ? current->header->name : NULL;
 }
 
 const char *podule_get_short_name(int c)
 {
 	podule_list *current = podule_list_head;
 
+	if (c < 0)
+		return NULL;
+
 	while (c--)
 	{
-		current = current->next;
 		if (!current)
 			return NULL;
+		current = current->next;
 	}
 
-	return current->header->short_name;
+	return current ? current->header->short_name : NULL;
 }
 
 uint32_t podule_get_flags(int c)
 {
 	podule_list *current = podule_list_head;
 
+	if (c < 0)
+		return 0;
+
 	while (c--)
 	{
-		current = current->next;
 		if (!current)
 			return 0;
+		current = current->next;
 	}
 
-	return current->header->flags;
+	return current ? current->header->flags : 0;
 }
 
 const podule_header_t *podule_find(const char *short_name)
